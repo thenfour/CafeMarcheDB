@@ -1,26 +1,11 @@
-import { Prisma } from "@prisma/client";
-import { z } from "zod";
 import { Permission } from "shared/permissions";
-import type { EventPublicId } from "shared/publicId";
+import { parsePublicId, type EventPublicId } from "shared/publicId";
 import { gMillisecondsPerDay } from "shared/time";
 import { BigintToNumberNullable } from "shared/utils";
 import { GetRelevantEvents, gEventRelevanceClass, kMaxRelevantEventsToQuery, type EventRelevanceClassValue, type EventRelevanceContext } from "../shared/eventRelevance";
-import { xEvent } from "../shared/schema/event";
+import { eventRelevanceView, xEvent, type DtoOf } from "../db3";
 import type { DB3ReadContext } from "./db3ReadExecution";
-
-const candidateSchema = z.object({
-    publicId: z.string(),
-    startsAt: z.date().nullable(),
-    durationMillis: z.bigint().nullable(),
-    // Prisma raw MySQL reads expose Boolean columns as 0/1.
-    isAllDay: z.union([
-        z.literal(0),
-        z.literal(1)
-    ])
-        .transform(value => value === 1).nullable(),
-    endDateTime: z.date().nullable(),
-    relevanceClassOverride: z.number().nullable(),
-});
+import { searchViewPage } from "./searchServerCore";
 
 function parseRelevanceOverride(value: number | null): EventRelevanceClassValue | null {
     if (value === null) {
@@ -39,7 +24,7 @@ export async function readDashboardRelevantEvents(context: DB3ReadContext, now: 
     if (!auth.user || !auth.band || !auth.hasPermission(Permission.view_events_nonpublic)) {
         return [];
     }
-    if (!xEvent.authorizeTableForView(auth) || Object.keys(candidateSchema.shape).some(columnName =>
+    if (!xEvent.authorizeTableForView(auth) || Object.keys(eventRelevanceView.dtoSchema.shape).some(columnName =>
         !xEvent.authorizeColumnForView({ auth, model: null, columnName }))) {
         return [];
     }
@@ -53,37 +38,33 @@ export async function readDashboardRelevantEvents(context: DB3ReadContext, now: 
 }
 
 async function loadRelevantEventCandidates(context: DB3ReadContext, timing: EventRelevanceContext) {
-    // The shared table policy owns band, deletion, visibility and private-owner predicates.
-    // lsmb todo: don't put an ad-hoc query here. use the search mechanism. as if you did an event search for the given timing window.
-    const visibility = Prisma.raw(xEvent.SqlGetVisFilterExpression({ auth: context.authorization, tableAlias: "e" }));
-    const rows: unknown = await context.database.$queryRaw(Prisma.sql`
-        SELECT 
-          e.publicId,
-          e.startsAt,
-          e.durationMillis,
-          e.isAllDay,
-          e.endDateTime, 
-          e.relevanceClassOverride
-        FROM
-          Event e LEFT JOIN EventStatus s ON s.id = e.statusId
-        WHERE
-          (${visibility})
-          AND (e.relevanceClassOverride IS NULL OR e.relevanceClassOverride <> ${gEventRelevanceClass.Hidden})
-          AND (e.relevanceClassOverride IS NOT NULL OR (
-            (s.significance IS NULL OR s.significance <> 'Cancelled')
-            AND e.startsAt IS NOT NULL AND e.endDateTime >= ${timing.twentyFourHoursAgo}
-          ))
-        ORDER BY
-          e.relevanceClassOverride IS NULL ASC,
-          ABS(TIMESTAMPDIFF(MINUTE, e.startsAt, ${timing.now})) ASC,
-          e.publicId ASC
-        LIMIT
-          ${kMaxRelevantEventsToQuery}
-    `);
-    return z.array(candidateSchema).parse(rows).map(row => ({
-        ...row,
-        publicId: xEvent.parseIdentity(row.publicId),
-        durationMillis: BigintToNumberNullable(row.durationMillis),
-        relevanceClassOverride: parseRelevanceOverride(row.relevanceClassOverride),
-    }));
+    const rows = await searchViewPage({
+        view: eventRelevanceView,
+        bandPublicId: parsePublicId<"Band">(context.authorization.requireBand().publicId),
+        mode: {
+            kind: "eventRelevance",
+            now: timing.now,
+            endedOnOrAfter: timing.twentyFourHoursAgo,
+        },
+        offset: 0,
+        take: kMaxRelevantEventsToQuery,
+        sort: [],
+        quickFilter: "",
+        discreteCriteria: [],
+    }, context.authorization, context);
+    return rows.map(readRelevanceCandidate);
+}
+
+function readRelevanceCandidate(row: DtoOf<typeof eventRelevanceView>) {
+    const { publicId, startsAt, durationMillis, isAllDay, endDateTime, relevanceClassOverride } = row;
+    // The classifier needs every selected field; reject a partial authorized DTO.
+    if (startsAt === undefined || durationMillis === undefined || isAllDay === undefined
+        || endDateTime === undefined || relevanceClassOverride === undefined) {
+        throw new Error("Event relevance requires the complete timing projection.");
+    }
+    return {
+        publicId, startsAt, isAllDay, endDateTime,
+        durationMillis: BigintToNumberNullable(durationMillis),
+        relevanceClassOverride: parseRelevanceOverride(relevanceClassOverride),
+    };
 }

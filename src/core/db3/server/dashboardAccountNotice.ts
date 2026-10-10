@@ -1,4 +1,3 @@
-import { Permission } from "shared/permissions";
 import type { DB3ReadContext } from "./db3ReadExecution";
 
 // lsmb todo: the concept of "has limited access" should probably be expressed through a PERMISSION

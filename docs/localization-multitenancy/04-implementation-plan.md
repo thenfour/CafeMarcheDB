@@ -513,6 +513,31 @@ invitation contracts account for the superseded UserTag/UserInstrument blocks.
 All six completed dashboard source references are removed, and `dashboard-content`
 is restored. A1/B and full localized-name matching remain open.
 
+## Dashboard Event search follow-up
+
+Dashboard candidate selection now uses the existing Event search pipeline through
+its typed page-only reader. The Event-owned `eventRelevance` mode supplies the
+candidate predicate, field dependencies and override/proximity order; shared
+search retains authorization, ordinary filtering and public-identity pagination.
+`Event_Relevance` projects only the classifier's six scalar fields. The same mode
+works through the ordinary HTTP search with counts, facets and filter composition.
+The twenty-candidate/five-card limits, pins, cancelled/hidden semantics and elapsed
+time boundaries retain their native coverage.
+
+The [performance comparison](dashboard-relevance-search-performance.md) records
+two native runs with 100, 1,000 and 10,000 Events in each of two bands. Results are
+identical. Shared search adds approximately eight milliseconds at the smallest
+population and saves approximately twenty-three milliseconds at the largest.
+The repeatable benchmark includes query counts and the shared authorization/
+projection overhead; its historical query is confined to benchmark fixtures.
+
+Two obsolete notice assertions now follow the current band-only implementation:
+no-band accounts do not warn, and a selected-band platform account without
+membership has limited access. The earlier GlobalRole/exemption description above
+records the preceding checkpoint. The notice implementation is outside this
+search change, apart from removing its unused `Permission` import found by the
+production build.
+
 ## Next slice: Global shell search
 
 Restore the original shell search through the existing domain readers and result
@@ -934,7 +959,7 @@ chrome follows the A1 exception.
 The complete-suite run still reports 206 failed tests and ten suite-load failures,
 including unscoped authorization/account/setlist fixtures, deferred-domain and
 date-policy contracts; the runner stops before the later jsdom batches. Focused
-passes do not establish A1 readiness. The latest run passes 1823 tests and skips
+passes do not establish A1 readiness. That checkpoint passed 1823 tests and skipped
 645; native cases require the explicit MariaDB test environment, including the
 eighteen new dashboard Event/notice cases and three reactivated transport cases.
 Updated account fixtures change
@@ -944,6 +969,21 @@ GlobalRole/designation prerequisites; those changed failures reproduce on baseli
 translation-read and CommonJS import-order failures were fixed; date probes and
 the retained named-view tests pass. The remaining failures still prevent A1
 acceptance. Earlier unrelated browser/download evidence remains recorded evidence.
+
+The Event search follow-up passes 144 focused checks in eight files, 328 native
+MariaDB cases in twenty-three files and both three-population performance runs.
+Typed page projection, normal HTTP relevance input, filter/facet/count composition,
+registered mode/view restrictions and fresh page-reader revocation are covered.
+Normal typecheck, targeted lint and the isolated normal production build pass.
+An unused `Permission` import in the account-notice file was removed after the
+production build identified it.
+The complete-suite rerun retains 206
+failed tests and ten suite-load failures, with 1828 passed and 650 skipped; the new
+native cases and opt-in benchmark account for the additional skipped tests.
+Failure-title comparison against the preceding dashboard run adds or removes no
+failures.
+Preservation verification retains 287 references, ten deferred specifications and
+twenty pending features. A1/B remain open.
 
 The [development seeder](../development-seeding.md) restores the pre-migration
 fixed catalogs and random users, songs/files, event schedules/attendance/setlists,

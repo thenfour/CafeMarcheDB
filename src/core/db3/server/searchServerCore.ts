@@ -4,9 +4,9 @@ import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { Stopwatch } from "shared/rootroot";
 import { loadBandTimeZone } from "src/server/bandTimeZone";
-import { ZGetSearchResultsInput, MakeEmptySearchResultsRet, type SearchResultsFacet, type SearchQueryMetric } from "../shared/apiTypes";
+import { ZGetSearchResultsInput, MakeEmptySearchResultsRet, type SearchResultsFacet, type SearchQueryMetric, type SearchModeDefinition } from "../shared/apiTypes";
 import { executeDB3Read, type DB3ReadContext, type DB3ReadDatabase } from "./db3ReadExecution";
-import { queryTable } from "./db3QueryCore";
+import { queryView } from "./db3QueryCore";
 import { calendarWindowSql } from "./calendarWindowSql";
 import { resolveSearchFacetLabels } from "./searchFacetCatalogs";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
@@ -19,6 +19,7 @@ import { SplitQuickFilter } from "shared/quickFilter";
 import { CalculateFilterQueryResult, type DiscreteCriterion, DiscreteCriterionFilterType, GetSearchResultsInput, SearchResultsRet, SortQueryElements } from "src/core/db3/shared/apiTypes";
 import * as db3 from "../../../core/db3/db3";
 import { resolvePublicIds } from "./db3PublicIds";
+import { eventRelevanceSearchMode } from "../shared/entities/event/eventRelevanceSearch";
 
 
 
@@ -115,6 +116,7 @@ function calculateFilterQuery(
     sortElements: SortQueryElements,
     auth: CMServerAuthorization,
     calendarPredicate: string | null,
+    modePredicates: readonly string[],
 ): CalculateFilterQueryResult {
     const table = db3.GetTableById(args.tableID);
     if (!table) {
@@ -127,7 +129,7 @@ function calculateFilterQuery(
     }
 
     // each criterion will supply the info we need to construct the correct query.
-    const whereAnd: string[] = [];
+    const whereAnd: string[] = [...modePredicates];
     if (args.calendarWindow) {
         if (table.tableName !== "Event") {
             throw new Error("Calendar windows are only supported for event searches.");
@@ -211,10 +213,23 @@ function calculateFilterQuery(
 
 export class SearchInputError extends Error { }
 
-const searchDomains = [
+interface SearchDomain {
+    readonly table: db3.xTable;
+    // The registry holds different named views; typed page callers keep their concrete view.
+    readonly view: db3.AnyDB3View;
+    readonly pageViews?: readonly db3.AnyDB3View[];
+    readonly modes?: readonly SearchModeDefinition[];
+    readonly permissions: readonly Permission[];
+    readonly sorts: readonly string[];
+    readonly criteria: ReadonlyArray<{ column: string; permission: Permission }>;
+}
+
+const searchDomains: readonly SearchDomain[] = [
     {
         table: db3.xEvent,
         view: db3.eventSearchView,
+        pageViews: [db3.eventRelevanceView],
+        modes: [eventRelevanceSearchMode],
         permissions: [Permission.view_events_nonpublic],
         // TODO: these should be well-typed such that a misspelled symbol
         // would fail to compile!
@@ -337,21 +352,40 @@ interface SearchExecution {
     readonly args: GetSearchResultsInput;
     readonly sort: SortQueryElements;
     readonly calendarPredicate: string | null;
+    readonly modePredicates: readonly string[];
     readonly filter: CalculateFilterQueryResult;
     readonly metrics: SearchQueryMetric[];
+}
+
+function configureSearchMode(args: GetSearchResultsInput, domain: SearchDomain, auth: CMServerAuthorization) {
+    const requestedMode = args.mode;
+    if (!requestedMode) {
+        return { whereAnd: [], sort: processSearchSortModel(domain.table, args) };
+    }
+    const mode = domain.modes?.find(mode => mode.kind === requestedMode.kind);
+    if (!mode) {
+        throw new SearchInputError(`Unsupported search mode ${requestedMode.kind} for ${domain.table.tableID}.`);
+    }
+    for (const columnName of mode.readColumns) {
+        if (!domain.table.authorizeColumnForView({ model: null, auth, columnName })) {
+            throw new AuthorizationError();
+        }
+    }
+    let columnId = 0;
+    return mode.buildQuery(requestedMode, { primaryTableAlias: "P", getColumnAlias: () => `sortCol_${++columnId}` });
 }
 
 async function prepareSearch(args: GetSearchResultsInput, context: DB3ReadContext): Promise<SearchExecution> {
     const auth = context.authorization;
     const domain = requireSearchDomain(args.tableID);
     const criteria = authorizeSearch(args, auth);
+    const { whereAnd: modePredicates, sort } = configureSearchMode(args, domain, auth);
     const discreteCriteria = await resolveSearchDiscreteCriteria(domain.table, criteria, auth, context.database);
     const searchArgs = { ...args, discreteCriteria };
-    const sort = processSearchSortModel(domain.table, searchArgs);
     const calendarPredicate = args.calendarWindow
         ? calendarWindowSql(args.calendarWindow, await loadBandTimeZone(context.database, auth.requireBand().id)) : null;
-    const filter = calculateFilterQuery(searchArgs, null, sort, auth, calendarPredicate);
-    return { context, domain, args: searchArgs, sort, calendarPredicate, filter, metrics: [] };
+    const filter = calculateFilterQuery(searchArgs, null, sort, auth, calendarPredicate, modePredicates);
+    return { context, domain, args: searchArgs, sort, calendarPredicate, modePredicates, filter, metrics: [] };
 }
 
 async function querySearchRows<T>(search: SearchExecution, title: string, sql: string): Promise<T[]> {
@@ -362,11 +396,11 @@ async function querySearchRows<T>(search: SearchExecution, title: string, sql: s
 }
 
 async function loadSearchFacet(search: SearchExecution, criterion: DiscreteCriterion): Promise<SearchResultsFacet | null> {
-    const { args, sort, context, filter, calendarPredicate } = search;
+    const { args, sort, context, filter, calendarPredicate, modePredicates } = search;
     const auth = context.authorization;
     const table: db3.xTable = search.domain.table;
     const field = table.getColumn(criterion.db3Column)!;
-    const excluding = calculateFilterQuery(args, field.member, sort, auth, calendarPredicate);
+    const excluding = calculateFilterQuery(args, field.member, sort, auth, calendarPredicate, modePredicates);
     const facet = field.SqlGetFacetInfoQuery({
         auth, crit: criterion,
         filteredItemsQuery: filter.sqlSelect,
@@ -401,17 +435,13 @@ async function loadSearchCount(search: SearchExecution): Promise<number> {
     return Number(rows[0]?.rowCount ?? 0);
 }
 
-async function loadSearchPage(search: SearchExecution, primaryKeys: number[]): Promise<SearchResultsRet["results"]> {
+async function loadSearchPage<TView extends db3.AnyDB3View>(search: SearchExecution, primaryKeys: number[], view: TView): Promise<db3.DtoOf<TView>[]> {
     if (!primaryKeys.length) {
         return [];
     }
-    const { args, context, domain } = search;
-    const rows = await queryTable({
-        table: {
-            tableID: domain.table.tableID,
-            tableName: domain.table.tableName,
-            viewID: domain.view.viewID
-        },
+    const { args, context } = search;
+    const rows = await queryView({
+        view,
         bandPublicId: args.bandPublicId,
         routeLocale: args.routeLocale,
         browserLanguages: args.browserLanguages,
@@ -420,8 +450,28 @@ async function loadSearchPage(search: SearchExecution, primaryKeys: number[]): P
         orderBy: undefined,
         cmdbQueryContext: "domain search results",
     }, context.authorization, context, { orderedPrimaryKeys: primaryKeys, trustedNaturalPrimaryKeys: primaryKeys });
-    search.metrics.push({ title: `DB3 ${domain.view.viewID} items`, millis: rows.executionTimeMillis, query: "", rowCount: rows.items.length });
+    search.metrics.push({ title: `DB3 ${view.viewID} items`, millis: rows.executionTimeMillis, query: "", rowCount: rows.items.length });
     return rows.items;
+}
+
+export type SearchViewPageInput<TView extends db3.AnyDB3View> = Omit<GetSearchResultsInput, "tableID" | "viewID"> & {
+    readonly view: TView;
+};
+
+/** Shared search filtering/pagination for readers that need a typed page without facets or counts. */
+export async function searchViewPage<TView extends db3.AnyDB3View>(input: SearchViewPageInput<TView>,
+    authorization: CMServerAuthorization, database: DB3ReadDatabase,
+): Promise<db3.DtoOf<TView>[]> {
+    const { view, ...pageInput } = input;
+    const domain = requireSearchDomain(view.tableID);
+    if (view !== domain.view && !domain.pageViews?.includes(view)) {
+        throw new SearchInputError(`Unsupported search view ${view.viewID}.`);
+    }
+    const args = ZGetSearchResultsInput.parse({ ...pageInput, tableID: view.tableID });
+    return executeDB3Read(database, authorization, async context => {
+        const search = await prepareSearch(args, context);
+        return loadSearchPage(search, await loadSearchPageIds(search), view);
+    });
 }
 
 async function searchInSnapshot(args: GetSearchResultsInput, context: DB3ReadContext): Promise<SearchResultsRet> {
@@ -430,7 +480,7 @@ async function searchInSnapshot(args: GetSearchResultsInput, context: DB3ReadCon
     const [facets, ids, rowCount] = await Promise.all([
         loadSearchFacets(search), loadSearchPageIds(search), loadSearchCount(search),
     ]);
-    const results = await loadSearchPage(search, ids);
+    const results = await loadSearchPage(search, ids, search.domain.view);
     search.metrics.push({ title: "(root)", millis: sw.ElapsedMillis, query: "", rowCount: results.length });
     // Diagnostic SQL authorization uses the fresh snapshot, including for direct callers.
     const canSeeSql = context.authorization.hasPermission(Permission.sysadmin);

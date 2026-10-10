@@ -1,6 +1,7 @@
 import { CalendarWindow, CalendarWindowSchema } from "shared/dateTimePolicy";
 import type { LocalePreferenceInput } from "src/locale/shared/localePreferences";
 import { PresentationInputSchema } from "src/locale/shared/presentationInput";
+import { EventRelevanceSearchModeSchema } from "./entities/event/eventRelevanceSearch";
 
 import db, { Prisma } from "db";
 import { z } from "zod";
@@ -463,9 +464,24 @@ export interface GetSearchResultsSortModel {
     direction: SortDirection,
 };
 
+export type SearchMode = z.infer<typeof EventRelevanceSearchModeSchema>;
+
+/** Domains own the predicates, ordering and field dependencies of their search modes. */
+export interface SearchModeDefinition {
+    readonly kind: SearchMode["kind"];
+    readonly readColumns: readonly string[];
+    readonly buildQuery: (mode: SearchMode,
+        api: {
+            readonly primaryTableAlias: string;
+            readonly getColumnAlias: () => string;
+        }) => { readonly whereAnd: readonly string[]; readonly sort: SortQueryElements };
+}
+
 export interface GetSearchResultsInput extends LocalePreferenceInput {
     bandPublicId?: BandPublicId | null;
     calendarWindow?: CalendarWindow;
+    // A domain mode supplies its own filter and order; ordinary sorts must be empty.
+    mode?: SearchMode;
     tableID: string;
     viewID?: string;
     includeDeleted?: boolean;
@@ -514,6 +530,7 @@ const ZGetSearchResultsSortModel = z.object({
 export const ZGetSearchResultsInput = z.object({
     ...PresentationInputSchema.shape,
     calendarWindow: CalendarWindowSchema.optional(),
+    mode: EventRelevanceSearchModeSchema.optional(),
     tableID: ZDBSymbol,
     viewID: ZDBSymbol.optional(),
     includeDeleted: z.boolean().optional(),
@@ -522,11 +539,17 @@ export const ZGetSearchResultsInput = z.object({
     offset: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
     take: z.number().int().min(1).max(MAX_DB3_PAGE_SIZE),
 
-    // unspecified sort is not allowed
-    sort: z.array(ZGetSearchResultsSortModel).min(1).max(10),
+    sort: z.array(ZGetSearchResultsSortModel).max(10),
 
     quickFilter: z.string().max(2000),
     discreteCriteria: z.array(ZDiscreteCriterion).max(30),
+}).superRefine((input, context) => {
+    if (input.mode ? input.sort.length !== 0 : input.sort.length === 0) {
+        context.addIssue({
+            code: z.ZodIssueCode.custom, path: ["sort"],
+            message: input.mode ? "A search mode supplies its own ordering." : "Specify at least one search sort."
+        });
+    }
 });
 
 

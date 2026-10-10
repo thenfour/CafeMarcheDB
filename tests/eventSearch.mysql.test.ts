@@ -6,7 +6,9 @@ import { getCalendarWindow } from "shared/dateTimePolicy";
 import { createAllDayRange } from "shared/time";
 import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
 import { bindDB3ReadSnapshot } from "src/core/db3/server/db3ReadExecution";
-import { GetSearchResultsCore } from "src/core/db3/server/searchServerCore";
+import { GetSearchResultsCore, searchViewPage } from "src/core/db3/server/searchServerCore";
+import { eventEditorView, eventRelevanceView } from "src/core/db3/shared/entities/event/eventViews";
+import { gEventRelevanceClass } from "src/core/db3/shared/eventRelevance";
 import { DiscreteCriterionFilterType as Behavior, type GetSearchResultsInput } from "src/core/db3/shared/apiTypes";
 import { generatePublicId } from "src/server/publicId";
 import { initializeAccessControl } from "src/setup/accessControl";
@@ -85,6 +87,51 @@ describe.skipIf(!settingsMysqlTestUrl)("existing event search on migrated MariaD
             await bindDB3ReadSnapshot(tx, otherAuth, { isolationLevel: "Serializable" }));
         expect(other.results.map(row => row.publicId)).toEqual([seed.foreign.publicId]);
         expect(other.facets.find(facet => facet.db3Column === "tags")!.items.map(item => item.id)).not.toContain(seed.firstTag.publicId);
+    }));
+
+    it("composes relevance with ordinary search filters, facets, counts and paging", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const seed = await seedSearch(tx, fixture);
+        const now = new Date("2026-10-10T12:00:00Z");
+        const mode: GetSearchResultsInput["mode"] = { kind: "eventRelevance", now, endedOnOrAfter: new Date("2026-10-09T12:00:00Z") };
+        await tx.event.update({ where: { id: seed.events[0]!.id }, data: {
+            startsAt: new Date("2026-09-01T12:00:00Z"), endDateTime: new Date("2026-09-01T13:00:00Z"),
+            relevanceClassOverride: gEventRelevanceClass.Pinned,
+        } });
+        await tx.event.update({ where: { id: seed.events[1]!.id }, data: {
+            startsAt: new Date("2026-10-10T13:00:00Z"), endDateTime: new Date("2026-10-10T14:00:00Z"),
+        } });
+        const cancelled = await tx.eventStatus.create({ data: { publicId: generatePublicId(), nameId: seed.type.nameId,
+            descriptionId: seed.type.descriptionId, significance: "Cancelled", isDeleted: true } });
+        await tx.event.update({ where: { id: seed.events[2]!.id }, data: { statusId: cancelled.id, endDateTime: now } });
+        await tx.event.update({ where: { id: seed.events[3]!.id }, data: { relevanceClassOverride: gEventRelevanceClass.Hidden } });
+        const first = await seed.read({ mode, sort: [], take: 1 });
+        const second = await seed.read({ mode, sort: [], take: 1, offset: 1 });
+        expect(first.results.map(event => event.name)).toEqual(["Alpha"]);
+        expect(second.results.map(event => event.name)).toEqual(["Bravo"]);
+        expect(first.rowCount).toBe(2);
+        expect(second.rowCount).toBe(2);
+        expect(first.facets).toEqual(second.facets);
+        expect(first.facets.find(facet => facet.db3Column === "tags")!.items).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: seed.firstTag.publicId, rowCount: 1 }),
+            expect.objectContaining({ id: seed.secondTag.publicId, rowCount: 1 }),
+        ]));
+        const filtered = await seed.read({ mode, sort: [], quickFilter: "Bravo", discreteCriteria: [
+            { db3Column: "tags", behavior: Behavior.hasSomeOf, options: [seed.secondTag.publicId] },
+        ] });
+        expect(filtered.results.map(event => event.publicId)).toEqual([seed.events[1]!.publicId]);
+        expect(filtered.rowCount).toBe(1);
+    }));
+
+    it("restricts modes and page views to their registered domain and refreshes page-reader authority", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const seed = await seedSearch(tx, fixture);
+        const context = await bindDB3ReadSnapshot(tx, seed.auth, { isolationLevel: "Serializable" });
+        const pageInput = { bandPublicId: seed.query().bandPublicId, offset: 0, take: 20, sort: [], quickFilter: "", discreteCriteria: [],
+            mode: { kind: "eventRelevance" as const, now: new Date("2026-10-10T12:00:00Z"), endedOnOrAfter: new Date("2026-10-09T12:00:00Z") } };
+        await expect(searchViewPage({ ...pageInput, view: eventEditorView }, seed.auth, context)).rejects.toThrow("Unsupported search view");
+        await expect(GetSearchResultsCore({ ...pageInput, tableID: "Song", viewID: "Song_Search" }, seed.auth, context)).rejects.toThrow("Unsupported search mode");
+        const grant = await tx.permission.findUniqueOrThrow({ where: { name: Permission.view_events_nonpublic } });
+        await tx.bandRolePermission.deleteMany({ where: { bandRoleId: seed.member.bandRoleId!, permissionId: grant.id } });
+        await expect(searchViewPage({ ...pageInput, view: eventRelevanceView }, seed.auth, context)).rejects.toMatchObject({ statusCode: 403 });
     }));
 
     it.each([

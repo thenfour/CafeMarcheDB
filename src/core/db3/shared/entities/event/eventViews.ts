@@ -726,6 +726,27 @@ export const eventReferenceView = defineView({
     hydrate: eventReferenceContract.hydrate,
 });
 
+const eventRelevanceViewContract = deriveViewContract(xEvent,
+    Prisma.validator<Prisma.EventDefaultArgs>()({
+        select: {
+            publicId: true,
+            startsAt: true,
+            durationMillis: true,
+            isAllDay: true,
+            endDateTime: true,
+            relevanceClassOverride: true,
+        },
+    }));
+
+/** Candidate classification needs scalar timing values, rather than full Event cards. */
+export const eventRelevanceView = defineView({
+    viewID: "Event_Relevance",
+    entity: xEvent,
+    selection: eventRelevanceViewContract.prismaSelection,
+    dtoSchema: eventRelevanceViewContract.dtoSchema,
+    hydrate: eventRelevanceViewContract.hydrate,
+});
+
 const eventWikiPageContextTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
     select: {
         publicId: true,

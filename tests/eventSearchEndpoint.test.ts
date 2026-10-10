@@ -66,12 +66,25 @@ describe("existing domain search HTTP owner", () => {
         expect(superjson.deserialize(res.send.mock.calls[0]![0])).toMatchObject({ filterQueryResult: { sqlSelect: "" }, queryMetrics: [{ query: "" }] });
     });
 
-    it.each([{ offset: -1 }, { offset: 0.5 }, { take: 0 }, { take: 1001 }, { sort: [] }, { bandPublicId: 123 }, { includeDeleted: "true" }, { routeLocale: "invalid_locale!" }])("rejects malformed arguments before reading grants: %j", async patch => {
+    it.each([{ offset: -1 }, { offset: 0.5 }, { take: 0 }, { take: 1001 }, { sort: [] }, { bandPublicId: 123 }, { includeDeleted: "true" }, { routeLocale: "invalid_locale!" },
+        { mode: { kind: "unknown" }, sort: [] },
+        { mode: { kind: "eventRelevance", now: "2026-10-10", endedOnOrAfter: new Date() }, sort: [] },
+        { mode: { kind: "eventRelevance", now: new Date(NaN), endedOnOrAfter: new Date() }, sort: [] },
+        { mode: { kind: "eventRelevance", now: new Date(), endedOnOrAfter: new Date() } },
+    ])("rejects malformed arguments before reading grants: %j", async patch => {
         const res = response();
         await searchResultsRoute(request({ ...args, ...patch }), res.res, ctx);
         expect(res.status).toHaveBeenCalledWith(400);
         expect(loadAuthorization).not.toHaveBeenCalled();
         expect(GetSearchResultsCore).not.toHaveBeenCalled();
+    });
+
+    it("passes the validated Event relevance mode through the ordinary search endpoint", async () => {
+        const mode = { kind: "eventRelevance", now: new Date("2026-10-10T12:00:00Z"), endedOnOrAfter: new Date("2026-10-09T12:00:00Z") };
+        const res = response();
+        await searchResultsRoute(request({ ...args, mode, sort: [] }), res.res, ctx);
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(GetSearchResultsCore).toHaveBeenCalledWith(expect.objectContaining({ mode, sort: [] }), auth);
     });
 
     it.each(["User"])("keeps %s search deferred before reading accounts/content", async tableID => {

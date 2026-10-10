@@ -7,7 +7,8 @@ import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
 import { loadDashboardData } from "src/core/db3/server/db3DashboardData";
 import { bindDB3ReadSnapshot } from "src/core/db3/server/db3ReadExecution";
 import { queryView } from "src/core/db3/server/db3QueryCore";
-import { eventSearchView } from "src/core/db3/shared/entities/event/eventViews";
+import { eventRelevanceView, eventSearchView } from "src/core/db3/shared/entities/event/eventViews";
+import { searchViewPage } from "src/core/db3/server/searchServerCore";
 import { gEventRelevanceClass } from "src/core/db3/shared/eventRelevance";
 import { hydrateDashboardData } from "src/core/db3/shared/references/dashboardData";
 import { generatePublicId } from "src/server/publicId";
@@ -84,10 +85,19 @@ describe.skipIf(!settingsMysqlTestUrl)("dashboard Event selection on migrated Ma
             await c.event({ publicId, relevanceClassOverride: gEventRelevanceClass.Pinned });
             publicIds.push(publicId);
         }
-        const raw = vi.spyOn(tx, "$queryRaw");
+        const candidates = await searchViewPage({
+            view: eventRelevanceView, bandPublicId: c.bandPublicId,
+            mode: { kind: "eventRelevance", now, endedOnOrAfter: at(-day) },
+            offset: 0, take: 20, sort: [], quickFilter: "", discreteCriteria: [],
+        }, c.auth, await bindDB3ReadSnapshot(tx, c.auth, { isolationLevel: "Serializable" }));
+        expect(candidates.map(event => event.publicId)).toEqual(publicIds.slice(0, 20));
+        expect(Object.keys(candidates[0]!).sort()).toEqual([
+            "durationMillis", "endDateTime", "isAllDay", "publicId", "relevanceClassOverride", "startsAt",
+        ]);
+        expect(candidates[0]!.durationMillis).toBe(BigInt(2 * hour));
+        expect(candidates[0]!.isAllDay).toBe(false);
         const dto = await c.read();
         expect(dto.relevantEventIds).toEqual(publicIds.slice(0, 5));
-        expect(await raw.mock.results[0]!.value).toHaveLength(20);
     }));
     it("retains cancelled status meaning after retirement and allows explicit overrides without relying on a status catalog", () => run(async (tx, fixture) => {
         const c = await prepare(tx, fixture);
@@ -166,21 +176,15 @@ describe.skipIf(!settingsMysqlTestUrl)("dashboard Event selection on migrated Ma
         await tx.bandUser.update({ where: { id: c.member.id }, data: { bandRoleId: null } });
         expect((await c.read()).hasLimitedAccess).toBe(true);
         const platform = await loadAuthorizationForUser(fixture.admin, tx, c.bandPublicId);
-        expect((await loadDashboardData(await bindDB3ReadSnapshot(tx, platform, { isolationLevel: "Serializable" }), platform, { bandPublicId: c.bandPublicId })).hasLimitedAccess).toBe(false);
+        expect((await loadDashboardData(await bindDB3ReadSnapshot(tx, platform, { isolationLevel: "Serializable" }), platform, { bandPublicId: c.bandPublicId })).hasLimitedAccess).toBe(true);
     }));
-    it("refreshes the global account designation outside a band and suppresses the notice for anonymous accounts", () => run(async (tx, fixture) => {
-        const auth = await loadAuthorizationForUser(fixture.user, tx);
-        const read = async () => loadDashboardData(await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" }), auth, {});
-        expect((await read()).hasLimitedAccess).toBe(true);
-        const role = await tx.globalRole.create({ data: { publicId: generatePublicId(), name: { create: { publicId: generatePublicId() } } } });
-        await tx.user.update({ where: { id: fixture.user.id }, data: { globalRoleId: role.id } });
-        expect((await read()).hasLimitedAccess).toBe(false);
-        await tx.globalRole.updateMany({ data: { isRoleForNewUsers: false } });
-        await tx.globalRole.update({ where: { id: role.id }, data: { isRoleForNewUsers: true } });
-        expect((await read()).hasLimitedAccess).toBe(true);
-        await tx.globalRole.update({ where: { id: role.id }, data: { isRoleForNewUsers: false, isDeleted: true } });
-        expect((await read()).hasLimitedAccess).toBe(true);
-        const anonymous = await loadAuthorizationForUser(null, tx);
-        expect((await loadDashboardData(await bindDB3ReadSnapshot(tx, anonymous, { isolationLevel: "Serializable" }), anonymous, {})).hasLimitedAccess).toBe(false);
+    it("limits the notice to band contexts and suppresses it for anonymous accounts", () => run(async (tx, fixture) => {
+        for (const person of [fixture.user, fixture.admin, null]) {
+            const auth = await loadAuthorizationForUser(person, tx);
+            expect((await loadDashboardData(await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" }), auth, {})).hasLimitedAccess).toBe(false);
+        }
+        const c = await prepare(tx, fixture);
+        const anonymous = await loadAuthorizationForUser(null, tx, c.bandPublicId);
+        expect((await loadDashboardData(await bindDB3ReadSnapshot(tx, anonymous, { isolationLevel: "Serializable" }), anonymous, { bandPublicId: c.bandPublicId })).hasLimitedAccess).toBe(false);
     }));
 });
