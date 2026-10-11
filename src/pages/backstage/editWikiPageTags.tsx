@@ -9,7 +9,7 @@ import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import { bandWikiPageTagView } from "src/core/db3/shared/entities/wikiPageTag/wikiPageTagViews";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
-import { Localized } from "src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 
 export const bandWikiPageTagTableSpec = defineTableClientSpec({
     view: bandWikiPageTagView,
@@ -30,7 +30,7 @@ const MainContent = () => {
     const presentation = usePresentation();
     const locale = useLocale();
     return <>
-        <Localized id="editWikiPageTags_markdown" />
+        <BandLocalizedMarkdown id="editWikiPageTags_markdown" />
         {presentation.bandPublicId ? <DB3EditGrid
             tableSpec={bandWikiPageTagTableSpec}
             view={bandWikiPageTagView}

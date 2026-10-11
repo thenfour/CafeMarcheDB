@@ -80,7 +80,7 @@ export function matchesWhere(row: TestRow, where: Record<string, unknown> | unde
       return clauses.every((clause) => !matchesWhere(row, clause as Record<string, unknown>))
     }
     // Prisma compound unique selectors describe several scalar columns.
-    if (["bandId_userId", "bandId_slug", "localeId_stringId", "bandId_name", "userId_name", "bandUserId_name"].includes(field)) {
+    if (["bandId_userId", "bandId_slug", "localeId_stringId", "stringKey_localeId", "stringKey_localeId_bandId", "bandId_name", "userId_name", "bandUserId_name"].includes(field)) {
       return isRecord(expected) && matchesWhere(row, expected)
     }
     return matchesScalar(row[field], expected)

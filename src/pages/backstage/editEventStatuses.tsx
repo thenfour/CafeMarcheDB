@@ -1,5 +1,5 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { Localized } from "@/src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { BlitzPage } from "@blitzjs/next";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import { GlobalCatalogContext } from "src/core/db3/components/GlobalCatalogContext";
@@ -25,7 +25,7 @@ const tableSpec = DB3Client.defineTableClientSpec({
 
 const MainContent = () => {
     return <>
-        <Localized id="EditEventStatusesPage_markdown" />
+        <BandLocalizedMarkdown id="EditEventStatusesPage_markdown" />
         <GlobalCatalogContext><DB3EditGrid tableSpec={tableSpec} view={db3.eventStatusEditorView} /></GlobalCatalogContext>
     </>;
 };

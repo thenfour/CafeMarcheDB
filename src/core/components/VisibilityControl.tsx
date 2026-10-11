@@ -3,7 +3,7 @@ import { Box, Tooltip } from "@mui/material";
 import React from 'react';
 import type { PermissionPublicId } from "shared/publicId";
 import * as db3 from "src/core/db3/db3";
-import { Localized } from "../../setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "../../setting/client/components/SettingMarkdown";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { StandardVariationSpec } from "./color/palette";
 import { useDashboardContext } from "./dashboardContext/DashboardContext";
@@ -91,7 +91,7 @@ export const VisibilityControl = (props: VisibilityControlProps) => {
     return <SelectionField className="VisibilityControl" source={source} value={[heavyValue ?? null]}
         readonly={props.readonly} displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
         dialogTitle={props.selectDialogTitle || "Who can see this"}
-        dialogDescription={<Localized id="VisibilityControlSelectDialogDescription" />}
+        dialogDescription={<BandLocalizedMarkdown id="VisibilityControlSelectDialogDescription" />}
         onChange={values => props.onChange(values[0]!)} />;
 };
 

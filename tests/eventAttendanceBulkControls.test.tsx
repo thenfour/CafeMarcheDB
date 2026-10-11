@@ -14,7 +14,7 @@ vi.mock("src/core/components/event/EventComponentsBase", () => ({ EventTableClie
 vi.mock("src/core/components/DateTime/EventDateRangeText", () => ({ EventDateRangeText: () => null }));
 vi.mock("src/core/db3/components/db3NewObjectDialog", () => ({ DB3EditObjectDialog: () => null }));
 vi.mock("src/core/components/markdown/Markdown", () => ({ Markdown: () => null }));
-vi.mock("src/setting/client/components/SettingMarkdown", () => ({ LocalizedMarkdown: () => null }));
+vi.mock("src/setting/client/components/SettingMarkdown", () => ({ BandLocalizedMarkdown: () => null }));
 vi.mock("src/core/components/event/EventChips", () => ({ EventStatusValue: () => null }));
 vi.mock("src/core/components/CMCoreComponents2", () => ({ CMButton: () => null }));
 vi.mock("src/core/db3/components/IconMap", () => ({

@@ -11,6 +11,7 @@ import { eventCatalogStrings } from "./eventCatalogStrings";
 import { songWorkflowStrings } from "./songWorkflowStrings";
 import { eventStatisticsStrings } from "./eventStatisticsStrings";
 import { markdownReferenceStrings } from "./markdownReferenceStrings";
+import { localizedMarkdownStrings } from "./localizedMarkdownStrings";
 
 function defaultMarkdownStaticString() {
     return markdownStaticString({
@@ -31,6 +32,7 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
     ...songWorkflowStrings,
     ...eventStatisticsStrings,
     ...markdownReferenceStrings,
+    ...localizedMarkdownStrings,
     "common.action.ok": plainStaticString({
         defaultValue: "OK",
         description: "Label for an OK button",
@@ -94,6 +96,9 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
     "DashboardStats_EventsMarkdown": defaultMarkdownStaticString(),
     "CustomLinksPageMarkdown": defaultMarkdownStaticString(),
     "GlobalWikiPage_Markdown": defaultMarkdownStaticString(),
+    "WikiWelcomePage_Markdown": markdownStaticString({
+        defaultValue: "", description: "Optional help on the welcome Wiki page", schema: z.string(), wikiPagePath: "welcome",
+    }),
     "SongHistoryTabDescription": defaultMarkdownStaticString(),
     "StatsPage_markdown": defaultMarkdownStaticString(),
     "EditFileDialogDescription": defaultMarkdownStaticString(),

@@ -734,16 +734,43 @@ repaired. All source archives and deferred specifications remain preserved;
 `file-creation` and `settings-editors` still need their final parity/specification
 audit, and optional primary text color remains deferred. A1/B remain open.
 
-## Next slice: localized Markdown editing and page help
+## Localized Markdown editing and page-help checkpoint
 
-Restore the original LocalizedMarkdown edit/cancel/save/save-and-close workflow
-through the existing localized-string owners with explicit scope and edit locale.
-Keep resolved display text separate from stored overrides, including intentional
-blanks and inherited values. Reuse the restored Markdown editor, references and
-attachments with caller-owned band/visibility policy. Restore optional page help
-through registered localized content. Verify per-key/scope authority, fresh
-revocation, locale/band changes, retained failed drafts, refresh and actual browser
-saves before removing the corresponding guards or preservation references.
+Existing page, dialog and field help restores inline edit/cancel/save/save-and-close
+through the registered static-string owner. The caller supplies explicit scope,
+writing locale and attachment policy. Band chrome uses an enabled writing language
+chosen from ordered preferences, independently of displayed fallback text. Exact
+reads start absent overrides empty; intentional blank saves and explicit inheritance
+resets remain distinct. Failed saves retain drafts, committed saves refresh the
+presentation, and band/account/preference changes discard old requests. Fresh
+scope permissions, enabled locales, per-key validation/storage and person audits
+are enforced in Serializable transactions; disabled-locale overrides remain removable.
+
+Optional per-page Wiki help uses registered Markdown `wikiPagePath` associations,
+starting with `welcome`, with independent band/locale values. Unregistered pages
+have no injected help. This replaces the retired arbitrary Wiki setting-key
+injection without restoring that storage contract. Existing production help content
+must be mapped to registered keys during the production-copy inventory/rehearsal.
+Band help retains the shared reference/attachment editor and explicit public File
+policy; platform editing disables band attachments. The built browser exposed a
+shared toolbar hook-order error during read-only transitions; toolbar functions now
+render as components, with a real-editor regression covering the transition.
+
+Normal typecheck, targeted lint/build, focused/native checks and seven built-browser
+groups pass as recorded below. Only the two completed `markdown-editing` source
+archives/references are removed and that feature is marked restored. Remaining
+deferred specifications, other source references, broader translation tooling and
+A1/B remain open.
+
+## Next slice: File-creation parity and preservation audit
+
+Compare the restored File owners/callers with the functional baseline and preserved
+image/upload authorization specifications. Make remaining specifications executable,
+verify any uncovered cases and account for service-owned generic File creation.
+Retain explicit band/public-ID ownership, fresh permissions, atomic storage cleanup
+and the existing shared-person profile boundary. Remove only fully covered File
+source references/specification guards after native and built-browser evidence;
+leave other feature obligations and A1/B open.
 
 ## Localized catalog text search exception
 
@@ -773,7 +800,7 @@ when a concrete workflow dependency requires it.
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
 | Events | Retain restored search/detail/creation/editing, setlists, invitation/attendance/default-instrument controls, date-picker highlights and import preview/save; finish full localized catalog-name matching separately. |
 | Songs and files | Retain restored Song search/detail/editing, credits/performance history/profile credit reads/statistics, tags, setlist picking, File search/detail/metadata/associations, associated and Markdown/branding uploads, image fork service and recording/file viewers; retain frontpage gallery editing/bake and public feed delivery; finish the preserved File/image creation parity audit. |
-| Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, global shell search, planner association selection/protected explorer, Markdown suggestions/attachments, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links; finish localized Markdown editing/help, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
+| Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, global shell search, planner association selection/protected explorer, Markdown suggestions/attachments/localized editing/help, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links; finish exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
 After core restoration: platform role/matrix and catalog/settings administration;
 band onboarding/lifecycle; shared-account lifecycle/merge/dependency reports;
@@ -1367,3 +1394,35 @@ The complete suite retains 206 failed tests and ten suite-load failures, with
 against the Markdown-attachment checkpoint. Preservation verification retains
 285 source references, ten deferred specifications and nineteen pending features.
 No source archive/specification is removed or feature prematurely marked complete.
+
+The **localized Markdown editing and page-help checkpoint** passes normal
+typecheck, targeted lint, a normal production build with isolated output and 202
+focused checks across fifteen files. These include twelve new static-string owner
+cases, 22 new editor DOM cases, a real Markdown toolbar transition regression,
+exact localization/settings, references/attachments, presentation changes, existing
+dashboard/dialog/field callers, branding controls and preservation. Seven new native
+translation cases plus retained localization/File/branding checks pass 31 MariaDB
+checks in four files. They verify native indexed/blob storage, Unicode/long values,
+blank/reset semantics, exact scope isolation, fresh authority and locale revocation,
+person audits/noops and transactional rollback. Private native databases are removed.
+
+Seven built Chromium groups pass inline edit/cancel/save/save-and-close, intentional
+blank versus inherited display and explicit reset/reload, French/Dutch registered
+Wiki help and an unregistered path, independent writing-language selection, fresh
+revocation with failed-draft retry, actual PDF insertion/save/contextual public
+download, a held exact-locale read across a band switch, and a Songs list-help
+save/reload. No uncaught page or unexpected RPC errors occur. French/Dutch reader
+and editor layouts are visually inspected. Owned content/global fallback rows,
+labels, grants, Files, actions, audits and private storage are restored/cleaned up;
+the owned server is stopped. Evidence is in
+`temp/localized-markdown-browser-result.json`.
+
+The complete suite retains 206 failed tests and ten suite-load failures, with 1858
+passed and 706 skipped. Its 164 normalized failure titles add or remove none
+against the branding-upload checkpoint. The runner stops before later jsdom batches.
+The separately selected legacy `domainSelection.test.ts` still cannot load because
+its RPC mock omits `BlitzRpcPlugin`; the same failure is reproduced against unchanged
+HEAD source in the isolated checkout. Its fixture repair belongs to the remaining
+picker parity work. Preservation verifies 283 source references, ten deferred
+specifications and eighteen pending features. Only `markdown-editing` is closed;
+File/settings parity audits, broader translation tooling and A1/B remain open.

@@ -10,7 +10,7 @@ import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
 import getSongActivityReport from "../../db3/queries/getSongActivityReport";
 import { SongHistoryTimingSchema, type SongHistoryFilter, type SongHistoryTiming } from "../../db3/shared/entities/song/songHistory";
 import { ActivityVis } from "../ActivityVis";
-import { Localized } from "src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { ChipFilterGroup, FilterControls } from "../search/FilterControl";
 
@@ -94,7 +94,7 @@ export function SongHistory(props: SongHistoryProps) {
         return <Alert severity="info">{locale.getPlainString("songHistory.unavailable")}</Alert>;
     }
     return <div>
-        <Localized id="SongHistoryTabDescription" />
+        <BandLocalizedMarkdown id="SongHistoryTabDescription" />
         <SongHistoryInner key={`${context.bandPublicId}/${context.routeLocale}/${props.song.publicId}/${context.clientRequestId}`} {...props} />
     </div>;
 }

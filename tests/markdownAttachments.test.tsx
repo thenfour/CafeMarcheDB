@@ -22,9 +22,11 @@ let snapshot: object;
 let rawPaste: boolean;
 let signedIn: boolean;
 let telemetry: () => Promise<void>;
+let showAdminControls = false;
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({
     useDashboardContext: () => ({ authorizationContext: { bandPublicId: band, authority, userPublicId: signedIn ? "AttachPerson0001" : null },
-        localePreferences: { routeLocale, browserLanguages }, isAuthorized: (permission: Permission) => permission === Permission.upload_files && uploadAllowed }),
+        localePreferences: { routeLocale, browserLanguages }, isShowingAdminControls: showAdminControls,
+        isAuthorized: (permission: Permission) => permission === Permission.upload_files && uploadAllowed }),
     useFeatureRecorder: () => () => telemetry(),
 }));
 vi.mock("src/locale/components/PresentationProvider", () => ({ usePresentation: () => ({ data: snapshot }) }));
@@ -199,6 +201,21 @@ describe("Markdown attachments in the original editor", () => {
 
     it("keeps readonly content without attachment controls", async () => {
         await render({ readonly: true }); expect(container.querySelector("textarea")).toBeNull(); expect(attachButton()).toBeNull(); expect(input()).toBeNull(); expect(requests).toHaveLength(0);
+    });
+
+    it("preserves the draft when hooked toolbar controls and read-only mode change", async () => {
+        showAdminControls = true;
+        try {
+            await render();
+            expect(textarea().value).toBe("Before caption after");
+            await render({ readonly: true });
+            expect(container.querySelector("pre")?.textContent).toBe("Before caption after");
+            showAdminControls = false;
+            await render();
+            expect(textarea().value).toBe("Before caption after");
+        } finally {
+            showAdminControls = false;
+        }
     });
 
     it("cancels pending uploads when the editor unmounts", async () => {

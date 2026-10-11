@@ -22,7 +22,7 @@ import { SelectionEditButton, SelectionFieldFrame } from "src/core/components/se
 import { CMSelectNullBehavior, SelectionSource, singleSelectionValue, withNullSelection } from "src/core/components/select/selectionSource";
 import { SelectionValue } from "src/core/components/select/SelectionOptions";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
-import { Localized } from "@/src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "../db3";
 import db3queries from "../queries/db3queries";
@@ -602,7 +602,7 @@ export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props
         value={singleSelectionValue(props.value, nullBehavior)}
         closeOnSelect={props.closeOnSelect}
         title={props.caption ?? locale.getPlainString("db3.action.selectField", { field: props.spec.selectionCaption })}
-        description={descriptionSettingName ? <Localized id={descriptionSettingName} /> : undefined}
+        description={descriptionSettingName ? <BandLocalizedMarkdown id={descriptionSettingName} /> : undefined}
         onCancel={props.onCancel} onAccept={values => props.onOK(values[0]!)}
     />;
 }

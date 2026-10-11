@@ -9,7 +9,7 @@ import { LocalizedStringColumnClient, InheritedColumnClient } from "src/core/db3
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
-import { Localized } from "src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 
 export const bandFileTagTableSpec = defineTableClientSpec({
     view: bandFileTagView,
@@ -42,7 +42,7 @@ export const FileTagCatalogContent = () => {
     const presentation = usePresentation();
     const locale = useLocale();
     return <>
-        <Localized id="EditFileTagsPage_markdown" />
+        <BandLocalizedMarkdown id="EditFileTagsPage_markdown" />
         {presentation.bandPublicId && <Alert severity="info">{locale.getPlainString("catalog.fileTagsSharedDefaults")}</Alert>}
         {presentation.bandPublicId ? <DB3EditGrid
             tableSpec={bandFileTagTableSpec} view={bandFileTagView}

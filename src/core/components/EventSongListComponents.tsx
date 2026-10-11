@@ -20,7 +20,7 @@ import { CoalesceBool, getHashedColor } from "shared/utils";
 import { SnackbarContext, SnackbarContextType, useSnackbar } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { Localized } from '../../setting/client/components/SettingMarkdown';
+import { BandLocalizedMarkdown } from '../../setting/client/components/SettingMarkdown';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import getSongPinnedRecording from '../db3/queries/getSongPinnedRecording';
 import { GetFilteredSongsItemSongPayload, TSongPinnedRecording } from '../db3/shared/apiTypes';
@@ -1418,7 +1418,7 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
             maxWidth="md"
             title={<>
                 <div>Edit setlist</div>
-                <Localized id='EditEventSongListDialogTitle' />
+                <BandLocalizedMarkdown id='EditEventSongListDialogTitle' />
                 <div style={{ display: "flex" }}>
                     {preview ? (<CMButton onClick={() => setPreview(false)} startIcon={<ArrowBack />}>Continue editing</CMButton>)
                         : (<CMButton onClick={() => setPreview(true)} startIcon={gIconMap.Visibility()}>Preview</CMButton>)}
@@ -1438,7 +1438,7 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
             </>}
         >
             <CMDialogContentText>
-                <Localized id='EditEventSongListDialogDescription' />
+                <BandLocalizedMarkdown id='EditEventSongListDialogDescription' />
                 <AdminInspectObject src={props.initialValue} label="initial value" />
                 <AdminInspectObject src={value} label="value" />
                 <AdminInspectObject src={stats} label="stats" />
@@ -1666,7 +1666,7 @@ export const EventSongListTabContent = ({ event, readonly, refetch }: { event: E
     });
 
     return <div className="EventSongListTabContent">
-        <Localized id='EventSongListTabDescription' />
+        <BandLocalizedMarkdown id='EventSongListTabDescription' />
         {insertAuthorized && !readonly && <CMButton className='addNewSongListButton' onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</CMButton>}
         {newOpen && !readonly && insertAuthorized && (
             <AppContextMarker name="EventSongListNewEditor">

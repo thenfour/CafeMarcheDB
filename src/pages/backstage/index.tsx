@@ -6,7 +6,7 @@ import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
 import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
 import { useLocale } from "src/locale/components/useLocale";
-import { Localized } from "src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 import { Permission } from "shared/permissions";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { PermissionBoundary } from "src/core/components/CMCoreComponents";
@@ -28,7 +28,7 @@ export function HomeContent() {
       {locale.getPlainString("dashboard.instruments.missing")}{" "}
       <CMLink href={withMemberPresentation("/backstage/profile", dashboard.memberPresentation)}>{locale.getPlainString("dashboard.profile")}</CMLink>
     </Alert>}
-    <div className="DashboardHeader"><Localized id="BackstageFrontpageHeaderMarkdown" /></div>
+    <div className="DashboardHeader"><BandLocalizedMarkdown id="BackstageFrontpageHeaderMarkdown" /></div>
     {bandPublicId && dashboard.currentUser && <PermissionBoundary permission={Permission.view_wiki_pages}>
       <WikiStandaloneControl canonicalWikiPath="special/announcements"
         className="contentSection announcementMarkdown" floatingHeader={true} />
@@ -39,7 +39,7 @@ export function HomeContent() {
         <BigEventCalendar />
       </React.Suspense>
     </PermissionBoundary>}
-    <Localized id="BackstageFrontpageMarkdown" />
+    <BandLocalizedMarkdown id="BackstageFrontpageMarkdown" />
   </Stack></AppContextMarker>;
 }
 

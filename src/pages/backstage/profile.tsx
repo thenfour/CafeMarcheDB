@@ -8,15 +8,15 @@ import { ProfilePageIdentityControl } from "src/core/components/user/UserIdentit
 import { CalendarUserSettingsControl } from "src/core/components/user/UserSettingsControls";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
-import { Localized } from "src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 
 function ProfileContent() {
     const presentation = usePresentation();
     const dashboard = useDashboardContext();
     const personId = presentation.data?.authorization.userPublicId;
     return <>
-        <Localized id="profile_markdown" />
-        <Localized id="profile_description_markdown" />
+        <BandLocalizedMarkdown id="profile_markdown" />
+        <BandLocalizedMarkdown id="profile_description_markdown" />
         {personId && <BandMemberProfile personId={personId} />}
         {dashboard.isAuthorized(Permission.sysadmin) && personId && <ProfilePageIdentityControl userId={personId} />}
         <CalendarUserSettingsControl />

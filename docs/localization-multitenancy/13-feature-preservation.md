@@ -52,8 +52,11 @@ record. Retirement additionally requires `retirementApproval` recording explicit
 user approval; isolation or a reduced replacement never implies it.
 
 The legacy per-page `WikiPage_<slug>_Markdown` setting injection is to be removed,
-not revived as arbitrary setting keys. Its archived help behavior still needs
-explicit accounting in the `markdown-editing` inventory entry before closure.
+not revived as arbitrary setting keys. The restored `markdown-editing` inventory
+entry accounts for its help behavior through registered Markdown definitions with
+page-path associations and explicit band/locale ownership. See the
+[localized-string contract](06-localization-settings.md#branding-timezone-and-markdown)
+for authoring and production-content mapping.
 
 `yarn migration:verify` protects preservation, not functional parity. Review must
 establish that evidence proves the reference behavior and retirement is authorized.

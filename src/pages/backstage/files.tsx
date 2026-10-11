@@ -9,7 +9,7 @@ import type { FileTagPublicId, InstrumentPublicId } from "shared/publicId";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
-import { Localized } from "@/src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { fileSearchConfig } from "src/core/hooks/searchConfigs";
@@ -205,7 +205,7 @@ const FilesPage: BlitzPage = () => {
             <AppContextMarker name="Files search page">
                 <div className="eventsMainContent searchPage">
                     <Suspense>
-                        <Localized id="files_markdown"></Localized>
+                        <BandLocalizedMarkdown id="files_markdown"></BandLocalizedMarkdown>
                     </Suspense>
                     <FileListOuter />
                 </div>

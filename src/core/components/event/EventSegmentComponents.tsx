@@ -4,7 +4,7 @@ import { EventDateRangeText } from "../DateTime/EventDateRangeText";
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import { LocalizedMarkdownKey, StaticLocalizedStringKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
+import { LocalizedMarkdownKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
 import { useMutation } from "@blitzjs/rpc";
 import { Divider, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React from "react";
@@ -15,7 +15,7 @@ import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { Localized } from "../../../setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
 import { DB3EditObjectDialog } from '../../db3/components/db3NewObjectDialog';
 import clearEventSegmentResponses from "../../db3/mutations/clearEventSegmentResponses";
@@ -64,7 +64,7 @@ interface EventSegmentEditDialogProps {
     initialValue: EventSegmentEditorClient;
     //isNewObject: boolean,
     //markdownSettingPrefix: "NewEventSegment" | "EditEventSegment" | "EditSingleEventSegment",
-    titleKey: StaticLocalizedStringKey;
+    titleKey: LocalizedMarkdownKey;
     descriptionKey: LocalizedMarkdownKey;
     onSave: (
         newValue: EventSegmentEditorClient,
@@ -115,8 +115,8 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
         tableRenderClient={tableRenderClient}
         // title={<SettingMarkdown setting={props.isNewObject ? "NewEventSegmentDialogTitle" : "EditEventSegmentDialogTitle"} />}
         // description={<SettingMarkdown setting={props.isNewObject ? "NewEventSegmentDialogDescription" : "EditEventSegmentDialogDescription"} />}
-        title={<Localized id={props.titleKey} />}
-        description={<Localized id={props.descriptionKey} />}
+        title={<BandLocalizedMarkdown id={props.titleKey} />}
+        description={<BandLocalizedMarkdown id={props.descriptionKey} />}
     />;
 };
 

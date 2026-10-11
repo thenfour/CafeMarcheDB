@@ -103,7 +103,7 @@ export async function loadLocalizationCatalog(database: LocalizationDatabase, au
 // exact locale,
 // and does not perform override resolution; a simple lookup.
 export async function lookupStaticTranslation(
-    database: LocalizationDatabase,
+    database: Pick<LocalizationDatabase, "staticLocalizedStringValue" | "bandStaticLocalizedStringValue">,
     auth: CMServerAuthorization,
     key: StaticLocalizedStringKey,
     localeTag: string,

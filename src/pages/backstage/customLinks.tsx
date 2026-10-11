@@ -1,6 +1,6 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
-import { Localized } from "@/src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { BlitzPage } from "@blitzjs/next";
 import { Alert } from "@mui/material";
 import { Suspense } from 'react';
@@ -24,7 +24,7 @@ const MyContent = () => {
     }
 
     return <div>
-        <Localized id="CustomLinksPageMarkdown" />
+        <BandLocalizedMarkdown id="CustomLinksPageMarkdown" />
         <CustomLinkList key={dashboardContext.memberPresentation.bandPublicId} />
     </div>;
 };

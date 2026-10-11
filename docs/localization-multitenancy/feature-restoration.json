@@ -91,8 +91,13 @@
       "reason": "LocalizedMarkdown preserves rendering but its inline editor was removed.",
       "restore": "Restore edit, cancel, save, save-and-close, feedback and refresh through explicit localized-string scope and locale. Restore optional per-page wiki help through registered localized content with explicit band ownership.",
       "verification": "Test edit authorization, locale/band targeting, intentional blanks, cancellation, failed saves and presentation refresh; exercise the inline editor. Verify per-page wiki help delivery and band/locale changes in the built wiki page.",
-      "status": "pending",
-      "evidence": []
+      "status": "restored",
+      "evidence": [
+        "Compared the functional/UX baseline f027830a9790 SettingMarkdown and Wiki callers. Existing page/dialog/field Markdown again offers inline edit, cancel, save, save-and-close, feedback and refresh through registered static-string values. Scope, edit locale and attachment policy are explicit; band localization grants replace the old global Sysadmin-only editor gate. Exact drafts never copy resolved fallback text. Intentional blanks persist; inheritance/reset removes only one locale/scope override. Failed saves retain the open draft. Global and band permissions/storage stay separate, with fresh Serializable reads/writes, registry validation/format, enabled locales and person-authored atomic audits. No retired Setting writer/schema is restored.",
+        "Optional per-page Wiki help replaces arbitrary WikiPage_<slug>_Markdown settings with registered Markdown definitions carrying wikiPagePath associations, starting with welcome. Band/locale help is resolved independently of Wiki revision content; unregistered pages inject no help. Existing production help still needs mapping to registered keys during the production-copy inventory/rehearsal. The owner reuses Markdown references and explicitly public band attachments; platform editors disable band uploads.",
+        "Validation: normal typecheck and production build with isolated output, targeted lint, 202 focused checks in fifteen files, and 31 native MariaDB checks in four files including twelve new owner cases, 22 new editor DOM cases and seven new native cases. Coverage includes exact/inherited/blank values, keyed formats, unknown/forged targets, per-scope authority, fresh grant and locale revocation, rollback/audits, failure/retry, context changes and refresh. A real-editor regression fixes and verifies toolbar hook isolation during read-only/admin-control transitions.",
+        "Seven production Chromium groups verify French inline cancel/blank/reset/reload, independent French/Dutch registered Wiki help and no help on unregistered paths, exact writing-language selection independent of route fallback, actual fresh grant revocation with failed save-and-close draft/retry, real PDF attachment insertion/save/contextual public bytes, a held exact-locale response across a band switch, and an existing Songs help save/reload. No uncaught page or unexpected RPC errors; French/Dutch layouts are inspected and owned fixtures/grants/labels/content/Files/audits/actions/private storage are cleaned up, with the owned server stopped. See temp/localized-markdown-browser-result.json and 04-implementation-plan.md#verification-status. Full-suite baseline failures and A1/B remain open. Only the two completed source archives/references are removed."
+      ]
     },
     {
       "id": "settings-editors",
@@ -950,18 +955,6 @@
       "featureId": "role-administration",
       "source": "30ce7de7d429973877201a8cf94c27979333cfc6:src/auth/queries/getAllRoles.ts:1-23",
       "sha256": "5244e8b648c4c6b5622153ec73ce512ed4d33942216cceab684928dc884d22dc"
-    },
-    {
-      "file": "src/setting/client/components/SettingMarkdown.tsx",
-      "featureId": "markdown-editing",
-      "source": "c4002c5f2ee1f79ee5f0501fb8f2382a32f2e8c4:src/core/components/SettingMarkdown.tsx:1-124",
-      "sha256": "4efd9d025181ba87f60d3cbef6781e08764a94d4ec907b760230f79322bf33a2"
-    },
-    {
-      "file": "src/setting/client/components/SettingMarkdown.tsx",
-      "featureId": "markdown-editing",
-      "source": "1cdb8299f3f0b373ade44adc44de26e06fd59b6a:src/setting/client/components/SettingMarkdown.tsx:1-130",
-      "sha256": "96e1c8e7e0f5c6d343f648df9a52e95bcfd9e67b4fbd9c0d8569f9f65d139ccd"
     },
     {
       "file": "src/setting/server/settingWrite.ts",

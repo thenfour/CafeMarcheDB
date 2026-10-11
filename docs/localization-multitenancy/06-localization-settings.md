@@ -111,6 +111,31 @@ bounds atomically, including DST; timed segments/other bands are unaffected. The
 separate versioned UTC-conversion command requires `--band=<public-id>`; schema
 migration itself does not convert date-time versions.
 
-`LocalizedMarkdown` renders resolved Markdown. Explicit scoped translation editing
-and broader tooling follow restoration; retaining existing working chrome does not
-require complete translation coverage.
+`LocalizedMarkdown` keeps resolved display text separate from exact stored editor
+values. Its caller supplies scope, edit locale and attachment policy; existing band
+chrome uses `BandLocalizedMarkdown`, with an enabled writing language chosen from
+the full preference list. Changing the selector starts that exact locale's draft.
+Missing overrides start empty without copying fallback text. Saving empty text
+creates a blank override; explicitly using inherited content removes only that
+key/locale/scope row. Cancel sends no write, failed saves keep the draft, and a
+post-commit refresh failure has separate feedback. Context changes discard late
+read/save/upload completions; grant and availability refreshes preserve drafts
+while disabling unauthorized writes.
+
+The static-string owner validates registered keys and each key's schema/format.
+Exact reads and writes refresh authority inside Serializable transactions. Band
+writes require an explicit selected band and `manage_band_localization`; platform
+writes require `manage_global_localization`. Sets require an enabled locale;
+existing unavailable overrides can still be removed. Storage, person-authored
+audits and resets are atomic, and unchanged values create no extra audit. Existing
+band help uses public attachments through the restored Markdown editor; global
+editors disable band attachments explicitly.
+
+Optional Wiki help uses a registered Markdown definition's `wikiPagePath`
+association, starting with `WikiWelcomePage_Markdown` for `welcome`. Values belong
+to the selected band's localized-string scope and resolve independently of the
+Wiki revision. Other pages can register their own help keys/path associations.
+Unregistered pages receive no injected help. Arbitrary `WikiPage_<slug>_Markdown`
+setting keys remain removed; production-copy inventory must account for existing
+help content when mapping it to registered keys. Broader translation management
+and complete translation coverage remain part of B.

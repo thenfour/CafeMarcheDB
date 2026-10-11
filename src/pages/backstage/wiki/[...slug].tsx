@@ -5,7 +5,7 @@ import { Permission } from "shared/permissions";
 import type { WikiPagePublicId } from "shared/publicId";
 import { gSSP } from "src/blitz-server";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { Localized } from "@/src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { WikiPageControl } from "src/core/components/wiki/WikiComponents";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
@@ -22,7 +22,7 @@ const WikiPageComponent = ({ wikiPath, wikiPageId }: { wikiPath: WikiPath, wikiP
     });
 
     return <>
-        <Localized id="GlobalWikiPage_Markdown" />
+        <BandLocalizedMarkdown id="GlobalWikiPage_Markdown" />
 
         <WikiPageControl wikiPath={wikiPath} />
     </>;

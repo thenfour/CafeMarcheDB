@@ -1,6 +1,6 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { MenuLinkList } from "@/src/core/components/dashboard/MenuLinkComponents";
-import { Localized } from "@/src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { BlitzPage } from "@blitzjs/next";
 import { Alert } from "@mui/material";
 import { Suspense } from "react";
@@ -15,7 +15,7 @@ const MyContent = () => {
         return <Alert severity="info">{locale.getPlainString("menuLink.selectBand")}</Alert>;
     }
     return <div>
-        <Localized id="MenuLinksPageMarkdown" />
+        <BandLocalizedMarkdown id="MenuLinksPageMarkdown" />
         <MenuLinkList key={dashboard.memberPresentation.bandPublicId} />
     </div>;
 };

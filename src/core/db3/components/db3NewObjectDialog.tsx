@@ -15,7 +15,7 @@ import * as db3 from "../db3";
 import { MarkdownStringColumnClient } from "./DB3ClientBasicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
-import { Localized } from "@/src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 
 ////////////////////////////////////////////////////////////////
 // this type spec is directly from xTableClientSpec
@@ -106,7 +106,7 @@ function DB3NewObjectDialogWithClient<TView extends ViewBase>({
                 </>}
             >
                 {error && <Alert severity="error">{error}</Alert>}
-                {props.descriptionSettingName && <Localized id={props.descriptionSettingName} />}
+                {props.descriptionSettingName && <BandLocalizedMarkdown id={props.descriptionSettingName} />}
 
                 <FormControl>
                     {

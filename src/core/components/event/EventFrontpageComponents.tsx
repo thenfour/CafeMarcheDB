@@ -8,7 +8,7 @@ import React from "react";
 import { EnNlFr } from "shared/lang";
 import { DateTimeRange } from "shared/time";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { Localized } from "../../../setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
 import { API } from '../../db3/clientAPI';
 import { gIconMap } from "../../db3/components/IconMap";
 import { usePresentation } from "src/locale/components/PresentationProvider";
@@ -310,7 +310,7 @@ const EventFrontpageControl = (props: EventFrontpageControlProps) => {
                     valueFr={valueFr || ""}
                     dialogTitle={props.fieldSpec.fieldLabel}
                     readOnly={readonly}
-                    dialogDescription={<Localized id={`EventFrontpageEditDialog_${props.fieldSpec.fieldLabel}`} />}
+                    dialogDescription={<BandLocalizedMarkdown id={`EventFrontpageEditDialog_${props.fieldSpec.fieldLabel}`} />}
                     selectButtonLabel='edit'
                     onChange={handleChange}
                 />

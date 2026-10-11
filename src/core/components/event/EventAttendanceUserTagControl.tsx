@@ -1,7 +1,7 @@
 import React from "react";
 import type { EventPublicId, UserPublicId } from "shared/publicId";
 import * as db3 from "src/core/db3/db3";
-import { Localized } from "../../../setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
 import { API } from "../../db3/clientAPI";
 import { useClientAuth } from "../../db3/components/useClientAuth";
 import { CMStandardDBChip } from "../CMChip";
@@ -57,6 +57,6 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
         value={[selectedTag]}
         readonly={readonly || !authorizedForEdit} displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
         dialogTitle="Expected attendance group"
-        dialogDescription={<Localized id={"event.expectedAttendanceUserTag.DescriptionMarkdown"} />}
+        dialogDescription={<BandLocalizedMarkdown id={"event.expectedAttendanceUserTag.DescriptionMarkdown"} />}
         onChange={values => handleChange(values[0]!)} />;
 };

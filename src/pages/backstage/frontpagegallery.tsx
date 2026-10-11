@@ -20,7 +20,7 @@ import { calculateNewDimensions, gDefaultImageArea, IsNullOrWhitespace } from "s
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
 import { CMButton, CMButtonGroup, KeyValueTable } from "src/core/components/CMCoreComponents2";
-import { Localized } from "src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
 import { CMDBUploadFile } from "src/core/components/file/CMDBUploadFile";
@@ -537,7 +537,7 @@ const MainContent = () => {
     };
 
     return <>
-        <Localized id="frontpage_gallery_markdown" />
+        <BandLocalizedMarkdown id="frontpage_gallery_markdown" />
         <NewGalleryItemComponent client={client} />
 
         <ReactSmoothDndContainer

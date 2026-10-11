@@ -31,7 +31,7 @@ vi.mock("src/core/components/wiki/WikiStandaloneComponents", () => ({
     WikiStandaloneControl: (props: { canonicalWikiPath: string; className?: string; floatingHeader?: boolean }) =>
         <div className={props.className} data-floating={props.floatingHeader}>{props.canonicalWikiPath}</div>,
 }));
-vi.mock("src/setting/client/components/SettingMarkdown", () => ({ Localized: ({ id }: { id: string }) => <div data-setting={id}>{id}</div> }));
+vi.mock("src/setting/client/components/SettingMarkdown", () => ({ BandLocalizedMarkdown: ({ id }: { id: string }) => <div data-setting={id}>{id}</div> }));
 vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({
     getPlainString: (key: LocalizedPlainStringKey) => kStaticLocalizedStringRegistry[key].defaultValue,
 }) }));

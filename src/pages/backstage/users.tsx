@@ -4,13 +4,13 @@ import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
 import { NavRealm } from "src/core/components/dashboard/StaticMenuItems";
 import { BandMemberDirectory } from "src/core/components/user/BandMemberDirectory";
 import { useLocale } from "src/locale/components/useLocale";
-import { Localized } from "src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 
 const UserSearchPage: BlitzPage = () => {
     const locale = useLocale();
     return <DashboardLayout title={locale.getPlainString("membership.directory.title")} navRealm={NavRealm.users}>
         <Suspense>
-            <Localized id="usersearch_markdown" />
+            <BandLocalizedMarkdown id="usersearch_markdown" />
             <BandMemberDirectory />
         </Suspense>
     </DashboardLayout>;

@@ -21,7 +21,7 @@ import React from "react";
 //import * as db3 from "../db3";
 import { TAnyModel } from "@/shared/rootroot";
 import { kStaticLocalizedStringRegistry, type LocalizedMarkdownKey, type LocalizedPlainStringKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
-import { Localized } from "@/src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import type { GridColDef, GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
 import { assert } from "blitz";
 import { Coalesce, HasFlag, gQueryOptions } from "shared/utils";
@@ -144,7 +144,7 @@ export abstract class IColumnClient<
         return <NameValuePair
             key={this.columnName}
             name={this.fieldCaption}
-            description={this.fieldDescriptionKey ? <Localized id={this.fieldDescriptionKey} /> : undefined}
+            description={this.fieldDescriptionKey ? <BandLocalizedMarkdown id={this.fieldDescriptionKey} /> : undefined}
             value={value}
             fieldName={this.columnName}
             isReadOnly={isReadOnly}

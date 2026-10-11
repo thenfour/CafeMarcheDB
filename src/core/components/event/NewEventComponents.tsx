@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import React from "react";
 import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { Localized } from "@/src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -165,7 +165,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             <CMButton onClick={handleSaveClick} startIcon={gIconMap.Save()} enabled={!grayed}>OK</CMButton>
         </>}
     >
-        <Localized id="NewEventDialogDescriptionMarkdown" />
+        <BandLocalizedMarkdown id="NewEventDialogDescriptionMarkdown" />
 
         <div className="NameValuePairList">
             <VisibilityControl value={eventValue.visiblePermission} onChange={(newVisiblePermission) => {

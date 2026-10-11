@@ -1,7 +1,7 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { EventOrderByColumnNames, EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from "@/src/core/components/event/EventClientBaseTypes";
-import { Localized } from "@/src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { BlitzPage } from "@blitzjs/next";
 import { Alert } from "@mui/material";
 import { Suspense } from "react";
@@ -366,7 +366,7 @@ const SearchEventsPage: BlitzPage = () => {
             <AppContextMarker name="Event search page">
                 <div className="eventsMainContent searchPage">
                     <Suspense>
-                        <Localized id="events_markdown" />
+                        <BandLocalizedMarkdown id="events_markdown" />
                     </Suspense>
                     <EventSearchContent />
                 </div>

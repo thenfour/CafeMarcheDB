@@ -1,7 +1,7 @@
 import { FileTableClientColumns } from "src/core/components/file/FileComponentsBase";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
-import { Localized } from "@/src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
@@ -31,7 +31,7 @@ const MainContent = () => {
     });
 
     return <>
-        <Localized id="EditFilesPage_markdown"></Localized>
+        <BandLocalizedMarkdown id="EditFilesPage_markdown"></BandLocalizedMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
             view={db3.fileEditorView}

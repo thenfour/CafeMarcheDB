@@ -10,7 +10,7 @@ import { AdminInspectObject, KeyValueTable, Pre } from "@/src/core/components/CM
 import { CMLink } from "@/src/core/components/CMLink";
 import { DateValue } from "@/src/core/components/DateTime/DateTimeComponents";
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from "@/src/core/components/EditFieldsDialog";
-import { Localized } from "@/src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { useSnackbar } from "@/src/core/components/SnackbarContext";
 import { AudioPlayerFileControls, FileExternalLink } from "@/src/core/components/SongFileComponents";
 import { VisibilityValue } from "@/src/core/components/VisibilityControl";
@@ -108,7 +108,7 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
 
             {tableClient && <EditFieldsDialogButton
                 dialogTitle='Edit file'
-                dialogDescription={<Localized id='EditFileDialogDescription' />}
+                dialogDescription={<BandLocalizedMarkdown id='EditFileDialogDescription' />}
                 readonly={readonly}
                 initialValue={file}
                 renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}

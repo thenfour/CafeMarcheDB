@@ -17,7 +17,7 @@ import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
 import { useBrand } from "../../../../shared/brandConfig";
-import { Localized } from "../../../setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
 import { ConnectionStatusIndicator } from "../../connectivity/ConnectionHealthComponents";
 import { API } from "../../db3/clientAPI";
 import { gIconMap } from "../../db3/components/IconMap";
@@ -169,7 +169,7 @@ const AppBarPageQrDialog = ({ open, onClose }: { open: boolean, onClose: () => v
             onClose={onClose}
             content={QrHelpers.url(dashboardContext.getAbsoluteUri(router.asPath))}
             title="QR code for this page"
-            description={<Localized id={"QrCodeForThisPageDescriptionMarkdown"} />}
+            description={<BandLocalizedMarkdown id={"QrCodeForThisPageDescriptionMarkdown"} />}
         />
     </AppContextMarker>;
 };

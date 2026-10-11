@@ -3,7 +3,7 @@ import { Alert } from "@mui/material";
 import { useRouter } from "next/router";
 import type { BlitzPage } from "@blitzjs/next";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
-import { Localized } from "src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 import { useLocale } from "src/locale/components/useLocale";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -29,7 +29,7 @@ const MainContent = () => {
         return <Alert severity="error">{locale.getPlainString("songCredits.invalidSong")}</Alert>;
     }
     return <>
-        <Localized id="EditSongCreditsPage_markdown" />
+        <BandLocalizedMarkdown id="EditSongCreditsPage_markdown" />
         <DB3EditGrid tableSpec={tableSpec} view={db3.songCreditEditorView} tableParams={{ songId: songId?.data ?? null }} />
     </>;
 };

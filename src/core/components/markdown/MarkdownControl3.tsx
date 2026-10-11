@@ -65,6 +65,8 @@ interface Markdown3EditorPropsBase {
     readonly?: boolean;
     /** Disable server file uploads in local-only editors such as the attendance sandbox. */
     allowUploads?: boolean;
+    /** Owners with separate save buttons need to wait until attachment insertion finishes. */
+    onUploadBusyChange?: (busy: boolean) => void;
     value?: string;
     initialValue?: string;
     autoFocus?: boolean;
@@ -141,6 +143,9 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         scopeKey: JSON.stringify([dashboardContext.authorizationContext, dashboardContext.localePreferences, uploadFields]),
         draft: useValue, textarea: textAreaRef, editor: controlledTextArea,
     });
+    React.useEffect(() => {
+        props.onUploadBusyChange?.(attachments.progress !== null);
+    }, [props.onUploadBusyChange, attachments.progress]);
     const [nativeFileInputRef, setNativeFileInputRef] = React.useState<HTMLInputElement | null>(null);
     const instanceId = React.useId();
     const writeTabId = `${instanceId}-write-tab`;
@@ -336,7 +341,10 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                                 .filter(item => !item.isEnabled || item.isEnabled(apiRef.current))
                                 .map((item, index) => {
                                     if (item.toolbarItem) {
-                                        return <React.Fragment key={index}>{item.toolbarItem({ api: apiRef.current, invocationTrigger: commandInvocationTriggerMap.current[item.id] || 0 })}</React.Fragment>;
+                                        // Toolbar components own their hooks, including when permissions hide an item.
+                                        const ToolbarItem = item.toolbarItem;
+                                        return <ToolbarItem key={index} api={apiRef.current}
+                                            invocationTrigger={commandInvocationTriggerMap.current[item.id] || 0} />;
                                     }
 
                                     return <Tooltip key={index} title={item.toolbarTooltip} disableInteractive>
