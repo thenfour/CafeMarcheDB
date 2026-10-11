@@ -79,6 +79,12 @@ const ZWikiSlug = z.string().min(1).transform(normalizeCanonicalWikiPath);
 const ZWikiTitle = z.string().min(1);
 export const ZWikiBand = z.custom<BandPublicId>(isPublicId);
 
+export const ZTGetUserWikiContributionsArgs = z.object({
+    userId: db3.xUser.identitySchema,
+    bandPublicId: ZWikiBand,
+}).strict();
+export type GetUserWikiContributionsInputType = z.infer<typeof ZTGetUserWikiContributionsArgs>;
+
 ////////////////////////////////////////////////////////////////
 export const ZTGetWikiPageArgs = z.object({
     bandPublicId: ZWikiBand,

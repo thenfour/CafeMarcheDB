@@ -384,6 +384,27 @@ Typecheck, targeted lint, demo production build and source preservation pass.
 The legacy `userRecovery` suite still has its nine previously recorded failures;
 this follow-up does not close the full-suite or A1/B gates.
 
+The remaining profile analytics audit retains populated attendance, credits and
+Wiki Contributions through their existing owners. Attendance keeps the original
+50/100/250/500/1,000 choices, segment/response/going counts, percentages, sortable
+rows, comments and contextual Event links. An unanswered history now shows `--`
+for the rate among responders instead of `NaN`. The two analytic queries request
+fresh data and omit previous-scope cache results. Wiki contributions retain page
+grouping, revision counts, first/latest dates, sorting and contextual links; their
+reader is now owned by the Wiki server and composes the existing DB3 contribution
+view in the refreshed snapshot. Unknown people reject through shared public-ID
+resolution, and a mismatched requested band rejects before querying revisions.
+
+`DateValue` now requires the caller's formatting locale and display timezone for
+its label, tooltip and relative calendar text. Profile all-day Event dates and
+month colors use the band's calendar; timed Events and contribution/creation
+timestamps use the viewer's timezone. Its File, Wiki, directory, planner,
+attendance-tooltip and dashboard callers supply the same explicit policy. A
+missing-to-present date no longer changes the hook order. Existing profile
+telemetry and the Sysadmin-only analytic tab gate are retained. Mass Analysis,
+global account administration and the full profile obligation remain separately
+open; this audit establishes the populated core analytic behavior only.
+
 Shared row policy now declares non-null replacement identities unavailable, including
 minimal projections and write references. This fixes the previously reproduced
 deleted/merged-person Song-credit write failure without a Song-specific fallback.
@@ -1054,16 +1075,35 @@ tests are removed. All 27 activity source blocks/reference entries are removed a
 whole-file deferred specifications and all other feature obligations remain.
 This closes activity reports, with A1/B still open. Verification is recorded below.
 
-## Next slice: Remaining core workflow parity review
+## Core workflow parity review
 
-Audit the remaining core obligations against `f027830a9790` and their existing
-callers, starting with member-profile activity/statistics and the preserved
-event/song facet/statistics helpers. Identify the exact remaining consumers before
-restoring their band/public-identity/localized contracts or recording superseded
-behavior. Retain the working domain-search owners, completed File/image creation
-parity and the A1 catalog-name search exception. Production inventory/rehearsal
-remains open before cutover; platform administration, account lifecycle and the
-rest of B remain separate open work.
+The reference/current caller audit finds no application consumers of
+`getEventFilterInfo` or `getSongFilterInfo`. Their timing/relevance, all-tag
+matching, counts, facets, paging and ordering obligations are implemented by the
+existing Event/Song domain-search owners, with public identities, localized
+references and fresh selected-band snapshots. The unused RPCs, payload archives
+and four guard tests are removed; `legacy-event-song-filters` is closed with its
+six preservation references removed. The unused legacy relevant-Song mode has no
+reference page, picker or profile caller; it does not require a second search
+implementation. Full localized-name matching remains separately pending under
+the owning search features and the A1 exception.
+
+The populated member analytics above, retained Event statistics/popular Songs
+and Song performance history account for the identified core statistics callers.
+Three obsolete assertions that those restored statistics/history screens remain
+unavailable are removed. Their active contract, authorization, native and browser
+checks remain. Account analysis and platform account/lifecycle obligations retain
+their own deferred implementations and specifications.
+
+## Next slice: Full-suite readiness
+
+Repair the inherited complete-suite failures before accepting A1, beginning with
+the legacy authorization fixtures and account/role/band expectations. Trace each
+failure to the target contract and retain its behavioral coverage; reactivate
+preserved specifications when their owner is restored. Keep the working core
+workflow owners, completed File/image creation parity and the A1 catalog-name
+search exception. The profile's remaining account-analysis/administration gaps,
+production inventory/rehearsal and the rest of B remain open under their owners.
 
 ## Localized catalog text search exception
 
@@ -1133,6 +1173,52 @@ data, rehearse backup restoration and deploy the migrated database, app and
 client together with writes stopped and matching upload backups.
 
 ## Verification status
+
+The **core workflow parity review** passes normal typecheck, targeted lint across
+all changed TypeScript files and a normal production build with isolated output.
+Its 222 focused cases across fourteen files cover populated profile counts,
+percentages and all five page sizes, zero-response/empty histories, sortable Wiki
+counts/dates/links, explicit date/tooltip/relative formatting, missing-date hook
+transitions, strict Wiki public requests, retained Event/Song endpoint guards,
+profile field policy and the five-zone date probes. The obsolete four legacy-RPC
+guards and three statistics/history recovery assertions are removed.
+
+Native MariaDB passes 155 cases across nine suites, including nine new profile
+analytics cases. Wiki pages group only the requested author's authorized revisions
+and preserve first/latest/count behavior without bodies, contact fields or natural
+IDs. Cases cover private pages, the same author/slug in two bands, requested-band
+correlation, missing people, fresh grant removal/restoration, deleted pages and
+inactive/deleted/merged actors. Attendance remains membership-owned across two
+bands, preserves blanks/false and future-only unanswered histories, and refreshes
+its read grants. The retained member/search/credit/Wiki/attendance/Event-statistics/
+Song-history cases pass; the disposable native database is removed.
+
+Eleven built Chromium groups cover populated attendance/Wiki/credit tabs, exact
+counts/rates, all original page sizes, first/latest contribution dates, localized
+credit labels, contextual links and existing profile telemetry. English browser
+preferences and a Los Angeles viewer verify French Brussels all-day dates and
+viewer-zone timed/tooltips; Dutch second-band results use Tokyo all-day dates and
+show `--` for the responder rate. A held old-band attendance reply cannot replace
+the new history after the actual band chooser changes context. The separate Mass
+Analysis notice issues no query, band managers retain the original tab restriction,
+freshly revoked Wiki grants reject captured requests and anonymous RPC access
+fails. Existing Event/Song pages retain All/Relevant controls and band-local cards
+after the unused RPC removal. No uncaught page or unexpected RPC errors occur.
+
+French/Dutch attendance and French Wiki screenshots are visually reviewed.
+The owned browser server is stopped; its new disposable database, sessions,
+fixture content and demo assets are removed. The user's development server is
+untouched. Evidence is in `temp/core-parity-browser-result.json`, with screenshots
+in `temp/core-parity-attendance-fr.png`, `temp/core-parity-attendance-nl.png` and
+`temp/core-parity-wiki-fr.png`.
+
+The complete suite retains 203 failed tests and ten suite-load failures, with
+2,106 passed and 826 skipped. All 163 normalized failure labels match the preceding
+activity-export checkpoint; later jsdom batches are covered by the focused run.
+Preservation verifies 189 references, six whole-file deferred specifications and
+thirteen pending features. Only the legacy facet/filter overlap is closed. Full
+profile/account parity, complete-suite readiness, production inventory/rehearsal
+and A1/B remain open.
 
 The event-search checkpoint (2026-10-08) passed normal typecheck/build, focused
 lint, 123 focused tests across 13 executable files and 30 native MariaDB tests

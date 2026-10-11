@@ -581,7 +581,7 @@ export function CalcRelativeTiming(refTime: Date, range: DateTimeRange, context:
 
 // Calendar-relative labels are shared by event ranges and point timestamps.
 // Only the event entry point above can supply an ongoing interval.
-function getRelativeCalendarTiming(refDate: CalendarDate, date: CalendarDate): RelativeTimingInfo {
+export function getRelativeCalendarTiming(refDate: CalendarDate, date: CalendarDate): RelativeTimingInfo {
     // today can be in the past or future so do that first
     const refTime = dayjs.utc(refDate.date);
     const startDate = dayjs.utc(date.date);

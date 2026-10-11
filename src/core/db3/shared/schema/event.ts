@@ -513,7 +513,6 @@ export const xEventArgs_Base = db3.defineTableDesc({
             associationForeignObjectMember: "eventTag",
             associationLocalObjectMember: "event",
             authMap: xEventAuthMap_Homepage,
-            // don't allow quick search on tag; it interferes with getEventFilterInfo.ts
             getQuickFilterWhereClause: () => false,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.EventWhereInput | boolean => {
                 if (!query.tagIds?.length) return false;

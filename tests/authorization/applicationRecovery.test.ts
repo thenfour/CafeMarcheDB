@@ -20,8 +20,6 @@ import { getDB3CommandHandler } from "@db3/server/db3CommandRegistry";
 import { validateDB3MutationRequest, validateDB3PaginatedQueryRequest, validateDB3QueryRequest } from "@db3/server/db3RequestValidation";
 import getAdminLogItemInfo from "@db3/queries/getAdminLogItemInfo";
 import getDistinctChangeFilterValues from "@db3/queries/getDistinctChangeFilterValues";
-import getEventFilterInfo from "@db3/queries/getEventFilterInfo";
-import getSongFilterInfo from "@db3/queries/getSongFilterInfo";
 import { insertImpl } from "@db3/server/db3mutationCore";
 import assignUserRole from "src/auth/mutations/assignUserRole";
 import setRoleDesignation from "src/auth/mutations/setRoleDesignation";
@@ -30,7 +28,6 @@ import previewUserMerge from "src/auth/queries/previewUserMerge";
 import searchUserMergeCandidates from "src/auth/queries/searchUserMergeCandidates";
 import getUserMassAnalysis from "@db3/queries/getUserMassAnalysis";
 import { ApplicationFeatureUnavailableError } from "src/core/shared/applicationRecovery";
-import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { invokeResolver } from "./support/resolverHarness";
@@ -60,11 +57,6 @@ const deferredAuditEndpoints = [
     { name: "audit filter references", resolve: getDistinctChangeFilterValues },
 ];
 
-const deferredDomainReaders = [
-    { name: "legacy event facets", resolve: getEventFilterInfo },
-    { name: "legacy song facets", resolve: getSongFilterInfo },
-];
-
 describe("service-owned File creation", () => {
     it("blocks generic File creation before its transaction or metadata hooks", async () => {
         // The empty target is intentional: every authorization read must fail before any typed field is used.
@@ -74,32 +66,6 @@ describe("service-owned File creation", () => {
             },
         });
         await expect(insertImpl(db3.xFile, {}, forbiddenAuthorization)).rejects.toThrow("creation");
-    });
-});
-
-describe("deferred event/song filters and statistics", () => {
-    it.each(deferredDomainReaders)("rejects $name before reading authorization, domain or reference data", async ({ resolve }) => {
-        const reportReader = createAuthorizationTestUser("normal", {
-            id: 13,
-            permissions: [Permission.login, Permission.view_events_reports, Permission.view_events_nonpublic, Permission.view_songs],
-        });
-        const requests: unknown[] = [
-            { filterSpec: { timing: "All", quickFilter: "", page: 0, pageSize: 20 } },
-            { bandPublicId: parsePublicId<"Band">("DomainBand000001"), routeLocale: "fr-BE", songId: parsePublicId<"Song">("DeferredSong0001") },
-            { bandId: 1, filterSpec: { page: -1, pageSize: 1_000_000 } },
-            null,
-        ];
-        for (const actor of [member, reportReader, sysadmin]) {
-            for (const input of requests) {
-                await expect(invokeResolver(resolve, input, createAuthorizationTestContext(actor)))
-                    .rejects.toThrow(ApplicationFeatureUnavailableError);
-            }
-        }
-    });
-
-    it.each(deferredDomainReaders)("requires login before reporting availability for $name", async ({ resolve }) => {
-        await expect(invokeResolver(resolve, {}, createAuthorizationTestContext(null)))
-            .rejects.toThrow("login");
     });
 });
 

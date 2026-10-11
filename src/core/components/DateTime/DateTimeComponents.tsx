@@ -1,12 +1,12 @@
 import { Tooltip } from "@mui/material";
 import React from "react";
-import { CalcRelativeTimingFromNow } from "shared/time";
+import { CalendarDate } from "shared/dateTimePolicy";
+import { getRelativeCalendarTiming } from "shared/time";
 
 
-function formatShortDate(date: Date, locale: string = navigator.language): string {
-    const now = new Date();
-    //const showYear = date.getFullYear() !== now.getFullYear();
-    const formatter = new Intl.DateTimeFormat(locale, {
+function formatShortDate(date: Date, formattingLocale: string, timeZone: string): string {
+    const formatter = new Intl.DateTimeFormat(formattingLocale, {
+        timeZone,
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -22,6 +22,8 @@ function formatShortDate(date: Date, locale: string = navigator.language): strin
 
 interface DateValueProps {
     value: Date | undefined | null;
+    formattingLocale: string;
+    timeZone: string;
     className?: string;
     style?: React.CSSProperties;
     format?: (dateString: string) => React.ReactNode;
@@ -30,20 +32,26 @@ interface DateValueProps {
 
 // file uploaded at, created at, event dates, etc.
 export const DateValue = (props: DateValueProps) => {
-    if (!props.value) return <span className={`DateValue null ${props.className}`} style={props.style}>--</span>;
     const now = React.useMemo(() => new Date(), []);
+    if (!props.value) {
+        return <span className={`DateValue null ${props.className}`} style={props.style}>--</span>;
+    }
 
-    const rel = CalcRelativeTimingFromNow(props.value, now);
-    const dayOfWeekLabel = props.value.toLocaleDateString(undefined, { weekday: "long" });
+    const rel = getRelativeCalendarTiming(
+        CalendarDate.fromInstant({ value: now, timeZone: props.timeZone }),
+        CalendarDate.fromInstant({ value: props.value, timeZone: props.timeZone }),
+    );
+    const dateOptions = { timeZone: props.timeZone };
+    const dayOfWeekLabel = props.value.toLocaleDateString(props.formattingLocale, { ...dateOptions, weekday: "long" });
 
-    const valueString = formatShortDate(props.value);
+    const valueString = formatShortDate(props.value, props.formattingLocale, props.timeZone);
     const valueNode = props.format ? props.format(valueString) : valueString;
 
     return <Tooltip title={
         <span>
             {dayOfWeekLabel}
             <br />
-            {props.value.toLocaleDateString()} {props.value.toLocaleTimeString()}
+            {props.value.toLocaleDateString(props.formattingLocale, dateOptions)} {props.value.toLocaleTimeString(props.formattingLocale, dateOptions)}
             <br />
             {rel.label}
         </span>

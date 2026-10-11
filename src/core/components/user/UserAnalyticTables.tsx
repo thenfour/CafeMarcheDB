@@ -4,6 +4,9 @@ import { Alert } from "@mui/material";
 import { useLocale } from "src/locale/components/useLocale";
 import React from "react";
 import { isAttendanceGoing } from "shared/eventAttendance";
+import { CalendarDate } from "shared/dateTimePolicy";
+import { eventPresentationTimeZone } from "shared/dateTimePresentation";
+import { getEventSegmentDateTimeRange } from "src/core/db3/shared/schema/event";
 import getUserEventAttendance from "../../db3/queries/getUserEventAttendance";
 import getUserWikiContributions from "../../db3/queries/getUserWikiContributions";
 import { sortEvents } from "../../db3/shared/apiTypes";
@@ -34,7 +37,8 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
     const dashboardContext = useDashboardContext();
     const [take, setTake] = React.useState<number>(50);
 
-    const [qr, refetch] = useQuery(getUserEventAttendance, { bandPublicId: dashboardContext.requireBandPublicId(), userId: props.user.publicId, take });
+    const [qr] = useQuery(getUserEventAttendance, { bandPublicId: dashboardContext.requireBandPublicId(), userId: props.user.publicId, take },
+        { staleTime: 0, cacheTime: 0, keepPreviousData: false });
     const agg = qr.events.reduce((acc, event) => {
         const segAgg = event.segments.reduce((segAcc, seg) => {
             const hasResponse = seg.attendanceId != null;
@@ -73,7 +77,7 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
                 ...agg,
                 "Response rate": <>{(agg.responseCount * 100 / agg.totalSegmentCount).toFixed(1)}%</>,
                 "Attendance rate (overall)": <>{(agg.goingCount * 100 / agg.totalSegmentCount).toFixed(1)}%</>,
-                "Attendance rate (when responding)": <>{(agg.goingCount * 100 / agg.responseCount).toFixed(1)}%</>,
+                "Attendance rate (when responding)": agg.responseCount > 0 ? <>{(agg.goingCount * 100 / agg.responseCount).toFixed(1)}%</> : <>--</>,
             }} />}
 
         <CMTable
@@ -81,8 +85,9 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
             getRowStyle={(row) => {
                 const now = new Date();
                 const eventDate = row.row.startsAt ? new Date(row.row.startsAt) : null;
-                const month = eventDate ? eventDate.getMonth() : 0;
-                let isFuture = !eventDate || eventDate > now;
+                const timeZone = eventPresentationTimeZone(getEventSegmentDateTimeRange(row.row), dashboardContext.eventDatePresentation);
+                const month = eventDate ? Number(CalendarDate.fromInstant({ value: eventDate, timeZone }).date.slice(5, 7)) - 1 : 0;
+                const isFuture = !eventDate || eventDate > now;
                 // Past color scheme
                 const pastColors = ["#fff", "#f7f7f7"];
                 // Future color scheme
@@ -117,7 +122,8 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
                     memberName: "startsAt",
                     header: "Date",
                     render: (row) => {
-                        return <DateValue value={row.row.startsAt} />;
+                        return <DateValue value={row.row.startsAt} formattingLocale={dashboardContext.formattingLocale}
+                            timeZone={eventPresentationTimeZone(getEventSegmentDateTimeRange(row.row), dashboardContext.eventDatePresentation)} />;
                     }
                 },
                 {
@@ -184,7 +190,8 @@ type UserWikiContributionsTabContentProps = {
 };
 export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabContentProps) => {
     const dashboardContext = useDashboardContext();
-    const [qr, refetch] = useQuery(getUserWikiContributions, { bandPublicId: dashboardContext.requireBandPublicId(), userId: props.user.publicId });
+    const [qr] = useQuery(getUserWikiContributions, { bandPublicId: dashboardContext.requireBandPublicId(), userId: props.user.publicId },
+        { staleTime: 0, cacheTime: 0, keepPreviousData: false });
 
     const wikiContributionsWithAddl = qr.wikiContributions.map((contribution, index) => ({
         ...contribution,
@@ -231,7 +238,8 @@ export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabC
                     memberName: "firstRevisionDate",
                     allowSort: true,
                     render: (row) => {
-                        return <DateValue value={row.row.firstRevisionDate ?? null} />;
+                        return <DateValue value={row.row.firstRevisionDate ?? null} formattingLocale={dashboardContext.formattingLocale}
+                            timeZone={dashboardContext.localTimeZone} />;
                     },
                 },
                 {
@@ -239,7 +247,8 @@ export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabC
                     memberName: "lastRevisionDate",
                     allowSort: true,
                     render: (row) => {
-                        return <DateValue value={row.row.lastRevisionDate ?? null} />;
+                        return <DateValue value={row.row.lastRevisionDate ?? null} formattingLocale={dashboardContext.formattingLocale}
+                            timeZone={dashboardContext.localTimeZone} />;
                     },
                 },
             ]}

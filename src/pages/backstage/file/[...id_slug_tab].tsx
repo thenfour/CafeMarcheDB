@@ -154,8 +154,8 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
 
             <KeyValueTable
                 data={{
-                    'Created At': file.fileCreatedAt ? <DateValue value={file.fileCreatedAt} /> : undefined,
-                    'Uploaded At': <><DateValue value={file.uploadedAt} /> {file.uploadedByUser && <>by <UserChip value={file.uploadedByUser} /></>}</>,
+                    'Created At': file.fileCreatedAt ? <DateValue value={file.fileCreatedAt} formattingLocale={dashboardContext.formattingLocale} timeZone={dashboardContext.localTimeZone} /> : undefined,
+                    'Uploaded At': <><DateValue value={file.uploadedAt} formattingLocale={dashboardContext.formattingLocale} timeZone={dashboardContext.localTimeZone} /> {file.uploadedByUser && <>by <UserChip value={file.uploadedByUser} /></>}</>,
                     ...(dashboardContext.isShowingAdminControls ? {
                         'Stored Leaf Name': <Pre>{file.storedLeafName}</Pre>,
                     } : {}),

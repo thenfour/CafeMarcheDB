@@ -340,7 +340,8 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                             {dashboardContext.serverStartupState.versionIsDirty && (
                                 <Typography variant="body2">With local modifications</Typography>
                             )}
-                            <Typography variant="body2">Git commit date: <DateValue value={dashboardContext.serverStartupState.gitCommitDate} /></Typography>
+                            <Typography variant="body2">Git commit date: <DateValue value={dashboardContext.serverStartupState.gitCommitDate}
+                                formattingLocale={dashboardContext.formattingLocale} timeZone={dashboardContext.localTimeZone} /></Typography>
                         </Box>
 
                     </>}>

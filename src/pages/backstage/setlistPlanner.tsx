@@ -458,7 +458,7 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
                     </div>
                     <div className="createdBy" style={{ opacity: 0.7 }}>
                         {dbPlan.createdAt && (
-                            <div className="fieldItem">Created on <DateValue value={dbPlan.createdAt} /></div>
+                            <div className="fieldItem">Created on <DateValue value={dbPlan.createdAt} formattingLocale={dashboardContext.formattingLocale} timeZone={dashboardContext.localTimeZone} /></div>
                         )}
                         {/* {dbPlan.createdByUserId && (
                             <div className="fieldItem">by <UserChip size="small" userId={dbPlan.createdByUserId} /></div>

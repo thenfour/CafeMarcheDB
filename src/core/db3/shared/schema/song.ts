@@ -249,19 +249,7 @@ const xSongArgs_Base = db3.defineTableDesc({
                 // they cross the trusted public-to-natural translation boundary.
                 return false;
             },
-            // don't allow quick search on tag; it interferes with getSongFilterInfo.ts
             getQuickFilterWhereClause: () => false,
-            // getQuickFilterWhereClause: (query: string): Prisma.SongWhereInput => ({
-            //     tags: {
-            //         some: {
-            //             tag: {
-            //                 text: {
-            //                     contains: query
-            //                 }
-            //             }
-            //         }
-            //     }
-            // }),
         }),
         taggedFiles: tagsRef("FileSongTag", "File", {
             associationForeignObjectMember: "file",

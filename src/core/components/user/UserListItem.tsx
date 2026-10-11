@@ -54,7 +54,7 @@ export function UserListItem({ user, index, refetch, filterSpec }: {
                 })}
             </CMChipContainer>
         </>}
-        footerContent={canManage && joinedAt && <DateValue value={joinedAt}
+        footerContent={canManage && joinedAt && <DateValue value={joinedAt} formattingLocale={dashboard.formattingLocale} timeZone={dashboard.localTimeZone}
             format={() => locale.getPlainString("membership.directory.joinedAt", { joinedAt })} style={{ opacity: .5 }} />} />;
 }
 

@@ -22,7 +22,7 @@ function grant(...permissions: Permission[]) {
     return requirePermission;
 }
 
-describe("deferred event statistics page authorization", () => {
+describe("event statistics page authorization", () => {
     beforeEach(() => loadAuth.mockReset());
 
     it.each([undefined, bandId])("retains event report protection with band %s", async selectedBand => {

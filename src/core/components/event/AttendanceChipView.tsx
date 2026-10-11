@@ -7,6 +7,7 @@ import { RenderMuiIcon } from "../../db3/components/IconMap";
 import { CMChip, CMChipSizeOptions } from "../CMChip";
 import type { ColorVariationSpec } from "../color/palette";
 import { DateValue } from "../DateTime/DateTimeComponents";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 export interface AttendanceChipTooltipProps {
     value: db3.EventAttendanceDisplay | null;
@@ -16,6 +17,7 @@ export interface AttendanceChipTooltipProps {
     eventSegment?: Pick<db3.EventDetailSegmentClient, "publicId" | "name" | "startsAt"> | undefined;
 };
 export const AttendanceChipTooltipContent = (props: AttendanceChipTooltipProps) => {
+    const dashboard = useDashboardContext();
     return <div>
         <div className="attendanceChipTooltip">
             <div className="attendanceChipTooltipResponse">
@@ -38,7 +40,7 @@ export const AttendanceChipTooltipContent = (props: AttendanceChipTooltipProps) 
         {/* updated by user on ... */}
         {props.segmentResponse && props.segmentResponse.updatedAt &&
             <div className="attendanceChipTooltipUpdated" style={{ marginTop: "4px" }}>
-                Updated on <DateValue value={props.segmentResponse.updatedAt} />
+                Updated on <DateValue value={props.segmentResponse.updatedAt} formattingLocale={dashboard.formattingLocale} timeZone={dashboard.localTimeZone} />
                 {props.segmentResponse.updatedByUser?.name && `by ${props.segmentResponse.updatedByUser.name}`}
             </div>
         }

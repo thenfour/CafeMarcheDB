@@ -34,7 +34,12 @@ export const WikiPageListItem = (props: WikiPageListItemProps) => {
         href={wikiUrl}
         title={props.wikiPage.slug}
         credits={[
-            props.wikiPage.createdAt && <DateValue key="createdAt" value={props.wikiPage.createdAt} format={(dateStr) => `Created on ${dateStr}`} />,
+            props.wikiPage.createdAt && <DateValue
+                key="createdAt"
+                value={props.wikiPage.createdAt}
+                formattingLocale={dashboardContext.formattingLocale}
+                timeZone={dashboardContext.localTimeZone}
+                format={(dateStr) => `Created on ${dateStr}`} />,
             props.wikiPage.createdByUser && <UserChip key="createdByUser" value={props.wikiPage.createdByUser} />
         ]}
         bodyContent={
