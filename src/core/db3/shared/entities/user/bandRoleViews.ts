@@ -5,7 +5,7 @@ import { assignableBandRoleWhere } from "src/auth/shared/bandRolePolicy";
 import { validateRolePermissionWrite } from "src/auth/shared/rolePermissionPolicy";
 import { DB3FieldReadAuth, defineAuthMap, defineTable, makeColumnSet, prismaModel } from "../../db3core";
 import { LocalizedStringField, localizedText } from "../../columnTypes/localizedString";
-import { BoolField, MakeColorField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSortOrderField, tagsRef } from "../../columnTypes/xTableColumnTypes";
+import { BoolField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSortOrderField, MakeUpdatedAtField, tagsRef } from "../../columnTypes/xTableColumnTypes";
 import { serverOwnedField } from "../../columnTypes/inherited";
 import { defineView, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
@@ -65,6 +65,8 @@ export const xBandRole = defineTable({
         publicId: () => MakePublicIdField<BandRolePublicId>(),
         name: columnName => new LocalizedStringField({ columnName, stringIdentityMember: "nameId", stringFormat: "PlainText", writeScope: "global", authMap: roleMetadataAuth }),
         description: columnName => new LocalizedStringField({ columnName, stringIdentityMember: "descriptionId", stringFormat: "Markdown", writeScope: "global", authMap: roleMetadataAuth }),
+        createdAt: () => MakeCreatedAtField(),
+        updatedAt: () => MakeUpdatedAtField(),
         color: () => MakeColorField({ authMap: roleMetadataAuth }),
         sortOrder: () => MakeSortOrderField({ authMap: roleMetadataAuth }),
         isDeleted: () => serverOwnedField(MakeIsDeletedField({ authMap: kReadOnlyAuthMap })),

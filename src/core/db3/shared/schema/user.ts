@@ -13,7 +13,7 @@ import type {
 import { TAnyModel } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
 import { PermissionSignificance } from "../apiTypes";
-import { BoolField, ForeignCollectionField, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
+import { BoolField, ForeignCollectionField, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { GenericStringField } from "../columnTypes/genericString";
 import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserSafeArgs } from "./prismArgs";
@@ -286,6 +286,9 @@ export const xPermissionBaseArgs = db3.defineTableDesc({
                 PreMutateAsOwner: Permission.never_grant
             }),
         }),
+        createdAt: () => MakeCreatedAtField(),
+        updatedAt: () => MakeUpdatedAtField(),
+
         bandRolePermissions: tagsRef("BandRolePermission", "BandRole", {
             associationLocalObjectMember: "permission",
             associationForeignObjectMember: "bandRole",

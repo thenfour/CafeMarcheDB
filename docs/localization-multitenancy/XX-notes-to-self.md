@@ -1021,6 +1021,8 @@ which brings multiple band contexts to the single page. HOWEVER if you're in onl
 # TECH DEBT accumulating / things to make sure we do
 
 -  cleanup lsmb todo
+-  roles need to render as chips
+-  on role/perm mgmt pages, highlight global vs. band scoped roles & permissions.
 -  cleanup scattered dayjs/temporal/custom
 -  `formattingLocale ?? navigator.language` -- not good. this should never be null
 -  selection pickers should not use MUI / should use chip selected states.
