@@ -127,6 +127,7 @@ export const xSetlistPlan = db3.defineTable({
         return {};
     },
     tableName: "SetlistPlan",
+    readConsistency: "snapshot",
     bandScope: {
         member: "bandId",
         managePermission: Permission.setlist_planner_access,

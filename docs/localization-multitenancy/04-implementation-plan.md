@@ -974,19 +974,49 @@ credit-type/instrument references still need their disclosure owners and parity
 evidence. Those omissions are visible in the report's migration notice.
 `activity-reports` and A1/B remain open; verification and cleanup are recorded below.
 
-## Next slice: Remaining activity projections and CSV
+## Activity-report auxiliary-reference checkpoint (2026-10-11)
 
-Finish the original detail projection through entity-owned authorization and
-public reference contracts, including the eight auxiliary reference families and
-saved query/URL disclosure and person redaction. Reuse the selected-band selection,
-snapshot and token owners in `getGeneralFeatureDetail` and CSV, retaining the
-original export limit, ordering, related columns and download workflow. Complete
-the remaining per-row context breadcrumbs and scalar hide controls as part of
-the original detail presentation. Verify
-field/row grants, hidden/deleted/foreign references, anonymous authors, formula-safe
-CSV, fresh revocation and two-band switches/exports in native tests and the built
-browser. Remove source references only after the remaining contracts and workflow
-have executable parity evidence; keep the two guards until their owners are safe.
+The original detail composition now restores File, EventSegment, EventAttendance,
+EventSongList, FrontpageGalleryItem, SetlistPlan, SongCreditType and BandInstrument
+references. Typed candidate reads use only the capped returned Actions. Narrow
+views belong to the respective entities; their table, column, row, selected-band,
+deletion and parent-visibility policies determine disclosure inside the same
+fresh report/data/timezone snapshot. Event children require a readable parent
+Event; galleries require a readable File and their own visibility. Denied,
+deleted and foreign references remain NULL without removing Actions from totals.
+Attendance and credit types remain shared global catalogs, while instruments use
+the selected band's identity and effective fields. Inactive attendance choices
+stay identifiable; hidden instruments/groups require the catalog-management grant.
+
+Attendance/credit-type captions and inherited instrument names/group colors use
+the existing localized-field owners. Intentional blank translations and band
+overrides remain blank. The projection carries only public identities, authorized
+labels and the metadata used by the chips, excluding storage/download targets,
+uploader/creator/person relations, configuration and plan/setlist contents.
+The File reference chip navigates to its existing landing page by public identity
+with the current band and locale, replacing the archived storage-dependent link.
+SetlistPlan now declares snapshot consistency so its reference view composes
+correctly with the report owner and refreshes its grants.
+
+The retained `ContextLabel` provides clickable breadcrumbs, preserving literal
+leading/repeated separators and selecting the exact parent prefix. It does not
+reintroduce redacted identity suffixes. Feature and all seven device/locale row
+values support both isolation and hiding through the existing filter handler;
+other filters remain intact. Family labels, tooltips and action names use the
+shared localization registry. Saved URLs/search text, general detail and CSV
+remain visible restoration obligations. The two guarded RPCs and all 27 activity
+references remain; activity reports and A1/B are still open.
+
+## Next slice: Activity metadata and CSV
+
+Finish saved query/URL disclosure and person redaction through the original detail
+owner. Reuse the selected-band selection, snapshot, tokens and all authorized
+reference owners in `getGeneralFeatureDetail` and CSV, retaining the original
+export limit, ordering, related columns and download workflow. Verify identifying
+and private saved metadata, formula-safe CSV, fresh revocation and two-band
+switches/exports in native tests and the built browser. Remove source references
+only after the remaining contracts and workflow have executable parity evidence;
+keep the two guards until their owners are safe.
 
 ## Localized catalog text search exception
 
@@ -1861,5 +1891,56 @@ normalized failure labels are unchanged from the facet checkpoint. It has 2019
 passed and 784 skipped. Later jsdom batches still need the focused run. Preservation
 verifies 222 references, six whole-file deferred specifications and fifteen pending
 features. Activity reports retain 27 references with the actual identity spec now
-active. Remaining detail metadata/references, general detail and CSV, other parity
-obligations, production inventory/rehearsal and A1/B remain open.
+active. At that checkpoint, remaining detail metadata/references, general detail
+and CSV, other parity obligations, production inventory/rehearsal and A1/B remained
+open.
+
+The **activity-report auxiliary-reference checkpoint** passes normal typecheck,
+targeted lint and a normal production build with isolated output. Its 203 focused
+cases across ten files retain timeline/facet/date-picker/page/guard coverage and
+the eight existing SetlistPlan authorization cases. The actual identity spec now
+has 32 executable cases, including literal breadcrumb prefixes and auxiliary-ID
+redaction; the mounted detail suite has 22, including eight reference families,
+all eight scalar hide actions and exact parent-prefix clicks.
+
+Native MariaDB passes 111 cases across seven suites, including 22 auxiliary
+reference cases and the existing detail/facet/timeline/membership/event-catalog/
+credit-type checks. These cover inherited names/colors and blank overrides,
+global catalogs, inactive attendance, hidden/private/deleted/foreign/hard-deleted
+references, independent parent visibility and all eight reference-field denials.
+A denied group color withholds its Instrument too. Report membership and
+independent File/Event/plan/catalog grants refresh before each read, including
+public-role grant sources, restoration/retry and two-band identity/label isolation.
+The disposable database is removed.
+
+The separate instrument-catalog suite still has its existing Event-read rejection
+assertion failure (eight cases pass). The same failure reproduces in the prior
+ledger build, before this slice, so it remains an unrelated test obligation.
+The full suite retains 203 failed tests and ten suite-load failures, with all 163
+normalized failure labels unchanged; it now has 2026 passed and 806 skipped.
+Later jsdom batches are covered by the focused run. Preservation still verifies
+222 references, six whole-file deferred specifications and fifteen pending
+features; all 27 activity references remain.
+
+Seventeen built Chromium groups retain the prior timeline/facet/detail checks
+and add all eight authorized auxiliary references, literal context breadcrumbs,
+row hide/clear controls and independent plan-grant revocation/restoration. French
+River Fanfare rows use Brussels dates; Dutch Harbour Brass rows use Tokyo dates
+and the second band's instrument identity/name. File navigation carries the
+current band and route locale to the public landing page. Private/deleted/foreign
+references, denied parents and unrelated band labels stay absent. Successful
+detail payloads contain no storage paths, external URLs, person fields or private
+reference metadata. The existing held old-band replies, fresh report revocation,
+retry, token correlation and anonymous RPC checks also pass. No uncaught page or
+unexpected RPC errors occur.
+
+French/Dutch ledger screenshots are visually reviewed after fixing breadcrumb
+wrapping between complete labels. Strings, settings and membership roles are
+restored; fixture grants/locales/roles, references, localized strings, Actions,
+audits and sessions are removed. The owned server is stopped and the user's
+development server is untouched. Evidence is in
+`temp/activity-references-browser-result.json`, with ledger screenshots in
+`temp/activity-references-ledger-fr.png` and
+`temp/activity-references-ledger-nl.png`. Saved query/URL disclosure, the general
+detail reader and CSV remain pending; the two RPC guards and activity reports/A1/B
+remain open.

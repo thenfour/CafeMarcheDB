@@ -8,6 +8,7 @@ import { activityParticipantToken, activityRowToken } from "./activityAnonymizat
 import { authorizeActivityReport } from "./activityReportAuthorization";
 import { activityFacetBaseWhere, activityFacetReferenceWhere } from "./activityFacetSelection";
 import { activityReferencesById, authorizedActivityReferenceIds, readActivityFacetReferences, type ActivityAuthorizedReferences } from "./activityFacetReferences";
+import { readActivityDetailReferences, type ActivityAuthorizedDetailReferences } from "./activityDetailReferences";
 
 // Preserve the original 200-row detail limit, with an exact total and stable newest-first ordering.
 const activityDetailRowLimit = 200;
@@ -18,11 +19,13 @@ export const activityDetailSelection = Prisma.validator<Prisma.ActionDefaultArgs
     pointerType: true, screenWidth: true, screenHeight: true, deviceClass: true, browserName: true,
     operatingSystem: true, language: true, locale: true, timezone: true,
     songId: true, eventId: true, wikiPageId: true, menuLinkId: true, customLinkId: true,
+    fileId: true, eventSegmentId: true, eventSongListId: true, frontpageGalleryItemId: true,
+    setlistPlanId: true, songCreditTypeId: true, attendanceId: true, bandInstrumentId: true,
 } });
 type ActivityDatabaseRow = Prisma.ActionGetPayload<typeof activityDetailSelection>;
 
 export function projectActivityDetailRows(rows: readonly ActivityDatabaseRow[], references: ActivityAuthorizedReferences,
-    input: FacetedBreakdownInput): ActivityDetailRow[] {
+    auxiliary: ActivityAuthorizedDetailReferences, input: FacetedBreakdownInput): ActivityDetailRow[] {
     const songs = activityReferencesById(references.songs), events = activityReferencesById(references.events);
     const wiki = activityReferencesById(references.wikiPages), menu = activityReferencesById(references.menuLinks);
     const custom = activityReferencesById(references.customLinks);
@@ -38,6 +41,14 @@ export function projectActivityDetailRows(rows: readonly ActivityDatabaseRow[], 
         wikiPage: row.wikiPageId === null ? null : wiki.get(row.wikiPageId) ?? null,
         menuLink: row.menuLinkId === null ? null : menu.get(row.menuLinkId) ?? null,
         customLink: row.customLinkId === null ? null : custom.get(row.customLinkId) ?? null,
+        file: row.fileId === null ? null : auxiliary.files.get(row.fileId) ?? null,
+        eventSegment: row.eventSegmentId === null ? null : auxiliary.segments.get(row.eventSegmentId) ?? null,
+        eventSongList: row.eventSongListId === null ? null : auxiliary.setlists.get(row.eventSongListId) ?? null,
+        frontpageGalleryItem: row.frontpageGalleryItemId === null ? null : auxiliary.galleryItems.get(row.frontpageGalleryItemId) ?? null,
+        setlistPlan: row.setlistPlanId === null ? null : auxiliary.plans.get(row.setlistPlanId) ?? null,
+        songCreditType: row.songCreditTypeId === null ? null : auxiliary.creditTypes.get(row.songCreditTypeId) ?? null,
+        attendance: row.attendanceId === null ? null : auxiliary.attendance.get(row.attendanceId) ?? null,
+        instrument: row.bandInstrumentId === null ? null : auxiliary.instruments.get(row.bandInstrumentId) ?? null,
     }));
 }
 
@@ -104,7 +115,8 @@ export function readActivityDetails(database: DB3ReadDatabase, authorization: DB
         const totalRowCount = await context.database.action.count({ where });
         const rows = await context.database.action.findMany({ ...activityDetailSelection, where,
             orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: activityDetailRowLimit });
-        return { rows: projectActivityDetailRows(rows, references, args), timeZone, rowLimit: activityDetailRowLimit,
+        const auxiliary = await readActivityDetailReferences(context, args, rows);
+        return { rows: projectActivityDetailRows(rows, references, auxiliary, args), timeZone, rowLimit: activityDetailRowLimit,
             metrics: { totalRowCount, queryTimeMs: Math.round(performance.now() - start) } };
     });
 }

@@ -4,10 +4,9 @@ import { Alert } from "@mui/material";
 import { formatZonedDate } from "shared/dateTimePresentation";
 import { getBandDateTimeFields } from "shared/dateTimePolicy";
 import { useLocale } from "src/locale/components/useLocale";
-import { CMButton, CMButtonGroup } from "../CMCoreComponents2";
-import type { ActivityDetailInput, ActivityDetailResult, ActivityDetailRow, ActivityFacetKey } from "./activityReportTypes";
+import type { ActivityDetailInput, ActivityDetailResult, ActivityDetailRow } from "./activityReportTypes";
 import { changeActivityFacetFilter, type ActivityReportFilters } from "./ClientFacetHandlers";
-import { ActivityReferenceChips, AnonymizedUserChip } from "./FeatureReportBasics";
+import { ActivityReferenceChips, ActivityScalarFilter, AnonymizedUserChip, ContextLabel } from "./FeatureReportBasics";
 import getDetail from "./queries/getDetail";
 
 interface FacetItemDetailTableProps {
@@ -27,17 +26,13 @@ function activityTimestamp(value: Date, timeZone: string, locale: string): strin
 function RowFilters({ row, filters, onChange }: {
     readonly row: ActivityDetailRow; readonly filters: ActivityReportFilters; readonly onChange: (filters: ActivityReportFilters) => void;
 }) {
-    const dimensions: Array<{ readonly facet: ActivityFacetKey; readonly value: string | null }> = [
+    const dimensions: Array<{ readonly facet: React.ComponentProps<typeof ActivityScalarFilter>["facet"]; readonly value: string | null }> = [
         { facet: "locales", value: row.locale }, { facet: "languages", value: row.language }, { facet: "timezones", value: row.timezone },
         { facet: "pointerTypes", value: row.pointerType }, { facet: "deviceClasses", value: row.deviceClass },
         { facet: "operatingSystems", value: row.operatingSystem }, { facet: "browsers", value: row.browserName },
     ];
-    const locale = useLocale();
-    return <CMButtonGroup>{dimensions.filter(item => item.value !== null && item.value !== "").map(item => <CMButton key={item.facet}
-        tooltip={`${locale.getPlainString("activityReports.isolate")}: ${locale.getPlainString(`activityReports.facet.${item.facet}`)}`}
-        onClick={() => { if (item.value !== null) { onChange(changeActivityFacetFilter(filters, item.facet, "isolate", item.value)); } }}>
-        {item.value}
-    </CMButton>)}</CMButtonGroup>;
+    return <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>{dimensions.map(item => item.value !== null && item.value !== ""
+        ? <ActivityScalarFilter key={item.facet} facet={item.facet} value={item.value} filters={filters} onChangeFilters={onChange} /> : null)}</div>;
 }
 
 export function FacetItemDetailTableRow({ row, index, timeZone, filters, onChangeFilters }: {
@@ -49,11 +44,9 @@ export function FacetItemDetailTableRow({ row, index, timeZone, filters, onChang
         <td>{index.toLocaleString(locale.formattingLocale ?? undefined)}</td>
         <td style={{ whiteSpace: "nowrap" }}><time dateTime={row.createdAt.toISOString()}>{activityTimestamp(row.createdAt, timeZone, locale.formattingLocale ?? "en")}</time></td>
         <td><AnonymizedUserChip value={row.userHash} /></td>
-        <td style={{ width: 220, minWidth: 220, overflowWrap: "anywhere" }}>{row.context !== null && <CMButton
-            tooltip={locale.getPlainString("activityReports.isolate")}
-            onClick={() => { if (row.context !== null) { onChangeFilters(changeActivityFacetFilter(filters, "contexts", "isolate", row.context)); } }}>{row.context}</CMButton>}</td>
-        <td><CMButton tooltip={locale.getPlainString("activityReports.isolate")}
-            onClick={() => onChangeFilters(changeActivityFacetFilter(filters, "features", "isolate", row.feature))}>{row.feature}</CMButton></td>
+        <td style={{ width: 220, minWidth: 220, overflowWrap: "anywhere" }}>{row.context !== null && <ContextLabel value={row.context}
+            onClickPart={prefix => onChangeFilters(changeActivityFacetFilter(filters, "contexts", "isolate", prefix))} />}</td>
+        <td><ActivityScalarFilter facet="features" value={row.feature} filters={filters} onChangeFilters={onChangeFilters} /></td>
         <td style={{ minWidth: 320 }}><ActivityReferenceChips row={row} timeZone={timeZone} filters={filters} onChangeFilters={onChangeFilters} /></td>
         <td style={{ width: 300, minWidth: 300 }}><RowFilters row={row} filters={filters} onChange={onChangeFilters} />
             {row.screenWidth !== null && row.screenHeight !== null && <span className="smallText">{row.screenWidth} × {row.screenHeight}</span>}</td>

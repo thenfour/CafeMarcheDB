@@ -5,6 +5,7 @@ import { gGeneralPaletteList, type ColorPaletteEntry } from "src/core/components
 import { LocalizedStringField, localizedText } from "../../columnTypes/localizedString";
 import { GhostField, MakeColorField, MakePKfield, MakePublicIdField, MakeSortOrderField } from "../../columnTypes/xTableColumnTypes";
 import { defineCrudView } from "../../core/db3CrudView";
+import { defineView } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { type DB3CreateFromStringContext, DB3FieldReadAuth, defineAuthMap, defineTable, makeColumnSet, prismaModel } from "../../db3core";
 
@@ -91,6 +92,15 @@ export const xSongCreditType = defineTable({
 });
 
 export const songCreditTypeContract = deriveViewContract(xSongCreditType, songCreditTypeEditorSelection);
+const songCreditTypeReferenceContract = deriveViewContract(xSongCreditType, Prisma.validator<Prisma.SongCreditTypeDefaultArgs>()({
+    select: { publicId: true, name: true, color: true },
+}));
+export const songCreditTypeReferenceView = defineView({
+    viewID: "SongCreditType_Reference", entity: xSongCreditType,
+    selection: songCreditTypeReferenceContract.prismaSelection,
+    dtoSchema: songCreditTypeReferenceContract.dtoSchema,
+    hydrate: songCreditTypeReferenceContract.hydrate,
+});
 export const songCreditTypeDisplayContract = {
     ...songCreditTypeContract,
     hydrate: (...args: Parameters<typeof songCreditTypeContract.hydrate>) => {

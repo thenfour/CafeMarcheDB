@@ -13,7 +13,7 @@ import { defineTable, makeColumnSet, prismaModel } from "../../db3core";
 import { defineCommand } from "../../core/db3Command";
 import { defineCrudView } from "../../core/db3CrudView";
 import { deriveViewContract } from "../../core/db3ViewContract";
-import { type DtoOf } from "../../core/db3View";
+import { defineView, type DtoOf } from "../../core/db3View";
 import { defineReferenceContract, reference } from "../../core/db3Hydration";
 
 const PublicId = z.string().refine(isPublicId, "Expected a public ID");
@@ -132,6 +132,24 @@ export const bandInstrumentReferences = defineReferenceContract({
     instrumentFunctionalGroup: reference(xBandInstrumentFunctionalGroup)<ReturnType<typeof bandInstrumentGroupDisplayContract.hydrate>>(),
 });
 export const bandInstrumentContract = deriveViewContract(xBandInstrument, instrumentSelection, { references: bandInstrumentReferences });
+const bandInstrumentReferenceContract = deriveViewContract(xBandInstrument, Prisma.validator<Prisma.BandInstrumentDefaultArgs>()({
+    select: { publicId: true, name: true, functionalGroupId: true },
+}));
+export const bandInstrumentReferenceView = defineView({
+    viewID: "BandInstrument_Reference", entity: xBandInstrument,
+    selection: bandInstrumentReferenceContract.prismaSelection,
+    dtoSchema: bandInstrumentReferenceContract.dtoSchema,
+    hydrate: bandInstrumentReferenceContract.hydrate,
+});
+const bandInstrumentGroupReferenceContract = deriveViewContract(xBandInstrumentFunctionalGroup, Prisma.validator<Prisma.BandInstrumentFunctionalGroupDefaultArgs>()({
+    select: { publicId: true, color: true },
+}));
+export const bandInstrumentGroupReferenceView = defineView({
+    viewID: "BandInstrumentFunctionalGroup_Reference", entity: xBandInstrumentFunctionalGroup,
+    selection: bandInstrumentGroupReferenceContract.prismaSelection,
+    dtoSchema: bandInstrumentGroupReferenceContract.dtoSchema,
+    hydrate: bandInstrumentGroupReferenceContract.hydrate,
+});
 export const bandInstrumentDisplayContract = {
     ...bandInstrumentContract,
     hydrate: (...args: Parameters<typeof bandInstrumentContract.hydrate>) =>

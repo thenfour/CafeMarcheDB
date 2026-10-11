@@ -6,6 +6,7 @@ import { gGeneralPaletteList, type ColorPaletteEntry } from "src/core/components
 import { LocalizedStringField, localizedText } from "../../columnTypes/localizedString";
 import { BoolField, GhostField, MakeColorField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField } from "../../columnTypes/xTableColumnTypes";
 import { defineCrudView } from "../../core/db3CrudView";
+import { defineView } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { type DB3CreateFromStringContext, DB3FieldReadAuth, defineAuthMap, defineTable, makeColumnSet, prismaModel } from "../../db3core";
 import { EventStatusSignificance, EventTypeSignificance } from "../../schema/prismArgs";
@@ -194,6 +195,15 @@ export const xEventAttendance = defineTable({
 export const eventTypeContract = deriveViewContract(xEventType, eventTypeEditorSelection);
 export const eventStatusContract = deriveViewContract(xEventStatus, eventStatusEditorSelection);
 export const eventAttendanceContract = deriveViewContract(xEventAttendance, eventAttendanceEditorSelection);
+const eventAttendanceReferenceContract = deriveViewContract(xEventAttendance, Prisma.validator<Prisma.EventAttendanceDefaultArgs>()({
+    select: { publicId: true, buttonCaption: true, description: true, color: true, iconName: true },
+}));
+export const eventAttendanceReferenceView = defineView({
+    viewID: "EventAttendance_Reference", entity: xEventAttendance,
+    selection: eventAttendanceReferenceContract.prismaSelection,
+    dtoSchema: eventAttendanceReferenceContract.dtoSchema,
+    hydrate: eventAttendanceReferenceContract.hydrate,
+});
 
 export const eventTypeDisplayContract = {
     ...eventTypeContract,

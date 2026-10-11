@@ -22,6 +22,7 @@ vi.mock("src/core/db3/components/IconMap", () => ({ gIconMap: { Search: () => <s
 vi.mock("src/core/components/song/SongChip", () => ({ SongChip: ({ value }: { value: { name: string } }) => <span>{value.name}</span> }));
 vi.mock("src/core/components/event/EventChips", () => ({ EventChip: ({ value, showDate }: { value: { name: string }; showDate: boolean }) => <span data-event-show-date={showDate}>{value.name}</span> }));
 vi.mock("src/core/components/wiki/WikiPageChip", () => ({ WikiPageChip: ({ slug }: { slug: string }) => <span>{slug}</span> }));
+vi.mock("src/core/components/file/FileChip", () => ({ FileReferenceChip: ({ value }: { value: { fileLeafName: string } }) => <span>{value.fileLeafName}</span> }));
 vi.mock("recharts", () => ({ PieChart: ({ children }: React.PropsWithChildren) => <div>{children}</div>, Pie: () => null, Tooltip: () => null }));
 // jsdom has no Canvas context; the built browser verifies identicon rendering.
 vi.mock("react-identicons", () => ({ default: () => <span data-identicon /> }));
@@ -36,7 +37,8 @@ function row(feature: string, userHash: string | null = personToken): ActivityDe
     return { rowKey: feature, createdAt: new Date("2026-01-01T23:15:00Z"), userHash, feature, context: "App/profile/", isClient: true,
         pointerType: "mouse", screenWidth: 1920, screenHeight: 1080, deviceClass: "desktop", browserName: "chrome", operatingSystem: "windows",
         language: "fr", locale: "fr-be", timezone: "Europe/Brussels", song: { publicId: parsePublicId<"Song">("ActivitySong0001"), name: "Visible song" },
-        event: null, wikiPage: null, menuLink: { publicId: parsePublicId<"MenuLink">("ActivityMenu0001"), caption: "Navigation française" }, customLink: null };
+        event: null, wikiPage: null, menuLink: { publicId: parsePublicId<"MenuLink">("ActivityMenu0001"), caption: "Navigation française" }, customLink: null,
+        file: null, eventSegment: null, eventSongList: null, frontpageGalleryItem: null, setlistPlan: null, songCreditType: null, attendance: null, instrument: null };
 }
 function result(feature = "profile_view", total = 1): ActivityDetailResult {
     return { rows: total ? [row(feature)] : [], timeZone: "Europe/Brussels", rowLimit: 200, metrics: { totalRowCount: total, queryTimeMs: 1 } };
@@ -76,6 +78,52 @@ afterEach(() => {
 });
 
 describe("mounted activity detail lifecycle", () => {
+    it("shows all eight authorized reference families and localized catalog labels", async () => {
+        const entry: ActivityDetailRow = { ...row("references"),
+            file: { publicId: parsePublicId<"File">("ActivityFile0001"), fileLeafName: "Score.pdf" },
+            eventSegment: { publicId: parsePublicId<"EventSegment">("ActivitySegm0001"), eventId: parsePublicId<"Event">("ActivityEvnt0001"), name: "Sound check", startsAt: null },
+            eventSongList: { publicId: parsePublicId<"EventSongList">("ActivityList0001"), eventId: parsePublicId<"Event">("ActivityEvnt0001"), name: "Main set" },
+            frontpageGalleryItem: { publicId: parsePublicId<"FrontpageGalleryItem">("ActivityGall0001"), fileId: parsePublicId<"File">("ActivityFile0001") },
+            setlistPlan: { publicId: parsePublicId<"SetlistPlan">("ActivityPlan0001"), name: "Summer plan" },
+            songCreditType: { publicId: parsePublicId<"SongCreditType">("ActivityCred0001"), name: "Compositeur", color: null },
+            attendance: { publicId: parsePublicId<"EventAttendance">("ActivityAttn0001"), buttonCaption: "Présent", description: "", color: null, iconName: null },
+            instrument: { publicId: parsePublicId<"Instrument">("ActivityInst0001"), name: "Trompette", color: null },
+        };
+        vi.mocked(invoke).mockResolvedValue({ ...result(), rows: [entry] });
+        await render();
+        for (const label of ["Score.pdf", "Sound check", "Main set", "ActivityGall0001", "Summer plan", "Compositeur", "Présent", "Trompette"]) {
+            expect(container.textContent).toContain(label);
+        }
+        expect(container.textContent).not.toMatch(/storedLeafName|externalURI|createdBy|uploadedBy/);
+    });
+
+    it.each([
+        ["features", "profile_view", "excludeFeatures"], ["locales", "fr-be", "excludeLocales"], ["languages", "fr", "excludeLanguages"],
+        ["timezones", "Europe/Brussels", "excludeTimezones"], ["pointerTypes", "mouse", "excludePointerTypes"], ["deviceClasses", "desktop", "excludeDeviceClasses"],
+        ["operatingSystems", "windows", "excludeOperatingSystems"], ["browsers", "chrome", "excludeBrowserNames"],
+    ])("hides a row's %s value and preserves the other filters", async (facet, value, field) => {
+        vi.mocked(invoke).mockResolvedValue(result());
+        await render();
+        const label = `activityReports.hide: activityReports.facet.${facet}: ${value}`;
+        const button = [...container.querySelectorAll<HTMLButtonElement>("button")].find(button => button.getAttribute("aria-label") === label);
+        expect(button).toBeDefined();
+        await act(async () => button!.click());
+        const expected = facet === "features" ? { timeline: { ...input.filterSpec, excludeFeatures: [value] }, facets: input.facetFilters }
+            : { timeline: input.filterSpec, facets: { ...input.facetFilters, [field]: facet === "browsers" ? ["firefox", value] : [value] } };
+        expect(changed.mock.lastCall?.[0]).toEqual(expected);
+    });
+
+    it("isolates every literal context prefix, including repeated and leading separators", async () => {
+        const context = "//App///branch/leaf/";
+        vi.mocked(invoke).mockResolvedValue({ ...result(), rows: [{ ...row("context"), context }] });
+        await render();
+        expect(container.querySelector("[data-activity-context]")!.textContent).toBe(context);
+        for (const [part, prefix] of [["App", "//App///"], ["branch", "//App///branch/"], ["leaf", context]]) {
+            await clickButton(part!);
+            expect(changed.mock.lastCall?.[0]).toEqual({ timeline: { ...input.filterSpec, contextBeginsWith: prefix }, facets: input.facetFilters });
+        }
+    });
+
     it("renders authorized references, anonymous tokens and timestamps in the trusted band zone", async () => {
         vi.mocked(invoke).mockResolvedValue({ ...result(), rows: [row("profile_view"), row("event_view", null)] });
         await render();
@@ -90,7 +138,7 @@ describe("mounted activity detail lifecycle", () => {
         expect(container.textContent).toContain("Navigation française");
         await clickButton("chrome");
         expect(changed.mock.lastCall?.[0]).toEqual({ timeline: input.filterSpec, facets: { ...input.facetFilters, includeBrowserNames: ["chrome"], excludeBrowserNames: [] } });
-        await clickButton("App/profile/");
+        await clickButton("profile");
         expect(changed.mock.lastCall?.[0].timeline.contextBeginsWith).toBe("App/profile/");
         const songAction = container.querySelector<HTMLButtonElement>('[data-activity-reference=songs] button')!;
         await act(async () => songAction.click());

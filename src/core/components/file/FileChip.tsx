@@ -1,11 +1,20 @@
 import { Permission } from "@/shared/permissions";
 import { getHashedColor } from "@/shared/utils";
 import { Prisma } from "@prisma/client";
+import type { FilePublicId } from "shared/publicId";
 import * as db3 from "src/core/db3/db3";
 import { CMChip, CMChipSizeOptions } from "../CMChip";
 import { ColorVariationSpec } from "../color/palette";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { Markdown } from "../markdown/Markdown";
+
+/** Public reference navigation requires no storage path or external download target. */
+export const FileReferenceChip = ({ value }: { readonly value: { readonly publicId: FilePublicId; readonly fileLeafName: string } }) => {
+    const dashboard = useDashboardContext();
+    return <CMChip href={dashboard.routingApi.getURIForFileLandingPage({ publicId: value.publicId })}>
+        <span style={{ color: getHashedColor(value.publicId) }}>{value.fileLeafName}</span>
+    </CMChip>;
+};
 
 
 export interface FileChipProps {

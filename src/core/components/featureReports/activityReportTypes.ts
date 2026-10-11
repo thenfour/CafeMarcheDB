@@ -2,7 +2,8 @@ import { z } from "zod";
 import { ActivityReportTimeBucketSize } from "shared/mysqlUtils";
 import { BandPublicIdSchema, PresentationInputSchema } from "src/locale/shared/presentationInput";
 import { isPublicId, parsePublicId, type SongPublicId, type EventPublicId, type WikiPagePublicId, type MenuLinkPublicId, type CustomLinkPublicId } from "shared/publicId";
-import type { EventStatusPublicId, EventTypePublicId } from "shared/publicId";
+import type { EventStatusPublicId, EventTypePublicId, FilePublicId, EventSegmentPublicId, EventSongListPublicId,
+    EventAttendancePublicId, FrontpageGalleryItemPublicId, SetlistPlanPublicId, SongCreditTypePublicId, InstrumentPublicId } from "shared/publicId";
 import { anonymousActivityContext } from "./activityContext";
 
 // Timeline filters own the top-level report; selected-bucket facet filters have a separate contract.
@@ -100,12 +101,25 @@ export interface ActivityEventReference {
 export interface ActivityWikiReference { readonly publicId: WikiPagePublicId; readonly slug: string }
 export interface ActivityMenuReference { readonly publicId: MenuLinkPublicId; readonly caption: string }
 export interface ActivityCustomLinkReference { readonly publicId: CustomLinkPublicId; readonly name: string }
+export interface ActivityFileReference { readonly publicId: FilePublicId; readonly fileLeafName: string }
+export interface ActivitySegmentReference {
+    readonly publicId: EventSegmentPublicId; readonly name: string; readonly eventId: EventPublicId; readonly startsAt: Date | null;
+}
+export interface ActivitySetlistReference { readonly publicId: EventSongListPublicId; readonly name: string; readonly eventId: EventPublicId }
+export interface ActivityGalleryReference { readonly publicId: FrontpageGalleryItemPublicId; readonly fileId: FilePublicId }
+export interface ActivityPlanReference { readonly publicId: SetlistPlanPublicId; readonly name: string }
+export interface ActivityCreditTypeReference { readonly publicId: SongCreditTypePublicId; readonly name: string; readonly color: string | null }
+export interface ActivityInstrumentReference { readonly publicId: InstrumentPublicId; readonly name: string; readonly color: string | null }
+export interface ActivityAttendanceReference {
+    readonly publicId: EventAttendancePublicId; readonly buttonCaption: string; readonly description: string;
+    readonly color: string | null; readonly iconName: string | null;
+}
 export interface ActivityReportReferences {
     readonly songs: readonly ActivitySongReference[]; readonly events: readonly ActivityEventReference[];
     readonly wikiPages: readonly ActivityWikiReference[]; readonly menuLinks: readonly ActivityMenuReference[];
     readonly customLinks: readonly ActivityCustomLinkReference[];
 }
-/** Explicit projection: saved URLs/search text and auxiliary references await their disclosure owners. */
+/** Explicit projection: saved URLs and search text await their disclosure owner. */
 export interface ActivityDetailRow {
     readonly rowKey: string; readonly createdAt: Date; readonly userHash: string | null;
     readonly feature: string; readonly context: string | null; readonly isClient: boolean;
@@ -115,6 +129,10 @@ export interface ActivityDetailRow {
     readonly song: ActivitySongReference | null; readonly event: ActivityEventReference | null;
     readonly wikiPage: ActivityWikiReference | null; readonly menuLink: ActivityMenuReference | null;
     readonly customLink: ActivityCustomLinkReference | null;
+    readonly file: ActivityFileReference | null; readonly eventSegment: ActivitySegmentReference | null;
+    readonly eventSongList: ActivitySetlistReference | null; readonly frontpageGalleryItem: ActivityGalleryReference | null;
+    readonly setlistPlan: ActivityPlanReference | null; readonly songCreditType: ActivityCreditTypeReference | null;
+    readonly attendance: ActivityAttendanceReference | null; readonly instrument: ActivityInstrumentReference | null;
 }
 export interface ActivityDetailResult {
     readonly rows: readonly ActivityDetailRow[]; readonly timeZone: string; readonly rowLimit: number;

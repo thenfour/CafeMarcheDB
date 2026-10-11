@@ -2,15 +2,18 @@ import React from "react";
 import { Tooltip } from "@mui/material";
 import Identicon from "react-identicons";
 import { formatZonedDate } from "shared/dateTimePresentation";
+import { getHashedColor } from "shared/utils";
 import { useLocale } from "src/locale/components/useLocale";
 import { CMChip } from "../CMChip";
 import { CMButton, CMButtonGroup } from "../CMCoreComponents2";
 import { EventChip } from "../event/EventChips";
 import { SongChip } from "../song/SongChip";
 import { WikiPageChip } from "../wiki/WikiPageChip";
-import { gIconMap } from "../../db3/components/IconMap";
+import { FileReferenceChip } from "../file/FileChip";
+import { gIconMap, RenderMuiIcon } from "../../db3/components/IconMap";
 import type { ActivityDetailRow, ActivityEventReference, ActivityFacetItem, ActivityFacetKey, ActivityReportReferences } from "./activityReportTypes";
 import { changeActivityFacetFilter, type ActivityReportFilters } from "./ClientFacetHandlers";
+import { activityContextBreadcrumbs } from "./activityContext";
 
 export function AnonymizedUserChip({ value }: { readonly value: string | null }) {
     const locale = useLocale();
@@ -41,6 +44,33 @@ function FilterableReference({ children, facet, referenceKey, filters, onChangeF
     </div>;
 }
 
+export function ActivityScalarFilter({ facet, value, filters, onChangeFilters }: {
+    readonly facet: "features" | "locales" | "languages" | "timezones" | "pointerTypes" | "deviceClasses" | "operatingSystems" | "browsers";
+    readonly value: string; readonly filters: ActivityReportFilters; readonly onChangeFilters: (filters: ActivityReportFilters) => void;
+}) {
+    const locale = useLocale();
+    const hideLabel = `${locale.getPlainString("activityReports.hide")}: ${locale.getPlainString(`activityReports.facet.${facet}`)}: ${value}`;
+    return <CMButtonGroup>
+        <CMButton tooltip={`${locale.getPlainString("activityReports.isolate")}: ${locale.getPlainString(`activityReports.facet.${facet}`)}`}
+            onClick={() => onChangeFilters(changeActivityFacetFilter(filters, facet, "isolate", value))}>{value}</CMButton>
+        <CMButton aria-label={hideLabel} tooltip={hideLabel} style={{ padding: "2px 4px" }}
+            onClick={() => onChangeFilters(changeActivityFacetFilter(filters, facet, "hide", value))}>{gIconMap.VisibilityOff()}</CMButton>
+    </CMButtonGroup>;
+}
+
+export function ContextLabel({ value, onClickPart }: { readonly value: string; readonly onClickPart: (prefix: string) => void }) {
+    const locale = useLocale();
+    return <span className="contextLabelContainer" data-activity-context={value} style={{ display: "inline-flex", flexWrap: "wrap", alignItems: "center" }}>
+        {activityContextBreadcrumbs(value).map(part => <React.Fragment key={part.prefix}>
+            {part.leadingSeparators}<CMButton
+                aria-label={`${locale.getPlainString("activityReports.isolate")}: ${part.prefix}`}
+                tooltip={`${locale.getPlainString("activityReports.isolate")}: ${part.prefix}`}
+                style={{ color: getHashedColor(part.label), padding: "2px 4px", whiteSpace: "nowrap", flexShrink: 0 }}
+                onClick={() => onClickPart(part.prefix)}>{part.label}</CMButton>{part.trailingSeparators}
+        </React.Fragment>)}
+    </span>;
+}
+
 function ActivityEventChip({ value, timeZone }: { readonly value: ActivityEventReference; readonly timeZone: string }) {
     const locale = useLocale();
     return <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4 }}>
@@ -55,12 +85,23 @@ export function ActivityReferenceChips({ row, timeZone, ...filters }: {
     readonly row: ActivityDetailRow; readonly filters: ActivityReportFilters; readonly onChangeFilters: (filters: ActivityReportFilters) => void;
     readonly timeZone: string;
 }) {
+    const locale = useLocale();
     return <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {row.song && <FilterableReference facet="songs" referenceKey={row.song.publicId} {...filters}><SongChip value={row.song} useHashedColor /></FilterableReference>}
         {row.event && <FilterableReference facet="events" referenceKey={row.event.publicId} {...filters}><ActivityEventChip value={row.event} timeZone={timeZone} /></FilterableReference>}
         {row.wikiPage && <FilterableReference facet="wikiPages" referenceKey={row.wikiPage.publicId} {...filters}><WikiPageChip slug={row.wikiPage.slug} useHashedColor /></FilterableReference>}
         {row.menuLink && <FilterableReference facet="menuLinks" referenceKey={row.menuLink.publicId} {...filters}><CMChip>{row.menuLink.caption}</CMChip></FilterableReference>}
         {row.customLink && <FilterableReference facet="customLinks" referenceKey={row.customLink.publicId} {...filters}><CMChip>{row.customLink.name}</CMChip></FilterableReference>}
+        {row.file && <div data-activity-reference="files"><FileReferenceChip value={row.file} /></div>}
+        {row.eventSegment && <CMChip>{locale.getPlainString("activityReports.reference.segment")}: {row.eventSegment.name}</CMChip>}
+        {row.eventSongList && <CMChip>{locale.getPlainString("activityReports.reference.setlist")}: {row.eventSongList.name}</CMChip>}
+        {row.frontpageGalleryItem && <CMChip>{locale.getPlainString("activityReports.reference.gallery")}: {row.frontpageGalleryItem.publicId}</CMChip>}
+        {row.setlistPlan && <CMChip>{locale.getPlainString("activityReports.reference.plan")}: {row.setlistPlan.name}</CMChip>}
+        {row.songCreditType && <CMChip color={row.songCreditType.color}>{locale.getPlainString("activityReports.reference.creditType")}: {row.songCreditType.name}</CMChip>}
+        {row.attendance && <CMChip color={row.attendance.color} shape="rectangle" tooltip={row.attendance.description}>
+            {row.attendance.iconName && RenderMuiIcon(row.attendance.iconName)}{row.attendance.buttonCaption}
+        </CMChip>}
+        {row.instrument && <CMChip color={row.instrument.color}>{locale.getPlainString("activityReports.reference.instrument")}: {row.instrument.name}</CMChip>}
     </div>;
 }
 
