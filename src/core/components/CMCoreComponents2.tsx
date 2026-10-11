@@ -209,6 +209,7 @@ export const CMTextButton = ({ enabled = true, ...props }: React.PropsWithChildr
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CMButtonProps {
     "aria-label"?: React.AriaAttributes["aria-label"];
+    "aria-expanded"?: React.AriaAttributes["aria-expanded"];
     onClick?: (e: React.MouseEvent<HTMLElement>) => void;
     href?: string; // for link-style buttons
     enabled?: boolean;
@@ -276,6 +277,7 @@ export const CMButton = React.forwardRef<HTMLElement, React.PropsWithChildren<CM
             href: props.href,
             autoFocus: props.autoFocus,
             "aria-label": props["aria-label"],
+            "aria-expanded": props["aria-expanded"],
         },
         innerContent
     );

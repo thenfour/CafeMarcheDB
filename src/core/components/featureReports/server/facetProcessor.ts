@@ -3,9 +3,10 @@ import { executeDB3Read, type DB3ReadContext, type DB3ReadDatabase } from "src/c
 import { loadBandTimeZone } from "src/server/bandTimeZone";
 import { FacetedBreakdownInputSchema, type ActivityFacetItem, type FacetedBreakdownInput, type FacetedBreakdownResult } from "../activityReportTypes";
 import { activityFacetBaseWhere, activityFacetReferenceWhere, type ActivityStringDimension } from "./activityFacetSelection";
-import { projectActivityReferenceCounts, readActivityFacetReferences } from "./activityFacetReferences";
+import { activityReferenceItems, projectActivityReferenceCounts, readActivityFacetReferences } from "./activityFacetReferences";
 import { authorizeActivityReport } from "./activityReportAuthorization";
 import { activityParticipantToken } from "./activityAnonymization";
+import { anonymousActivityContext } from "../activityContext";
 
 async function stringFacet(context: DB3ReadContext, where: Prisma.ActionWhereInput, field: ActivityStringDimension): Promise<ActivityFacetItem[]> {
     const rows = await context.database.action.groupBy({ by: [field], where, _count: { _all: true } });
@@ -13,6 +14,18 @@ async function stringFacet(context: DB3ReadContext, where: Prisma.ActionWhereInp
         const value = row[field];
         return value === null ? [] : [{ key: value, label: value, count: row._count._all }];
     });
+}
+
+async function contextFacet(context: DB3ReadContext, where: Prisma.ActionWhereInput): Promise<ActivityFacetItem[]> {
+    const rows = await context.database.action.groupBy({ by: ["context"], where, _count: { _all: true } });
+    const counts = new Map<string, number>();
+    for (const row of rows) {
+        const label = anonymousActivityContext(row.context);
+        if (label !== null) {
+            counts.set(label, (counts.get(label) ?? 0) + row._count._all);
+        }
+    }
+    return [...counts].map(([key, count]) => ({ key, label: key, count }));
 }
 
 function referenceGroups(context: DB3ReadContext, where: Prisma.ActionWhereInput) {
@@ -71,7 +84,7 @@ export function readActivityFacets(database: DB3ReadDatabase, authorization: DB3
         const total = { count: await context.database.action.count({ where }) };
         const facets: FacetedBreakdownResult["facets"] = {
             features: await stringFacet(context, where, "feature"),
-            contexts: await stringFacet(context, where, "context"),
+            contexts: await contextFacet(context, where),
             operatingSystems: await stringFacet(context, where, "operatingSystem"),
             pointerTypes: await stringFacet(context, where, "pointerType"),
             browsers: await stringFacet(context, where, "browserName"),
@@ -87,7 +100,7 @@ export function readActivityFacets(database: DB3ReadDatabase, authorization: DB3
             menuLinks: projectActivityReferenceCounts(references.menuLinks, referenceCounts(groups, "menuLinkId")),
             customLinks: projectActivityReferenceCounts(references.customLinks, referenceCounts(groups, "customLinkId")),
         };
-        return { total, facets, timeZone, metrics: { queryTimeMs: Math.round(performance.now() - start) } };
+        return { total, facets, references: activityReferenceItems(references), timeZone, metrics: { queryTimeMs: Math.round(performance.now() - start) } };
     });
 }
 

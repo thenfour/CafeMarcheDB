@@ -8,7 +8,7 @@ import { eventReferenceView } from "src/core/db3/shared/entities/event/eventView
 import { wikiPageReferenceView } from "src/core/db3/shared/entities/wiki/wikiViews";
 import { menuLinkReferenceView } from "src/core/db3/shared/entities/menuLink/menuLinkViews";
 import { customLinkReferenceView } from "src/core/db3/shared/entities/customLink/customLinkViews";
-import type { ActivityFacetItem, FacetedBreakdownInput } from "../activityReportTypes";
+import type { ActivityFacetItem, ActivityReportReferences, FacetedBreakdownInput } from "../activityReportTypes";
 
 async function readReferences<TView extends AnyDB3View>(context: DB3ReadContext, input: QueryViewInput<TView>): Promise<DtoOf<TView>[]> {
     const auth = context.authorization;
@@ -57,6 +57,13 @@ function requireLabel(value: string | null | undefined): string {
     return value ?? "";
 }
 
+function requireReferenceField<T>(value: T | undefined): T {
+    if (value === undefined) {
+        throw new Error("An authorized activity reference is incomplete.");
+    }
+    return value;
+}
+
 export async function readActivityFacetReferences(context: DB3ReadContext, input: FacetedBreakdownInput,
     candidates: { readonly songIds: number[]; readonly eventIds: number[]; readonly wikiPageIds: number[];
         readonly menuLinkIds: number[]; readonly customLinkIds: number[] }) {
@@ -74,11 +81,39 @@ export async function readActivityFacetReferences(context: DB3ReadContext, input
     const wiki = await readReferences(context, { ...preferences, view: wikiPageReferenceView, filter: { publicIds: wikiIdentities.map(row => parsePublicId<"WikiPage">(row.publicId)) } });
     const menu = await readReferences(context, { ...preferences, view: menuLinkReferenceView, filter: { publicIds: menuIdentities.map(row => parsePublicId<"MenuLink">(row.publicId)) } });
     const custom = await readReferences(context, { ...preferences, view: customLinkReferenceView, filter: { publicIds: customIdentities.map(row => parsePublicId<"CustomLink">(row.publicId)) } });
-    return {
-        songs: { identities: songIdentities, labels: songs.map(row => ({ publicId: row.publicId, label: requireLabel(row.name) })) },
-        events: { identities: eventIdentities, labels: events.map(row => ({ publicId: row.publicId, label: requireLabel(row.name) })) },
-        wikiPages: { identities: wikiIdentities, labels: wiki.map(row => ({ publicId: row.publicId, label: requireLabel(row.slug) })) },
-        menuLinks: { identities: menuIdentities, labels: menu.map(row => ({ publicId: row.publicId, label: requireLabel(row.caption) })) },
-        customLinks: { identities: customIdentities, labels: custom.map(row => ({ publicId: row.publicId, label: requireLabel(row.name) })) },
+    // Keep only the reference owner's public fields; do not forward hydrated relation objects.
+    const items: ActivityReportReferences = {
+        songs: songs.map(row => ({ publicId: row.publicId, name: requireLabel(row.name) })),
+        events: events.map(row => ({ publicId: row.publicId, name: requireLabel(row.name), startsAt: requireReferenceField(row.startsAt),
+            statusId: requireReferenceField(row.statusId), typeId: requireReferenceField(row.typeId) })),
+        wikiPages: wiki.map(row => ({ publicId: row.publicId, slug: requireLabel(row.slug) })),
+        menuLinks: menu.map(row => ({ publicId: row.publicId, caption: requireLabel(row.caption) })),
+        customLinks: custom.map(row => ({ publicId: row.publicId, name: requireLabel(row.name) })),
     };
+    return {
+        songs: { identities: songIdentities, items: items.songs, labels: items.songs.map(row => ({ publicId: row.publicId, label: row.name })) },
+        events: { identities: eventIdentities, items: items.events, labels: items.events.map(row => ({ publicId: row.publicId, label: row.name })) },
+        wikiPages: { identities: wikiIdentities, items: items.wikiPages, labels: items.wikiPages.map(row => ({ publicId: row.publicId, label: row.slug })) },
+        menuLinks: { identities: menuIdentities, items: items.menuLinks, labels: items.menuLinks.map(row => ({ publicId: row.publicId, label: row.caption })) },
+        customLinks: { identities: customIdentities, items: items.customLinks, labels: items.customLinks.map(row => ({ publicId: row.publicId, label: row.name })) },
+    };
+}
+
+export type ActivityAuthorizedReferences = Awaited<ReturnType<typeof readActivityFacetReferences>>;
+
+export function activityReferenceItems(references: ActivityAuthorizedReferences): ActivityReportReferences {
+    return { songs: references.songs.items, events: references.events.items, wikiPages: references.wikiPages.items,
+        menuLinks: references.menuLinks.items, customLinks: references.customLinks.items };
+}
+
+export function activityReferencesById<TReference extends { readonly publicId: string }>(references: ActivityReferenceSet & { readonly items: readonly TReference[] }): ReadonlyMap<number, TReference> {
+    const items = new Map(references.items.map(row => [row.publicId, row]));
+    return new Map(references.identities.flatMap(row => {
+        const item = items.get(row.publicId);
+        if (!item) {
+            return [];
+        }
+        const entry: [number, TReference] = [row.id, item];
+        return [entry];
+    }));
 }

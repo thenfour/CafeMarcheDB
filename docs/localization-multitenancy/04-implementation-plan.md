@@ -930,17 +930,63 @@ work. All 28 activity source references and the deferred detail-redaction
 specification remain intact; `activity-reports` and A1/B remain open. Validation
 and browser cleanup evidence are recorded below.
 
-## Next slice: Activity-report details and CSV
+## Activity-report ledger checkpoint (2026-10-11)
 
-Continue the original report composition through its existing query/UI owners:
-restore domain reference chips/metadata and authorized drill-down/ledger rows,
-then CSV. Reuse the selected-band aggregate/filter/reference owners and keep
-person anonymization consistent across those projections. Reactivate the preserved
-detail/redaction/filter specifications for their actual contracts. Verify private,
-deleted and foreign-band references, anonymous authors, fresh grant revocation,
-two-band context switches and exports in native tests and the built browser.
-Remove only fully covered references after evidence; retain the remaining guards
-until those owners and projections are safe.
+The original `getDetail`, `FacetItemDetailTable`, `FeatureReportBasics` and
+`FacetedBreakdown` composition now provides the default Activity ledger and lazy
+per-item detail rows in the fourteen filterable facet tabs. Person-token and
+screen-size groups remain descriptive, matching the reference. The ledger keeps
+the original newest-200 limit, adds a stable timestamp/Action-ID tie-break and
+shows the exact matching total and localized truncation notice. Drill-downs
+intersect the existing bucket, date range, feature/context and additional facet
+filters; they do not replace includes or exclusions. Rows support feature/context/
+device isolation and authorized-reference isolation/hiding.
+
+Typed Prisma reads reuse the aggregate selected-band/filter/reference owners
+inside one fresh authorization/data/timezone snapshot. The explicit row projection
+omits natural identities, person relations and unchecked saved metadata. Only
+authorized Song/Event/Wiki/MenuLink/CustomLink references supply public identities
+and localized labels. Their domain chips are restored in both rows and facets;
+Event start/status/type metadata comes from its existing reference view. Ledger
+timestamps and Event reference dates use the trusted report zone and shared
+localized formatters. Timestamp offsets distinguish repeated DST occurrences.
+The existing Event chip now honors `showDate` in its tooltip too, letting this
+caller supply its own explicit report-zone date. Compact reference actions and
+horizontal table scrolling keep long contexts and device metadata readable.
+
+Rows and facets share selection-scoped private HMAC person tokens. A server-only
+process key is shared across Next's separately bundled RPC modules; it remains
+process-local and changes on restart. Row tokens have a separate purpose and never
+expose Action IDs. Historical context strings such as `App/profile/<person>/name`
+are truncated at identity-bearing suffixes in both projections, and counts merge
+under the safe prefix. Numeric/opaque identity segments and email suffixes are
+also withheld. Context filters cannot reintroduce identifying suffixes. Anonymous
+authors retain NULL tokens and remain in totals. Late replies, changed contexts,
+Refresh and same-input presentation invalidation remove old rows/references.
+
+The actual whole-file `featureReportUserIdRedaction.test.ts` specification is
+executable again against the new selection/projection owner, with native row
+authorization/redaction coverage. Its one source reference is removed; the other
+27 activity references remain preserved. Two obsolete `getDetail` availability
+guard cases are removed. `getGeneralFeatureDetail` and `getDetailCsv` stay guarded.
+CSV, saved query text/raw URLs and File/segment/attendance/setlist/gallery/plan/
+credit-type/instrument references still need their disclosure owners and parity
+evidence. Those omissions are visible in the report's migration notice.
+`activity-reports` and A1/B remain open; verification and cleanup are recorded below.
+
+## Next slice: Remaining activity projections and CSV
+
+Finish the original detail projection through entity-owned authorization and
+public reference contracts, including the eight auxiliary reference families and
+saved query/URL disclosure and person redaction. Reuse the selected-band selection,
+snapshot and token owners in `getGeneralFeatureDetail` and CSV, retaining the
+original export limit, ordering, related columns and download workflow. Complete
+the remaining per-row context breadcrumbs and scalar hide controls as part of
+the original detail presentation. Verify
+field/row grants, hidden/deleted/foreign references, anonymous authors, formula-safe
+CSV, fresh revocation and two-band switches/exports in native tests and the built
+browser. Remove source references only after the remaining contracts and workflow
+have executable parity evidence; keep the two guards until their owners are safe.
 
 ## Localized catalog text search exception
 
@@ -1772,3 +1818,48 @@ fifteen pending features. All 28 activity references remain until domain chips,
 Event reference metadata, detail/ledger projections and CSV are restored and the
 actual deferred redaction specification is reactivated. Full activity report
 parity, production inventory/rehearsal, other obligations and A1/B remain open.
+
+The **activity-report ledger checkpoint** passes normal typecheck, targeted lint
+and a normal production build with isolated output. Its 178 focused cases across
+nine files cover strict detail selection, explicit projections and safe historical
+contexts, timestamp/metadata presentation, mounted ledger/drill-down composition,
+row filter actions, truncation, fresh denial/retry, late replies and same-input
+invalidation alongside the retained timeline/facet/date-picker/page/guard checks.
+The reactivated identity specification contributes 25 executable cases; the new
+mounted detail suite contributes twelve. The shared CMButton forwards
+`aria-expanded`, verified through the real drill-down button's mounted state.
+
+Native MariaDB passes 76 cases across four suites, including 23 new detail cases.
+These verify the stable newest-200 limit and exact total, all seven scalar
+drill-downs, public reference/filter intersections and literal SQL metacharacters,
+private/deleted/foreign/hard-deleted references and intentional localized blanks.
+Rows correlate with facet person tokens without leaking person IDs or saved
+query/URL metadata. Hidden reference drill-downs match nothing; separate reference
+and report grants refresh before reads. Anonymous authors, both administrator
+policies, explicit platform band context, a shared person's two memberships,
+half-open dates and repeated/skipped DST hours remain covered. The disposable
+native database is removed.
+
+Thirteen built Chromium groups retain the prior timeline/facet controls and add
+default ledger navigation, localized French/Dutch rows and related-chip filtering,
+per-facet lazy detail loading, consistent tokens across separately bundled RPCs,
+identicons and safe profile contexts. A Tokyo browser shows Brussels report/Event
+dates correctly; Dutch second-band rows use Tokyo. Held old-band replies cannot
+replace timeline, facets or detail rows. Fresh report revocation removes mounted
+results and rejects a captured detail RPC; restoration permits Refresh. Anonymous
+requests to all three active report RPCs fail. Successful facet/detail payloads
+contain no shared-person/membership identities, private reference names or saved
+URLs/search text. No uncaught page or unexpected RPC errors occur. French/Dutch
+ledger and drill-down screenshots are visually reviewed after the layout fix.
+Translations, timezone settings and membership roles/timestamps are restored;
+fixture references, localized strings, grants/locales/roles, sessions, Actions and
+audits are removed and the owned server is stopped. Evidence is in
+`temp/activity-details-browser-result.json`.
+
+The complete suite still has 203 failed tests and ten suite-load failures; all 163
+normalized failure labels are unchanged from the facet checkpoint. It has 2019
+passed and 784 skipped. Later jsdom batches still need the focused run. Preservation
+verifies 222 references, six whole-file deferred specifications and fifteen pending
+features. Activity reports retain 27 references with the actual identity spec now
+active. Remaining detail metadata/references, general detail and CSV, other parity
+obligations, production inventory/rehearsal and A1/B remain open.

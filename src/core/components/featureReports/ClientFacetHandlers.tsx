@@ -1,4 +1,4 @@
-import { ActivityFacetFilterSchema, type ActivityFacetFilter, type ActivityFacetKey, type ActivityTimelineFilter } from "./activityReportTypes";
+import { ActivityDetailSelectionSchema, ActivityFacetFilterSchema, type ActivityDetailSelection, type ActivityFacetFilter, type ActivityFacetKey, type ActivityTimelineFilter } from "./activityReportTypes";
 
 export interface ActivityReportFilters {
     readonly timeline: ActivityTimelineFilter;
@@ -50,6 +50,14 @@ export function activityFacetFilterValues(filters: ActivityReportFilters, facet:
 export function activityFacetSupportsFilter(facet: ActivityFacetKey): boolean {
     // The reference has no person-token or screen-size filters.
     return facet !== "screenSizes" && facet !== "users";
+}
+
+export function activityFacetDetailSelection(facet: ActivityFacetKey, key: string): ActivityDetailSelection | null {
+    if (!activityFacetSupportsFilter(facet)) {
+        return null;
+    }
+    // Validate each reference's branded identity while keeping the original descriptive groups closed.
+    return ActivityDetailSelectionSchema.parse({ facet, key });
 }
 
 export type ActivityFacetFilterOperation = "isolate" | "hide" | "removeInclude" | "removeExclude" | "clear";

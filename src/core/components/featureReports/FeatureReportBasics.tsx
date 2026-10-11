@@ -1,4 +1,92 @@
-export {};
+import React from "react";
+import { Tooltip } from "@mui/material";
+import Identicon from "react-identicons";
+import { formatZonedDate } from "shared/dateTimePresentation";
+import { useLocale } from "src/locale/components/useLocale";
+import { CMChip } from "../CMChip";
+import { CMButton, CMButtonGroup } from "../CMCoreComponents2";
+import { EventChip } from "../event/EventChips";
+import { SongChip } from "../song/SongChip";
+import { WikiPageChip } from "../wiki/WikiPageChip";
+import { gIconMap } from "../../db3/components/IconMap";
+import type { ActivityDetailRow, ActivityEventReference, ActivityFacetItem, ActivityFacetKey, ActivityReportReferences } from "./activityReportTypes";
+import { changeActivityFacetFilter, type ActivityReportFilters } from "./ClientFacetHandlers";
+
+export function AnonymizedUserChip({ value }: { readonly value: string | null }) {
+    const locale = useLocale();
+    if (value === null) {
+        return <span className="smallText">{locale.getPlainString("activityReports.anonymous")}</span>;
+    }
+    return <Tooltip title={value.slice(0, 8)} disableInteractive>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }} data-activity-person={value}>
+            <Identicon string={value} size={25} /><span>{value.slice(0, 8)}</span>
+        </span>
+    </Tooltip>;
+}
+
+function FilterableReference({ children, facet, referenceKey, filters, onChangeFilters }: React.PropsWithChildren<{
+    readonly facet: ActivityFacetKey; readonly referenceKey: string; readonly filters: ActivityReportFilters;
+    readonly onChangeFilters: (filters: ActivityReportFilters) => void;
+}>) {
+    const locale = useLocale();
+    return <div data-activity-reference={facet} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        {children}
+        <CMButtonGroup>{(["isolate", "hide"] as const).map(operation => <CMButton key={operation}
+            aria-label={`${locale.getPlainString(`activityReports.${operation}`)}: ${locale.getPlainString(`activityReports.facet.${facet}`)}`}
+            tooltip={`${locale.getPlainString(`activityReports.${operation}`)}: ${locale.getPlainString(`activityReports.facet.${facet}`)}`}
+            style={{ padding: "2px 4px" }}
+            onClick={() => onChangeFilters(changeActivityFacetFilter(filters, facet, operation, referenceKey))}>
+            {operation === "isolate" ? gIconMap.Search() : gIconMap.VisibilityOff()}
+        </CMButton>)}</CMButtonGroup>
+    </div>;
+}
+
+function ActivityEventChip({ value, timeZone }: { readonly value: ActivityEventReference; readonly timeZone: string }) {
+    const locale = useLocale();
+    return <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4 }}>
+        <EventChip value={value} showDate={false} useHashedColor />
+        {value.startsAt && <time dateTime={value.startsAt.toISOString()} title={timeZone} style={{ whiteSpace: "nowrap" }}>
+            {formatZonedDate({ value: value.startsAt, timeZone }, locale.formattingLocale ?? "en", { year: "numeric", month: "2-digit", day: "2-digit" })}
+        </time>}
+    </div>;
+}
+
+export function ActivityReferenceChips({ row, timeZone, ...filters }: {
+    readonly row: ActivityDetailRow; readonly filters: ActivityReportFilters; readonly onChangeFilters: (filters: ActivityReportFilters) => void;
+    readonly timeZone: string;
+}) {
+    return <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {row.song && <FilterableReference facet="songs" referenceKey={row.song.publicId} {...filters}><SongChip value={row.song} useHashedColor /></FilterableReference>}
+        {row.event && <FilterableReference facet="events" referenceKey={row.event.publicId} {...filters}><ActivityEventChip value={row.event} timeZone={timeZone} /></FilterableReference>}
+        {row.wikiPage && <FilterableReference facet="wikiPages" referenceKey={row.wikiPage.publicId} {...filters}><WikiPageChip slug={row.wikiPage.slug} useHashedColor /></FilterableReference>}
+        {row.menuLink && <FilterableReference facet="menuLinks" referenceKey={row.menuLink.publicId} {...filters}><CMChip>{row.menuLink.caption}</CMChip></FilterableReference>}
+        {row.customLink && <FilterableReference facet="customLinks" referenceKey={row.customLink.publicId} {...filters}><CMChip>{row.customLink.name}</CMChip></FilterableReference>}
+    </div>;
+}
+
+export function ActivityFacetLabel({ facet, item, references, timeZone }: {
+    readonly facet: ActivityFacetKey; readonly item: ActivityFacetItem; readonly references: ActivityReportReferences;
+    readonly timeZone: string;
+}) {
+    switch (facet) {
+        case "users":
+            return <AnonymizedUserChip value={item.key} />;
+        case "songs": {
+            const row = references.songs.find(row => row.publicId === item.key);
+            return row ? <SongChip value={row} useHashedColor /> : <>{item.label}</>;
+        }
+        case "events": {
+            const row = references.events.find(row => row.publicId === item.key);
+            return row ? <ActivityEventChip value={row} timeZone={timeZone} /> : <>{item.label}</>;
+        }
+        case "wikiPages": {
+            const row = references.wikiPages.find(row => row.publicId === item.key);
+            return row ? <WikiPageChip slug={row.slug} useHashedColor /> : <>{item.label}</>;
+        }
+        default:
+            return <CMChip>{item.label}</CMChip>;
+    }
+}
 
 // MIGRATION_RESTORE: activity-reports
 // Source: 9306d02db399b172ad5e9957c64e5930054faae8:src/core/components/featureReports/FeatureReportBasics.tsx:1-569

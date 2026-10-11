@@ -76,7 +76,7 @@ export const EventChip = ({ renderAsLink = true, ...props }: EventChipProps) => 
         className={`eventChip ${status?.significance} ${props.className}`}
         color={props.useHashedColor ? undefined : dashboardContext.eventType.getById(props.value.typeId)?.color}
         tooltip={<div>
-            <div>{db3.EventAPI.getLabel(props.value, { truncate: false })}</div>
+            <div>{db3.EventAPI.getLabel(props.value, { truncate: false, showDate: CoalesceBool(props.showDate, true) })}</div>
             <div><EventStatusChip statusId={props.value.statusId} /></div>
         </div>
         }
@@ -123,4 +123,3 @@ export const EventStatusValue = (props: EventStatusValueProps) => {
     const status = dashboardContext.eventStatus.getById(props.statusId);
     return status && (<CMStatusIndicator size={props.size} model={status} onClick={props.onClick} getText={o => o?.name || ""} />);
 };
-

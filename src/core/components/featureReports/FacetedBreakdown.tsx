@@ -6,8 +6,10 @@ import { getHashedColor } from "shared/utils";
 import { useLocale } from "src/locale/components/useLocale";
 import { CMButton, CMButtonGroup } from "../CMCoreComponents2";
 import { CMTab, CMTabPanel } from "../TabPanel";
-import { activityFacetKeys, type ActivityFacetItem, type ActivityFacetKey, type FacetedBreakdownInput, type FacetedBreakdownResult } from "./activityReportTypes";
-import { activityFacetFilterValues, activityFacetSupportsFilter, changeActivityFacetFilter, type ActivityFacetFilterOperation, type ActivityReportFilters } from "./ClientFacetHandlers";
+import { activityFacetKeys, type ActivityDetailInput, type ActivityFacetItem, type ActivityFacetKey, type ActivityReportReferences, type FacetedBreakdownInput, type FacetedBreakdownResult } from "./activityReportTypes";
+import { activityFacetDetailSelection, activityFacetFilterValues, activityFacetSupportsFilter, changeActivityFacetFilter, type ActivityFacetFilterOperation, type ActivityReportFilters } from "./ClientFacetHandlers";
+import { ActivityFacetLabel } from "./FeatureReportBasics";
+import { FacetItemDetailTable } from "./FacetItemDetailTable";
 import getFacetedBreakdown from "./queries/getFacetedBreakdown";
 
 interface FacetedBreakdownProps {
@@ -37,12 +39,20 @@ function FacetFilterControls({ facet, filters, onChange }: {
     </div>;
 }
 
-function FacetDistribution({ facet, items, filters, onChange }: {
+function FacetDistribution({ facet, items, references, timeZone, filters, onChange, details }: {
     readonly facet: ActivityFacetKey; readonly items: readonly ActivityFacetItem[]; readonly filters: ActivityReportFilters;
     readonly onChange: (filters: ActivityReportFilters) => void;
+    readonly references: ActivityReportReferences;
+    readonly timeZone: string;
+    readonly details: { readonly input: FacetedBreakdownInput; readonly refetchTrigger: number } | null;
 }) {
     const locale = useLocale();
     const [ascending, setAscending] = React.useState(false);
+    const [expandedKey, setExpandedKey] = React.useState<string | null>(null);
+    const detailInput = React.useMemo(() => {
+        const selection = expandedKey === null ? null : activityFacetDetailSelection(facet, expandedKey);
+        return details && selection ? { ...details.input, detail: selection } : null;
+    }, [details, expandedKey, facet]);
     const sorted = [...items].sort((left, right) => (ascending ? left.count - right.count : right.count - left.count)
         || left.label.localeCompare(right.label, locale.formattingLocale ?? undefined) || left.key.localeCompare(right.key));
     const total = sorted.reduce((count, row) => count + row.count, 0);
@@ -63,16 +73,18 @@ function FacetDistribution({ facet, items, filters, onChange }: {
             <table>
                 <thead><tr><th>{locale.getPlainString(`activityReports.facet.${facet}`)}</th><th>{countLabel}</th><th>%</th><th>{locale.getPlainString("activityReports.filters")}</th></tr></thead>
                 <tbody>{sorted.map(item => <tr key={item.key} data-facet-item={item.key} data-facet-count={item.count}>
-                    <td style={{ maxWidth: 320, overflowWrap: "anywhere" }}>{item.label}</td>
+                    <td style={{ maxWidth: 320, overflowWrap: "anywhere" }}><ActivityFacetLabel facet={facet} item={item} references={references} timeZone={timeZone} /></td>
                     <td>{item.count.toLocaleString(locale.formattingLocale ?? undefined)}</td>
                     <td>{(item.count / total).toLocaleString(locale.formattingLocale ?? undefined, { style: "percent", maximumFractionDigits: 1 })}</td>
                     <td>{activityFacetSupportsFilter(facet) && <CMButtonGroup>
                         <CMButton onClick={() => onChange(changeActivityFacetFilter(filters, facet, "isolate", item.key))}>{locale.getPlainString("activityReports.isolate")}</CMButton>
                         {facet !== "contexts" && <CMButton onClick={() => onChange(changeActivityFacetFilter(filters, facet, "hide", item.key))}>{locale.getPlainString("activityReports.hide")}</CMButton>}
+                        {details && <CMButton aria-expanded={expandedKey === item.key} onClick={() => setExpandedKey(current => current === item.key ? null : item.key)}>{locale.getPlainString("activityReports.details")}</CMButton>}
                     </CMButtonGroup>}</td>
                 </tr>)}</tbody>
             </table>
         </div>}
+        {detailInput && details && <FacetItemDetailTable input={detailInput} refetchTrigger={details.refetchTrigger} onChangeFilters={onChange} />}
     </section>;
 }
 
@@ -80,7 +92,7 @@ export function FacetedBreakdown({ input, refetchTrigger, onChangeFilters }: Fac
     const locale = useLocale();
     const [loaded, setLoaded] = React.useState<{ readonly key: string; readonly result: FacetedBreakdownResult } | null>(null);
     const [failedKey, setFailedKey] = React.useState<string | null>(null);
-    const [tab, setTab] = React.useState<string>("total");
+    const [tab, setTab] = React.useState<string>("ledger");
     const requestKey = JSON.stringify([input, refetchTrigger]);
     React.useEffect(() => {
         let current = true;
@@ -99,7 +111,10 @@ export function FacetedBreakdown({ input, refetchTrigger, onChangeFilters }: Fac
     }, [input, refetchTrigger, requestKey]);
     const filters = { timeline: input.filterSpec, facets: input.facetFilters };
     const result = loaded?.key === requestKey ? loaded.result : null;
-    const renderFacet = (facet: ActivityFacetKey) => result && <FacetDistribution key={facet} facet={facet} items={result.facets[facet]} filters={filters} onChange={onChangeFilters} />;
+    const ledgerInput = React.useMemo<ActivityDetailInput>(() => ({ ...input, detail: { facet: "total" } }), [input]);
+    const detailContext = React.useMemo(() => ({ input, refetchTrigger }), [input, refetchTrigger]);
+    const renderFacet = (facet: ActivityFacetKey, withDetails: boolean) => result && <FacetDistribution key={facet} facet={facet}
+        items={result.facets[facet]} references={result.references} timeZone={result.timeZone} filters={filters} onChange={onChangeFilters} details={withDetails ? detailContext : null} />;
     return <div data-activity-breakdown>
         <h2>{locale.getPlainString("activityReports.breakdown")}: {input.selectedBucket}</h2>
         <div>{locale.getPlainString("activityReports.timeZone")}: {result?.timeZone}</div>
@@ -111,11 +126,14 @@ export function FacetedBreakdown({ input, refetchTrigger, onChangeFilters }: Fac
                     <div className="smallText">{result.metrics.queryTimeMs} ms</div>
                     <CMTabPanel selectedTabId={tab} handleTabChange={(_event, value) => { if (typeof value === "string") { setTab(value); } }}>
                         {[
+                        <CMTab key="ledger" thisTabId="ledger" summaryTitle={locale.getPlainString("activityReports.ledger")}>
+                            <FacetItemDetailTable input={ledgerInput} refetchTrigger={refetchTrigger} onChangeFilters={onChangeFilters} />
+                        </CMTab>,
                         <CMTab key="total" thisTabId="total" summaryTitle={locale.getPlainString("activityReports.summary")}>
-                            <div className="summaryFacetTab" style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>{activityFacetKeys.filter(facet => result.facets[facet].length).map(renderFacet)}</div>
+                            <div className="summaryFacetTab" style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>{activityFacetKeys.filter(facet => result.facets[facet].length).map(facet => renderFacet(facet, false))}</div>
                             {!result.total.count && <div>{locale.getPlainString("activityReports.noFacetItems")}</div>}
                         </CMTab>,
-                        ...activityFacetKeys.map(facet => <CMTab key={facet} thisTabId={facet} summaryTitle={`${locale.getPlainString(`activityReports.facet.${facet}`)} (${result.facets[facet].length})`}>{renderFacet(facet)}</CMTab>),
+                        ...activityFacetKeys.map(facet => <CMTab key={facet} thisTabId={facet} summaryTitle={`${locale.getPlainString(`activityReports.facet.${facet}`)} (${result.facets[facet].length})`}>{renderFacet(facet, true)}</CMTab>),
                         ]}
                     </CMTabPanel>
                 </div>}

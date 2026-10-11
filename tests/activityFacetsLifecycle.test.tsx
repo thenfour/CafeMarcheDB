@@ -12,6 +12,8 @@ import type { FacetedBreakdownInput, FacetedBreakdownResult } from "src/core/com
 
 vi.mock("@blitzjs/rpc", () => ({ invoke: vi.fn() }));
 vi.mock("src/core/components/featureReports/queries/getFacetedBreakdown", () => ({ default: vi.fn() }));
+// Ledger request/row lifecycle has its own mounted specification; this file exercises distributions.
+vi.mock("src/core/components/featureReports/FacetItemDetailTable", () => ({ FacetItemDetailTable: () => null }));
 vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({ formattingLocale: "fr-BE", getPlainString: (key: string) => key }) }));
 // Unused shared-control providers do not need to load the dashboard's unrelated RPCs.
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: vi.fn() }));
@@ -26,7 +28,7 @@ const input: FacetedBreakdownInput = {
         contextBeginsWith: null, includeFeatures: [], excludeFeatures: [] }, facetFilters: emptyActivityFacetFilters(),
 };
 function result(count: number): FacetedBreakdownResult {
-    return { total: { count }, timeZone: "Europe/Brussels", metrics: { queryTimeMs: 1 }, facets: {
+    return { references: { songs: [], events: [], wikiPages: [], menuLinks: [], customLinks: [] }, total: { count }, timeZone: "Europe/Brussels", metrics: { queryTimeMs: 1 }, facets: {
         features: count ? [{ key: "event_view", label: "event_view", count: count - 1 }, { key: "profile_view", label: "profile_view", count: 1 }] : [],
         contexts: [], operatingSystems: [], pointerTypes: [], browsers: [], deviceClasses: [], languages: [], locales: [], timezones: [],
         screenSizes: [], users: [], songs: [], events: [], wikiPages: [], menuLinks: [], customLinks: [],
@@ -68,6 +70,7 @@ describe("mounted activity facet lifecycle", () => {
         await render();
         expect(vi.mocked(invoke).mock.calls[0]?.[1]).toEqual(input);
         expect(container.querySelector("[data-activity-facet-total]")!.getAttribute("data-activity-facet-total")).toBe("5");
+        await act(async () => [...container.querySelectorAll<HTMLElement>(".CMTabHeaderTitle")].find(tab => tab.textContent === "activityReports.summary")!.click());
         const section = container.querySelector<HTMLElement>("[data-facet-key=features]")!;
         expect(section.querySelector("tbody tr")!.getAttribute("data-facet-item")).toBe("event_view");
         await clickButton("activityReports.leastFirst", section);

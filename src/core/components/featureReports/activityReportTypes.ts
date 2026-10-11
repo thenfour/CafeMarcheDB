@@ -2,13 +2,16 @@ import { z } from "zod";
 import { ActivityReportTimeBucketSize } from "shared/mysqlUtils";
 import { BandPublicIdSchema, PresentationInputSchema } from "src/locale/shared/presentationInput";
 import { isPublicId, parsePublicId, type SongPublicId, type EventPublicId, type WikiPagePublicId, type MenuLinkPublicId, type CustomLinkPublicId } from "shared/publicId";
+import type { EventStatusPublicId, EventTypePublicId } from "shared/publicId";
+import { anonymousActivityContext } from "./activityContext";
 
 // Timeline filters own the top-level report; selected-bucket facet filters have a separate contract.
 export const ActivityTimelineFilterSchema = z.object({
     bucketSize: z.nativeEnum(ActivityReportTimeBucketSize),
     excludeYourself: z.boolean(),
     excludeSysadmins: z.boolean(),
-    contextBeginsWith: z.string().max(256).nullable(),
+    contextBeginsWith: z.string().max(256).nullable().refine(value => anonymousActivityContext(value) === value,
+        "Activity context filters must not identify people or embedded records."),
     includeFeatures: z.array(z.string().min(1).max(64)).max(256),
     excludeFeatures: z.array(z.string().min(1).max(64)).max(256),
 }).strict();
@@ -55,15 +58,68 @@ export const ActivityFacetFilterSchema = z.object({
 }).strict();
 export type ActivityFacetFilter = z.infer<typeof ActivityFacetFilterSchema>;
 
-export const FacetedBreakdownInputSchema = PresentationInputSchema.extend({
+const activitySelectionInputSchema = PresentationInputSchema.extend({
     bandPublicId: BandPublicIdSchema,
     startDate: reportDate,
     endDateExclusive: reportDate,
     filterSpec: ActivityTimelineFilterSchema,
     selectedBucket: z.string().min(1).max(32),
     facetFilters: ActivityFacetFilterSchema,
-}).strict().refine(value => value.startDate < value.endDateExclusive, "The report end must follow its start.");
+}).strict();
+export const FacetedBreakdownInputSchema = activitySelectionInputSchema.refine(value => value.startDate < value.endDateExclusive, "The report end must follow its start.");
 export type FacetedBreakdownInput = z.infer<typeof FacetedBreakdownInputSchema>;
+
+// A drill-down narrows the existing selection; it never replaces its includes or exclusions.
+export const ActivityDetailSelectionSchema = z.discriminatedUnion("facet", [
+    z.object({ facet: z.literal("total") }).strict(),
+    z.object({ facet: z.literal("features"), key: z.string().max(64) }).strict(),
+    z.object({ facet: z.literal("contexts"), key: z.string().max(256).refine(value => anonymousActivityContext(value) === value) }).strict(),
+    z.object({ facet: z.literal("operatingSystems"), key: z.string().max(256) }).strict(),
+    z.object({ facet: z.literal("pointerTypes"), key: z.string().max(256) }).strict(),
+    z.object({ facet: z.literal("browsers"), key: z.string().max(256) }).strict(),
+    z.object({ facet: z.literal("deviceClasses"), key: z.string().max(256) }).strict(),
+    z.object({ facet: z.literal("languages"), key: z.string().max(256) }).strict(),
+    z.object({ facet: z.literal("locales"), key: z.string().max(256) }).strict(),
+    z.object({ facet: z.literal("timezones"), key: z.string().max(256) }).strict(),
+    z.object({ facet: z.literal("songs"), key: songIdentity }).strict(),
+    z.object({ facet: z.literal("events"), key: eventIdentity }).strict(),
+    z.object({ facet: z.literal("wikiPages"), key: wikiIdentity }).strict(),
+    z.object({ facet: z.literal("menuLinks"), key: menuIdentity }).strict(),
+    z.object({ facet: z.literal("customLinks"), key: customLinkIdentity }).strict(),
+]);
+export type ActivityDetailSelection = z.infer<typeof ActivityDetailSelectionSchema>;
+export const ActivityDetailInputSchema = activitySelectionInputSchema.extend({ detail: ActivityDetailSelectionSchema }).strict()
+    .refine(value => value.startDate < value.endDateExclusive, "The report end must follow its start.");
+export type ActivityDetailInput = z.infer<typeof ActivityDetailInputSchema>;
+
+export interface ActivitySongReference { readonly publicId: SongPublicId; readonly name: string }
+export interface ActivityEventReference {
+    readonly publicId: EventPublicId; readonly name: string; readonly startsAt: Date | null;
+    readonly statusId: EventStatusPublicId | null; readonly typeId: EventTypePublicId | null;
+}
+export interface ActivityWikiReference { readonly publicId: WikiPagePublicId; readonly slug: string }
+export interface ActivityMenuReference { readonly publicId: MenuLinkPublicId; readonly caption: string }
+export interface ActivityCustomLinkReference { readonly publicId: CustomLinkPublicId; readonly name: string }
+export interface ActivityReportReferences {
+    readonly songs: readonly ActivitySongReference[]; readonly events: readonly ActivityEventReference[];
+    readonly wikiPages: readonly ActivityWikiReference[]; readonly menuLinks: readonly ActivityMenuReference[];
+    readonly customLinks: readonly ActivityCustomLinkReference[];
+}
+/** Explicit projection: saved URLs/search text and auxiliary references await their disclosure owners. */
+export interface ActivityDetailRow {
+    readonly rowKey: string; readonly createdAt: Date; readonly userHash: string | null;
+    readonly feature: string; readonly context: string | null; readonly isClient: boolean;
+    readonly pointerType: string | null; readonly screenWidth: number | null; readonly screenHeight: number | null;
+    readonly deviceClass: string | null; readonly browserName: string | null; readonly operatingSystem: string | null;
+    readonly language: string | null; readonly locale: string | null; readonly timezone: string | null;
+    readonly song: ActivitySongReference | null; readonly event: ActivityEventReference | null;
+    readonly wikiPage: ActivityWikiReference | null; readonly menuLink: ActivityMenuReference | null;
+    readonly customLink: ActivityCustomLinkReference | null;
+}
+export interface ActivityDetailResult {
+    readonly rows: readonly ActivityDetailRow[]; readonly timeZone: string; readonly rowLimit: number;
+    readonly metrics: { readonly queryTimeMs: number; readonly totalRowCount: number };
+}
 
 export const activityFacetKeys = ["features", "contexts", "operatingSystems", "pointerTypes", "browsers", "deviceClasses",
     "languages", "locales", "timezones", "screenSizes", "users", "songs", "events", "wikiPages", "menuLinks", "customLinks"] as const;
@@ -74,6 +130,7 @@ export interface ActivityFacetItem<TKey extends string = string> {
     readonly count: number;
 }
 export interface FacetedBreakdownResult {
+    readonly references: ActivityReportReferences;
     readonly total: { readonly count: number };
     readonly timeZone: string;
     readonly metrics: { readonly queryTimeMs: number };
