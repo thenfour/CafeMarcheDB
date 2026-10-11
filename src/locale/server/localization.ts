@@ -119,15 +119,25 @@ export async function lookupStaticTranslation(
 /** Call only with string IDs obtained from an authorized entity read in this transaction. No public arbitrary-ID endpoint. */
 export async function resolveAuthorizedDynamicStrings(
     database: LocalizationDatabase,
-    auth: CMServerAuthorization,
+    // caller performs authorization for entities;
+    // string presentation only needs band scope.
+    scope: { readonly band: { readonly id: number } | null },
     stringIds: readonly number[],
     input: LocalePreferenceInput = {},
 ) {
     const preferences = collectLocalePreferences(input);
     const [availability, globalRows, bandRows] = await Promise.all([
-        loadLocaleAvailability(database, auth.band?.id ?? null),
-        database.dynamicLocalizedStringValue.findMany({ where: { stringId: { in: [...stringIds] } }, select: { ...valueSelection, stringId: true } }),
-        auth.band ? database.bandDynamicLocalizedStringValue.findMany({ where: { bandId: auth.band.id, stringId: { in: [...stringIds] } }, select: { ...valueSelection, stringId: true } }) : Promise.resolve<Array<StoredTranslation & { stringId: number }>>([]),
+        loadLocaleAvailability(database, scope.band?.id ?? null),
+        database.dynamicLocalizedStringValue
+            .findMany({
+                where: { stringId: { in: [...stringIds] } },
+                select: { ...valueSelection, stringId: true }
+            }),
+        scope.band ? database.bandDynamicLocalizedStringValue
+            .findMany({
+                where: { bandId: scope.band.id, stringId: { in: [...stringIds] } },
+                select: { ...valueSelection, stringId: true }
+            }) : Promise.resolve<Array<StoredTranslation & { stringId: number }>>([]),
     ]);
     return new Map(stringIds.map(id => [id, resolveString({
         preferences, availability,

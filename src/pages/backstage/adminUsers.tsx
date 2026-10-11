@@ -13,6 +13,7 @@ import { useClientAuth } from "src/core/db3/components/useClientAuth";
 import { useLocale } from "src/locale/components/useLocale";
 import React, { Suspense } from "react";
 import { AccountRoleAction } from "src/core/components/user/AccountRoleControl";
+import { AccountAnalysisAction } from "src/core/components/user/UserMassAnalysisTab";
 
 const makeDisplayOnlyColumn = <T extends DB3Client.IColumnClient>(column: T): T => {
     // This grid may inspect security state, but generic DB3 mutation must not
@@ -48,6 +49,7 @@ const UserListContent: React.FC<{}> = () => {
         const profileUrl = dashboardContext.routingApi.getURIForUser(userPayload);
         return <div>
             <Suspense><AccountRoleAction userId={userPayload.publicId} onChanged={() => args.refetch()} /></Suspense>
+            {auth.hasPermission(Permission.sysadmin) && <AccountAnalysisAction userId={userPayload.publicId} />}
             <ImpersonateUserButton userId={userPayload.publicId} />
             <AdminResetPasswordButton user={userPayload} />
             {dashboardContext.memberPresentation.bandPublicId

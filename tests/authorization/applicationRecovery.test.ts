@@ -25,7 +25,6 @@ import { insertImpl } from "@db3/server/db3mutationCore";
 import mergeUsers from "src/auth/mutations/mergeUsers";
 import previewUserMerge from "src/auth/queries/previewUserMerge";
 import searchUserMergeCandidates from "src/auth/queries/searchUserMergeCandidates";
-import getUserMassAnalysis from "@db3/queries/getUserMassAnalysis";
 import { ApplicationFeatureUnavailableError } from "src/core/shared/applicationRecovery";
 import { parsePublicId } from "shared/publicId";
 
@@ -45,7 +44,6 @@ const deferredEndpoints = [
     { name: "search merge candidates", call: (ctx: RequestContext) => invokeResolver(searchUserMergeCandidates, { query: "", excludeUserId: userId }, ctx) },
     { name: "preview account merge", call: (ctx: RequestContext) => invokeResolver(previewUserMerge, participants, ctx) },
     { name: "commit account merge", call: (ctx: RequestContext) => invokeResolver(mergeUsers, { participants, confirmation: "a".repeat(64) }, ctx) },
-    { name: "analyze account dependencies", call: (ctx: RequestContext) => invokeResolver(getUserMassAnalysis, { userId }, ctx) },
 ];
 
 const deferredAuditEndpoints = [

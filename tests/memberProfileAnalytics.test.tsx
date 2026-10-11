@@ -10,6 +10,8 @@ import type getContributions from "src/core/db3/queries/getUserWikiContributions
 vi.mock("src/core/db3/queries/getUserEventAttendance", () => ({ default: "attendance" }));
 vi.mock("src/core/db3/queries/getUserWikiContributions", () => ({ default: "wiki" }));
 vi.mock("src/core/db3/queries/getUserCredits", () => ({ default: "credits" }));
+vi.mock("src/core/db3/queries/getUserMassAnalysis", () => ({ default: "analysis" }));
+vi.mock("src/core/db3/queries/getUserAccountAnalysisChoices", () => ({ default: "choices" }));
 vi.mock("@blitzjs/rpc", () => ({ useQuery: (query: string, input: object, options: object) => {
     queries.push({ query, input, options });
     return [query === "attendance" ? history : contributions];
@@ -38,6 +40,8 @@ vi.mock("src/core/components/markdown/Markdown", () => ({ Markdown: ({ markdown 
 vi.mock("src/core/components/CMLink", () => ({ CMLink: ({ href, children }: React.PropsWithChildren<{ href: string }>) => <a href={href}>{children}</a> }));
 vi.mock("src/core/db3/components/useDB3Context", () => ({ useDB3QueryContext: () => ({}) }));
 vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({ getPlainString: (key: string) => key }) }));
+vi.mock("src/locale/components/PresentationProvider", () => ({ usePresentation: () => ({ data: null }) }));
+vi.mock("src/core/components/user/userChip", () => ({ UserChip: () => null }));
 
 import { UserAttendanceTabContent, UserWikiContributionsTabContent } from "src/core/components/user/UserAnalyticTables";
 

@@ -1,10 +1,9 @@
-export type DeferredApplicationFeature = "accountMerge" | "accountAnalysis" | "auditLog"
+export type DeferredApplicationFeature = "accountMerge" | "auditLog"
     | "fileCreation" | "quickSearch"
     | "eventWorkflows" | "songWorkflows" | "fileWorkflows" | "publicPublication" | "domainSearch" | "developerExamples";
 
 const featureNames: { readonly [Feature in DeferredApplicationFeature]: string } = {
     accountMerge: "Shared-account merging",
-    accountAnalysis: "Shared-account dependency analysis",
     auditLog: "Audit log",
     fileCreation: "File creation",
     quickSearch: "Quick search",

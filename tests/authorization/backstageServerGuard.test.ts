@@ -183,12 +183,12 @@ describe("backstage server page guard", () => {
 
     });
 
-    it("reports deferred account analysis without returning dependency data", async () => {
+    it("requires platform Sysadmin authority before returning account dependency data", async () => {
         await expect(invokeResolver(
             getUserMassAnalysis,
             { userId: eventAdmin.publicId },
             createAuthorizationTestContext(eventAdmin),
-        )).rejects.toThrow("Shared-account dependency analysis is temporarily unavailable");
+        )).rejects.toThrow("Not authorized for sysadmin");
     });
 
     it("fails closed for an unregistered backstage page", async () => {

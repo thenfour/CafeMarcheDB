@@ -1,5 +1,14 @@
 
-import type { RolePublicId, UserPublicId } from "shared/publicId";
+import { ValidValue } from "@/shared/rootroot";
+import { AccountAnalysisStringKey } from "@/src/locale/shared/accountAnalysisStrings";
+import type { BandPublicId, BandRolePublicId, BandUserPublicId, GlobalRolePublicId, UserPublicId } from "shared/publicId";
+
+export interface UserAccountAnalysisChoice {
+    readonly publicId: UserPublicId;
+    readonly name: string;
+    readonly email: string;
+    readonly isDeleted: boolean;
+}
 
 export type UserMassAnalysisContentCounts = {
     createdSongs: number;
@@ -27,6 +36,8 @@ export type UserMassAnalysisSystemCounts = {
     sessions: number;
     tokens: number;
     changes: number;
+    signInMethods: number;
+    userSettings: number;
 };
 
 export type UserMassAnalysisUserInfo = {
@@ -36,8 +47,12 @@ export type UserMassAnalysisUserInfo = {
     createdAt: Date;
     isSysAdmin: boolean;
     isDeleted: boolean;
-    roleId: RolePublicId | null;
-    roleName: string | null;
+    isProtectedAdministrator: boolean;
+    globalRoleId: GlobalRolePublicId | null;
+    globalRoleName: string | null;
+    globalRoleIsDeleted: boolean;
+    mergedIntoUserId: UserPublicId | null;
+    mergedAt: Date | null;
     hasGoogleIdentity: boolean;
 };
 
@@ -48,11 +63,23 @@ export type UserMassAnalysisActivityMetrics = {
     daysSinceLastActivity: number | null;
 };
 
+// Transport carries the reason and its data; the report resolves messages in the current presentation locale.
+export type UserDependencyRiskReason = {
+    readonly kind: "sysadmin" | "merged" | "activeSessions"
+}
+    | {
+        readonly kind: "globalRole";
+        readonly name: string | null;
+    }
+    | {
+        readonly kind: "content" | "participation" | "recentActivity";
+        readonly count: number;
+    };
 export type UserMassAnalysisRiskAssessment = {
     safeToDelete: boolean;
     riskLevel: 'low' | 'medium' | 'high';
-    warnings: string[];
-    blockers: string[];
+    warnings: UserDependencyRiskReason[];
+    blockers: UserDependencyRiskReason[];
 };
 
 export type UserMassAnalysisResult = {
@@ -62,16 +89,41 @@ export type UserMassAnalysisResult = {
     systemCounts: UserMassAnalysisSystemCounts;
     activityMetrics: UserMassAnalysisActivityMetrics;
     riskAssessment: UserMassAnalysisRiskAssessment;
+    memberships: UserMassAnalysisMembership[];
 };
 
+export interface UserMassAnalysisMembership {
+    readonly publicId: BandUserPublicId;
+    readonly bandPublicId: BandPublicId;
+    readonly bandName: string | null;
+    readonly bandIsDeleted: boolean;
+    readonly isDeleted: boolean;
+    readonly createdAt: Date;
+    readonly roleId: BandRolePublicId | null;
+    readonly roleName: string | null;
+    readonly roleIsDeleted: boolean;
+    readonly counts: UserMassAnalysisParticipationCounts & { readonly settings: number };
+}
+
 // Type-safe data row structure for tables
+type AccountAnalysisRowLabel = ValidValue<AccountAnalysisStringKey, "accountAnalysis.signInMethods">
+    | ValidValue<AccountAnalysisStringKey, "accountAnalysis.accountSettings">
+    | ValidValue<AccountAnalysisStringKey, "accountAnalysis.globalRole">
+    | ValidValue<AccountAnalysisStringKey, "accountAnalysis.protectedAdministrator">
+    | ValidValue<AccountAnalysisStringKey, "accountAnalysis.deletedGlobalRole">
+    | ValidValue<AccountAnalysisStringKey, "accountAnalysis.mergedInto">
+    | ValidValue<AccountAnalysisStringKey, "accountAnalysis.mergedAt">;
+
+
+
 export type MassAnalysisDataRow = {
     key: string;
     label: string;
-    value: number;
-    compareValue?: number;
-    displayValue?: string;
-    compareDisplayValue?: string;
+    labelKey?: AccountAnalysisRowLabel;
+    value: number | null;
+    compareValue?: number | null;
+    displayValue?: string | null;
+    compareDisplayValue?: string | null;
     isDateValue?: boolean;
     isBooleanValue?: boolean;
 };
@@ -112,6 +164,8 @@ export const getSystemCountsRows = (
         { key: "sessions", label: "Sessions", value: counts.sessions, compareValue: compareCounts?.sessions },
         { key: "tokens", label: "Tokens", value: counts.tokens, compareValue: compareCounts?.tokens },
         { key: "changes", label: "Changes", value: counts.changes, compareValue: compareCounts?.changes },
+        { key: "signInMethods", label: "Sign-in Methods", labelKey: "accountAnalysis.signInMethods", value: counts.signInMethods, compareValue: compareCounts?.signInMethods },
+        { key: "userSettings", label: "Account Settings", labelKey: "accountAnalysis.accountSettings", value: counts.userSettings, compareValue: compareCounts?.userSettings },
     ];
 
 export const getSummaryRows = (
@@ -131,7 +185,7 @@ export const getSummaryRows = (
         { key: "totalParticipationItems", label: "Total Participation Items", value: totalParticipationItems, compareValue: compareTotalParticipation },
         { key: "totalSystemItems", label: "Total System Items", value: totalSystemItems, compareValue: compareTotalSystem },
         { key: "accountAgeInDays", label: "Account Age", value: analysis.activityMetrics.accountAgeInDays, compareValue: compareAnalysis?.activityMetrics.accountAgeInDays },
-        { key: "daysSinceLastActivity", label: "Days Since Last Activity", value: analysis.activityMetrics.daysSinceLastActivity || 0, compareValue: compareAnalysis?.activityMetrics.daysSinceLastActivity || 0 },
+        { key: "daysSinceLastActivity", label: "Days Since Last Activity", value: analysis.activityMetrics.daysSinceLastActivity, compareValue: compareAnalysis?.activityMetrics.daysSinceLastActivity },
         {
             key: "hasEverLoggedIn",
             label: "Has Ever Logged In",
@@ -144,10 +198,8 @@ export const getSummaryRows = (
         {
             key: "lastActivityDate",
             label: "Last Activity",
-            value: analysis.activityMetrics.lastActivityDate ? analysis.activityMetrics.lastActivityDate.getTime() : 0,
-            compareValue: compareAnalysis?.activityMetrics.lastActivityDate ? compareAnalysis.activityMetrics.lastActivityDate.getTime() : 0,
-            displayValue: analysis.activityMetrics.lastActivityDate ? analysis.activityMetrics.lastActivityDate.toLocaleDateString() : 'Never',
-            compareDisplayValue: compareAnalysis?.activityMetrics.lastActivityDate ? compareAnalysis.activityMetrics.lastActivityDate.toLocaleDateString() : 'Never',
+            value: analysis.activityMetrics.lastActivityDate?.getTime() ?? null,
+            compareValue: compareAnalysis?.activityMetrics.lastActivityDate?.getTime() ?? null,
             isDateValue: true
         },
     ];
@@ -182,12 +234,13 @@ export const getUserInfoRows = (
             compareDisplayValue: compareUserInfo?.email
         },
         {
-            key: "roleName",
-            label: "Role",
+            key: "globalRoleName",
+            label: "Global Account Role",
+            labelKey: "accountAnalysis.globalRole",
             value: 0,
             compareValue: 0,
-            displayValue: userInfo.roleName || 'No Role',
-            compareDisplayValue: compareUserInfo?.roleName || 'No Role'
+            displayValue: userInfo.globalRoleName,
+            compareDisplayValue: compareUserInfo?.globalRoleName
         },
         {
             key: "isSysAdmin",
@@ -208,6 +261,38 @@ export const getUserInfoRows = (
             isBooleanValue: true
         },
         {
+            key: "isProtectedAdministrator",
+            label: "Protected Administrator",
+            labelKey: "accountAnalysis.protectedAdministrator",
+            value: Number(userInfo.isProtectedAdministrator),
+            compareValue: compareUserInfo ? Number(compareUserInfo.isProtectedAdministrator) : undefined,
+            isBooleanValue: true,
+        },
+        {
+            key: "globalRoleIsDeleted",
+            label: "Global Role Is Deleted", labelKey: "accountAnalysis.deletedGlobalRole",
+            value: Number(userInfo.globalRoleIsDeleted),
+            compareValue: compareUserInfo ? Number(compareUserInfo.globalRoleIsDeleted) : undefined,
+            isBooleanValue: true,
+        },
+        {
+            key: "mergedIntoUserId",
+            label: "Merged Into Account",
+            labelKey: "accountAnalysis.mergedInto",
+            value: 0,
+            compareValue: 0,
+            displayValue: userInfo.mergedIntoUserId,
+            compareDisplayValue: compareUserInfo?.mergedIntoUserId,
+        },
+        {
+            key: "mergedAt",
+            label: "Merged At",
+            labelKey: "accountAnalysis.mergedAt",
+            value: userInfo.mergedAt?.getTime() ?? null,
+            compareValue: compareUserInfo?.mergedAt?.getTime() ?? null,
+            isDateValue: true,
+        },
+        {
             key: "hasGoogleIdentity",
             label: "Google ID",
             value: userInfo.hasGoogleIdentity ? 1 : 0,
@@ -221,8 +306,6 @@ export const getUserInfoRows = (
             label: "Created",
             value: userInfo.createdAt.getTime(),
             compareValue: compareUserInfo?.createdAt.getTime(),
-            displayValue: userInfo.createdAt.toLocaleDateString(),
-            compareDisplayValue: compareUserInfo?.createdAt.toLocaleDateString(),
             isDateValue: true
         },
     ];

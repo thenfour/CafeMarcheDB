@@ -8,6 +8,10 @@ export function OpposingSortDirection(x: SortDirection) {
 
 export type Nullish = null | undefined;
 
+// resolves to the same type as provided, errors if not assignable to the specified type
+export type ValidValue<U, T extends U> = T;
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // https://gist.github.com/codeguy/6684588
 // Produces one path segment. Callers slugify path parts separately and join them.

@@ -1151,19 +1151,59 @@ are removed, the reference-only RoleChip module is deleted, the designation
 specification is active and the obsolete role recovery UI/guards are removed.
 Applicable membership chips and current DTO behavior remain in their migrated
 owners. Native and built-browser evidence is recorded below. Account
-merge/dependency analysis, full profile parity, production inventory/rehearsal,
-A1/B and localized catalog-name matching remain open.
+merge, full profile parity, production inventory/rehearsal, A1/B and localized
+catalog-name matching remain open. Dependency analysis is closed below.
 
-## Next slice: Shared-account dependency analysis
+## Shared-account dependency analysis checkpoint
 
-Restore the preserved account dependency reports, risk summaries, Mass Analysis
-tab and two-account comparison through their existing owners. Distinguish shared
-User records from each BandUser's owned records and apply current platform/read
-authority to every report. Verify exact dependency counts, visibility,
-deleted/merged accounts, shared people in two bands and the original built UI.
-Keep candidate search, transactional merge, credential/session handling and merge
-confirmation under the separate account-merge obligation; use the restored
-analysis contracts when continuing that slice.
+The original Mass Analysis profile tab retains its summary, content,
+participation, system and account-information tables, count bars, advisory risk
+cards and two-account comparison. A lazy platform-account-grid action also makes
+inactive, merged and membership-free targets inspectable. Reports and the minimal
+comparison account list require fresh platform Sysadmin authority in repeatable
+snapshots, independently of account-management or selected-band grants.
+
+The reference administrative inventory intentionally counts hidden/deleted content
+and retired memberships/bands. User owns authored content, credits, history,
+sign-in methods and account settings; BandUser owns responses, tags, instruments
+and membership settings. Dependencies leave the server as counts, alongside the
+original permitted account metadata and public identities. Credentials and linked
+record contents remain private. Each membership resolves its own band/role labels;
+the account GlobalRole resolves globally, without the selected band's overrides.
+
+Activity and risk retain the reference heuristic categories and thresholds.
+Active platform or band grants on a GlobalRole replace comparisons against raw
+role names; flagged administrators remain protected even if their designated
+grants are invalid. Merged targets have
+an explicit blocker. All sessions count as dependencies, while live-session
+warnings exclude expired rows. Typed risk reasons resolve through registered
+localized messages. These advisory summaries authorize no lifecycle or merge write.
+
+The shared selection UI searches account name/email/public identity and excludes
+the primary account. Comparison and picker state reset on account, band, route,
+ordered preferences, presentation revision and actor changes. Old/mismatched
+results and failed authorization cannot display a cached report; Refresh retries
+both current reports. Dates/numbers use explicit viewer timezone/formatting locale,
+unknown activity stays null and comparison-only populated sections remain visible.
+
+The account-analysis obligation is closed: four source blocks/references and its
+unused recovery flag/string are removed. Two obsolete availability-guard cases
+are removed; the retained page guard now requires Sysadmin. Account merge and its
+four deferred specifications, broader profile/lifecycle parity, production
+inventory/rehearsal, localized-name matching and A1/B remain open.
+
+## Next slice: Shared-account merge
+
+Restore the preserved candidate search, aggregate preview, confirmation and
+transactional merge through their existing UI and policy owners. Adapt the fixed
+policies to shared User identity and each BandUser's owned records, including
+credentials/sessions, account roles, memberships, authored content and history.
+Use the restored analysis contracts without treating its risk heuristic as write
+authorization or inheriting a band participant picker's eligibility policy.
+Revalidate current authority and preview state at commit; retain atomic audit
+rollback, continuity, concurrency and idempotency behavior. Reactivate the four
+preserved merge specifications and verify the original built confirmation flow
+on disposable two-band data.
 
 ## Localized catalog text search exception
 
@@ -1234,7 +1274,44 @@ client together with writes stopped and matching upload backups.
 
 ## Verification status
 
-The **role administration** checkpoint passes normal `yarn typecheck`, targeted
+The **account dependency analysis** checkpoint passes normal `yarn typecheck`,
+targeted ESLint across twenty-one changed TypeScript files and a normal production
+build with isolated output. The complete repository runner selects **286 files:
+2,965 passed and 876 skipped**, with no test or suite-load failures. Existing
+conditional database gates remain; no unrelated skips are added. Focused pure,
+request, page-guard and mounted-profile/report checks pass **93 cases in five
+files** and cover risk boundaries,
+privacy, lazy loading, original table composition, explicit dates/numbers,
+comparison/clear/refresh, late results, errors and presentation/actor resets.
+
+All **65 native MySQL specifications** run on a private disposable database:
+**846 passed and 24 skipped**, with sixty-one passing and four existing
+fixture-gated suites. Ten account cases verify exact original category counts,
+hidden/deleted content, retired bands/memberships/roles, inactive/merged targets,
+account isolation, fresh revoked/deleted/merged/anonymous actors, Sysadmin without
+account-management or selected-band grants, expired/live sessions, locale
+preference order and intentional blanks. The private database is dropped.
+
+**Eight built Chromium groups** verify lazy inactive/merged inspection, the
+original Mass Analysis profile path and five tables, both membership inventories,
+exact private/deleted File counts, French/Dutch account and membership labels,
+explicit Tokyo dates, email comparison search/exclusion, side-by-side bars/cards,
+band navigation/reset, Clear, held old replies, strict public requests and fresh
+revocation/hiding/retry. Band-only managers and anonymous requests are denied.
+French/Dutch comparison and inactive-account layouts are visually inspected.
+No uncaught page or unexpected RPC errors occur; the owned server/database/assets
+are removed. The development database and server are untouched.
+
+Evidence is in `temp/account-analysis-full-suite.log`,
+`temp/account-analysis-all-native.log`, `temp/account-analysis-final-focused.log`
+and `temp/account-analysis-browser-result.json`. Final build/lint/compiler and
+source correspondence are recorded in `temp/account-analysis-final-results.json`.
+Preservation verifies **122 source references, five whole-file deferred
+specifications and eleven pending features**. Account analysis is restored;
+account merge is next. Broader profile parity, production inventory/rehearsal,
+localized catalog-name matching and A1/B remain open.
+
+The preceding **role administration** checkpoint passes normal `yarn typecheck`, targeted
 ESLint across seventy-one changed TypeScript files and a normal production build
 with isolated output. The complete repository
 runner selects **283 files: 2,937 passed and 866 skipped**, with no test or
@@ -1272,8 +1349,9 @@ Final compiler/build/lint and cleanup results are in
 `temp/role-admin-final-results.json` and `temp/role-admin-cleanup-tests.log`.
 `yarn migration:verify` retains **126 source references, five whole-file deferred
 specifications and twelve pending features**. Role administration is restored;
-account analysis/merge, full profile parity, localized-name matching, production
-inventory/rehearsal and A1/B remain open.
+account merge, full profile parity, localized-name matching, production
+inventory/rehearsal and A1/B remain open. Its analysis status and inventory totals
+are superseded by the account-analysis checkpoint above.
 
 The preceding **full-suite readiness** checkpoint passes `yarn typecheck`, targeted ESLint
 across all fifty changed TypeScript files and a normal production build with

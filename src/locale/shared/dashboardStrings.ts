@@ -42,7 +42,6 @@ export const dashboardStrings = {
     "dashboard.instruments.missing": label("You have no instruments assigned in this band. Open your profile to choose them."),
     "dashboard.profile": label("Your profile"),
     "dashboard.account.limited": label("Your account has limited access; please contact an admin for access."),
-    "recovery.accountAnalysis.description": label("Account dependency analysis is temporarily unavailable while band support is restored."),
     "recovery.activityReports.title": label("Activity reports"),
     "recovery.activityReports.description": label("Activity reports and their CSV exports are temporarily unavailable while band support is restored. Activity recording remains available."),
     "recovery.auditLog.title": label("Audit log"),

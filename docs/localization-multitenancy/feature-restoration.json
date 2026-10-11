@@ -27,7 +27,7 @@
         "2026-10-10: The existing UserDetail owner is active within BandMemberProfile. Original sysadmin-gated attendance, credits and Wiki Contributions tabs preserve contextual URLs. Credits require an active selected-band person, fresh management/basic-person/Song-read authority and independently visible Songs; a narrow profile view includes public Song metadata and existing localized credit-type references. Wiki dates use the shared display component.",
         "Existing account controls use the independent platform account view and fresh platform capability reads in a repeatable snapshot. A stale basic-person session guard was removed from that platform endpoint. Band management grants do not provide platform authority. Existing sign-in/reset dialogs use CMButton; profile telemetry carries selected-band/person context.",
         "The member validation above includes 20 native credit cases and ten platform-account cases, with fresh grants/account revocation and band-only-manager denial. Built profiles verify credits and contextual Song links, attendance/Wiki tab URLs, actual sign-in method add/remove and selected-band profile activity. French layouts were visually inspected; no page/unexpected RPC errors and disposable data was cleaned up.",
-        "Still pending: Mass Analysis retains its explicit recovery notice and separate account-analysis obligation; global role assignment, merging and broader lifecycle parity retain their owning obligations. Source archives/deferred specifications remain preserved; this checkpoint does not close full profile parity or A1/B. Verification is recorded in 04-implementation-plan.md#verification-status.",
+        "Mass Analysis and shared GlobalRole assignment are now restored through their separate account-analysis and role-administration obligations. The original profile retains attendance, credits, Wiki contributions and account controls; merging and broader lifecycle/profile parity remain pending. Its source archives/deferred specifications stay preserved until full profile parity closes. Verification is recorded in 04-implementation-plan.md#verification-status.",
         "2026-10-11: The populated analytic audit retains original attendance sizes/counts/rates, sortable rows/comments and Wiki grouping/counts/first/latest dates/links through the existing views and fresh selected-band snapshots. Zero-response rates now display --. DateValue callers supply explicit formatting locale and display timezone: all-day Event dates/month colors use the band, timed and revision/creation timestamps the viewer. Missing dates no longer change hook order. Native coverage includes shared-person/two-membership isolation, private/missing/deleted references and stale grants/actors; built profiles verify populated attendance/Wiki/credits, French/Dutch labels/dates, held old-band replies, telemetry and original Sysadmin gating. Mass Analysis and account/role/lifecycle obligations remain separately open, so full member-profile parity stays pending. See 04-implementation-plan.md#verification-status and temp/core-parity-browser-result.json.",
         "2026-10-11 full-suite readiness: Shared-account deactivation/reactivation and deleted-account sign-in summaries now use fresh manage_global_users authority instead of band lifecycle grants. Unit and built-browser checks deny band-only managers, allow an operator with only the global management grant and no selected band, reject revoked authority, preserve both memberships and credentials, revoke sessions and retain User-owned audits. Broader continuity, role assignment, merge and account-analysis parity remain separately pending. Verification is recorded in 04-implementation-plan.md#verification-status and temp/readiness-browser-result.json."
       ]
@@ -59,8 +59,14 @@
       "reason": "Account dependency analysis and comparison were disabled with the legacy merge readers.",
       "restore": "Restore authorized dependency reports, risk summaries and two-account comparison with explicit account and band ownership.",
       "verification": "Test dependency counts, visibility, comparison, merged/deleted accounts and the built analysis tab.",
-      "status": "pending",
-      "evidence": []
+      "status": "restored",
+      "evidence": [
+        "2026-10-11: Restored the f027830a9790 Mass Analysis tab through its original profile/query entry points, retaining summary/content/participation/system/account tables, count bars, advisory risk cards and two-account comparison. The platform account grid adds a lazy entry point for inactive, merged and membership-free targets. The shared SelectionPicker searches public account name/email/identity and excludes the primary account; merge candidate eligibility remains separate.",
+        "Fresh platform Sysadmin authority is required for report and comparison-list reads inside repeatable snapshots, independently of manage_global_users or selected-band grants. Existence counts intentionally include hidden/deleted content, retired memberships/bands and inactive/merged targets. User owns authored content, credits, account settings, sign-in methods and history; BandUser owns responses, instruments, tags and membership settings. Only original authorized account metadata, public identities and aggregates leave the readers; dependency contents and credentials remain private.",
+        "Preserved activity and risk thresholds retain their reference heuristic categories. Active global grants determine role elevation independently of localized names; flagged administrators stay protected even with invalid grants, and merged targets receive a blocker. Session inventory includes expired rows while live-session warnings exclude them. Typed reasons use registered localized messages. Each membership resolves its own band/role labels, including retired definitions and intentional blanks; the account role resolves globally. Dates/numbers use explicit viewer timezone/formatting locale, unknown activity stays null, and comparison-only populated sections remain visible.",
+        "Normal typecheck, targeted lint and normal production build with isolated output pass. All 65 native specifications pass 846 cases with 24 existing conditional skips; ten new account cases cover every original count, privacy, target state, fresh authority, Sysadmin without management/band grants, sessions, locale preference order and retired labels. Mounted and pure cases cover risk boundaries, strict public requests, lazy loading, original composition, comparison selection/clear/refresh, errors/late data and account/band/route/preference/revision/actor resets. Complete-suite and preservation totals are recorded in 04-implementation-plan.md#verification-status.",
+        "Eight built Chromium groups verify lazy inactive/merged inspection, original profile tables, both membership inventories, exact private/deleted file counts, French/Dutch global and membership labels, explicit Tokyo dates, email comparison search/exclusion, side-by-side bars/cards, band navigation/reset, Clear, held old replies, strict requests, fresh revocation/hiding/retry and band-only/anonymous rejection. French/Dutch comparison and inactive-account layouts are visually inspected. No uncaught page or unexpected RPC errors occur; owned database/server/assets are removed. Evidence: temp/account-analysis-browser-result.json. Four completed source blocks/references, the unused recovery flag/string and two obsolete availability-guard cases are removed; the retained page guard now requires Sysadmin. Account merge and its four deferred specifications remain pending, along with full profile parity, production inventory/rehearsal and A1/B."
+      ]
     },
     {
       "id": "dashboard-content",
@@ -530,30 +536,6 @@
       "featureId": "account-merge",
       "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/user/UserAdminPanel.tsx:1-165",
       "sha256": "23f553f37f775b848de5b7acff089c7d8fc34f8861d2df15905fc5427d798b74"
-    },
-    {
-      "file": "src/core/components/user/UserAnalyticTables.tsx",
-      "featureId": "account-analysis",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/user/UserAnalyticTables.tsx:2-11",
-      "sha256": "8a38563edf8532703e43fc5e7d24d20f1c77c20962dc377affaf3b3aef2c75f9"
-    },
-    {
-      "file": "src/core/components/user/UserAnalyticTables.tsx",
-      "featureId": "account-analysis",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/user/UserAnalyticTables.tsx:24-25",
-      "sha256": "137800b46de7ae7f9287f8f004a5722e81191816a9eab06c08c13ac08c0c04a3"
-    },
-    {
-      "file": "src/core/components/user/UserAnalyticTables.tsx",
-      "featureId": "account-analysis",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/user/UserAnalyticTables.tsx:315-640",
-      "sha256": "8d387dd5a92512efe44676274d98bfca56e2c545c425c9c5ff59cd47ffaa0743"
-    },
-    {
-      "file": "src/core/db3/queries/getUserMassAnalysis.ts",
-      "featureId": "account-analysis",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/queries/getUserMassAnalysis.ts:1-189",
-      "sha256": "91add029e3db55517fccc734919307b8fffd963421b535dc946f01f8373712d3"
     },
     {
       "file": "tests/authorization/userMerge.test.ts",
