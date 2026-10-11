@@ -32,8 +32,13 @@ interface CMMultiSelectProps<Toption> {
     className?: string | undefined;
 };
 
-export const CMMultiSelect = <Toption,>(props: CMMultiSelectProps<Toption>) => <SelectionField
-    {...props} multiple source={makeAsyncSelectionSource(props)} className={`CMMultiSelect ${props.className || ""}`} />;
+export const CMMultiSelect = <Toption,>(props: CMMultiSelectProps<Toption>) => (
+    <SelectionField
+        {...props}
+        multiple
+        source={makeAsyncSelectionSource(props)}
+        className={`CMMultiSelect ${props.className || ""}`}
+    />);
 
 interface CMSingleSelectBaseProps<Toption> {
     getOptions: (args: { quickFilter: string | undefined }) => Promise<Toption[]> | Toption[];
@@ -88,8 +93,13 @@ type CMSingleSelectProps<Toption> =
 export const CMSingleSelect = <Toption,>(props: CMSingleSelectProps<Toption>) => {
     const source = withNullSelection(makeAsyncSelectionSource(props), props.nullBehavior, props.renderNullOption);
     const onChange = props.onChange as (value: Toption | Tnull) => void;
-    return <SelectionField {...props} source={source} value={singleSelectionValue(props.value, props.nullBehavior)}
-        onChange={values => onChange(values[0])} className={`CMSingleSelect ${props.className || ""}`} />;
+    return <SelectionField
+        {...props}
+        source={source}
+        value={singleSelectionValue(props.value, props.nullBehavior)}
+        onChange={values => onChange(values[0])}
+        className={`CMSingleSelect ${props.className || ""}`}
+    />;
 };
 
 export const StringArrayOptionsProvider = <T extends (number | string),>(x: T[]) => ({

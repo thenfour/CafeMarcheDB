@@ -1,0 +1,38 @@
+import { z } from "zod";
+import { plainStaticString } from "./staticLocalizedStringRegistryHelpers";
+
+const label = (defaultValue: string) => plainStaticString({ defaultValue, description: "Activity report control or feedback", schema: z.string() });
+export const activityReportStrings = {
+    "activityReports.title": label("Feature usage"),
+    "activityReports.selectBand": label("Select a band to view its activity report."),
+    "activityReports.denied": label("You do not have permission to view this band's activity report."),
+    "activityReports.refresh": label("Refresh"),
+    "activityReports.excludeYourself": label("Exclude yourself"),
+    "activityReports.excludeSysadmins": label("Exclude platform administrators"),
+    "activityReports.features": label("Features"),
+    "activityReports.all": label("All"),
+    "activityReports.none": label("None"),
+    "activityReports.context": label("Filter context…"),
+    "activityReports.parentContext": label("Parent context"),
+    "activityReports.clearContext": label("Clear context"),
+    "activityReports.timing": label("Timing"),
+    "activityReports.year": label("Past year"),
+    "activityReports.sixMonths": label("Past 6 months"),
+    "activityReports.threeMonths": label("Past 3 months"),
+    "activityReports.month": label("Past month"),
+    "activityReports.twoWeeks": label("Past 2 weeks"),
+    "activityReports.bucket.hour": label("Hour"),
+    "activityReports.bucket.day": label("Day"),
+    "activityReports.bucket.week": label("Week"),
+    "activityReports.bucket.month": label("Month"),
+    "activityReports.bucket.year": label("Year"),
+    "activityReports.bucket.all": label("Entire period"),
+    "activityReports.clearBucket": label("Clear selected period"),
+    "activityReports.loading": label("Loading activity…"),
+    "activityReports.failed": label("Activity could not be loaded. Refresh to try again."),
+    "activityReports.invalidRange": label("Choose an end date after the start date."),
+    "activityReports.count": label("Actions"),
+    "activityReports.timeZone": label("Reporting time zone"),
+    "activityReports.endExclusive": label("The end date is excluded."),
+    "activityReports.remaining": label("Activity breakdowns, row details and exports are currently unavailable."),
+};

@@ -1,12 +1,15 @@
 import { resolver } from "@blitzjs/rpc";
-import { Permission } from "shared/permissions";
-import { requireRestoredApplicationFeature } from "src/core/shared/applicationRecovery";
+import type { Ctx } from "blitz";
+import db from "db";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
+import { GeneralFeatureReportInputSchema } from "../activityReportTypes";
+import { readActivityTimeline } from "../server/activityTimeline";
 
-// Reject every legacy report input before loading authorization data or report rows.
-export default resolver.pipe(
-    resolver.authorize(Permission.login),
-    async (_args: unknown): Promise<never> => requireRestoredApplicationFeature("activityReports"),
-);
+export default resolver.pipe(async (input: unknown, ctx: Ctx) => {
+    const args = GeneralFeatureReportInputSchema.parse(input);
+    const auth = await loadAuthorization(ctx.session, args.bandPublicId);
+    return readActivityTimeline(db, auth, args);
+});
 
 // MIGRATION_RESTORE: activity-reports
 // Source: 9306d02db399b172ad5e9957c64e5930054faae8:src/core/components/featureReports/queries/getGeneralFeatureReport.ts:1-133

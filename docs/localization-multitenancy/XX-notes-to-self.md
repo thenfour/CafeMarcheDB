@@ -1020,6 +1020,10 @@ which brings multiple band contexts to the single page. HOWEVER if you're in onl
 
 # TECH DEBT accumulating / things to make sure we do
 
+-  cleanup lsmb todo
+-  cleanup scattered dayjs/temporal/custom
+-  `formattingLocale ?? navigator.language` -- not good. this should never be null
+-  selection pickers should not use MUI / should use chip selected states.
 -  `parsePublicId<"Event">` -- these free strings are slightly a problem; better to use `xEvent.parseIdentity`
 -  replace adhoc localized strings on chrome
 -  fix backstage home alerts formatting

@@ -12,13 +12,24 @@ export enum CMSelectDisplayStyle {
     AllWithInlineEditing = "AllWithInlineEditing",
 }
 
-export const SelectionEditButton = (props: React.PropsWithChildren<{ onClick: () => void; label: string }>) => <Box
-    component="button" type="button" className="interactable freeButton CMTextButton enabled"
-    aria-label={props.label} onClick={props.onClick}
-    sx={{ font: "inherit", lineHeight: "inherit", border: 0, flexShrink: 0, "&:focus-visible": { outline: "2px solid", outlineColor: "primary.main", outlineOffset: 2 } }}
->{props.children || "Edit"}</Box>;
+export const SelectionEditButton = (props: React.PropsWithChildren<{ onClick: () => void; label: string }>) => (
+    <Box
+        component="button"
+        type="button"
+        className="interactable freeButton CMTextButton enabled"
+        aria-label={props.label}
+        onClick={props.onClick}
+        sx={{ font: "inherit", lineHeight: "inherit", border: 0, flexShrink: 0, "&:focus-visible": { outline: "2px solid", outlineColor: "primary.main", outlineOffset: 2 } }}
+    >
+        {props.children || "Edit"}
+    </Box>);
 
-export const SelectionFieldFrame = (props: React.PropsWithChildren) => <CMChipContainer style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4, minWidth: 0 }}>{props.children}</CMChipContainer>;
+export const SelectionFieldFrame = (props: React.PropsWithChildren) => (
+    <CMChipContainer
+        style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4, minWidth: 0 }}
+    >
+        {props.children}
+    </CMChipContainer>);
 
 export interface SelectionFieldProps<T> {
     source: SelectionSource<T>;
@@ -53,15 +64,32 @@ export function SelectionField<T>(props: SelectionFieldProps<T>) {
                 if (props.readonly) return;
                 props.onChange(props.multiple ? selected ? props.value.filter(value => props.source.getKey(value) !== props.source.getKey(item)) : [...props.value, item] : [item]);
             };
-            return <Box component="label" key={props.source.getKey(item)} sx={{ display: "inline-flex", alignItems: "center", minWidth: 0, "&:focus-within": { outline: "2px solid", outlineColor: "primary.main" } }}>
-                {props.multiple ? <Checkbox size="small" checked={selected} disabled={props.readonly || query.isPreviousData} onChange={choose} inputProps={{ "aria-label": props.source.getLabel(item) }} />
-                    : <Radio size="small" value={String(props.source.getKey(item))} checked={selected} disabled={props.readonly || query.isPreviousData} onChange={choose} inputProps={{ "aria-label": props.source.getLabel(item) }} />}
-                <SelectionValue>{props.source.renderValue(item)}</SelectionValue>
-            </Box>;
+            // using adjascent MUI checkboxes / radios.
+            return (
+                <Box
+                    component="label"
+                    key={props.source.getKey(item)}
+                    sx={{ display: "inline-flex", alignItems: "center", minWidth: 0, "&:focus-within": { outline: "2px solid", outlineColor: "primary.main" } }}
+                >
+                    {props.multiple ? <Checkbox size="small" checked={selected} disabled={props.readonly || query.isPreviousData} onChange={choose} inputProps={{ "aria-label": props.source.getLabel(item) }} />
+                        : <Radio size="small" value={String(props.source.getKey(item))} checked={selected} disabled={props.readonly || query.isPreviousData} onChange={choose} inputProps={{ "aria-label": props.source.getLabel(item) }} />}
+                    <SelectionValue>{props.source.renderValue(item)}</SelectionValue>
+                </Box>);
+
+            // todo: use per-item selection state rather than checkboxes/radios
         })}
         {edit}
     </> : <>
-        <SelectionValueList value={items} getKey={props.source.getKey} getLabel={props.source.getLabel} renderValue={item => <Box sx={{ opacity: showAll && !selectedKeys.has(props.source.getKey(item)) ? 0.55 : 1 }}>{props.source.renderValue(item)}</Box>}>
+        <SelectionValueList
+            value={items}
+            getKey={props.source.getKey}
+            getLabel={props.source.getLabel}
+            renderValue={item => (
+                <Box
+                    sx={{ opacity: showAll && !selectedKeys.has(props.source.getKey(item)) ? 0.55 : 1 }}
+                >
+                    {props.source.renderValue(item)}
+                </Box>)}>
             {edit}
         </SelectionValueList>
     </>;

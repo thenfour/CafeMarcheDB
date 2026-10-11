@@ -33,7 +33,6 @@ import getDetail from "src/core/components/featureReports/queries/getDetail";
 import getDetailCsv from "src/core/components/featureReports/queries/getDetailCsv";
 import getFacetedBreakdown from "src/core/components/featureReports/queries/getFacetedBreakdown";
 import getGeneralFeatureDetail from "src/core/components/featureReports/queries/getGeneralFeatureDetail";
-import getGeneralFeatureReport from "src/core/components/featureReports/queries/getGeneralFeatureReport";
 import { ApplicationFeatureUnavailableError } from "src/core/shared/applicationRecovery";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
@@ -65,7 +64,6 @@ const deferredReportEndpoints = [
     { name: "activity CSV export", resolve: getDetailCsv },
     { name: "activity facets", resolve: getFacetedBreakdown },
     { name: "general activity details", resolve: getGeneralFeatureDetail },
-    { name: "activity timeline", resolve: getGeneralFeatureReport },
 ];
 
 const deferredAuditEndpoints = [

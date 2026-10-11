@@ -1,4 +1,34 @@
-export {};
+import { z } from "zod";
+import { ActivityReportTimeBucketSize } from "shared/mysqlUtils";
+import { BandPublicIdSchema, PresentationInputSchema } from "src/locale/shared/presentationInput";
+
+// Only migrated timeline filters are accepted; deferred facet inputs never become ignored filters.
+export const ActivityTimelineFilterSchema = z.object({
+    bucketSize: z.nativeEnum(ActivityReportTimeBucketSize),
+    excludeYourself: z.boolean(),
+    excludeSysadmins: z.boolean(),
+    contextBeginsWith: z.string().max(256).nullable(),
+    includeFeatures: z.array(z.string().min(1).max(64)).max(256),
+    excludeFeatures: z.array(z.string().min(1).max(64)).max(256),
+}).strict();
+const reportDate = z.date().min(new Date("1900-01-01T00:00:00Z")).max(new Date("3000-01-01T00:00:00Z"));
+export const GeneralFeatureReportInputSchema = PresentationInputSchema.extend({
+    bandPublicId: BandPublicIdSchema,
+    startDate: reportDate,
+    endDateExclusive: reportDate,
+    filterSpec: ActivityTimelineFilterSchema,
+}).strict().refine(value => value.startDate < value.endDateExclusive, "The report end must follow its start.");
+export type ActivityTimelineFilter = z.infer<typeof ActivityTimelineFilterSchema>;
+export type GeneralFeatureReportInput = z.infer<typeof GeneralFeatureReportInputSchema>;
+export interface GeneralFeatureReportBucket {
+    readonly bucket: string;
+    readonly count: number;
+}
+export interface GeneralFeatureReportResult {
+    readonly data: GeneralFeatureReportBucket[];
+    readonly timeZone: string;
+    readonly metrics: { readonly queryTimeMs: number };
+}
 
 // MIGRATION_RESTORE: activity-reports
 // Source: 9306d02db399b172ad5e9957c64e5930054faae8:src/core/components/featureReports/activityReportTypes.ts:1-511

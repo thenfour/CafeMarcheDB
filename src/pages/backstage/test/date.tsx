@@ -94,7 +94,13 @@ export const DateTestPageCtrl = () => {
             <DateTimeRangeControl key={editorReset} value={selectedRange} onChange={next => editRange(panel, next)} timeZone={spec.isAllDay ? lifecycleTimeZone : timeZone} />
             <p>Changing this panel's timezone changes its presentation. Editing a date or clock updates the shared sample.</p>
             <h3>Standalone DayControl</h3>
-            <DayControl value={calendarDate} coalescedFallbackValue={calendarDate} onChange={date => setSelectedDate(date.date)} otherValue={null} />
+            <DayControl
+                showEventHighlights={true}
+                value={calendarDate}
+                coalescedFallbackValue={calendarDate}
+                onChange={date => setSelectedDate(date.date)}
+                otherValue={null}
+            />
             <Values rows={[
                 ["Selected calendar date", selectedDay],
                 ["Midnight in this panel's zone → UTC", midnight?.toISOString()],

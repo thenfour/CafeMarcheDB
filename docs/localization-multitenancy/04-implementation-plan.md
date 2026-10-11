@@ -855,17 +855,48 @@ block/reference is removed; all other references and seven deferred specificatio
 remain intact. Production-copy help mapping, localized-name search, other
 obligations and A1/B stay open.
 
-## Next slice: Activity-report restoration
+## Activity-report timeline checkpoint
 
-Restore the original activity-report query and UI composition through its existing
-owners. Start with fresh selected-band snapshots, shared-person versus membership
-identities, localized references, date policy and the timeline/date controls. Retain
-filters, facets, drill-down detail and CSV obligations as the remaining composition
-is migrated; do not introduce a parallel simplified report. Reactivate preserved
-projection/filter specifications and verify two-band privacy, grant revocation and
-context changes in native tests and the built browser. Remove only fully covered
-references after evidence; keep full report parity and A1/B open until their
-remaining obligations are verified.
+The original report page, top-level timeline and general-report RPC are active.
+The page retains refresh/last-updated, self/administrator exclusions, feature
+All/None/dialog selection, context prefix/parent/clear, calendar date selection,
+five presets, all six bucket sizes and selected-bucket highlighting/clear. Necessary
+labels resolve through the static registry; dates and counts use the presentation
+locale. The caller enables calendar Event highlights only with the Event search
+grant, so a report-only reader can select dates without requesting Event data.
+
+The timeline owner requires an explicit public band identity and fresh
+`view_feature_reports` authority inside one repeatable snapshot. Actions with
+another band or no band never contribute. Counts include the selected band's
+actions under the report grant; no person/entity references, routes, contexts or
+query text are projected. Self exclusion uses shared User identity; role authority
+comes from the selected membership. Administrator exclusion consumes the shared
+account-flag/active-global-role predicate and retains anonymous authors. Strict
+inputs accept only migrated timeline filters; unsupported facet filters are rejected.
+
+Calendar presets and picker boundaries use the trusted band timezone, with an
+inclusive start and exclusive end that includes today in the default preset.
+The end-date rule is visible beside the controls. Hour/day/week/month/year grouping
+uses real timezone offset periods without requiring MySQL timezone tables.
+ISO weeks retain their week-year; spring's missing hour has no bucket and both
+occurrences of autumn's repeated wall hour contribute to the same bucket.
+Old-band/filter responses cannot replace the current chart; a failed fresh read
+removes the chart and explicit Refresh can retry.
+
+The native/built-browser evidence is recorded below. All 28 activity references,
+including the deferred detail-redaction specification, remain intact. The full
+`activity-reports` obligation and A1/B remain open.
+
+## Next slice: Activity-report facets and details
+
+Continue the original report composition through its existing query/UI owners:
+restore band-owned facets, shared-person versus membership filters, localized
+authorized references and drill-down rows, then CSV. Reactivate the preserved
+detail/redaction/filter specifications for their actual contracts. Verify private,
+deleted and foreign-band references, anonymous authors, fresh grant revocation,
+two-band context switches and exports in native tests and the built browser.
+Remove only fully covered references after evidence; retain the remaining guards
+until those owners and projections are safe.
 
 ## Localized catalog text search exception
 
@@ -1615,3 +1646,41 @@ versus the settings checkpoint; later jsdom batches still require the focused
 run. Preservation verifies 223 references, seven deferred specifications and
 fifteen pending features. Only `catalog-help` is closed; production inventory/
 rehearsal, localized-name search, other obligations and A1/B remain open.
+
+The **activity-report timeline checkpoint** passes normal typecheck, targeted lint
+and a normal production build with isolated output. Its 239 focused cases across
+eight files cover strict public context/filter/date contracts, calendar arithmetic
+and DST periods, mounted late-response/refresh/error handling, actual report
+calendar selection/localization/highlight ownership, page policy, retained guards
+and existing date-display/calendar-window consumers. Two obsolete timeline guard
+cases are removed because that RPC is active; all remaining report guards and
+the preserved detail-redaction specification remain intact.
+
+Native MariaDB checks pass 29 cases across the timeline and membership-role
+suites. They verify two-band counts, exclusion of unowned Actions, aggregate-only
+payloads, anonymous/current-person/both administrator policies, parameterized
+feature/context filters, exact half-open boundaries, all six buckets, ISO
+week-year/local year boundaries, spring/autumn DST and fresh grant/permission/
+membership/role/account/merge/band revocation before aggregation. Platform
+authority requires an explicit band. The unchanged role-continuity tests verify
+the shared administrator predicate extraction; the private database is removed.
+
+Seven built Chromium groups pass French/Dutch controls/counts/dates, both timezone
+policies, actual calendar selection, feature/context/date/bucket controls,
+selection/clear, Refresh, the real band chooser and a held old-band response,
+fresh grant rejection/chart removal/retry, report-only calendar access without
+Event requests, role-carried platform access/unscoped notice and anonymous
+page/RPC rejection. Successful payloads contain no person/entity identities or
+private routes/query text. French/Dutch charts are visually inspected. No uncaught
+page or unexpected RPC errors occur. Original translations, timezone settings
+and membership role/timestamps are restored; fixture role/string/grants/locales,
+sessions, actions and audits are removed, and the owned server is stopped.
+Evidence is in `temp/activity-timeline-browser-result.json`.
+
+The complete suite retains 203 failed tests and ten suite-load failures, with
+1969 passed and 737 skipped. Its 163 normalized failure labels add or remove
+none versus the catalog-help checkpoint; later jsdom batches still require the
+focused run. Preservation remains at 223 references, seven deferred
+specifications and fifteen pending features. All 28 activity references remain;
+facets, detail rows/redaction and CSV are the next slice. Full report parity,
+production inventory/rehearsal, other obligations and A1/B stay open.

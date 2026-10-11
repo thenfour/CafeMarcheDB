@@ -30,9 +30,13 @@ const selectionRowSx = (props: SelectionRowProps) => ({
     "&:focus-within": { outline: "2px solid", outlineColor: "primary.main", outlineOffset: -2 },
 } as const);
 
-const SelectionListItem = (props: React.PropsWithChildren) => <Box component="li" sx={{ listStyle: "none", borderBottom: "1px solid", borderColor: "divider", "&:last-child": { borderBottom: 0 } }}>
-    {props.children}
-</Box>;
+const SelectionListItem = (props: React.PropsWithChildren) => (
+    <Box
+        component="li"
+        sx={{ listStyle: "none", borderBottom: "1px solid", borderColor: "divider", "&:last-child": { borderBottom: 0 } }}
+    >
+        {props.children}
+    </Box>);
 
 export const SelectionCheckboxRow = (props: React.PropsWithChildren<SelectionRowProps & {
     onToggle: () => void;

@@ -746,6 +746,11 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 }
 
 
+.CMDateRangePicker {
+    display: flex;
+    align-items: center;
+}
+
 /*
 
 <div.EventCalendarMonth.MuiDateCalendar-root>

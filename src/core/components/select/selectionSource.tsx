@@ -1,6 +1,7 @@
 import React from "react";
 import { CMChip, CMChipProps, CMChipShapeOptions, CMChipSizeOptions } from "../CMChip";
 import { StandardVariationSpec } from "../color/palette";
+import { SplitQuickFilter } from "@/shared/quickFilter";
 
 export enum CMSelectNullBehavior {
     NonNullable = "NonNullable",
@@ -20,18 +21,26 @@ export interface SelectionQuery<T> {
     creationControls?: React.ReactNode;
 }
 
+// passed to renderValue/renderOption
+type SelectionSourceRenderProps<T> = {
+    readonly item: T;
+    readonly selected: boolean;
+    readonly key: React.Key;
+    readonly onSelect: () => void;
+}
+
 // Query hooks stay in the adapter. The picker owns interaction, never database rules.
 export interface SelectionSource<T> {
     useOptions: (filterText: string, enabled: boolean) => SelectionQuery<T>;
     getKey: (item: T) => React.Key;
-    getLabel: (item: T) => string;
+    getLabel: (item: T) => string;  // useful at  very least for filtering
     renderValue: (item: T) => React.ReactNode;
     renderOption?: (item: T, selected: boolean) => React.ReactNode;
     matchesText?: (item: T, text: string) => boolean;
 }
 
 function filterSelectionItems<T>(items: T[], getLabel: (item: T) => string, filterText: string): T[] {
-    const words = filterText.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+    const words = SplitQuickFilter(filterText);
     return items.filter(item => words.every(word => getLabel(item).toLocaleLowerCase().includes(word)));
 }
 

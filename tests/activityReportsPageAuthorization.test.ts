@@ -22,10 +22,10 @@ function grant(...permissions: Permission[]) {
     return requirePermission;
 }
 
-describe("deferred activity report page authorization", () => {
+describe("activity report page authorization", () => {
     beforeEach(() => loadAuth.mockReset());
 
-    it("admits a signed-in account to the recovery explanation without a band", async () => {
+    it("admits a signed-in account to the explicit band-selection notice", async () => {
         grant(Permission.login);
         await authorizePageRequest("/backstage/featureReports", session);
     });

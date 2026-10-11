@@ -149,7 +149,12 @@
       "restore": "Restore activity timelines, facets, filters, drill-down details and CSV export with fresh authorization, explicit band ownership, localized references and public identities; preserve anonymization and redaction.",
       "verification": "Reactivate the preserved projection/filter specifications; test two bands, platform policy, grant revocation, anonymization, private references, CSV and browser report navigation/context switches.",
       "status": "pending",
-      "evidence": []
+      "evidence": [
+        "2026-10-11: The original report page, TopLevelDateSelection and getGeneralFeatureReport are active for the timeline slice. Refresh, self/platform-admin exclusions, feature All/None/dialog, literal context prefix/parent/clear, calendar dates, five presets, all six bucket sizes and bucket selection/clear are retained. Labels, counts and date formatting use the shared presentation machinery; Event highlights are an explicit caller choice requiring the Event search grant.",
+        "The typed owner requires explicit band public identity and fresh report permission inside a repeatable authorization/data/timezone snapshot. It excludes foreign/unowned Actions, retains anonymous authors and recognizes both platform-admin policies through the shared predicate. Results project only bucket/count/timezone/metrics. Band-local half-open date ranges and real DST offset periods replace legacy browser/UTC grouping; unsupported deferred filters are rejected.",
+        "239 focused cases across eight files, 29 native MariaDB cases across two files and seven built Chromium groups pass, including a report-only calendar reader, two bands/languages/timezones, stale responses, fresh revocation/retry, role-carried platform access and anonymous RPC rejection. Normal typecheck, targeted lint and a normal isolated production build pass. See 04-implementation-plan.md#verification-status and temp/activity-timeline-browser-result.json.",
+        "Facets, drill-down/detail projections and CSV remain guarded. All 28 activity references and the whole-file detail-redaction specification remain preserved; this is a completed timeline slice, not closure of full report parity or A1/B."
+      ]
     },
     {
       "id": "file-search",

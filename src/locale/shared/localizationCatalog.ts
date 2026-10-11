@@ -1,3 +1,5 @@
+// shared (no react!)
+
 import { IntlMessageFormat } from "intl-messageformat";
 import {
     kStaticLocalizedStringRegistry, type LocalizedMarkdownKey, type LocalizedPlainStringKey,
@@ -55,6 +57,8 @@ export function createLocaleApi(catalog: LocalizationCatalog | null, refetch: ()
             if (kStaticLocalizedStringRegistry[key].format !== "markdown") throw new Error(`Expected a Markdown key: ${key}`);
             return requireText(key).value;
         },
+
+        // convenience to expose the registry entry + resolved string
         getString<K extends StaticLocalizedStringKey>(key: K) {
             const detail = requireText(key);
             // we don't store this with the resolved catalog, so that fetching them preserves

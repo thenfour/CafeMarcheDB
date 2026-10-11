@@ -14,6 +14,7 @@ import { CalendarDate, CalendarRange, CalendarDayHitTest, getBandDateTimeFields 
 import { useDashboardContext } from '../dashboardContext/DashboardContext';
 import { gGeneralPaletteList, StandardVariationSpec } from '../color/palette';
 import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
+import { useLocale } from 'src/locale/components/useLocale';
 
 const roundedNow = () => roundToNearest15Minutes(new Date());
 
@@ -123,7 +124,8 @@ function DaySlot({ day, selectedDay, range, items, otherDay, calendarToday: now,
     </div>
 }
 
-interface EventCalendarMonthProps {
+interface CalendarMonthProps {
+    showEventHighlights: boolean;
     timeZone: string;
     value: CalendarDate;
     onChange: (value: CalendarDate) => void;
@@ -131,7 +133,17 @@ interface EventCalendarMonthProps {
     range: CalendarRange;
 };
 
-const EventCalendarMonth = (props: EventCalendarMonthProps) => {
+interface CalendarHighlights {
+    readonly events: CalendarEventSpec[];
+    readonly loading: boolean;
+}
+
+function EventCalendarHighlights(props: { range: CalendarRange; children: (highlights: CalendarHighlights) => React.ReactNode }) {
+    const highlights = useEventsForDateRange(props.range);
+    return <>{props.children(highlights)}</>;
+}
+
+const CalendarMonth = (props: CalendarMonthProps) => {
     const djs = React.useMemo(() => dayjs(props.value.date), [props.value]);
 
     const otherDjs = React.useMemo(() => props.otherDay ? dayjs(props.otherDay.date) : null, [props.otherDay]);
@@ -157,42 +169,27 @@ const EventCalendarMonth = (props: EventCalendarMonthProps) => {
         new CalendarDate(lastVisibleDay.add(1, "day").format("YYYY-MM-DD"), props.timeZone)
     ), [firstVisibleDay, lastVisibleDay, props.timeZone]);
 
-    const { events, loading } = useEventsForDateRange(visibleRange);
-
-    const dayProps: CustomDayProps = React.useMemo(() => ({
-        selectedDay: djs,
-        calendarToday: dayjs(now),
-        otherDay: otherDjs,
-        items: events,
-        range: props.range,
-    }), [djs, otherDjs, props.range, events, now]);
-
-    return <div className="EventCalendarMonthContainer">
-        {loading && <LinearProgress className='loadingIndicator' />}
-        <DateCalendar
-            showDaysOutsideCurrentMonth
-            className={`EventCalendarMonth ${loading ? "loading" : ""}`}
-            views={["day", "year"]}
-
-            value={djs}
-            onChange={(v, state) => {
-                props.onChange(new CalendarDate((v || now).format("YYYY-MM-DD"), props.timeZone));
-            }}
-
-            view={view}
-            onViewChange={(view) => {
-                setView(view);
-            }}
-            onMonthChange={(month) => {
-                setDisplayedMonth(month);
-            }}
-
-            slots={{ day: DaySlot }}
-            slotProps={{
-                day: dayProps as any,
-            }}
-        />
-    </div>;
+    const renderCalendar = ({ events, loading }: CalendarHighlights) => {
+        // MUI accepts its built-in slot props; our DaySlot also consumes the highlight fields.
+        const dayProps: Partial<DaySlotProps> = {
+            selectedDay: djs, calendarToday: now, otherDay: otherDjs, items: events, range: props.range,
+        };
+        return <div className="EventCalendarMonthContainer">
+            {loading && <LinearProgress className='loadingIndicator' />}
+            <DateCalendar<Dayjs>
+                showDaysOutsideCurrentMonth
+                className={`EventCalendarMonth ${loading ? "loading" : ""}`}
+                views={["day", "year"]}
+                value={djs}
+                onChange={value => props.onChange(new CalendarDate((value || now).format("YYYY-MM-DD"), props.timeZone))}
+                view={view} onViewChange={setView} onMonthChange={setDisplayedMonth}
+                slots={{ day: DaySlot }} slotProps={{ day: dayProps }}
+            />
+        </div>;
+    };
+    return props.showEventHighlights
+        ? <EventCalendarHighlights range={visibleRange}>{renderCalendar}</EventCalendarHighlights>
+        : renderCalendar({ events: [], loading: false });
 };
 
 
@@ -200,6 +197,7 @@ const EventCalendarMonth = (props: EventCalendarMonthProps) => {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface DayControlProps {
+    showEventHighlights: boolean;
     value: CalendarDate | null;
     otherValue: CalendarDate | null;
     onChange: (newValue: CalendarDate) => void;
@@ -211,6 +209,8 @@ interface DayControlProps {
 }
 
 export const DayControl = ({ readonly = false, coalescedFallbackValue, ...props }: DayControlProps) => {
+    // A missing formatting preference retains the browser's date format.
+    const formattingLocale = useLocale().formattingLocale ?? navigator.language;
 
     const inputDate: CalendarDate | null = props.value;
     const isTBD = inputDate === null;
@@ -242,7 +242,7 @@ export const DayControl = ({ readonly = false, coalescedFallbackValue, ...props 
         ) : (
             <div className={`${props.className} determined ${readonly ? "readonly" : "interactable editable"}`} onClick={handleFieldClick} style={{ display: "flex", alignItems: "center" }}>
                 {gIconMap.CalendarMonth()}
-                <span>{formatCalendarDate(coalescedDay, navigator.language, { weekday: 'short', day: 'numeric', month: 'short', year: "numeric" })}</span>
+                <span>{formatCalendarDate(coalescedDay, formattingLocale, { weekday: 'short', day: 'numeric', month: 'short', year: "numeric" })}</span>
                 {props.showDuration && <div className="duration">
                     &nbsp;({`${range.dayCount}d`})
                 </div>}
@@ -260,7 +260,8 @@ export const DayControl = ({ readonly = false, coalescedFallbackValue, ...props 
                     horizontal: 'left',
                 }}
             >
-                <EventCalendarMonth
+                <CalendarMonth
+                    showEventHighlights={props.showEventHighlights}
                     timeZone={coalescedDay.timeZone}
                     value={coalescedDay}
                     onChange={handleCalendarChangeDay}
@@ -403,6 +404,7 @@ export const DateTimeRangeControl = ({ value, timeZone, ...props }: DateTimeRang
                 <div className="dateSelection field">
 
                     <DayControl
+                        showEventHighlights={true}
                         readonly={false}
                         onChange={handleStartDateChange}
                         value={value.isTBD() ? null : startDay}
@@ -432,6 +434,7 @@ export const DateTimeRangeControl = ({ value, timeZone, ...props }: DateTimeRang
                             <div className="ndash field">&ndash;</div>
 
                             {value.isAllDay() && <DayControl
+                                showEventHighlights={true}
                                 // for all-day events, selecting the end time means selecting the LAST day, not the "end". would not make sense to have to select 12-oct for an event that only exists on 11-oct.
                                 readonly={false}
                                 onChange={handleEndDateChange}
@@ -494,6 +497,7 @@ export interface DateRange {
 }
 
 export interface CMDateRangePickerProps {
+    showEventHighlights: boolean;
     value: DateRange;
     onChange: (newValue: DateRange) => void;
     timeZone: string;
@@ -518,37 +522,40 @@ export const CMDateRangePicker = ({ value, ...props }: CMDateRangePickerProps) =
 
     // NoSsr because without it, the dates will cause hydration errors due to server/client mismatches.
     return <NoSsr>
-        <div className="DateTimeRangeControl">
-            <div className="row" style={{ display: "flex", alignItems: "center" }}>
-                <DayControl
-                    readonly={false}
-                    onChange={handleStartDateChange}
-                    value={CalendarDate.fromInstant({ value: value.start, timeZone: props.timeZone })}
-                    coalescedFallbackValue={CalendarDate.fromInstant({ value: value.start, timeZone: props.timeZone })}
-                    otherValue={null} // use LAST time so it doesn't spill into next day.
-                    range={getRangeCalendarDates(range, props.timeZone)!}
-                    showDuration={false}
-                    className="datePart field startDate"
-                />
+        <div className="CMDateRangePicker">
+            <div className="DateTimeRangeControl">
+                <div className="row" style={{ display: "flex", alignItems: "center" }}>
+                    <DayControl
+                        showEventHighlights={props.showEventHighlights}
+                        readonly={false}
+                        onChange={handleStartDateChange}
+                        value={CalendarDate.fromInstant({ value: value.start, timeZone: props.timeZone })}
+                        coalescedFallbackValue={CalendarDate.fromInstant({ value: value.start, timeZone: props.timeZone })}
+                        otherValue={null} // use LAST time so it doesn't spill into next day.
+                        range={getRangeCalendarDates(range, props.timeZone)!}
+                        showDuration={false}
+                        className="datePart field startDate"
+                    />
+                </div>
+            </div>
+            <div className="ndash field">&ndash;</div>
+
+            <div className="DateTimeRangeControl">
+                <div className="row" style={{ display: "flex", alignItems: "center" }}>
+
+                    <DayControl
+                        showEventHighlights={props.showEventHighlights}
+                        readonly={false}
+                        onChange={handleEndDateChange}
+                        value={CalendarDate.fromInstant({ value: value.end, timeZone: props.timeZone })}
+                        coalescedFallbackValue={CalendarDate.fromInstant({ value: value.end, timeZone: props.timeZone })}
+                        otherValue={null} // use LAST time so it doesn't spill into next day.
+                        range={getRangeCalendarDates(range, props.timeZone)!}
+                        showDuration={false}
+                        className="datePart field startDate endDate"
+                    />
+                </div>
             </div>
         </div>
-        <div className="ndash field">&ndash;</div>
-
-        <div className="DateTimeRangeControl">
-            <div className="row" style={{ display: "flex", alignItems: "center" }}>
-
-                <DayControl
-                    readonly={false}
-                    onChange={handleEndDateChange}
-                    value={CalendarDate.fromInstant({ value: value.end, timeZone: props.timeZone })}
-                    coalescedFallbackValue={CalendarDate.fromInstant({ value: value.end, timeZone: props.timeZone })}
-                    otherValue={null} // use LAST time so it doesn't spill into next day.
-                    range={getRangeCalendarDates(range, props.timeZone)!}
-                    showDuration={false}
-                    className="datePart field startDate endDate"
-                />
-            </div>
-        </div>
-
     </NoSsr>;
 };

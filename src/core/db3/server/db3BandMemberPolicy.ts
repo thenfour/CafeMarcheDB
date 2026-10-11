@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { AuthorizationError } from "blitz";
 import { getPermissionDefinition, gContinuitySensitivePermissions, gPermissionOrdered, Permission } from "shared/permissions";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
+import { platformSysadminWhere } from "src/auth/server/principalPredicates";
 import { PermissionSet } from "src/auth/shared/PermissionSet";
 
 const roleSelection = Prisma.validator<Prisma.BandRoleDefaultArgs>()({
@@ -24,26 +25,6 @@ const roleSelection = Prisma.validator<Prisma.BandRoleDefaultArgs>()({
     },
 });
 type AssignmentRole = Prisma.BandRoleGetPayload<typeof roleSelection>;
-
-// Sysadmin authority can come from the account flag or its active global role.
-const platformSysadminWhere = Prisma.validator<Prisma.UserWhereInput>()({
-    OR: [
-        { isSysAdmin: true },
-        {
-            globalRole: {
-                isDeleted: false,
-                permissions: {
-                    some: {
-                        permission: {
-                            name: Permission.sysadmin,
-                            isDeleted: false
-                        }
-                    }
-                }
-            }
-        },
-    ],
-});
 
 export function roleGrants(role: AssignmentRole | undefined): PermissionSet {
     return new PermissionSet(role && !role.isDeleted ? role.bandRolePermissions
