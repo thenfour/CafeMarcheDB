@@ -32,7 +32,8 @@ and several reports/admin surfaces remain guarded
 or incomplete. Song credit editing and performance history, public
 homepage/feed delivery and frontpage gallery editing/bake are restored below.
 General File search/detail/metadata pages, associated uploads, the image fork
-service and band branding uploads are restored. The
+service and band branding uploads are restored. The File-creation parity audit
+is complete, including preserved originals and resized image children. The
 [restoration manifest](feature-restoration.json) records the individual obligations
 and verification criteria; use `yarn migration:status` rather than maintaining a
 second restriction table. Keep every deferred page, RPC/API, generic DB3 root,
@@ -762,15 +763,51 @@ archives/references are removed and that feature is marked restored. Remaining
 deferred specifications, other source references, broader translation tooling and
 A1/B remain open.
 
-## Next slice: File-creation parity and preservation audit
+## File-creation parity and preservation checkpoint
 
-Compare the restored File owners/callers with the functional baseline and preserved
-image/upload authorization specifications. Make remaining specifications executable,
-verify any uncovered cases and account for service-owned generic File creation.
-Retain explicit band/public-ID ownership, fresh permissions, atomic storage cleanup
-and the existing shared-person profile boundary. Remove only fully covered File
-source references/specification guards after native and built-browser evidence;
-leave other feature obligations and A1/B open.
+The audit against `f027830a9790` repaired a remaining upload regression: a requested
+image limit was overwriting the original bytes. Uploads now keep the original File,
+bytes, filename, dates, metadata and associations. When both original dimensions
+exceed the limit, the reply returns a separate JPEG child with its own public/storage
+identity and audited parent relationship. It inherits band, uploader and visibility;
+associations stay on the original and `previewFileId` stays unset, matching the
+reference. EXIF orientation is baked into the child pixels. Long/narrow images and
+exact-limit boundaries retain their original identity and bytes.
+
+Both image rows, original associations, audits and storage share the upload
+transaction and rollback. A server-created upload parent has explicit actor/band
+and active/local checks; it does not require adding File-read grants to upload-only
+roles. Client-selected parents still use the shared public-reference read policy.
+Generic client File creation remains denied because File metadata is server-owned;
+upload, resized-child and fork services use the same DB3 insert/field/audit owner.
+The reference profile has no photo upload caller, the general gallery is a separate
+developer example, and reference audio post-processing persisted no preview or
+audio metadata. These are accounted for without adding unrelated workflows.
+
+All seven preserved image authorization specifications are executable again with
+current band grants, public-ID RPCs and transactional owners. Existing delivery
+specifications also supply explicit band context; their three previously failing
+fixtures now pass. The unused disabled-bake recovery component and its obsolete
+placeholder-only test are removed. Disabled upload controls retain their localized
+notice, drop-navigation prevention and no clipboard interception, with an accurate
+availability message.
+
+Focused/native checks and eleven built-browser groups pass as recorded below.
+Only the forty completed `file-creation` source blocks/references are removed and
+that feature is marked restored. The ten whole-file deferred specifications, other
+feature obligations, settings-editor audit and A1/B remain open.
+
+## Next slice: Settings-editor parity and preservation audit
+
+Compare the restored settings, preferences and branding editors with the functional
+baseline and their preserved specifications. Make remaining user/setting
+authorization cases executable through typed hives and registered keys, and verify
+fresh per-key/scope authority, independent bands, save/reset, cache refresh and
+scheduling time-zone reanchor behavior. Account for legacy keys and optional
+primary text color without recreating arbitrary setting storage or per-page Wiki
+injection. Remove only fully covered settings source references/specification
+guards after native and built-browser evidence; leave other obligations and A1/B
+open.
 
 ## Localized catalog text search exception
 
@@ -1426,3 +1463,39 @@ HEAD source in the isolated checkout. Its fixture repair belongs to the remainin
 picker parity work. Preservation verifies 283 source references, ten deferred
 specifications and eighteen pending features. Only `markdown-editing` is closed;
 File/settings parity audits, broader translation tooling and A1/B remain open.
+
+The **File-creation parity and preservation checkpoint** passes normal typecheck,
+targeted lint, a normal production build with isolated output, and 238 focused
+checks across thirteen files. All seven preserved image authorization cases now
+run, and the existing direct/private/HTML delivery cases use current band grants.
+The focused run also retains upload HTTP/transport, image geometry/RPC, gallery,
+creation controls, Markdown/branding/editor, page authorization, service-owned
+creation and preservation coverage. The obsolete disabled-bake placeholder test is
+removed along with its unused component.
+
+Native MariaDB and physical-storage checks pass 128 cases across eight files,
+including eleven new upload cases for byte preservation, exact/long/narrow resize
+boundaries, JPEG child identity and public relationships, EXIF orientation,
+upload-only roles, trusted-parent ownership and failed child insert/audit/commit
+rollback. Existing upload, image fork, gallery, branding, File associations/catalogs/
+search and shared-person profile checks pass. Private databases are removed.
+
+Eleven built Chromium groups pass actual French/Dutch chooser, clipboard image
+paste, file/URL drop and undo/raw paste; original and resized JPEG downloads;
+contextual public-ID navigation between original/child File details; long/narrow
+image preservation; actual Song and locked Event-description Wiki saves; fresh
+upload and parent-visibility revocation; stale presentation/band switches;
+anonymous rejection; and a failed batch after a successful original/child pair.
+No uncaught page or unexpected RPC errors occur. Native fixture checks verify
+content, labels, grants, original/child Files, actions, audits and private storage
+cleanup; the owned server is stopped. The browser harness also tracks clipboard
+originals through its private storage leaves. Evidence is in
+`temp/file-parity-browser-result.json` and `temp/file-parity-cleanup-inspection.json`.
+
+The complete suite has 203 failed tests and ten suite-load failures, 1868 passed
+and 717 skipped. Its 163 normalized failure titles add none against the localized
+Markdown checkpoint; the removed File delivery failure group contained the three
+now-passing fixtures. The runner still stops before later jsdom batches. Preservation
+verifies 243 source references, ten whole-file deferred specifications and seventeen
+pending features. Only `file-creation` is closed in this slice; settings parity,
+broader translation tooling, other feature obligations and A1/B remain open.

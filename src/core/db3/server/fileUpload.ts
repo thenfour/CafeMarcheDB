@@ -1,7 +1,7 @@
 import { Prisma, type File } from "@prisma/client";
 import { AuthorizationError } from "blitz";
 import { constants } from "node:fs";
-import { copyFile, mkdir, stat, unlink, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, stat, unlink } from "node:fs/promises";
 import path from "node:path";
 import mime from "mime";
 import sharp from "sharp";
@@ -17,6 +17,7 @@ import { queryView } from "./db3QueryCore";
 import { resolvePublicForeignIds } from "./db3PublicIds";
 import { createFileRecord, type FileCreationFields, type FileStorageMetadata } from "./fileCreation";
 import { resolveFileStoragePath } from "./fileStorage";
+import { createUploadedImagePreview } from "./uploadedImage";
 
 /** Multipart parsing owns these temporary paths; they never come from JSON/client fields. */
 export interface FileUploadPart {
@@ -92,13 +93,9 @@ function assignUploadTags(args: FileUploadArgs, leaf: string, mimeType: string |
     return { ...values, tags: [...tags], taggedInstruments: [...instruments] };
 }
 
-async function imageUploadMetadata(storedPath: string, mimeType: string | null, maxDimension: number | undefined): Promise<string | null> {
+async function imageUploadMetadata(storedPath: string, mimeType: string | null): Promise<string | null> {
     if (!mimeType?.startsWith("image/")) {
         return null;
-    }
-    if (maxDimension !== undefined) {
-        const resized = await sharp(storedPath).resize({ width: maxDimension, height: maxDimension, fit: "inside", withoutEnlargement: true }).toBuffer();
-        await writeFile(storedPath, new Uint8Array(resized));
     }
     try {
         const metadata = await sharp(storedPath).metadata();
@@ -139,14 +136,14 @@ async function createExternalUpload(context: DB3ReadContext, args: FileUploadArg
 }
 
 async function storeLocalUpload(part: FileUploadPart, storageDirectory: string, leaf: string,
-    mimeType: string | null, maxImageDimension: number | undefined, createdPaths: string[],
+    mimeType: string | null, createdPaths: string[],
 ): Promise<FileStorageMetadata> {
     const storedLeafName = storageLeaf(leaf);
     const storedPath = resolveFileStoragePath(storageDirectory, storedLeafName);
     await mkdir(storageDirectory, { recursive: true });
     await copyFile(part.temporaryPath, storedPath, constants.COPYFILE_EXCL);
     createdPaths.push(storedPath);
-    const customData = await imageUploadMetadata(storedPath, mimeType, maxImageDimension);
+    const customData = await imageUploadMetadata(storedPath, mimeType);
     return { uploadedAt: new Date(), storedLeafName, mimeType, sizeBytes: (await stat(storedPath)).size, customData };
 }
 
@@ -160,8 +157,12 @@ async function createLocalUploads(context: DB3ReadContext, args: FileUploadArgs,
         const mimeType = mime.getType(leaf);
         const values = { ...assignUploadTags(args, leaf, mimeType, catalogs), fileLeafName: leaf,
             description: "", fileCreatedAt: part.lastModifiedDate ?? new Date() };
-        const metadata = await storeLocalUpload(part, storageDirectory, leaf, mimeType, args.maxImageDimension, createdPaths);
-        uploaded.push(await createUploadedFile(context, values, metadata));
+        const metadata = await storeLocalUpload(part, storageDirectory, leaf, mimeType, createdPaths);
+        const original = await createFileRecord(context, values, metadata);
+        const preview = args.maxImageDimension === undefined ? null
+            : await createUploadedImagePreview(context, original, values.visiblePermissionId,
+                args.maxImageDimension, storageDirectory, createdPaths);
+        uploaded.push(publicUploadedFile(preview ?? original, context.authorization));
     }
     return uploaded;
 }

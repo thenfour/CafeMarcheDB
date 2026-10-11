@@ -78,7 +78,7 @@ const deferredDomainReaders = [
     { name: "legacy song facets", resolve: getSongFilterInfo },
 ];
 
-describe("deferred file creation", () => {
+describe("service-owned File creation", () => {
     it("blocks generic File creation before its transaction or metadata hooks", async () => {
         // The empty target is intentional: every authorization read must fail before any typed field is used.
         const forbiddenAuthorization = new Proxy({} as CMServerAuthorization, {

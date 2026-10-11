@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import sharp from "sharp";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
@@ -11,6 +11,7 @@ import { createCommandRowServices } from "src/core/db3/server/db3CommandCore";
 import { bindDB3ReadSnapshot, type DB3ReadRootDatabase } from "src/core/db3/server/db3ReadExecution";
 import { queryView } from "src/core/db3/server/db3QueryCore";
 import { FileUploadInputError, uploadFiles, type FileUploadPart } from "src/core/db3/server/fileUpload";
+import { createUploadedImagePreview } from "src/core/db3/server/uploadedImage";
 import { FileUploadArgsSchema, FileUploadResponseSchema, type FileUploadArgs } from "src/core/db3/shared/fileUpload";
 import { eventReferenceView, songReferenceView, fileDetailView, fileEditorView, xBandUser, xFile, xFileSongTag, xInstrument, xPermission, xSong, xWikiPage } from "src/core/db3/db3";
 import { generatePublicId } from "src/server/publicId";
@@ -151,16 +152,135 @@ describe.skipIf(!settingsMysqlTestUrl)("associated File editing and uploads on M
         const parts = names.map(originalFilename => ({ originalFilename, temporaryPath: path.join(input, originalFilename), lastModifiedDate: null }));
         const result = await c.upload(parts, storage, { taggedInstrumentId: undefined, maxImageDimension: 10 });
         expect(result.files).toHaveLength(3);
-        expect(await readdir(storage)).toHaveLength(3);
-        const files = await tx.file.findMany({ where: { publicId: { in: result.files.map(file => file.publicId) } }, include: { tags: { include: { bandFileTag: { include: { globalFileTag: true } } } }, taggedInstruments: true } });
+        expect(await readdir(storage)).toHaveLength(4);
+        const files = await tx.file.findMany({ where: { bandId: c.band.id }, include: { tags: { include: { bandFileTag: { include: { globalFileTag: true } } } }, taggedInstruments: true } });
         const pdf = files.find(file => file.fileLeafName === names[0])!;
         expect(pdf.tags.map(tag => tag.bandFileTag.globalFileTag?.significance)).toEqual(["Partition"]);
         expect(pdf.taggedInstruments).toMatchObject([{ bandInstrumentId: c.instrument.id }]);
         expect(files.find(file => file.fileLeafName === names[1])?.tags.map(tag => tag.bandFileTag.globalFileTag?.significance)).toEqual(["Recording"]);
         const image = files.find(file => file.fileLeafName === names[2])!;
-        expect(JSON.parse(image.customData!)).toEqual({ imageMetadata: { width: 10, height: 5 } });
-        expect((await readFile(path.join(storage, image.storedLeafName))).length).toBe(image.sizeBytes);
-        expect(await tx.change.count({ where: { table: "File", recordId: { in: files.map(file => file.id) } } })).toBe(3);
+        expect(JSON.parse(image.customData!)).toEqual({ imageMetadata: { width: 40, height: 20 } });
+        expect(await readFile(path.join(storage, image.storedLeafName))).toEqual(await readFile(path.join(input, names[2]!)));
+        const preview = files.find(file => file.publicId === result.files[2]?.publicId)!;
+        expect(preview).toMatchObject({ parentFileId: image.id, fileLeafName: "photo_.jpg", mimeType: "image/jpeg", previewFileId: null });
+        expect(JSON.parse(preview.customData!)).toEqual({ relationToParent: "forkedImage", imageMetadata: { width: 10, height: 5 } });
+        expect((await readFile(path.join(storage, preview.storedLeafName))).length).toBe(preview.sizeBytes);
+        expect(preview.taggedInstruments).toEqual([]);
+        expect(await tx.change.count({ where: { table: "File", recordId: { in: files.map(file => file.id) } } })).toBe(4);
+    })));
+
+    it.each([
+        { width: 10, height: 10, child: false },
+        { width: 40, height: 10, child: false },
+        { width: 10, height: 40, child: false },
+        { width: 9, height: 15, child: false },
+        { width: 20, height: 12, child: true },
+    ])("retains the reference upload resize boundary for $width x $height", ({ width, height, child }) => run(async (tx, fixture) => withStorage(async (storage, incoming) => {
+        const c = await prepare(tx, fixture);
+        const originalFilename = "boundary.png";
+        const temporaryPath = path.join(incoming, originalFilename);
+        const bytes = await sharp({ create: { width, height, channels: 4, background: "red" } }).png().toBuffer();
+        await writeFile(temporaryPath, new Uint8Array(bytes));
+        const lastModifiedDate = new Date("2020-02-03T04:05:06.000Z");
+        const response = await c.upload([{ originalFilename, temporaryPath, lastModifiedDate }], storage, { maxImageDimension: 10 });
+        expect(FileUploadResponseSchema.parse(response)).toEqual(response);
+        expect(response.files).toHaveLength(1);
+        expect(JSON.stringify(response)).not.toMatch(/"(?:id|bandId|parentFileId|visiblePermissionId)":/);
+        const original = await tx.file.findFirstOrThrow({ where: { fileLeafName: originalFilename, bandId: c.band.id }, include: { taggedSongs: true } });
+        const returned = await tx.file.findUniqueOrThrow({ where: { publicId: response.files[0]!.publicId }, include: { taggedSongs: true } });
+        expect(original.fileCreatedAt).toEqual(lastModifiedDate);
+        expect(original.previewFileId).toBeNull();
+        expect(await readFile(path.join(storage, original.storedLeafName))).toEqual(bytes);
+        expect(original.taggedSongs.map(tag => tag.songId)).toEqual([c.songs[0]!.id]);
+        expect(await readdir(storage)).toHaveLength(child ? 2 : 1);
+        if (child) {
+            expect(returned).toMatchObject({ parentFileId: original.id, fileLeafName: "boundary_.jpg", mimeType: "image/jpeg",
+                bandId: original.bandId, uploadedByUserId: fixture.user.id, visiblePermissionId: original.visiblePermissionId });
+            expect(returned.taggedSongs).toEqual([]);
+            expect((await sharp(await readFile(path.join(storage, returned.storedLeafName))).metadata()).format).toBe("jpeg");
+            const snapshot = await bindDB3ReadSnapshot(tx, c.auth, { isolationLevel: "Serializable" });
+            const related = await queryView({ view: fileDetailView, filter: { publicIds: [response.files[0]!.publicId, xFile.parseIdentity(original.publicId)] },
+                cmdbQueryContext: "upload original and resized child" }, c.auth, snapshot);
+            expect(related.items.find(file => file.publicId === returned.publicId)?.parentFile?.publicId).toBe(original.publicId);
+            expect(related.items.find(file => file.publicId === original.publicId)?.childFiles?.map(file => file.publicId)).toEqual([returned.publicId]);
+        } else {
+            expect(returned.publicId).toBe(original.publicId);
+            expect(returned.parentFileId).toBeNull();
+            expect(await readFile(path.join(storage, returned.storedLeafName))).toEqual(bytes);
+        }
+    })));
+
+    it("normalizes EXIF orientation in the resized child while preserving every original byte", () => run(async (tx, fixture) => withStorage(async (storage, incoming) => {
+        const c = await prepare(tx, fixture);
+        const originalFilename = "oriented.jpg", temporaryPath = path.join(incoming, originalFilename);
+        const bytes = await sharp({ create: { width: 12, height: 40, channels: 3, background: "blue" } })
+            .jpeg().withMetadata({ orientation: 6 }).toBuffer();
+        await writeFile(temporaryPath, new Uint8Array(bytes));
+        const response = await c.upload([{ originalFilename, temporaryPath, lastModifiedDate: null }], storage, { maxImageDimension: 10 });
+        const child = await tx.file.findUniqueOrThrow({ where: { publicId: response.files[0]!.publicId } });
+        const original = await tx.file.findUniqueOrThrow({ where: { id: child.parentFileId! } });
+        expect(await readFile(path.join(storage, original.storedLeafName))).toEqual(bytes);
+        expect(JSON.parse(child.customData!)).toEqual({ relationToParent: "forkedImage", imageMetadata: { width: 10, height: 3 } });
+        const metadata = await sharp(await readFile(path.join(storage, child.storedLeafName))).metadata();
+        expect(metadata).toMatchObject({ format: "jpeg", width: 10, height: 3 });
+        expect(metadata.orientation).toBeUndefined();
+    })));
+
+    it("creates an upload child without granting File reads or unrelated association reads", () => run(async (tx, fixture) => withStorage(async (storage, incoming) => {
+        const c = await prepare(tx, fixture);
+        const readPermission = await tx.permission.findUniqueOrThrow({ where: { name: Permission.view_files } });
+        await tx.bandRolePermission.deleteMany({ where: { permissionId: readPermission.id } });
+        const originalFilename = "upload-only.png", temporaryPath = path.join(incoming, originalFilename);
+        await sharp({ create: { width: 20, height: 20, channels: 3, background: "red" } }).png().toFile(temporaryPath);
+        const response = await c.upload([{ originalFilename, temporaryPath, lastModifiedDate: null }], storage, {
+            maxImageDimension: 10, taggedSongId: undefined, taggedEventId: undefined,
+            taggedBandUserId: undefined, taggedInstrumentId: undefined,
+        });
+        const child = await tx.file.findUniqueOrThrow({ where: { publicId: response.files[0]!.publicId } });
+        expect(child.parentFileId).not.toBeNull();
+        expect((await c.auth.refresh(tx)).hasPermission(Permission.view_files)).toBe(false);
+        expect(await readdir(storage)).toHaveLength(2);
+    })));
+
+    it("restricts the trusted upload-parent boundary to the actor's own active local File in the selected band", () => run(async (tx, fixture) => withStorage(async (storage, incoming) => {
+        const c = await prepare(tx, fixture);
+        const originalFilename = "owned-parent.png", temporaryPath = path.join(incoming, originalFilename);
+        await sharp({ create: { width: 20, height: 20, channels: 3, background: "red" } }).png().toFile(temporaryPath);
+        const response = await c.upload([{ originalFilename, temporaryPath, lastModifiedDate: null }], storage);
+        const parent = await tx.file.findUniqueOrThrow({ where: { publicId: response.files[0]!.publicId } });
+        const snapshot = await bindDB3ReadSnapshot(tx, c.auth, { isolationLevel: "Serializable" });
+        const changes = await tx.change.count();
+        for (const patch of [{ bandId: fixture.bands[1]!.id }, { uploadedByUserId: fixture.admin.id },
+            { isDeleted: true }, { externalURI: "https://example.com/photo.png" }]) {
+            await expect(createUploadedImagePreview(snapshot, { ...parent, ...patch }, c.uploadArgs.visiblePermissionId ?? null,
+                10, "must-not-be-read", [])).rejects.toThrow("own active local parent");
+        }
+        expect(await readdir(storage)).toEqual([parent.storedLeafName]);
+        expect(await tx.change.count()).toBe(changes);
+    })));
+
+    it.each(["child insert", "child audit", "commit"])("rolls back both images and the original associations after failed %s", reason => run(async (tx, fixture) => withStorage(async (storage, incoming) => {
+        const c = await prepare(tx, fixture);
+        const originalFilename = "rollback-preview.png", temporaryPath = path.join(incoming, originalFilename);
+        await sharp({ create: { width: 20, height: 20, channels: 3, background: "red" } }).png().toFile(temporaryPath);
+        const before = { files: await tx.file.count(), changes: await tx.change.count(), associations: await tx.fileSongTag.count() };
+        // DB3 uses the capitalized Prisma delegate, which has its own proxy identity.
+        const fileDelegate: Prisma.TransactionClient["file"] = Reflect.get(tx, xFile.tableName);
+        const originalInsert = fileDelegate.create.bind(fileDelegate), originalAudit = tx.change.create.bind(tx.change);
+        const failure = reason === "child insert" ? vi.spyOn(fileDelegate, "create").mockImplementationOnce(args => originalInsert(args)).mockRejectedValueOnce(new Error(reason))
+            : reason === "child audit" ? vi.spyOn(tx.change, "create").mockImplementationOnce(args => originalAudit(args)).mockRejectedValueOnce(new Error(reason)) : null;
+        const failingCommit: DB3ReadRootDatabase = { $transaction: (work, options) => c.root.$transaction(async transaction => {
+            await work(transaction);
+            throw new Error("commit");
+        }, options) };
+        try {
+            await expect(c.upload([{ originalFilename, temporaryPath, lastModifiedDate: null }], storage, { maxImageDimension: 10 },
+                reason === "commit" ? failingCommit : c.root)).rejects.toThrow(reason);
+        } finally {
+            failure?.mockRestore();
+        }
+        expect(await readdir(storage)).toEqual([]);
+        expect({ files: await tx.file.count(), changes: await tx.change.count(), associations: await tx.fileSongTag.count() }).toEqual(before);
     })));
 
     it.each(["missing part", "invalid image", "commit failure"])("rolls back every File, association, audit and stored file after %s", reason => run(async (tx, fixture) => withStorage(async (storage, input) => {

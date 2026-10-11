@@ -23,7 +23,6 @@ vi.mock("@webscopeio/react-textarea-autocomplete", () => ({
 }));
 
 import { CollapsableUploadFileComponent, FileDropWrapper, UploadFileComponent } from "src/core/components/file/FileDrop";
-import { DeferredImageCreationButton } from "src/core/components/file/FileCreationRecoveryControls";
 import { MarkdownEditor } from "src/core/components/markdown/RichTextEditor";
 
 let language: string;
@@ -43,7 +42,7 @@ afterEach(async () => {
     vi.unstubAllGlobals();
 });
 
-describe("deferred file creation controls", () => {
+describe("File upload controls", () => {
     it("retains the production upload card, localized instructions and file picker interaction", async () => {
         await act(async () => root.render(<UploadFileComponent enabled onFileSelect={vi.fn()} progress={null} />));
         const card = container.querySelector('.UploadFileComponent.interactable.interactableWithBorder');
@@ -186,7 +185,7 @@ describe("deferred file creation controls", () => {
         const onFileSelect = vi.fn();
         const onURLUpload = vi.fn();
         await act(async () => root.render(<Component enabled={false} onFileSelect={onFileSelect} onURLUpload={onURLUpload} progress={0.5} enablePaste />));
-        expect(container.querySelector('[role="alert"]')?.textContent).toContain("en: File uploads and image creation are temporarily unavailable");
+        expect(container.querySelector('[role="alert"]')?.textContent).toContain("en: File uploads are unavailable here.");
         expect(container.querySelectorAll("input, button, progress")).toHaveLength(0);
         const paste = new Event("paste", { bubbles: true, cancelable: true });
         document.dispatchEvent(paste);
@@ -221,17 +220,6 @@ describe("deferred file creation controls", () => {
         expect(container.querySelector("textarea")?.value).toBe("Unsaved content");
         expect(onFileSelect).not.toHaveBeenCalled();
         expect(onURLUpload).not.toHaveBeenCalled();
-    });
-
-    it("keeps bake disabled and explains the restriction in its tooltip", async () => {
-        await act(async () => root.render(<DeferredImageCreationButton />));
-        expect(container.querySelector("button")?.disabled).toBe(true);
-        expect(container.textContent).toContain("en: Bake new image");
-        await act(async () => {
-            container.querySelector("span")!.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
-            await new Promise(resolve => window.setTimeout(resolve, 150));
-        });
-        expect(document.querySelector('[role="tooltip"]')?.textContent).toContain("File uploads and image creation are temporarily unavailable");
     });
 
     it("blocks Markdown file paste while retaining text/HTML paste and existing content", async () => {
