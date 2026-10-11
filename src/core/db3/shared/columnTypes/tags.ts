@@ -3,6 +3,7 @@ import { TAnyModel } from "@/shared/rootroot";
 import type { Prisma } from "db";
 import { assertIsNumberArray } from "shared/arrayUtils";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
+
 import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion, DiscreteCriterionFilterType,
     type SearchResultsFacetQuery, type SortQueryElements
@@ -17,6 +18,14 @@ import {
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
 } from "../db3core";
+
+/** Association fields own their policy; persistence supplies trusted, resolved identities. */
+export interface AssociationWriteContext {
+    readonly database: Prisma.TransactionClient;
+    readonly authorization: CMServerAuthorization;
+    readonly localId: number;
+    readonly desiredForeignIds: readonly number[];
+}
 
 
 ////////////////////////////////////////////////////////////////
@@ -59,6 +68,7 @@ type TagsFieldValueArgs<
 > = {
     // Existing tag fields filter by selectable targets. Membership history reads the authorized join rows instead.
     readVisibility?: "target" | "association";
+    validateWrite?: (context: AssociationWriteContext) => Promise<void>;
     columnName: string; // "instrumentType"
     associationTableID: TAssociationTableID;
     foreignTableID: TForeignTableID;
@@ -316,6 +326,7 @@ class TagsFieldImpl<
     }
 
     readonly readVisibility: "target" | "association";
+    readonly validateWrite?: (context: AssociationWriteContext) => Promise<void>;
 
     constructor(args: TagsFieldArgs<
         TAssociation,
@@ -336,6 +347,7 @@ class TagsFieldImpl<
         });
         // Preserve selectable-target filtering for existing tag declarations.
         this.readVisibility = args.readVisibility ?? "target";
+        this.validateWrite = args.validateWrite;
 
         // // does default behavior of case-insensitive, trimmed compare.
         // const itemExactlyMatches_defaultImpl = (value: TAssociation, filterText: string): boolean => {

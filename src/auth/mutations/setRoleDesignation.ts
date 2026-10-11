@@ -1,122 +1,15 @@
 import { resolver } from "@blitzjs/rpc";
-import { Permission } from "shared/permissions";
+import type { Ctx } from "blitz";
 import { SetRoleDesignationInput } from "../roleDesignations";
-import { requireRestoredApplicationFeature } from "src/core/shared/applicationRecovery";
+import db, { Prisma } from "db";
+import { loadAuthorization } from "../server/serverAuthorization";
+import { writeRoleDesignation } from "../server/roleDesignationWrite";
 
 export default resolver.pipe(
     resolver.zod(SetRoleDesignationInput),
-    resolver.authorize(Permission.login),
-    async () => requireRestoredApplicationFeature("accountRoles"),
+    async (edit, ctx: Ctx) => {
+        const auth = await loadAuthorization(ctx.session, null);
+        return db.$transaction(tx => writeRoleDesignation(tx, auth, edit),
+            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    },
 );
-
-
-// MIGRATION_RESTORE: role-administration
-// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/mutations/setRoleDesignation.ts:1-102
-// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
-// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
-// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
-// SHA256: 98b81fb2a51958966fbaef7a3a16c34abbf30c3b57996ffcf47caf6191de0ae9
-// MIGRATION_REFERENCE_BEGIN
-// import { NotFoundError } from "blitz";
-// import db, { Prisma } from "db";
-// import {
-//     ChangeAction,
-//     CreateChangeContext,
-//     RegisterChange,
-// } from "@/src/auth/server/activityLog";
-// import { Permission } from "shared/permissions";
-// import {
-//     RoleDesignation,
-//     type RoleDesignationValue,
-//     SetRoleDesignationInput,
-// } from "../roleDesignations";
-// import { resolver } from "@blitzjs/rpc";
-// import { cmauthorize } from "../server/cmResolver";
-//
-// const designationFields: Record<RoleDesignationValue, "isRoleForNewUsers" | "isPublicRole" | "isSysAdminRole"> = {
-//     [RoleDesignation.newUsers]: "isRoleForNewUsers",
-//     [RoleDesignation.public]: "isPublicRole",
-//     [RoleDesignation.sysadmin]: "isSysAdminRole",
-// };
-//
-// export default resolver.pipe(
-//     resolver.zod(SetRoleDesignationInput),
-//     cmauthorize(Permission.sysadmin),
-//     async ({ designation, roleId }, ctx) => db.$transaction(
-//         async tx => {
-//             const auth = await ctx.auth.refresh(tx);
-//             auth.requirePermission(Permission.sysadmin);
-//
-//             // Lock every existing Role row before inspecting or changing either
-//             // singleton designation. Concurrent reassignments therefore serialize.
-//             await tx.$queryRaw(Prisma.sql`SELECT id FROM \`Role\` ORDER BY id FOR UPDATE`);
-//
-//             const roles = await tx.role.findMany({
-//                 select: {
-//                     id: true,
-//                     publicId: true,
-//                     isRoleForNewUsers: true,
-//                     isPublicRole: true,
-//                     isSysAdminRole: true,
-//                     permissions: {
-//                         select: { permission: { select: { name: true } } },
-//                     },
-//                 },
-//                 orderBy: { id: "asc" },
-//             });
-//             const selectedRole = roles.find(role => role.publicId === roleId);
-//             if (!selectedRole) throw new NotFoundError();
-//             if (designation === RoleDesignation.sysadmin
-//                 && !selectedRole.permissions.some(entry => entry.permission.name === Permission.sysadmin)) {
-//                 throw new Error(`The designated Sysadmin role must grant ${Permission.sysadmin}.`);
-//             }
-//
-//             const field = designationFields[designation];
-//             const changeContext = CreateChangeContext("setRoleDesignation");
-//             const rolesToClear = roles.filter(role => role.id !== selectedRole.id && role[field]);
-//
-//             for (const role of rolesToClear) {
-//                 await tx.role.update({
-//                     where: { id: role.id },
-//                     data: { [field]: false },
-//                 });
-//                 await RegisterChange({
-//                     action: ChangeAction.update,
-//                     changeContext,
-//                     table: "Role",
-//                     pkid: role.id,
-//                     oldValues: { [field]: true },
-//                     newValues: { [field]: false },
-//                     auth,
-//                     db: tx,
-//                 });
-//             }
-//
-//             if (!selectedRole[field]) {
-//                 await tx.role.update({
-//                     where: { id: selectedRole.id },
-//                     data: { [field]: true },
-//                 });
-//                 await RegisterChange({
-//                     action: ChangeAction.update,
-//                     changeContext,
-//                     table: "Role",
-//                     pkid: selectedRole.id,
-//                     oldValues: { [field]: false },
-//                     newValues: { [field]: true },
-//                     auth,
-//                     db: tx,
-//                 });
-//             }
-//
-//             const assignmentCount = await tx.role.count({ where: { [field]: true } });
-//             if (assignmentCount !== 1) {
-//                 throw new Error(`Expected exactly one ${designation} role after reassignment.`);
-//             }
-//
-//             return { designation, roleId };
-//         },
-//         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-//     ),
-// );
-// MIGRATION_REFERENCE_END

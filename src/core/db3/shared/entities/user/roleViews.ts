@@ -1,60 +1,113 @@
-// Preserved migration reference only. The empty export keeps this file a TypeScript module.
-export {};
+import { Prisma } from "@prisma/client";
+import { Permission } from "shared/permissions";
+import type { GlobalRolePublicId, GlobalRolePermissionPublicId, BandRolePermissionPublicId } from "shared/publicId";
+import { validateRolePermissionWrite } from "src/auth/shared/rolePermissionPolicy";
+import { serverOwnedField } from "../../columnTypes/inherited";
+import { LocalizedStringField, localizedText } from "../../columnTypes/localizedString";
+import { BoolField, MakeColorField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSortOrderField, foreignRef, tagsRef } from "../../columnTypes/xTableColumnTypes";
+import { defineCrudView } from "../../core/db3CrudView";
+import { defineView } from "../../core/db3View";
+import { deriveViewContract } from "../../core/db3ViewContract";
+import { defineTable, makeColumnSet, prismaModel } from "../../db3core";
+import { xPermission } from "../../schema/user";
+import { kReadOnlyAuthMap } from "../common/entityCommon";
+import { roleGrantsAuth, roleMetadataAuth, xBandRole } from "./bandRoleViews";
 
+const metadataSelection = Prisma.validator<Prisma.GlobalRoleDefaultArgs>()({
+    select: { publicId: true, name: true, description: true, color: true, sortOrder: true },
+});
+const associationAuth = {
+    View: Permission.sysadmin, ViewOwn: Permission.sysadmin,
+    Edit: Permission.never_grant, EditOwn: Permission.never_grant, Insert: Permission.never_grant,
+};
 
-// MIGRATION_RESTORE: role-administration
-// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/entities/user/roleViews.ts:1-48
-// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
-// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
-// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
-// SHA256: 529b2dad6a6506bf8c7fae13326b585361339ac53d3dc7fa7a2e6619578e9180
-// MIGRATION_REFERENCE_BEGIN
-// import { Prisma } from "db";
-// import { defineCrudView } from "../../core/db3CrudView";
-// import { deriveViewContract } from "../../core/db3ViewContract";
-// import { xRole } from "../../schema/user";
-//
-// const roleEditorArgs = Prisma.validator<Prisma.RoleDefaultArgs>()({
-//     select: {
-//         publicId: true,
-//         name: true,
-//         description: true,
-//         sortOrder: true,
-//         color: true,
-//         permissions: {
-//             select: {
-//                 publicId: true,
-//                 roleId: true,
-//                 permissionId: true,
-//                 permission: {
-//                     select: {
-//                         publicId: true,
-//                         name: true,
-//                         description: true,
-//                         sortOrder: true,
-//                     },
-//                 },
-//             },
-//             orderBy: [
-//                 { permission: { sortOrder: "asc" } },
-//                 { permission: { name: "asc" } },
-//                 { permission: { id: "asc" } },
-//             ],
-//         },
-//     },
-// });
-//
-// const roleEditorViewContract = deriveViewContract(
-//     xRole,
-//     roleEditorArgs,
-// );
-//
-// export const roleEditorView = defineCrudView({
-//     viewID: "Role_Editor",
-//     entity: xRole,
-//     operations: { create: true, update: true },
-//     selection: roleEditorViewContract.prismaSelection,
-//     dtoSchema: roleEditorViewContract.dtoSchema,
-//     hydrate: roleEditorViewContract.hydrate,
-// });
-// MIGRATION_REFERENCE_END
+export const xGlobalRole = defineTable({
+    tableName: "GlobalRole", prismaModel: prismaModel<Prisma.GlobalRoleDelegate>(),
+    getIdentity: (row: { publicId: GlobalRolePublicId }) => row.publicId,
+    getSelectionArgs: () => metadataSelection, queryStrategy: "resolved", deletePolicy: "disabled",
+    tableAuthMap: { View: Permission.manage_global_users, ViewOwn: Permission.manage_global_users,
+        Edit: Permission.sysadmin, EditOwn: Permission.sysadmin, Insert: Permission.sysadmin },
+    naturalOrderBy: [{ sortOrder: "asc" }, { name: "asc" }], queryParameters: {},
+    getParameterizedWhereClause: (): Prisma.GlobalRoleWhereInput[] => [{ isDeleted: false }],
+    getRowInfo: row => ({ pk: row.publicId, name: localizedText(row.name) ?? "", ownerUserId: null }),
+    fields: makeColumnSet({
+        id: () => MakePKfield({ naturalIdVisibility: "never" }),
+        publicId: () => MakePublicIdField<GlobalRolePublicId>(),
+        name: columnName => new LocalizedStringField({ columnName, stringIdentityMember: "nameId", stringFormat: "PlainText", writeScope: "global", authMap: roleMetadataAuth }),
+        description: columnName => new LocalizedStringField({ columnName, stringIdentityMember: "descriptionId", stringFormat: "Markdown", writeScope: "global", authMap: roleMetadataAuth }),
+        sortOrder: () => MakeSortOrderField({ authMap: roleMetadataAuth }),
+        color: () => MakeColorField({ authMap: roleMetadataAuth }),
+        isDeleted: () => serverOwnedField(MakeIsDeletedField({ authMap: kReadOnlyAuthMap })),
+        isRoleForNewUsers: columnName => serverOwnedField(new BoolField({ columnName, allowNull: false, defaultValue: false, authMap: kReadOnlyAuthMap })),
+        isPublicRole: columnName => serverOwnedField(new BoolField({ columnName, allowNull: false, defaultValue: false, authMap: kReadOnlyAuthMap })),
+        isSysAdminRole: columnName => serverOwnedField(new BoolField({ columnName, allowNull: false, defaultValue: false, authMap: kReadOnlyAuthMap })),
+        permissions: tagsRef("GlobalRolePermission", "Permission", {
+            associationLocalObjectMember: "globalRole", associationForeignObjectMember: "permission",
+            getQuickFilterWhereClause: () => false, getCustomFilterWhereClause: () => false,
+            authMap: roleGrantsAuth, validateWrite: context => validateRolePermissionWrite("global", context),
+        }),
+    }),
+});
+
+export const xGlobalRolePermission = defineTable({
+    tableName: "GlobalRolePermission", prismaModel: prismaModel<Prisma.GlobalRolePermissionDelegate>(),
+    getIdentity: (row: { publicId: GlobalRolePermissionPublicId }) => row.publicId,
+    getSelectionArgs: () => ({ select: { publicId: true, permissionId: true, permission: { select: { publicId: true, name: true } } } }),
+    tableAuthMap: associationAuth, deletePolicy: "disabled", naturalOrderBy: { publicId: "asc" },
+    getRowInfo: row => ({ pk: row.publicId, name: row.permission?.name ?? "", ownerUserId: null }),
+    fields: makeColumnSet({
+        id: () => MakePKfield({ naturalIdVisibility: "never" }), publicId: () => MakePublicIdField<GlobalRolePermissionPublicId>(),
+        globalRole: foreignRef(() => xGlobalRole, { fkidMember: "globalRoleId", authMap: kReadOnlyAuthMap }),
+        permission: foreignRef(() => xPermission, { fkidMember: "permissionId", authMap: kReadOnlyAuthMap }),
+    }),
+});
+export const xBandRolePermission = defineTable({
+    tableName: "BandRolePermission", prismaModel: prismaModel<Prisma.BandRolePermissionDelegate>(),
+    getIdentity: (row: { publicId: BandRolePermissionPublicId }) => row.publicId,
+    getSelectionArgs: () => ({ select: { publicId: true, permissionId: true, permission: { select: { publicId: true, name: true } } } }),
+    tableAuthMap: associationAuth, deletePolicy: "disabled", naturalOrderBy: { publicId: "asc" },
+    getRowInfo: row => ({ pk: row.publicId, name: row.permission?.name ?? "", ownerUserId: null }),
+    fields: makeColumnSet({
+        id: () => MakePKfield({ naturalIdVisibility: "never" }), publicId: () => MakePublicIdField<BandRolePermissionPublicId>(),
+        bandRole: foreignRef(() => xBandRole, { fkidMember: "bandRoleId", authMap: kReadOnlyAuthMap }),
+        permission: foreignRef(() => xPermission, { fkidMember: "permissionId", authMap: kReadOnlyAuthMap }),
+    }),
+});
+
+const globalEditorSelection = Prisma.validator<Prisma.GlobalRoleDefaultArgs>()({ select: {
+    ...metadataSelection.select, isRoleForNewUsers: true, isPublicRole: true, isSysAdminRole: true,
+    permissions: { select: { publicId: true, permissionId: true, permission: { select: { publicId: true, name: true } } } },
+} });
+const bandEditorSelection = Prisma.validator<Prisma.BandRoleDefaultArgs>()({ select: {
+    ...metadataSelection.select, isRoleForNewUsers: true, isPublicRole: true,
+    bandRolePermissions: { select: { publicId: true, permissionId: true, permission: { select: { publicId: true, name: true } } } },
+} });
+const globalContract = deriveViewContract(xGlobalRole, globalEditorSelection);
+const bandContract = deriveViewContract(xBandRole, bandEditorSelection);
+export const globalRoleEditorView = defineCrudView({
+    viewID: "GlobalRole_Editor", entity: xGlobalRole, operations: { create: true, update: true },
+    selection: globalContract.prismaSelection, dtoSchema: globalContract.dtoSchema, hydrate: globalContract.hydrate,
+    where: ({ auth }) => {
+        auth.requirePermission(Permission.sysadmin);
+        return {};
+    },
+});
+export const bandRoleEditorView = defineCrudView({
+    viewID: "BandRole_Editor", entity: xBandRole, operations: { create: true, update: true },
+    selection: bandContract.prismaSelection, dtoSchema: bandContract.dtoSchema, hydrate: bandContract.hydrate,
+    where: ({ auth }) => {
+        auth.requirePermission(Permission.sysadmin);
+        return {};
+    },
+});
+const listContract = deriveViewContract(xGlobalRole, metadataSelection);
+export const globalRoleListView = defineView({ viewID: "GlobalRole_List", entity: xGlobalRole,
+    selection: listContract.prismaSelection, dtoSchema: listContract.dtoSchema, hydrate: listContract.hydrate });
+
+declare module "../../db3core" {
+    interface DB3TableTypeRegistry {
+        GlobalRole: typeof xGlobalRole;
+        GlobalRolePermission: typeof xGlobalRolePermission;
+        BandRolePermission: typeof xBandRolePermission;
+    }
+}

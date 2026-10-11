@@ -5,7 +5,7 @@ import type { TAnyModel } from "@/shared/rootroot";
 import type { AnyDB3CrudView, ClientOf, DB3IdentityOf, TableOf } from "../db3";
 import { createEntityCrudUpdatePatch } from "../db3";
 import type { xTableRenderClient } from "./DB3ClientCore";
-import { useDB3Command } from "./useDB3Command";
+import { useDB3Command, type DB3CommandContextInput } from "./useDB3Command";
 
 export interface CrudViewCommandClient<
     TView extends AnyDB3CrudView = AnyDB3CrudView,
@@ -27,6 +27,8 @@ export function useCrudViewCommands<
 >(args: {
     readonly view: TView;
     readonly tableClient: TTableClient;
+    readonly writeContext?: DB3CommandContextInput;
+    readonly onChanged?: () => Promise<void>;
 }): CrudViewCommandClient<
     TView,
     TTableClient extends xTableRenderClient<TView, any> ? ClientOf<TView> : TAnyModel
@@ -40,13 +42,14 @@ export function useCrudViewCommands<
     }
 
     const dashboardContext = useDashboardContext();
-    const create = useDB3Command(args.view.crud.operations.create?.command);
-    const update = useDB3Command(args.view.crud.operations.update.command);
-    const deleteCommand = useDB3Command(args.view.crud.operations.delete?.command);
+    const create = useDB3Command(args.view.crud.operations.create?.command, args.writeContext);
+    const update = useDB3Command(args.view.crud.operations.update.command, args.writeContext);
+    const deleteCommand = useDB3Command(args.view.crud.operations.delete?.command, args.writeContext);
 
     const refresh = async () => {
         await args.tableClient.refetch();
         await dashboardContext.refreshCachedData();
+        await args.onChanged?.();
     };
 
     return {

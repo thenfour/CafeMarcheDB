@@ -70,7 +70,7 @@ export async function loadEffectivePermissionContext(
 
     // The public definition is shared, but any band grants on it still require
     // a band context. The new-user role applies only to an active roleless member.
-    const bandRoles = await database.bandRole.findMany({
+    const storedBandRoles = await database.bandRole.findMany({
         where: {
             isDeleted: false,
             OR: [
@@ -81,10 +81,14 @@ export async function loadEffectivePermissionContext(
         },
         select: { id: true, isPublicRole: true, isRoleForNewUsers: true, bandRolePermissions: { select: grantSelection } },
     });
-    if (bandRoles.filter(role => role.isPublicRole).length > 1
-        || bandRoles.filter(role => role.isRoleForNewUsers).length > 1) {
+    const ambiguousBandDesignations = storedBandRoles.filter(role => role.isPublicRole).length > 1
+        || storedBandRoles.filter(role => role.isRoleForNewUsers).length > 1;
+    if (bandId !== null && ambiguousBandDesignations) {
         throw new Error("Ambiguous active public or new-member role designation.");
     }
+    // Invalid band definitions confer no public grants in platform context.
+    // Independently validated global/account authority remains usable for their repair.
+    const bandRoles = ambiguousBandDesignations ? [] : storedBandRoles;
 
     // Login and logged-in visibility describe the global account, independently
     // of whether the person has joined a band or received a membership role.

@@ -142,6 +142,9 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
     }
 
     if (action === "assignRole") {
+        if (target.principal.isSysAdmin) {
+            return false;
+        }
         if (!actor.auth.hasPermission(Permission.manage_global_users)) return false;
         if (!isRoleWithinDelegationEnvelope(actor, target.rolePermissions)) return false;
         if (desiredRole !== undefined && !isRoleWithinDelegationEnvelope(actor, desiredRole)) return false;
@@ -177,7 +180,9 @@ export const getContinuityWarningsForUserResult = (
     resultingRole: PermissionSet,
     activeNonSysadminUsers: readonly UserManagementSubject[],
 ): Permission[] => {
-    if (target.principal.isDeleted === true || target.principal.isSysAdmin) return [];
+    if (target.principal.isDeleted === true || target.principal.isSysAdmin || target.rolePermissions.includesName(Permission.sysadmin)) {
+        return [];
+    }
     const principalId = target.principal.id;
 
     return gPermissionOrdered.filter(permission => {
@@ -189,6 +194,7 @@ export const getContinuityWarningsForUserResult = (
             user.principal.id !== principalId
             && user.principal.isDeleted !== true
             && !user.principal.isSysAdmin
+            && !user.rolePermissions.includesName(Permission.sysadmin)
             && user.rolePermissions.includesName(permission)
         ));
     });

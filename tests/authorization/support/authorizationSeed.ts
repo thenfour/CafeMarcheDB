@@ -25,9 +25,11 @@ export function createAuthorizationSeed(users: readonly AuthorizationTestUser[],
         bandLocale: [{ id: 1, bandId: 1, localeId: 1, sortOrder: 1 }],
         bandSetting: [{ id: 1, publicId: "BandTimeZone0001", bandId: 1, name: "dateTime.bandTimeZone", value: "Europe/Brussels" }],
         permission: [...permissionRows],
-        globalRole: [{ id: 900_002, publicId: "SysadminRole0001", isDeleted: false, isSysAdminRole: true },
+        globalRole: [{ id: 900_002, publicId: "SysadminRole0001", name: "Sysadmin", description: null, color: null, sortOrder: 0,
+            isRoleForNewUsers: false, isPublicRole: false, isDeleted: false, isSysAdminRole: true },
             ...users.flatMap(user => user.globalRole ? [{ id: user.globalRole.id, publicId: user.globalRole.publicId,
-                name: user.globalRole.name, isDeleted: false, isSysAdminRole: false }] : [])],
+                name: user.globalRole.name, description: null, color: null, sortOrder: 0,
+                isRoleForNewUsers: false, isPublicRole: false, isDeleted: false, isSysAdminRole: false }] : [])],
         globalRolePermission: [
             ...Object.values(Permission).filter(name => name !== Permission.never_grant).map((name, index) => ({
                 id: 930_000 + index, globalRoleId: 900_002, permissionId: permissionId(name),

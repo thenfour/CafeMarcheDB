@@ -1118,15 +1118,52 @@ deletion field so retired rows cannot appear in ordinary reads. Ordinary account
 deactivation retains memberships and credentials while revoking sessions. Broader
 role continuity, account merge/analysis and lifecycle parity remain open.
 
-## Next slice: Role administration
+## Role administration checkpoint
 
-Restore the preserved role/matrix editors, designations, account role assignment
-and continuity safeguards through GlobalRole/BandRole and their existing owners.
-Verify protected grants, atomic designations, current request authorization,
-auditing and actual editors across two bands. Keep account merge/dependency
-analysis under their separate obligations. Full profile parity, production
-inventory/rehearsal, A1/B and the localized catalog-name search exception remain
-open; complete-suite readiness alone does not accept those gates.
+The original role and Permission grids and permission matrix are restored through
+GlobalRole/BandRole views and their existing DB3 owners. They retain localized
+metadata editing, permission selection, help, unknown-permission filtering,
+synchronization indicators and copy. Shared definitions use explicit platform
+write authority; the selected band determines displayed labels and contextual
+navigation. Band membership role assignment keeps its existing band owner.
+
+The role association field owns protected-grant validation for both editor and
+matrix writes. BandRole rejects platform/unknown permissions; never_grant cannot
+be assigned; the designated GlobalRole Sysadmin retains sysadmin and login.
+Dedicated designation commands require fresh platform authority, validate scope
+and public identities, lock definitions in a serializable transaction and repair
+duplicate/deleted flags atomically with one audit operation. Idempotent requests
+add no audit. Ambiguous band designations confer no public platform grants, while
+independent platform authority remains usable for repair. Account-flag Sysadmins
+retain the existing fail-closed global designation policy.
+
+Original profile and platform-account-list actions assign or clear the shared
+account's GlobalRole with current manage_global_users authority, active localized
+choices, delegation checks and explicit continuity acknowledgement. Both band
+memberships, their roles, credentials and sessions are preserved. Writes audit the
+User field only; final ordinary global-management holders exclude Sysadmins.
+Pending controls prevent duplicate writes, failed drafts permit retry and refresh
+failures after commit are distinct. Matrix scope changes close their dropdown
+before the new query suspends.
+
+The role-administration obligation is closed: its sixty-three source references
+are removed, the reference-only RoleChip module is deleted, the designation
+specification is active and the obsolete role recovery UI/guards are removed.
+Applicable membership chips and current DTO behavior remain in their migrated
+owners. Native and built-browser evidence is recorded below. Account
+merge/dependency analysis, full profile parity, production inventory/rehearsal,
+A1/B and localized catalog-name matching remain open.
+
+## Next slice: Shared-account dependency analysis
+
+Restore the preserved account dependency reports, risk summaries, Mass Analysis
+tab and two-account comparison through their existing owners. Distinguish shared
+User records from each BandUser's owned records and apply current platform/read
+authority to every report. Verify exact dependency counts, visibility,
+deleted/merged accounts, shared people in two bands and the original built UI.
+Keep candidate search, transactional merge, credential/session handling and merge
+confirmation under the separate account-merge obligation; use the restored
+analysis contracts when continuing that slice.
 
 ## Localized catalog text search exception
 
@@ -1158,7 +1195,7 @@ when a concrete workflow dependency requires it.
 | Songs and files | Retain restored Song search/detail/editing, credits/performance history/profile credit reads/statistics, tags, setlist picking, File search/detail/metadata/associations, associated and Markdown/branding uploads, image fork service and recording/file viewers, including verified original/resized-image creation; retain frontpage gallery editing/bake and public feed delivery. |
 | Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, global shell search, planner association selection/protected explorer, Markdown suggestions/attachments/localized editing/help, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links; finish exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
-After core restoration: platform role/matrix and catalog/settings administration;
+After core restoration: retain restored platform role/matrix and catalog/settings administration;
 band onboarding/lifecycle; shared-account lifecycle/merge/dependency reports;
 full portal routing; localized-name text matching; translation inventory/editing,
 import/export and French/Dutch coverage. Existing workflow parity is not a new
@@ -1197,7 +1234,48 @@ client together with writes stopped and matching upload backups.
 
 ## Verification status
 
-The **full-suite readiness** checkpoint passes `yarn typecheck`, targeted ESLint
+The **role administration** checkpoint passes normal `yarn typecheck`, targeted
+ESLint across seventy-one changed TypeScript files and a normal production build
+with isolated output. The complete repository
+runner selects **283 files: 2,937 passed and 866 skipped**, with no test or
+suite-load failures. The new native specification retains the existing
+disposable-database gate; no unrelated skip guards are added. Five superseded
+role/designation recovery-rejection cases are removed. The focused request,
+authorization, write-context and mounted-control boundary run passes **105 cases
+across four files**, including retained drafts, acknowledged retry, pending and
+unmounted writes, fresh capability revocation and deliberate designation retry.
+After preservation cleanup, seventy-three focused cases in five files pass
+against the final recovery/request/control sources.
+
+All **64 native MySQL specifications** run through the repository runner on a
+private disposable database: **836 passed and 24 skipped**, with sixty passing
+and four existing fixture-gated suites. The new role specification passes all
+thirty-nine cases. Coverage includes atomic duplicate/deleted designation repair,
+Sysadmin grant completeness, no-op audit behavior, fresh grants/deleted/merged
+actors, both editor/matrix paths, active public references, protected platform
+grants, shared-account delegation/continuity, session/membership preservation and
+independent band label overrides/intentional blanks. The runner exits zero and
+drops its private database; the development database is untouched.
+
+**Thirteen built Chromium groups** pass on disposable two-band data. They exercise
+the original creation dialog, French inline edit/confirmation, Dutch labels,
+Permission metadata filter/edit, audited global and band matrices, unknown filter,
+copy, protected-cell rejection, designation change/restore, profile assignment,
+lazy account-list clearing, explicit continuity acknowledgement and fresh
+platform-grant revocation. Band-only managers and anonymous requests are denied.
+French/Dutch grids and the band matrix are visually inspected. No uncaught page
+or unexpected RPC errors occur. The owned server, database and assets are removed.
+
+Evidence is in `temp/role-admin-final-suite.log`, `temp/role-admin-all-native.log`,
+`temp/role-admin-boundary.log` and `temp/role-admin-browser-result.json`.
+Final compiler/build/lint and cleanup results are in
+`temp/role-admin-final-results.json` and `temp/role-admin-cleanup-tests.log`.
+`yarn migration:verify` retains **126 source references, five whole-file deferred
+specifications and twelve pending features**. Role administration is restored;
+account analysis/merge, full profile parity, localized-name matching, production
+inventory/rehearsal and A1/B remain open.
+
+The preceding **full-suite readiness** checkpoint passes `yarn typecheck`, targeted ESLint
 across all fifty changed TypeScript files and a normal production build with
 isolated output. The tested build's five production changes match the final
 workspace sources. `yarn test --reporter=dot` completes all 278 selected files:

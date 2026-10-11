@@ -16,6 +16,7 @@ import {
     type xTableRenderClient,
 } from "./DB3ClientCore";
 import { type CrudViewCommandClient, useCrudViewCommands } from "./useCrudViewCommands";
+import type { DB3CommandContextInput } from "./useDB3Command";
 
 export interface UseCrudTableRenderContextArgs<TView extends AnyDB3CrudView> {
     readonly view: TView;
@@ -27,6 +28,8 @@ export interface UseCrudTableRenderContextArgs<TView extends AnyDB3CrudView> {
     readonly includeDeleted?: boolean;
     readonly queryOptions?: any;
     readonly paginated?: boolean;
+    readonly writeContext?: DB3CommandContextInput;
+    readonly onChanged?: () => Promise<void>;
 }
 
 export type CrudTableRenderContext<TView extends AnyDB3CrudView> =
@@ -67,7 +70,7 @@ export function useCrudTableRenderContext<TView extends AnyDB3CrudView>(
         includeDeleted: args.includeDeleted,
         queryOptions: args.queryOptions,
     });
-    const commands = useCrudViewCommands({ view: args.view, tableClient });
+    const commands = useCrudViewCommands({ view: args.view, tableClient, writeContext: args.writeContext, onChanged: args.onChanged });
 
     return Object.assign(tableClient, { crud: commands });
 }

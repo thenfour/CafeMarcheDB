@@ -1,6 +1,7 @@
 import { useDB3QueryContext } from "./useDB3Context";
 import { useMutation } from "@blitzjs/rpc";
 import executeDB3CommandMutation from "../mutations/executeDB3Command";
+import type { BandPublicId } from "shared/publicId";
 import type {
     AnyDB3Command,
     CommandClientInputOf,
@@ -13,14 +14,22 @@ export interface DB3CommandToken<TCommand extends AnyDB3Command> {
     readonly invalidation: TCommand["invalidation"];
 }
 
+/** Read presentation may remain band-local while a caller edits platform-owned data. */
+export interface DB3CommandContextInput {
+    readonly bandPublicId: BandPublicId | null;
+}
+
 export function useDB3Command<TCommand extends AnyDB3Command>(
     command: TCommand,
+    writeContext?: DB3CommandContextInput,
 ): DB3CommandToken<TCommand>;
 export function useDB3Command<TCommand extends AnyDB3Command>(
     command: TCommand | undefined,
+    writeContext?: DB3CommandContextInput,
 ): DB3CommandToken<TCommand> | undefined;
 export function useDB3Command<TCommand extends AnyDB3Command>(
     command: TCommand | undefined,
+    writeContext?: DB3CommandContextInput,
 ): DB3CommandToken<TCommand> | undefined {
     const [mutate] = useMutation(executeDB3CommandMutation);
     const queryContext = useDB3QueryContext();
@@ -34,7 +43,7 @@ export function useDB3Command<TCommand extends AnyDB3Command>(
             const result = await mutate({
                 commandID: command.commandID,
                 payload,
-                bandPublicId: queryContext.bandPublicId,
+                bandPublicId: writeContext ? writeContext.bandPublicId : queryContext.bandPublicId,
             });
             // todo: find a well-designed way to invalidate relevant queries
             return command.parseResult(result) as CommandResultOf<TCommand>;

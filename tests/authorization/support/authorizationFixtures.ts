@@ -35,6 +35,7 @@ type TestGlobalRole = {
   id: number
   publicId: GlobalRolePublicId
   name: string
+  isDeleted: boolean
   permissions: Array<{
     id: number
     publicId: PublicId<"GlobalRolePermission">
@@ -44,6 +45,7 @@ type TestGlobalRole = {
       id: number
       publicId: PermissionPublicId
       name: Permission
+      isDeleted: boolean
     }
   }>
 }
@@ -139,6 +141,7 @@ export function createAuthorizationTestUser(
       id: globalRoleId,
       publicId: parsePublicId<"GlobalRole">(`TestRole${globalRoleId.toString().padStart(8, "0").slice(-8)}`),
       name: persona,
+      isDeleted: false,
       permissions: permissions.filter(permission => getPermissionDefinition(permission).scope !== "band").map((permission, index) => ({
         id: globalRoleId * 100 + index,
         publicId: parsePublicId<"GlobalRolePermission">(`RolePerm${(globalRoleId * 100 + index).toString().padStart(8, "0").slice(-8)}`),
@@ -148,6 +151,7 @@ export function createAuthorizationTestUser(
           id: authorizationPermissionId(permission),
           publicId: parsePublicId<"Permission">(`TestPerm${authorizationPermissionId(permission).toString().padStart(8, "0")}`),
           name: permission,
+          isDeleted: false,
         },
       })),
     },

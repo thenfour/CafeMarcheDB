@@ -2,9 +2,11 @@ import { Prisma } from "@prisma/client";
 import { Permission } from "shared/permissions";
 import type { BandRolePublicId } from "shared/publicId";
 import { assignableBandRoleWhere } from "src/auth/shared/bandRolePolicy";
-import { defineTable, makeColumnSet, prismaModel } from "../../db3core";
+import { validateRolePermissionWrite } from "src/auth/shared/rolePermissionPolicy";
+import { DB3FieldReadAuth, defineAuthMap, defineTable, makeColumnSet, prismaModel } from "../../db3core";
 import { LocalizedStringField, localizedText } from "../../columnTypes/localizedString";
-import { MakeColorField, MakePKfield, MakePublicIdField, MakeSortOrderField } from "../../columnTypes/xTableColumnTypes";
+import { BoolField, MakeColorField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSortOrderField, tagsRef } from "../../columnTypes/xTableColumnTypes";
+import { serverOwnedField } from "../../columnTypes/inherited";
 import { defineView, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { kReadOnlyAuthMap } from "../common/entityCommon";
@@ -19,7 +21,22 @@ const selection = Prisma.validator<Prisma.BandRoleDefaultArgs>()({
     },
 });
 
-/** Only display metadata crosses this read-only surface; role grants stay on the server. */
+export const roleMetadataAuth = defineAuthMap({
+    PostQuery: DB3FieldReadAuth.inheritRow,
+    PostQueryAsOwner: DB3FieldReadAuth.inheritRow,
+    PreInsert: Permission.sysadmin,
+    PreMutate: Permission.sysadmin,
+    PreMutateAsOwner: Permission.sysadmin,
+});
+export const roleGrantsAuth = defineAuthMap({
+    PostQuery: Permission.sysadmin,
+    PostQueryAsOwner: Permission.sysadmin,
+    PreInsert: Permission.sysadmin,
+    PreMutate: Permission.sysadmin,
+    PreMutateAsOwner: Permission.sysadmin,
+});
+
+/** Shared definitions are platform-owned; membership assignments remain band-owned. */
 export const xBandRole = defineTable({
     tableName: "bandRole",
     tableUniqueName: "BandRole",
@@ -30,9 +47,9 @@ export const xBandRole = defineTable({
     tableAuthMap: {
         View: Permission.login,
         ViewOwn: Permission.login,
-        Edit: Permission.never_grant,
-        EditOwn: Permission.never_grant,
-        Insert: Permission.never_grant,
+        Edit: Permission.sysadmin,
+        EditOwn: Permission.sysadmin,
+        Insert: Permission.sysadmin,
     },
     queryParameters: {},
     getParameterizedWhereClause: (): Prisma.BandRoleWhereInput[] => [{ isDeleted: false }],
@@ -46,10 +63,22 @@ export const xBandRole = defineTable({
     fields: makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "never" }),
         publicId: () => MakePublicIdField<BandRolePublicId>(),
-        name: columnName => new LocalizedStringField({ columnName, stringIdentityMember: "nameId", stringFormat: "PlainText", writeScope: "band", authMap: kReadOnlyAuthMap }),
-        description: columnName => new LocalizedStringField({ columnName, stringIdentityMember: "descriptionId", stringFormat: "Markdown", writeScope: "band", authMap: kReadOnlyAuthMap }),
-        color: () => MakeColorField({ authMap: kReadOnlyAuthMap }),
-        sortOrder: () => MakeSortOrderField({ authMap: kReadOnlyAuthMap }),
+        name: columnName => new LocalizedStringField({ columnName, stringIdentityMember: "nameId", stringFormat: "PlainText", writeScope: "global", authMap: roleMetadataAuth }),
+        description: columnName => new LocalizedStringField({ columnName, stringIdentityMember: "descriptionId", stringFormat: "Markdown", writeScope: "global", authMap: roleMetadataAuth }),
+        color: () => MakeColorField({ authMap: roleMetadataAuth }),
+        sortOrder: () => MakeSortOrderField({ authMap: roleMetadataAuth }),
+        isDeleted: () => serverOwnedField(MakeIsDeletedField({ authMap: kReadOnlyAuthMap })),
+        isRoleForNewUsers: columnName => serverOwnedField(new BoolField({ columnName, allowNull: false, defaultValue: false, authMap: kReadOnlyAuthMap })),
+        isPublicRole: columnName => serverOwnedField(new BoolField({ columnName, allowNull: false, defaultValue: false, authMap: kReadOnlyAuthMap })),
+        bandRolePermissions: tagsRef("BandRolePermission",
+            "Permission", {
+            associationLocalObjectMember: "bandRole",
+            associationForeignObjectMember: "permission",
+            getQuickFilterWhereClause: () => false,
+            getCustomFilterWhereClause: () => false,
+            authMap: roleGrantsAuth,
+            validateWrite: context => validateRolePermissionWrite("band", context),
+        }),
     }),
 });
 

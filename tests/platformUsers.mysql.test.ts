@@ -37,16 +37,16 @@ describe.skipIf(!settingsMysqlTestUrl)("platform accounts on MariaDB", () => {
         const person = await tx.user.findUniqueOrThrow({ where: { id: fixture.user.id }, select: { publicId: true } });
         const target = parsePublicId<"User">(person.publicId);
         expect(manager.auth.hasPermission(Permission.view_users_basic_info)).toBe(false);
-        const result = await readUserManagementCapabilities(await snapshot(tx, manager.auth), manager.auth, target);
-        expect(result).toMatchObject({ canAssignRole: false, canMerge: false, mergedIntoUserId: null });
+        const result = await readUserManagementCapabilities(await snapshot(tx, manager.auth), manager.auth, target, {});
+        expect(result).toMatchObject({ canAssignRole: true, canMerge: false, mergedIntoUserId: null });
         expect(JSON.stringify(result)).not.toMatch(/"(?:id|email|phone)":/);
         const admin = await loadAuthorizationForUser(fixture.admin, tx);
-        expect(await readUserManagementCapabilities(await snapshot(tx, admin), admin, target)).toMatchObject({ canManageSignInMethods: true, canResetPassword: true });
+        expect(await readUserManagementCapabilities(await snapshot(tx, admin), admin, target, {})).toMatchObject({ canManageSignInMethods: true, canResetPassword: true });
         const bandMember = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(fixture.bands[0]!.publicId));
-        expect(await readUserManagementCapabilities(await snapshot(tx, bandMember), bandMember, target))
+        expect(await readUserManagementCapabilities(await snapshot(tx, bandMember), bandMember, target, {}))
             .toMatchObject({ canDeactivate: false, canReactivate: false, canImpersonate: false });
         await tx.globalRolePermission.deleteMany({ where: { globalRoleId: manager.role.id } });
-        expect(await readUserManagementCapabilities(await snapshot(tx, manager.auth), manager.auth, target))
+        expect(await readUserManagementCapabilities(await snapshot(tx, manager.auth), manager.auth, target, {}))
             .toMatchObject({ canDeactivate: false, canReactivate: false, canImpersonate: false });
     }));
 
@@ -54,12 +54,12 @@ describe.skipIf(!settingsMysqlTestUrl)("platform accounts on MariaDB", () => {
         const actor = await accountManager(tx, fixture, [Permission.impersonate_user]);
         const target = parsePublicId<"User">((await tx.user.findUniqueOrThrow({ where: { id: fixture.user.id } })).publicId);
         expect(actor.auth.hasPermission(Permission.manage_global_users)).toBe(false);
-        expect(await readUserManagementCapabilities(await snapshot(tx, actor.auth), actor.auth, target))
+        expect(await readUserManagementCapabilities(await snapshot(tx, actor.auth), actor.auth, target, {}))
             .toMatchObject({ canImpersonate: true, canDeactivate: false, canResetPassword: false });
-        expect(await readUserManagementCapabilities(await snapshot(tx, actor.auth), actor.auth, parsePublicId<"User">(actor.user.publicId)))
+        expect(await readUserManagementCapabilities(await snapshot(tx, actor.auth), actor.auth, parsePublicId<"User">(actor.user.publicId), {}))
             .toMatchObject({ canImpersonate: false });
         await tx.globalRolePermission.deleteMany({ where: { globalRoleId: actor.role.id } });
-        expect(await readUserManagementCapabilities(await snapshot(tx, actor.auth), actor.auth, target))
+        expect(await readUserManagementCapabilities(await snapshot(tx, actor.auth), actor.auth, target, {}))
             .toMatchObject({ canImpersonate: false });
     }));
 
@@ -67,7 +67,7 @@ describe.skipIf(!settingsMysqlTestUrl)("platform accounts on MariaDB", () => {
         const manager = await accountManager(tx, fixture);
         const person = await tx.user.update({ where: { id: fixture.user.id }, data: { isDeleted: true } });
         expect(manager.auth.hasPermission(Permission.recover_users)).toBe(false);
-        expect(await readUserManagementCapabilities(await snapshot(tx, manager.auth), manager.auth, parsePublicId<"User">(person.publicId)))
+        expect(await readUserManagementCapabilities(await snapshot(tx, manager.auth), manager.auth, parsePublicId<"User">(person.publicId), {}))
             .toMatchObject({ canReactivate: true, canDeactivate: false, canImpersonate: false });
     }));
 
@@ -76,7 +76,7 @@ describe.skipIf(!settingsMysqlTestUrl)("platform accounts on MariaDB", () => {
         const context = await snapshot(tx, manager.auth);
         const person = await tx.user.findUniqueOrThrow({ where: { id: fixture.user.id }, select: { publicId: true } });
         await tx.user.update({ where: { id: manager.user.id }, data: reason === "account" ? { isDeleted: true } : { mergedIntoUserId: fixture.admin.id } });
-        await expect(readUserManagementCapabilities(context, manager.auth, parsePublicId<"User">(person.publicId))).rejects.toThrow();
+        await expect(readUserManagementCapabilities(context, manager.auth, parsePublicId<"User">(person.publicId), {})).rejects.toThrow();
     }));
 
     it("reads sign-in summaries without a band and withholds them from ordinary account managers", () => withSettingsMysqlFixture(database, async (tx, fixture) => {

@@ -37,9 +37,13 @@
       "reason": "Single-band Role administration cannot execute against GlobalRole and BandRole.",
       "restore": "Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.",
       "verification": "Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.",
-      "status": "pending",
+      "status": "restored",
       "evidence": [
-        "2026-10-11 full-suite readiness: Active authorization fixtures now seed explicit GlobalRole/BandRole grants and current memberships; the generic Prisma double has no authorization defaults. Existing protected-account/grant checks and forbidden generic GlobalRole/Permission deletion remain executable. Permission metadata now declares its server-owned deletion policy, with native regression coverage. These checks do not restore the preserved role/matrix editors, designations or full continuity workflows; this obligation remains pending."
+        "2026-10-11: Restored the f027830a9790 role and Permission administration paths with the original DB3 grids, localized name/description/color/order editing, association picker, registered Markdown help, permission matrix, unknown-permission filter, synchronization indicators and copy action. GlobalRole and BandRole definitions are shared platform-owned data; explicit platform write context stays separate from selected-band label presentation. The original Permission metadata grid also supplies that context. Current membership role assignment remains band-owned.",
+        "Both matrices and role association editors use the same role-owned validation and generic audited association persistence. BandRole rejects platform/unknown grants; never_grant is forbidden; designated GlobalRole Sysadmin retains sysadmin and login. Dedicated designation commands validate scope/public identities, refresh platform authority, lock the definition set in a serializable transaction, clear duplicate/deleted designations and share one audit operation; unchanged requests add no audit. Ambiguous band designations confer no platform public grants, while independently validated platform authority remains available for repair. Account-flag administrators still fail closed on ambiguous global Sysadmin designations.",
+        "Original profile and platform-account-list actions now assign or clear User.globalRoleId with fresh manage_global_users authority, authorized active GlobalRole choices, delegation limits and required continuity acknowledgement. They preserve both BandUser roles, credentials and sessions and audit only the changed User field. The final ordinary global-management holder excludes account-flag and role-carried Sysadmins. Current capability reads resolve global localized choices in one snapshot. Failed drafts remain editable; pending/unmounted requests cannot overlap or replace a new scope; committed refresh failures are distinct. Designation failures have an explicit retry action.",
+        "Verification: 105 focused request/policy/DOM cases in four files, 39 new native role cases, and all 64 native specifications through the repository runner: 836 passed and 24 existing gated cases skipped. The complete suite passes 2,937 cases with 866 skipped across all 283 selected files. Native checks cover repairs/no-op audits, protected grants, active/deleted/merged and revoked actors, delegation/continuity, session/membership preservation, strict public transport and independent band overrides/intentional blanks. Normal typecheck, targeted lint, normal isolated production build, diff and preservation checks pass. Details and logs are in 04-implementation-plan.md#verification-status.",
+        "Thirteen built Chromium assertion groups pass on disposable two-band data: original role creation, French inline localized edit and confirmation, Dutch labels, Permission metadata filtering/editing, both audited matrices, controlled-cell rejection, copy/unknown filter, designation changes, profile assignment, account-list clearing, explicit continuity retry and captured requests rejected after fresh platform revocation or from band-only/anonymous actors. French/Dutch grids and the band matrix are visually inspected; no uncaught page or unexpected RPC errors occur. Owned server/database/assets are removed. All 63 completed source blocks/references are removed; the reference-only RoleChip module is deleted, with membership chips and current DTOs retaining its applicable behavior. The obsolete role recovery page/strings and five superseded recovery-rejection cases are removed; the designation specification is executable. Account merge/analysis, full profile parity, localized-name matching, production inventory/rehearsal and A1/B remain open."
       ]
     },
     {
@@ -384,28 +388,10 @@
   ],
   "references": [
     {
-      "file": "src/auth/mutations/assignUserRole.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/mutations/assignUserRole.ts:1-100",
-      "sha256": "6eebc147f48611de9936fd7bab91bf7901a526eeb70fd70a87f2787d4fd7da74"
-    },
-    {
       "file": "src/auth/mutations/mergeUsers.ts",
       "featureId": "account-merge",
       "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/mutations/mergeUsers.ts:1-13",
       "sha256": "9967571e5c9719d3826522471c42b4cf1a149c8ff8d1be9743da6aa8a94f374a"
-    },
-    {
-      "file": "src/auth/mutations/setRoleDesignation.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/mutations/setRoleDesignation.ts:1-102",
-      "sha256": "98b81fb2a51958966fbaef7a3a16c34abbf30c3b57996ffcf47caf6191de0ae9"
-    },
-    {
-      "file": "src/auth/queries/getUserManagementCapabilities.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/queries/getUserManagementCapabilities.ts:1-64",
-      "sha256": "671905ec2da9afa071b6eb530b1adda0236b1ba50c0ae5dc4b7f684143174061"
     },
     {
       "file": "src/auth/queries/previewUserMerge.ts",
@@ -418,12 +404,6 @@
       "featureId": "account-merge",
       "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/queries/searchUserMergeCandidates.ts:1-75",
       "sha256": "b873d125900fff9e87fe3e756a93119350ea7ab0a8b2115a33b39ae963464374"
-    },
-    {
-      "file": "src/auth/server/userManagementState.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userManagementState.ts:1-161",
-      "sha256": "6baad7db1a98e7b38a8e0573f0cce7a2e43bf8352158b85523edf915319d02ba"
     },
     {
       "file": "src/auth/server/userMerge/classifyRecords.ts",
@@ -540,30 +520,6 @@
       "sha256": "507d4df11d742a8ea0b1f2ded6630f256cb21af112a4098f7a1af0948dcce2a6"
     },
     {
-      "file": "src/core/components/RoleChip.tsx",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/RoleChip.tsx:1-23",
-      "sha256": "5c2da24485e9b8f46fff79953c6a76a9748d5ead6f7d2f2cc0fb7c099735702c"
-    },
-    {
-      "file": "src/core/components/dashboardContext/DashboardContext.tsx",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/dashboardContext/DashboardContext.tsx:197-311",
-      "sha256": "72f3cf97c307e15909748689e623704199682e2ac030a53e2fd4eeab3ca4003d"
-    },
-    {
-      "file": "src/core/components/dashboardContext/dashboardContextTypes.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/dashboardContext/dashboardContextTypes.ts:1-146",
-      "sha256": "1166a3716f5e3aabb07af4e48bb93b2290ef8f1bb64bc005e2a19e8c88b77c23"
-    },
-    {
-      "file": "src/core/components/event/attendanceScenario.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/event/attendanceScenario.ts:1-203",
-      "sha256": "7a68d75efeaae0264e3d39ada713d821462d0b3385ffd052ad4447873914c6cd"
-    },
-    {
       "file": "src/core/components/user/MergeUsersButton.tsx",
       "featureId": "account-merge",
       "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/user/MergeUsersButton.tsx:1-240",
@@ -594,334 +550,16 @@
       "sha256": "8d387dd5a92512efe44676274d98bfca56e2c545c425c9c5ff59cd47ffaa0743"
     },
     {
-      "file": "src/core/components/user/UserDetail.tsx",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/user/UserDetail.tsx:1-286",
-      "sha256": "48e2e0cf30a2f471b3e90991a88cce37dc7eefe978c9ad2ba21968b4983eac35"
-    },
-    {
-      "file": "src/core/components/user/UserListItem.tsx",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/user/UserListItem.tsx:1-84",
-      "sha256": "00ec01e4f0cc6bef1574d62a4c0736c227574152dee03b63caca19bb5246e2d7"
-    },
-    {
-      "file": "src/core/db3/components/DB3JSONStringColumnClient.tsx",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/components/DB3JSONStringColumnClient.tsx:185-217",
-      "sha256": "fe9bb1583ea4ce0e2dd74bb051b22cf7f505c6d2cb8831fec1f505577d2f7eb0"
-    },
-    {
-      "file": "src/core/db3/components/DB3JSONStringColumnClient.tsx",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/components/DB3JSONStringColumnClient.tsx:515-592",
-      "sha256": "020fd71e3ae5445cce4f1b7aa355e2bb365199b0662c82afb6bad1eb709f1c7a"
-    },
-    {
-      "file": "src/core/db3/db3.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/db3.ts:1-62",
-      "sha256": "76cd11f03cfa305e795bc3f350a322f4c5dd6e41e729c1d103b683d500e14be9"
-    },
-    {
       "file": "src/core/db3/queries/getUserMassAnalysis.ts",
       "featureId": "account-analysis",
       "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/queries/getUserMassAnalysis.ts:1-189",
       "sha256": "91add029e3db55517fccc734919307b8fffd963421b535dc946f01f8373712d3"
     },
     {
-      "file": "src/core/db3/server/commands/rolePermissionSetCommand.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/server/commands/rolePermissionSetCommand.ts:1-66",
-      "sha256": "01e34cb7f0f2c33f6e5c73ef689d8d15ecf4abff2c45de710d966ed47ac6f0a6"
-    },
-    {
-      "file": "src/core/db3/server/db3CommandRegistry.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/server/db3CommandRegistry.ts:1-70",
-      "sha256": "1365510e8ee01420a92fd1d905b98c2e225400a6532bbd4fd4b0ff163f161604"
-    },
-    {
-      "file": "src/core/db3/server/db3DashboardData.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/server/db3DashboardData.ts:1-64",
-      "sha256": "3ebe76a8176a44a20740298013e9f0e2f96628058e04396a3c9e5bd7209f92f9"
-    },
-    {
-      "file": "src/core/db3/shared/entities/user/permissionViews.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/entities/user/permissionViews.ts:1-82",
-      "sha256": "57810eaf31f0457102baf207cf1a49aa1dbbaf4ff7dde74d0fb9f4cf72de8cf7"
-    },
-    {
-      "file": "src/core/db3/shared/entities/user/rolePermissionCommands.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/entities/user/rolePermissionCommands.ts:1-15",
-      "sha256": "b67a0d1fda641114f86762a0a70abf15d6022fa4c12d9422424664a9c16ee0fa"
-    },
-    {
-      "file": "src/core/db3/shared/entities/user/roleViews.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/entities/user/roleViews.ts:1-48",
-      "sha256": "529b2dad6a6506bf8c7fae13326b585361339ac53d3dc7fa7a2e6619578e9180"
-    },
-    {
-      "file": "src/core/db3/shared/entities/user/userViews.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/entities/user/userViews.ts:1-169",
-      "sha256": "05f3649d38e228c64a762ce5d4b2ad507326784ac67b60f5497cec5cf8c561c7"
-    },
-    {
-      "file": "src/core/db3/shared/references/dashboardData.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/references/dashboardData.ts:1-79",
-      "sha256": "a181a5b61f482ada785445aa6b53cb2ca59e810fc8016bf6a2f44f2bf8021472"
-    },
-    {
-      "file": "src/core/db3/shared/references/dashboardReferences.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/references/dashboardReferences.ts:33-33",
-      "sha256": "4a3ad4cf6726a83a9e44220e8d24737d3fb9954c28f88f12ae7852aae388d7dd"
-    },
-    {
-      "file": "src/core/db3/shared/references/dashboardReferences.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/references/dashboardReferences.ts:42-70",
-      "sha256": "936cf72e34c87903fa22cfd1e6df215e1b00eb5719a112dd55f568cabad2ec0c"
-    },
-    {
-      "file": "src/core/db3/shared/references/dashboardReferences.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/references/dashboardReferences.ts:145-148",
-      "sha256": "4ed056545b476a97d7f244cf1ea9e941dec7b45d96eb077351c7dd3b983de3d3"
-    },
-    {
-      "file": "src/core/db3/shared/references/dashboardReferences.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/references/dashboardReferences.ts:212-232",
-      "sha256": "fae1e0c42e9c8d80f8c880b50d5fec517bcdce620fbc48ca2401c871fd472ba7"
-    },
-    {
-      "file": "src/core/db3/shared/references/dashboardReferences.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/references/dashboardReferences.ts:323-327",
-      "sha256": "9d506ba9fb4a874d77cb44a97f8b1735974c7704473a5d5b871fc89c361ee862"
-    },
-    {
-      "file": "src/core/db3/shared/references/dashboardReferences.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/references/dashboardReferences.ts:355-385",
-      "sha256": "0d00d7b3f2a60d238756e70986870564cf8ee098ad2323101d40217f2e1e5c58"
-    },
-    {
-      "file": "src/core/db3/shared/schema/enrichedUserTypes.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/enrichedUserTypes.ts:1-64",
-      "sha256": "79a08cee8c2a04bb707c642a639dcb5fa53d36489fd703b9d0eb9450b8ea4434"
-    },
-    {
-      "file": "src/core/db3/shared/schema/prismArgs.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/prismArgs.ts:3-29",
-      "sha256": "22a1fe5f4db6256e1c8b783989dee84d2b17cfe6580903c0cf0d77ba90bd73f6"
-    },
-    {
-      "file": "src/core/db3/shared/schema/prismArgs.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/prismArgs.ts:147-151",
-      "sha256": "f35a55a84a92de9ef1fcd35e0c5041609461e5071223b7d4188d42356f31817e"
-    },
-    {
-      "file": "src/core/db3/shared/schema/prismArgs.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/prismArgs.ts:174-226",
-      "sha256": "c27889a1f2a6edc6c4339f1795187e39deef3a4fc3d32bbbad3793a0b0c5bc33"
-    },
-    {
-      "file": "src/core/db3/shared/schema/prismArgs.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/prismArgs.ts:392-423",
-      "sha256": "a4f2ff43a2510b89e122d018ced433d5bf944812d3f870cb7a55759f598d3c38"
-    },
-    {
-      "file": "src/core/db3/shared/schema/prismArgs.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/prismArgs.ts:467-501",
-      "sha256": "4f37cb4b158dbdb6df8d2279c2de16f0aecc9ddb54e77d9b01c02f002b881be9"
-    },
-    {
-      "file": "src/core/db3/shared/schema/prismArgs.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/prismArgs.ts:519-604",
-      "sha256": "92efd85a3e8e83b82b19867d7337df59dd85f723d7afe5986c3b6fb75ddb6d7a"
-    },
-    {
-      "file": "src/core/db3/shared/schema/prismArgs.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/prismArgs.ts:608-635",
-      "sha256": "4999318716a614e613a562c74aa07d89b879dea457a97c9cb126387cd50e8998"
-    },
-    {
-      "file": "src/core/db3/shared/schema/user.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/user.ts:8-16",
-      "sha256": "44f0a169f351a2be78178375db8dc3c6a33a596a4642b496a88f44a76a14a9bd"
-    },
-    {
-      "file": "src/core/db3/shared/schema/user.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/user.ts:23-23",
-      "sha256": "5cd2fc741c4fea750e073ff1d9349a36709482ab389f0bcc644199504d6d6fa7"
-    },
-    {
-      "file": "src/core/db3/shared/schema/user.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/user.ts:103-142",
-      "sha256": "15b90450c298577db5a592d1699730faa9c1348f7e146e341ae1319593a742ad"
-    },
-    {
-      "file": "src/core/db3/shared/schema/user.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/user.ts:166-181",
-      "sha256": "7605907c64e82e49877d9dfe4297c1481bf4d728752dbae80b53962890576422"
-    },
-    {
-      "file": "src/core/db3/shared/schema/user.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/user.ts:255-428",
-      "sha256": "7f34b60a20d2b9deb57ca5225f086e83f58fac85653abf021a000754bfe42a01"
-    },
-    {
-      "file": "src/core/db3/shared/schema/user.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/user.ts:630-640",
-      "sha256": "9ceacae85e680ceb3d3bfc640a42a073e68295045ddad35869b100880df9b1c1"
-    },
-    {
-      "file": "src/core/db3/shared/schema/user.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/user.ts:675-803",
-      "sha256": "9ee9f5efc2690744e164bc91f54e530d8c611b336edc016021a742b7f5b0c472"
-    },
-    {
-      "file": "src/pages/backstage/adminUsers.tsx",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/pages/backstage/adminUsers.tsx:1-74",
-      "sha256": "dfc7d8c03f2ce95e250eec9e98f5a265d10b102397161bdd316b09731a581e0a"
-    },
-    {
-      "file": "src/pages/backstage/rolePermissions.tsx",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/pages/backstage/rolePermissions.tsx:1-84",
-      "sha256": "b3948361cfd40030511e373ead8c17554c0ca813b12931e920f952e7b446347e"
-    },
-    {
-      "file": "src/pages/backstage/roles.tsx",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/pages/backstage/roles.tsx:1-128",
-      "sha256": "9fc2a575d5a0149e49a96b7a1c7a52111649e135a06bb73f51d2cd4c31105d25"
-    },
-    {
-      "file": "tests/authorization/authorizationTestHarness.test.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/authorizationTestHarness.test.ts:28-28",
-      "sha256": "a31805b0e1f7840fa4261f20d4d956681353a443ca5ba10db4d358e80d82080f"
-    },
-    {
-      "file": "tests/authorization/authorizationTestHarness.test.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/authorizationTestHarness.test.ts:35-35",
-      "sha256": "7ac9a82ac429e61ebc989780bbc85bb8b841c8f38b0547db51043de074acb059"
-    },
-    {
-      "file": "tests/authorization/authorizationTestHarness.test.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/authorizationTestHarness.test.ts:351-731",
-      "sha256": "9d83b87713e2dcfd04f78b36205dc589bca9220b3c74feddb49c224a15690c24"
-    },
-    {
-      "file": "tests/authorization/authorizationTestHarness.test.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/authorizationTestHarness.test.ts:988-1571",
-      "sha256": "ce2e8c7491eff8493f9a7d2b916a1d795a300198206c91cb2f67c299bfa2d174"
-    },
-    {
-      "file": "tests/authorization/authorizationTestHarness.test.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/authorizationTestHarness.test.ts:1860-2135",
-      "sha256": "b58044e39bb3534e84fd6574be28657b3f7af8a3816035e919e6f6a70c19e7cc"
-    },
-    {
-      "file": "tests/authorization/backstageServerGuard.test.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/backstageServerGuard.test.ts:1-197",
-      "sha256": "3e79e9fcb1765f2cc8bb4116de8e3a8692763a652d1c20df0a8c952aec23c628"
-    },
-    {
-      "file": "tests/authorization/db3TableAuthorization.test.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/db3TableAuthorization.test.ts:1-294",
-      "sha256": "446c76fdc75d553aa0e6bc3b128b06bfc83d6901db71e47ab41823de73dfd53d"
-    },
-    {
-      "file": "tests/authorization/db3Views.test.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/db3Views.test.ts:172-250",
-      "sha256": "6f0c652ea9f19dcb356b1eec932281240305da3824b61ac32ab1d44a544a6e39"
-    },
-    {
-      "file": "tests/authorization/directMutationHardening.test.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/directMutationHardening.test.ts:70-192",
-      "sha256": "f254403fdf8b291b6c89cb348c514deefa6af84c81f3ccf058454dcf5f05d90b"
-    },
-    {
-      "file": "tests/authorization/roleDesignation.test.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/roleDesignation.test.ts:1-272",
-      "sha256": "41097c870066573638049aea95636399221b8f3e10a2363e2e8381e9c78009d4"
-    },
-    {
       "file": "tests/authorization/userMerge.test.ts",
       "featureId": "account-merge",
       "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/userMerge.test.ts:1-145",
       "sha256": "a8061ff9c51ca57e29f5f40832debe891c302371b34c82787f8c0f29f8556d66"
-    },
-    {
-      "file": "tests/dashboardBootstrap.mysql.test.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/dashboardBootstrap.mysql.test.ts:1-143",
-      "sha256": "8c71a899965d7134d364409a046568e7350d630d4ebe0ca5556c3c3b55ee3a97"
-    },
-    {
-      "file": "tests/db3Commands.test.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/db3Commands.test.ts:9-9",
-      "sha256": "3afb79db4226ad667341211c9033e8371a3cb24fed210af8500d01ec4effd240"
-    },
-    {
-      "file": "tests/db3Commands.test.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/db3Commands.test.ts:27-31",
-      "sha256": "2248a96ffb7d5e0172ac4b2c4a44ed1b08434bda4d3c64cb358b9efff161d9a4"
-    },
-    {
-      "file": "tests/db3Commands.test.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/db3Commands.test.ts:222-300",
-      "sha256": "d746acc8a7661407aaef348db11cc9c6664c46972c95d75d7ece4736cf716ac7"
-    },
-    {
-      "file": "tests/db3Commands.test.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/db3Commands.test.ts:594-614",
-      "sha256": "44684395341fed7b34bc5e552b07dd840603b2de554433176a958e0c88bbe5fd"
-    },
-    {
-      "file": "tests/db3DashboardCatalogs.mysql.test.ts",
-      "featureId": "role-administration",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/db3DashboardCatalogs.mysql.test.ts:1-137",
-      "sha256": "0a1bebfa3911365a8ed9e22a8d6975198560e17d9ca4fef8c1ed64f377cd96ca"
     },
     {
       "file": "tests/userMerge.mysql.test.ts",
@@ -994,12 +632,6 @@
       "featureId": "member-profile",
       "source": "3bdf5b99754f60c1fb42c83779cf3ee9b9cf33de:src/core/db3/mutations/updateUserPrimaryInstrumentMutation.ts:1-54",
       "sha256": "037efce72d6a9258aa5bad89fb205696ce85a33d430898a3081fbd6df4a6d037"
-    },
-    {
-      "file": "src/pages/backstage/roles.tsx",
-      "featureId": "role-administration",
-      "source": "30ce7de7d429973877201a8cf94c27979333cfc6:src/auth/queries/getAllRoles.ts:1-23",
-      "sha256": "5244e8b648c4c6b5622153ec73ce512ed4d33942216cceab684928dc884d22dc"
     },
     {
       "file": "src/core/db3/shared/schema/prismArgs.ts",
@@ -1312,12 +944,6 @@
       "featureId": "wiki-search",
       "source": "976ab6f7a3781848ffc23a2a1cac87e96ff286b9:tests/db3LegacyReadCompatibilityInventory.test.ts:32-35",
       "sha256": "001ddfa0bc3a17b36304d67b9f93afaaadd0d35ba1208d524011048b76a1724b"
-    },
-    {
-      "file": "tests/authorization/sessionAuthorizationHardening.test.ts",
-      "featureId": "role-administration",
-      "source": "09914973c9b78c61740b465524f7ba48ccbe47c9:tests/authorization/sessionAuthorizationHardening.test.ts:1-94",
-      "sha256": "e1714128247b79d713384dfdd22cf29d778b025296853f51fce2f5443ea4e4d7"
     },
     {
       "file": "src/pages/backstage/events.tsx",

@@ -415,7 +415,7 @@ const permissionRegistry = [
     "platform",
     "Administer shared accounts and global role assignments.",
     8840,
-    protectedPermission
+    { ...protectedPermission, isContinuitySensitive: true }
   ),
   definePermission(
     "impersonate_user",

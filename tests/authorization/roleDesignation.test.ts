@@ -1,285 +1,51 @@
-// MIGRATION_DEFERRED_TEST
-// Preserved migration reference only. The empty export keeps this file a TypeScript module.
-export {};
+import { describe, expect, it } from "vitest";
+import { parsePublicId } from "shared/publicId";
+import { SetRoleDesignationInput } from "src/auth/roleDesignations";
+import { AssignUserRoleInput } from "src/auth/mutations/assignUserRole";
+import { bandRoleEditorView, globalRoleEditorView } from "src/core/db3/shared/entities/user/roleViews";
+import { setBandRolePermissionCommand, setGlobalRolePermissionCommand } from "src/core/db3/shared/entities/user/rolePermissionCommands";
+import { getDB3CommandHandler } from "src/core/db3/server/db3CommandRegistry";
 
+const globalRole = parsePublicId<"GlobalRole">("GlobalRole000001");
+const bandRole = parsePublicId<"BandRole">("BandRole00000001");
+const userId = parsePublicId<"User">("Account000000001");
 
-// MIGRATION_RESTORE: role-administration
-// Source: ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/roleDesignation.test.ts:1-272
-// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
-// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
-// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
-// SHA256: 41097c870066573638049aea95636399221b8f3e10a2363e2e8381e9c78009d4
-// MIGRATION_REFERENCE_BEGIN
-// import { beforeEach, describe, expect, it, vi } from "vitest"
-// import { Permission } from "shared/permissions"
-// import { parsePublicId } from "shared/publicId"
-//
-// vi.mock("db", async () => {
-//   const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client")
-//   const { authorizationTestDb } = await import("./support/inMemoryPrisma")
-//   return {
-//     ...prisma,
-//     default: authorizationTestDb,
-//   }
-// })
-//
-// import db3Mutation from "tests/authorization/db3MutationTestResolver"
-// import setRoleDesignation from "src/auth/mutations/setRoleDesignation"
-// import {
-//   RoleDesignation,
-//   type RoleDesignationValue,
-// } from "src/auth/roleDesignations"
-// import {
-//   createAuthorizationPersona,
-//   createAuthorizationTestUser,
-// } from "./support/authorizationFixtures"
-// import { forgeDb3Insert, forgeDb3PublicUpdate } from "./support/db3RequestBuilders"
-// import { authorizationTestDb } from "./support/inMemoryPrisma"
-// import { invokeResolver } from "./support/resolverHarness"
-//
-// type RoleFlag = "isRoleForNewUsers" | "isPublicRole" | "isSysAdminRole"
-//
-// const makeRole = (id: number, overrides: Partial<Record<RoleFlag, boolean>> = {}) => ({
-//   id,
-//   publicId: parsePublicId<"Role">(`RolePublic${id.toString().padStart(6, "0")}`),
-//   name: `Role ${id}`,
-//   description: "",
-//   isRoleForNewUsers: false,
-//   isPublicRole: false,
-//   isSysAdminRole: false,
-//   sortOrder: id,
-//   color: null,
-//   significance: null,
-//   permissions: [],
-//   ...overrides,
-// })
-//
-// const assignments: Array<{
-//   designation: RoleDesignationValue
-//   flag: RoleFlag
-// }> = [
-//   { designation: RoleDesignation.newUsers, flag: "isRoleForNewUsers" },
-//   { designation: RoleDesignation.public, flag: "isPublicRole" },
-//   { designation: RoleDesignation.sysadmin, flag: "isSysAdminRole" },
-// ]
-//
-// describe("BA-U005 built-in role designations", () => {
-//   const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
-//
-//   beforeEach(() => {
-//     vi.restoreAllMocks()
-//   })
-//
-//   it.each(assignments)("atomically repairs duplicate $designation assignments", async ({
-//     designation,
-//     flag,
-//   }) => {
-//     const roles = [
-//       makeRole(10, { [flag]: true }),
-//       makeRole(11, { [flag]: true }),
-//       {
-//         ...makeRole(12),
-//         permissions: designation === RoleDesignation.sysadmin
-//           ? [{ permissionId: 500, permission: { id: 500, name: Permission.sysadmin } }]
-//           : [],
-//       },
-//     ]
-//     const sessions = [{ id: 1, userId: sysadmin.id }, { id: 2, userId: 99 }]
-//     authorizationTestDb.reset({ user: [sysadmin], role: roles, change: [], session: sessions })
-//     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-//
-//     await expect(invokeResolver(setRoleDesignation, {
-//       designation,
-//       roleId: roles[2]!.publicId,
-//     }, ctx)).resolves.toEqual({ designation, roleId: roles[2]!.publicId })
-//
-//     const resultingRoles = authorizationTestDb.snapshot("role")
-//     expect(authorizationTestDb.snapshot("session")).toEqual(sessions)
-//     expect(resultingRoles.filter(role => role[flag])).toEqual([
-//       expect.objectContaining({ id: 12 }),
-//     ])
-//
-//     const changes = authorizationTestDb.snapshot("change")
-//     expect(changes).toHaveLength(3)
-//     expect(new Set(changes.map(change => change.operationId)).size).toBe(1)
-//     expect(changes).toEqual(expect.arrayContaining([
-//       expect.objectContaining({
-//         table: "Role",
-//         recordId: 10,
-//         context: "setRoleDesignation",
-//         oldValues: JSON.stringify({ [flag]: true }),
-//         newValues: JSON.stringify({ [flag]: false }),
-//       }),
-//       expect.objectContaining({
-//         table: "Role",
-//         recordId: 11,
-//         context: "setRoleDesignation",
-//         oldValues: JSON.stringify({ [flag]: true }),
-//         newValues: JSON.stringify({ [flag]: false }),
-//       }),
-//       expect.objectContaining({
-//         table: "Role",
-//         recordId: 12,
-//         context: "setRoleDesignation",
-//         oldValues: JSON.stringify({ [flag]: false }),
-//         newValues: JSON.stringify({ [flag]: true }),
-//       }),
-//     ]))
-//   })
-//
-//   it.each(assignments)("repairs a missing $designation assignment", async ({ designation, flag }) => {
-//     const selectedRole = {
-//       ...makeRole(11),
-//       permissions: designation === RoleDesignation.sysadmin
-//         ? [{ permissionId: 500, permission: { id: 500, name: Permission.sysadmin } }]
-//         : [],
-//     }
-//     authorizationTestDb.reset({
-//       user: [sysadmin],
-//       role: [makeRole(10), selectedRole],
-//       change: [],
-//     })
-//     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-//
-//     await invokeResolver(setRoleDesignation, { designation, roleId: selectedRole.publicId }, ctx)
-//
-//     expect(authorizationTestDb.snapshot("role").filter(role => role[flag])).toEqual([
-//       expect.objectContaining({ id: 11 }),
-//     ])
-//     expect(authorizationTestDb.snapshot("change")).toHaveLength(1)
-//   })
-//
-//   it("does not audit or write an already-valid assignment", async () => {
-//     const selectedRole = makeRole(10, { isPublicRole: true })
-//     authorizationTestDb.reset({
-//       user: [sysadmin],
-//       role: [selectedRole, makeRole(11)],
-//       change: [],
-//     })
-//     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-//     const update = vi.spyOn(authorizationTestDb.getDelegate("role"), "update")
-//
-//     await invokeResolver(setRoleDesignation, {
-//       designation: RoleDesignation.public,
-//       roleId: selectedRole.publicId,
-//     }, ctx)
-//
-//     expect(update).not.toHaveBeenCalled()
-//     expect(authorizationTestDb.snapshot("change")).toEqual([])
-//   })
-//
-//   it("accepts a freshly verified Sysadmin permission without requiring the user flag", async () => {
-//     const roleCarriedSysadmin = createAuthorizationTestUser("sysadmin", {
-//       id: 2,
-//       isSysAdmin: false,
-//     })
-//     const selectedRole = makeRole(10, { isPublicRole: true })
-//     authorizationTestDb.reset({
-//       user: [roleCarriedSysadmin],
-//       role: [selectedRole],
-//       change: [],
-//     })
-//     const { ctx } = createAuthorizationPersona("sysadmin", {
-//       id: roleCarriedSysadmin.id,
-//       isSysAdmin: false,
-//     })
-//     const findRoles = vi.spyOn(authorizationTestDb.getDelegate("role"), "findMany")
-//
-//     await expect(invokeResolver(setRoleDesignation, {
-//       designation: RoleDesignation.public,
-//       roleId: selectedRole.publicId,
-//     }, ctx)).resolves.toEqual({ designation: RoleDesignation.public, roleId: selectedRole.publicId })
-//
-//     expect(findRoles).toHaveBeenCalled()
-//     expect(authorizationTestDb.snapshot("change")).toEqual([])
-//   })
-//
-//   it("rejects an unknown selected role without changing assignments", async () => {
-//     const roles = [makeRole(10, { isRoleForNewUsers: true }), makeRole(11)]
-//     authorizationTestDb.reset({ user: [sysadmin], role: roles, change: [] })
-//     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-//
-//     await expect(invokeResolver(setRoleDesignation, {
-//       designation: RoleDesignation.newUsers,
-//       roleId: parsePublicId<"Role">("UnknownRolePub01"),
-//     }, ctx)).rejects.toThrow()
-//
-//     expect(authorizationTestDb.snapshot("role")).toEqual(roles)
-//     expect(authorizationTestDb.snapshot("change")).toEqual([])
-//   })
-//
-//   it("rejects designating a Sysadmin role that cannot administer the platform", async () => {
-//     const roles = [{
-//       ...makeRole(10, { isSysAdminRole: true }),
-//       permissions: [{ permissionId: 500, permission: { id: 500, name: Permission.sysadmin } }],
-//     }, { ...makeRole(11), permissions: [] }]
-//     authorizationTestDb.reset({ user: [sysadmin], role: roles, change: [] })
-//     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-//
-//     await expect(invokeResolver(setRoleDesignation, {
-//       designation: RoleDesignation.sysadmin,
-//       roleId: roles[1]!.publicId,
-//     }, ctx)).rejects.toThrow(`must grant ${Permission.sysadmin}`)
-//
-//     expect(authorizationTestDb.snapshot("role").filter(role => role.isSysAdminRole)).toEqual([
-//       expect.objectContaining({ id: 10 }),
-//     ])
-//   })
-//
-//   it.each(assignments)("rejects generic updates to $flag, including from Sysadmin", async ({ flag }) => {
-//     const selectedRole = makeRole(10, { [flag]: true })
-//     authorizationTestDb.reset({
-//       user: [sysadmin],
-//       role: [selectedRole, makeRole(11)],
-//       change: [],
-//     })
-//     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-//     const update = vi.spyOn(authorizationTestDb.getDelegate("role"), "update")
-//
-//     await expect(invokeResolver(
-//       db3Mutation,
-//       forgeDb3PublicUpdate("Role", selectedRole.publicId, { [flag]: false }),
-//       ctx,
-//     )).rejects.toThrow(`Not authorized to mutate Role fields: ${flag}`)
-//
-//     expect(update).not.toHaveBeenCalled()
-//   })
-//
-//   it("allows generic creation of an unassigned ordinary role", async () => {
-//     authorizationTestDb.reset({ user: [sysadmin], role: [], change: [] })
-//     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-//
-//     await expect(invokeResolver(
-//       db3Mutation,
-//       forgeDb3Insert("Role", {
-//         name: "Ordinary role",
-//         isRoleForNewUsers: false,
-//         isPublicRole: false,
-//       }),
-//       ctx,
-//     )).resolves.toEqual(expect.objectContaining({
-//       name: "Ordinary role",
-//       isRoleForNewUsers: false,
-//       isPublicRole: false,
-//     }))
-//   })
-//
-//   it.each(assignments)("rejects generic creation with $flag assigned", async ({ flag }) => {
-//     authorizationTestDb.reset({ user: [sysadmin], role: [], change: [] })
-//     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-//
-//     await expect(invokeResolver(
-//       db3Mutation,
-//       forgeDb3Insert("Role", {
-//         name: "Forged built-in role",
-//         isRoleForNewUsers: false,
-//         isPublicRole: false,
-//         [flag]: true,
-//       }),
-//       ctx,
-//     )).rejects.toThrow(`Not authorized to mutate Role fields: ${flag}`)
-//
-//     expect(authorizationTestDb.snapshot("role")).toEqual([])
-//   })
-// })
-// MIGRATION_REFERENCE_END
+describe("role administration request boundaries", () => {
+    it.each([
+        { scope: "global", designation: "sysadmin", roleId: globalRole },
+        { scope: "band", designation: "public", roleId: bandRole },
+        { scope: "band", designation: "newUsers", roleId: bandRole },
+    ])("accepts the migrated $scope/$designation designation", edit => {
+        expect(SetRoleDesignationInput.parse(edit)).toEqual(edit);
+    });
+    it.each([
+        { scope: "global", designation: "public", roleId: globalRole },
+        { scope: "global", designation: "newUsers", roleId: globalRole },
+        { scope: "band", designation: "sysadmin", roleId: bandRole },
+        { designation: "public", roleId: bandRole },
+        { scope: "band", designation: "public", roleId: 12 },
+        { scope: "band", designation: "public", roleId: bandRole, bandId: 1 },
+        { scope: "band", designation: "public", roleId: bandRole, isPublicRole: true },
+    ])("rejects ambiguous or forged designations %#", edit => {
+        expect(() => SetRoleDesignationInput.parse(edit)).toThrow();
+    });
+    it.each([globalRole, null])("requires explicit continuity policy for account role %s", roleId => {
+        expect(AssignUserRoleInput.parse({ userId, roleId, acknowledgeContinuityRisk: false })).toEqual({ userId, roleId, acknowledgeContinuityRisk: false });
+        expect(() => AssignUserRoleInput.parse({ userId, roleId })).toThrow();
+        expect(() => AssignUserRoleInput.parse({ userId, roleId, acknowledgeContinuityRisk: false, bandId: 1 })).toThrow();
+    });
+    it.each([globalRoleEditorView, bandRoleEditorView])("keeps singleton and deletion flags out of generic writes: $viewID", view => {
+        const command = view.crud.operations.update.command;
+        for (const flag of ["isRoleForNewUsers", "isPublicRole", "isDeleted", "isSysAdminRole"]) {
+            expect(() => command.parseDto({ identity: globalRole, patch: { [flag]: true } })).toThrow();
+        }
+        expect(view.crud.operations.delete).toBeUndefined();
+    });
+    it.each([setGlobalRolePermissionCommand, setBandRolePermissionCommand])("registers strict public association commands: $commandID", command => {
+        expect(getDB3CommandHandler(command.commandID).command).toBe(command);
+        const request = { localIdentity: "Permission000001", foreignIdentity: bandRole, isAssociated: true };
+        expect(command.parseDto(request)).toEqual(request);
+        expect(() => command.parseDto({ ...request, localIdentity: 1 })).toThrow();
+        expect(() => command.parseDto({ ...request, userId })).toThrow();
+    });
+});

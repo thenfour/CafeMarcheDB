@@ -65,6 +65,7 @@ describe("canonical permission registry", () => {
     expect([...gContinuitySensitivePermissions]).toEqual([
       Permission.deactivate_users,
       Permission.assign_user_roles,
+      Permission.manage_global_users,
     ])
   })
 

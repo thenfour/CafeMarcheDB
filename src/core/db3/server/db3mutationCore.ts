@@ -333,6 +333,13 @@ export const UpdateAssociations = async ({ changeContext, auth, ...args }: Updat
         fallbackOwnerId: null,
     }));
 
+    await args.column.validateWrite?.({
+        database: transactionalDb,
+        authorization: auth,
+        localId: args.localId,
+        desiredForeignIds: args.desiredTagIds,
+    });
+
     const currentAssociations = await transactionalDb[associationTableName].findMany({
         where: { [args.column.associationLocalIDMember]: args.localId },
     });

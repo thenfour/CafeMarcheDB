@@ -32,6 +32,7 @@ import { gIconMap } from './IconMap';
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
 import { gridSortModelFromPrismaOrderBy } from "./db3GridSort";
 import { useLocale } from "src/locale/components/useLocale";
+import type { DB3CommandContextInput } from "./useDB3Command";
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 50 as number;
@@ -109,6 +110,8 @@ type DB3CrudEditGridProps<TView extends db3.AnyDB3CrudView> =
         view: TView;
         tableSpec: DB3Client.xTableClientSpec<TView>;
         referenceProvider?: db3.DB3ReferenceProvider<db3.ReferenceContractOf<TView>>;
+        writeContext?: DB3CommandContextInput;
+        onChanged?: () => Promise<void>;
     };
 
 type DB3ReadOnlyGridProps = DB3EditGridBaseProps & {
@@ -214,6 +217,8 @@ function DB3CrudEditGrid<TView extends db3.AnyDB3CrudView>({
         paginationModel: queryState.paginationModel,
         includeDeleted: queryState.includeDeleted,
         paginated: true,
+        writeContext: props.writeContext,
+        onChanged: props.onChanged,
     });
     return <DB3EditGridImpl
         {...props}

@@ -8,9 +8,11 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import { LocalizedStringColumnClient } from "src/core/db3/components/DB3CatalogFields";
+import { usePresentation } from "src/locale/components/PresentationProvider";
 
 const Inner = () => {
     const dashboardContext = useDashboardContext();
+    const presentation = usePresentation();
 
     const codePermissions = gPermissionOrdered;
 
@@ -35,12 +37,17 @@ const Inner = () => {
 
     return <>
         {missingInDb.map(x => <div key={x} style={{ fontSize: "48px" }}>❗🟥 "{x}" is missing in the db; restarting the server will sync it up</div>)}
-        <DB3EditGrid tableSpec={PermissionClientSchema} view={db3.permissionEditorView} renderExtraActions={(x) => {
-            return <div>{codePermissions.some(k => k === x.row.name) ? (
-                <Tooltip title="this permission is in sync with code."><div>☑</div></Tooltip>)
-                : (<Tooltip title="this permission is not known in code; it can probably be deleted.">
-                    <div style={{ display: "flex", whiteSpace: "nowrap" }}>❗🟥Unknown</div></Tooltip>)}</div>
-        }} />
+        <DB3EditGrid
+            tableSpec={PermissionClientSchema}
+            view={db3.permissionEditorView}
+            writeContext={{ bandPublicId: null }}
+            onChanged={async () => { await presentation.invalidate(); }} renderExtraActions={(x) => {
+                return <div>{codePermissions.some(k => k === x.row.name) ? (
+                    <Tooltip title="this permission is in sync with code."><div>☑</div></Tooltip>)
+                    : (<Tooltip title="this permission is not known in code; it can probably be deleted.">
+                        <div style={{ display: "flex", whiteSpace: "nowrap" }}>❗🟥Unknown</div></Tooltip>)}</div>
+            }}
+        />
     </>;
 }
 

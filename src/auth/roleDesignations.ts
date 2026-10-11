@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isPublicId, type RolePublicId } from "shared/publicId";
+import { isPublicId, type GlobalRolePublicId, type BandRolePublicId } from "shared/publicId";
 
 export const RoleDesignation = {
     newUsers: "newUsers",
@@ -9,7 +9,16 @@ export const RoleDesignation = {
 
 export type RoleDesignationValue = typeof RoleDesignation[keyof typeof RoleDesignation];
 
-export const SetRoleDesignationInput = z.object({
-    designation: z.enum([RoleDesignation.newUsers, RoleDesignation.public, RoleDesignation.sysadmin]),
-    roleId: z.custom<RolePublicId>(isPublicId),
-});
+export const SetRoleDesignationInput = z.discriminatedUnion("scope", [
+    z.object({
+        scope: z.literal("global"),
+        designation: z.literal(RoleDesignation.sysadmin),
+        roleId: z.custom<GlobalRolePublicId>(isPublicId)
+    }).strict(),
+    z.object({
+        scope: z.literal("band"),
+        designation: z.enum([RoleDesignation.newUsers, RoleDesignation.public]),
+        roleId: z.custom<BandRolePublicId>(isPublicId)
+    }).strict(),
+]);
+export type SetRoleDesignation = z.infer<typeof SetRoleDesignationInput>;

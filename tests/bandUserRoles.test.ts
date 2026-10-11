@@ -25,12 +25,12 @@ describe("membership role transport", () => {
         expect(bandUserRoleCommand.parseResult({ membershipId, roleId, status: "confirmationRequired", permissions: [Permission.assign_user_roles] })).toMatchObject({ status: "confirmationRequired" });
         expect(() => bandUserRoleCommand.parseResult({ membershipId, roleId, status: "confirmationRequired", permissions: [] })).toThrow();
     });
-    it("derives public membership/role references and keeps role catalogs read-only", () => {
+    it("derives public membership/role references and reserves definition editing for Sysadmins", () => {
         expect(bandUserRolesView.parseDto({
             publicId: membershipId, userId: "User000000000001", user: { publicId: "User000000000001", name: "Alice" },
             bandRoleId: roleId, bandRole: { publicId: roleId }
         })).toMatchObject({ bandRoleId: roleId });
         expect(bandRoleListView.tableID).toBe("BandRole");
-        expect(xBandRole.tableAuthMap.Edit).toBe(Permission.never_grant);
+        expect(xBandRole.tableAuthMap.Edit).toBe(Permission.sysadmin);
     });
 });

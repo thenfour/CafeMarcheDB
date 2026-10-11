@@ -22,14 +22,15 @@ import { validateDB3MutationRequest, validateDB3PaginatedQueryRequest, validateD
 import getAdminLogItemInfo from "@db3/queries/getAdminLogItemInfo";
 import getDistinctChangeFilterValues from "@db3/queries/getDistinctChangeFilterValues";
 import { insertImpl } from "@db3/server/db3mutationCore";
-import assignUserRole from "src/auth/mutations/assignUserRole";
-import setRoleDesignation from "src/auth/mutations/setRoleDesignation";
 import mergeUsers from "src/auth/mutations/mergeUsers";
 import previewUserMerge from "src/auth/queries/previewUserMerge";
 import searchUserMergeCandidates from "src/auth/queries/searchUserMergeCandidates";
 import getUserMassAnalysis from "@db3/queries/getUserMassAnalysis";
 import { ApplicationFeatureUnavailableError } from "src/core/shared/applicationRecovery";
 import { parsePublicId } from "shared/publicId";
+
+// These requests deliberately target the removed single-band Role contract.
+const roleId = parsePublicId<"Role">("DeferredRole0001");
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { invokeResolver } from "./support/resolverHarness";
 import { forgeDb3Insert, forgeDb3PublicUpdate, forgeDb3PublicDelete, forgeDb3Query } from "./support/db3RequestBuilders";
@@ -37,16 +38,10 @@ import { forgeDb3Insert, forgeDb3PublicUpdate, forgeDb3PublicDelete, forgeDb3Que
 const member = createAuthorizationTestUser("normal", { id: 10 });
 const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 });
 const userId = member.publicId;
-const roleId = parsePublicId<"Role">("DeferredRole0001");
 const participants = { mainUserId: userId, retiringUserId: sysadmin.publicId };
 type RequestContext = Ctx | AuthenticatedCtx;
 
 const deferredEndpoints = [
-    { name: "assign account role", call: (ctx: RequestContext) => invokeResolver(assignUserRole, { userId, roleId, acknowledgeContinuityRisk: true }, ctx) },
-    { name: "clear account role", call: (ctx: RequestContext) => invokeResolver(assignUserRole, { userId, roleId: null, acknowledgeContinuityRisk: true }, ctx) },
-    { name: "designate public role", call: (ctx: RequestContext) => invokeResolver(setRoleDesignation, { roleId, designation: "public" }, ctx) },
-    { name: "designate new-user role", call: (ctx: RequestContext) => invokeResolver(setRoleDesignation, { roleId, designation: "newUsers" }, ctx) },
-    { name: "designate sysadmin role", call: (ctx: RequestContext) => invokeResolver(setRoleDesignation, { roleId, designation: "sysadmin" }, ctx) },
     { name: "search merge candidates", call: (ctx: RequestContext) => invokeResolver(searchUserMergeCandidates, { query: "", excludeUserId: userId }, ctx) },
     { name: "preview account merge", call: (ctx: RequestContext) => invokeResolver(previewUserMerge, participants, ctx) },
     { name: "commit account merge", call: (ctx: RequestContext) => invokeResolver(mergeUsers, { participants, confirmation: "a".repeat(64) }, ctx) },

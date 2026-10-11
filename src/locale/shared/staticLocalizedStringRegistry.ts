@@ -13,6 +13,7 @@ import { eventStatisticsStrings } from "./eventStatisticsStrings";
 import { markdownReferenceStrings } from "./markdownReferenceStrings";
 import { localizedMarkdownStrings } from "./localizedMarkdownStrings";
 import { activityReportStrings } from "./activityReportStrings";
+import { roleAdministrationStrings } from "./roleAdministrationStrings";
 
 function defaultMarkdownStaticString() {
     return markdownStaticString({
@@ -35,6 +36,7 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
     ...markdownReferenceStrings,
     ...localizedMarkdownStrings,
     ...activityReportStrings,
+    ...roleAdministrationStrings,
     "common.action.ok": plainStaticString({
         defaultValue: "OK",
         description: "Label for an OK button",

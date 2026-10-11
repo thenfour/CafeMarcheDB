@@ -17,11 +17,13 @@ import {
 } from '@mui/x-data-grid';
 import React from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { CMButton } from "src/core/components/CMCoreComponents2";
 import * as DB3Client from "../DB3Client";
 import type { CMDBTableFilterItem, CMDBTableFilterModel } from '../shared/apiTypes';
 import type { AnyDB3AssociationCommand } from '../shared/core/db3AssociationCommand';
 import * as db3 from "../db3";
 import { useDashboardContext } from "../../components/dashboardContext/DashboardContext";
+import type { DB3CommandContextInput } from "./useDB3Command";
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 
@@ -41,6 +43,9 @@ export type DB3BooleanMatrixProps<
     foreignTableSpec: DB3Client.xTableClientSpec<TForeignView>,
     tagsField: DB3Client.TagsFieldClient<TAssociation>,
     associationCommand: AnyDB3AssociationCommand,
+    writeContext?: DB3CommandContextInput;
+    disabled?: boolean;
+    onChanged?: () => Promise<void>;
     renderExtraActions?: (args: DB3AssMatrxiExtraActionsArgs<db3.ClientOf<TLocalView>>) => React.ReactNode,
     filterRow?: (row: db3.ClientOf<TLocalView>) => boolean;
 };
@@ -52,7 +57,40 @@ export function DB3AssociationMatrix<
 >(props: DB3BooleanMatrixProps<TLocalView, TForeignView, TAssociation>) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const dashboardContext = useDashboardContext();
-    const associationCommand = DB3Client.useDB3Command(props.associationCommand);
+    const associationCommand = DB3Client.useDB3Command(props.associationCommand, props.writeContext);
+    const pending = React.useRef(false);
+    const [saving, setSaving] = React.useState(false);
+    const alive = React.useRef(true);
+    React.useEffect(() => {
+        alive.current = true;
+        return () => { alive.current = false; };
+    }, []);
+
+    const setAssociation = async (local: db3.ClientOf<TLocalView>, foreign: db3.ClientOf<TForeignView>, isAssociated: boolean) => {
+        if (pending.current || props.disabled) {
+            return;
+        }
+        pending.current = true;
+        setSaving(true);
+        try {
+            await associationCommand.invoke({ local, foreign, isAssociated });
+            if (!alive.current) {
+                return;
+            }
+            await dbRows.refetch();
+            await props.onChanged?.();
+            showSnackbar({ children: "change successful", severity: "success" });
+        } catch {
+            if (alive.current) {
+                showSnackbar({ children: "change failed", severity: "error" });
+            }
+        } finally {
+            pending.current = false;
+            if (alive.current) {
+                setSaving(false);
+            }
+        }
+    };
 
     // set initial pagination values + get pagination state.
     const [paginationModel, setPaginationModel] = React.useState({
@@ -99,6 +137,8 @@ export function DB3AssociationMatrix<
         referenceProvider: dashboardContext.referenceStore,
         // use the table's natural sort
     });
+    // The foreign spec is also view-bound; the render facade erases this generic parameter.
+    const foreignRows = dbColumns.items as db3.ClientOf<TForeignView>[];
 
     if (props.associationCommand.localEntity.tableID
         !== props.localTableSpec.args.table.tableID) {
@@ -128,7 +168,7 @@ export function DB3AssociationMatrix<
             return info.name;
         }
     },
-    ...dbColumns.items.map((tag): GridColDef => ({
+    ...foreignRows.map((tag): GridColDef => ({
         field: `id:${tag[props.foreignTableSpec.args.table.clientIdMember]}`,
         editable: false,
         headerName: props.foreignTableSpec.args.table.getRowInfo(tag).name,
@@ -146,18 +186,9 @@ export function DB3AssociationMatrix<
             );
             return <div className='MuiDataGrid-cellContent'><Checkbox
                 checked={!!association}
+                disabled={saving || props.disabled}
                 onChange={(_event, value) => {
-                    associationCommand.invoke({
-                        local: params.row,
-                        foreign: tag,
-                        isAssociated: value,
-                    }).then(() => {
-                        showSnackbar({ children: "change successful", severity: 'success' });
-                    }).catch(() => {
-                        showSnackbar({ children: "change failed", severity: 'error' });
-                    }).finally(() => {
-                        dbRows.refetch();
-                    });
+                    void setAssociation(params.row, tag, value);
                 }}
             /></div>;
         }
@@ -190,7 +221,7 @@ export function DB3AssociationMatrix<
             const bInfo = props.localTableSpec.args.table.getRowInfo(b);
             return aInfo.name.localeCompare(bInfo.name);
         });
-        const orderedColumns = dbColumns.items.slice().sort((a, b) => {
+        const orderedColumns = foreignRows.slice().sort((a, b) => {
             const aInfo = props.foreignTableSpec.args.table.getRowInfo(a);
             const bInfo = props.foreignTableSpec.args.table.getRowInfo(b);
             return aInfo.name.localeCompare(bInfo.name);
@@ -213,7 +244,9 @@ export function DB3AssociationMatrix<
                 const association = associations.find(
                     value => getAssociationForeignIdentity(value) === roleIdentity,
                 );
-                if (!association) continue;
+                if (!association) {
+                    continue;
+                }
 
                 const roleInfo = props.foreignTableSpec.args.table.getRowInfo(role);
                 obj.push([roleInfo.name, permissionInfo.name]);
@@ -229,7 +262,7 @@ export function DB3AssociationMatrix<
 
     return (<div>
         <div>
-            <button onClick={handleClickCopy}>Copy</button>
+            <CMButton disabled={props.disabled} onClick={handleClickCopy}>Copy</CMButton>
         </div>
 
         <DataGrid
