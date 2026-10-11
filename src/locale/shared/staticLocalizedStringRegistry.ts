@@ -75,7 +75,11 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
     "EditSongCreditsPage_markdown": defaultMarkdownStaticString(),
     "editSongCreditTypes_markdown": defaultMarkdownStaticString(),
     "editSongs_markdown": defaultMarkdownStaticString(),
-    "editSongTags_markdown": defaultMarkdownStaticString(),
+    "editSongTags_markdown": markdownStaticString({
+        defaultValue: "",
+        description: "Help above the selected band's Song Tag catalog editor",
+        schema: z.string(),
+    }),
     "editWikiPageTags_markdown": defaultMarkdownStaticString(),
     "EditUserTagsPage_markdown": defaultMarkdownStaticString(),
     "events_markdown": defaultMarkdownStaticString(),

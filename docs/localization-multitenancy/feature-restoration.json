@@ -116,11 +116,18 @@
     },
     {
       "id": "catalog-help",
-      "reason": "The song-tag editor replacement dropped its configured help Markdown.",
+      "reason": "The existing Song Tag catalog editor preserves configured help through the registered localized Markdown owner, with independent band/language writes and fresh localization authority.",
       "restore": "Restore edit-song-tag help content through localized Markdown without losing the migrated catalog editor.",
       "verification": "Verify the configured help is rendered in the selected locale and band alongside the song-tag editor.",
-      "status": "pending",
-      "evidence": []
+      "status": "restored",
+      "evidence": [
+        "2026-10-11: Audited the functional/UX baseline f027830a9790 and the preserved c4df4fe07549d210e476ef5f0d24731bdf338a67 source. Both compose configured editSongTags_markdown help directly above the editable Song Tag grid. The current page already mounts BandLocalizedMarkdown with that registered key and retains the migrated bandSongTagView, typed catalog columns and dashboard reference store. The audit verifies this composition rather than creating a parallel help or catalog path. Registry metadata now explains this key to translators; the empty default and Markdown format are unchanged.",
+        "BandLocalizedMarkdown supplies explicit band scope, an enabled writing language and public band attachments through the existing static-string editor. Resolved/inherited help stays separate from exact drafts. Cancel sends no write; stored blank suppresses help and survives reload; inheritance/reset deletes only the selected band/key/locale row. Writes require manage_band_localization independently of the catalog route/grid admin_songs grant. Fresh transaction authority rejects stale writes, focus refresh disables revoked help controls while retaining the draft, restored authority retries it, and context changes discard old drafts. No arbitrary Setting names, legacy storage, implicit band selection or startup conversion are restored. Production-copy help mapping remains an explicit band/language inventory obligation in 06-localization-settings.md.",
+        "Validation uses the existing executable owners: 140 focused cases across seven files and 19 native MariaDB cases across three files pass. These cover localized Markdown save/cancel/blank/reset/failure/retry/context changes, registry ownership and validation, fresh grants, localization fallback, typed columns/view contracts and preservation, plus native translation and Song Tag CRUD/privacy/audit behavior. The private native database is removed. Normal typecheck, targeted lint, a normal production build with isolated output and preservation verification pass; evidence is recorded in 04-implementation-plan.md#verification-status.",
+        "Five production Chromium groups verify French inherited help above the grid, exact empty drafts, cancel/intentional blank/reload/reset; independent French/Dutch language and band save/reload with the selected band catalog; stale Save denial, focus-driven help disablement and retained-draft retry while catalog row editing/cancel remains available under its separate grant; actual band-switch draft discard and unscoped HTTP 403; and anonymous sign-in with neither help nor catalog editors. No uncaught page or unexpected RPC errors occur. French/Dutch layouts are visually inspected. Original band/platform translations are restored exactly; fixture tags, dependent dynamic values, grants, enabled locales, audits/actions and sessions are removed, and the owned server is stopped. Evidence: temp/catalog-help-browser-result.json.",
+        "Only the single fully covered catalog-help source block/reference is removed. All other references and seven deferred specifications remain unchanged; preservation now verifies 223 references and fifteen pending features. Catalog localized-name search, production inventory/rehearsal, other restoration obligations and A1/B remain open.",
+        "The complete suite retains the settings checkpoint's 203 failed tests and ten suite-load failures, with 1943 passed and 720 skipped. All 163 normalized failure labels are unchanged. The runner stops before later jsdom batches, which pass in the focused run. These existing failures still prevent A1/B acceptance; this slice closes only catalog-help."
+      ]
     },
     {
       "id": "demo-seeding",
@@ -966,12 +973,6 @@
       "featureId": "role-administration",
       "source": "30ce7de7d429973877201a8cf94c27979333cfc6:src/auth/queries/getAllRoles.ts:1-23",
       "sha256": "5244e8b648c4c6b5622153ec73ce512ed4d33942216cceab684928dc884d22dc"
-    },
-    {
-      "file": "src/pages/backstage/editSongTags.tsx",
-      "featureId": "catalog-help",
-      "source": "c4df4fe07549d210e476ef5f0d24731bdf338a67:src/pages/backstage/editSongTags.tsx:1-42",
-      "sha256": "853d987f30c5e4468e513900dc0b27c654163c7c2bef7a747798555404aee075"
     },
     {
       "file": "src/core/db3/shared/schema/prismArgs.ts",

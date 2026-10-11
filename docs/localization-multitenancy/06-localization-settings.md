@@ -189,6 +189,13 @@ post-commit refresh failure has separate feedback. Context changes discard late
 read/save/upload completions; grant and availability refreshes preserve drafts
 while disabling unauthorized writes.
 
+The Song Tag catalog retains `editSongTags_markdown` help above its existing grid.
+Its editor uses the same explicit band/language owner, independently of the
+catalog's `admin_songs` permission. Production-copy inventory must map the legacy
+help value to this registered Markdown key with an explicit target band and enabled
+language; it must account for existing translations and intentional blanks rather
+than adding arbitrary setting aliases or guessing a language at startup.
+
 The static-string owner validates registered keys and each key's schema/format.
 Exact reads and writes refresh authority inside Serializable transactions. Band
 writes require an explicit selected band and `manage_band_localization`; platform

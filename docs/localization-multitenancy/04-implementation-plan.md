@@ -35,7 +35,9 @@ General File search/detail/metadata pages, associated uploads, the image fork
 service and band branding uploads are restored. The File-creation parity audit
 is complete, including preserved originals and resized image children. Settings,
 preferences and branding parity is also complete, including primary text color,
-per-key access, focus refresh and band-only time-zone reanchor. The
+per-key access, focus refresh and band-only time-zone reanchor. The Song Tag
+catalog-help audit is complete, including independent band/language authoring
+alongside the existing catalog grid. The
 [restoration manifest](feature-restoration.json) records the individual obligations
 and verification criteria; use `yarn migration:status` rather than maintaining a
 second restriction table. Keep every deferred page, RPC/API, generic DB3 root,
@@ -830,14 +832,40 @@ guards are replaced by executable tests. Other references and the seven remainin
 whole-file deferred specifications remain intact; settings parity is closed while
 other obligations and A1/B stay open.
 
-## Next slice: Catalog-help parity and preservation audit
+## Catalog-help parity and preservation checkpoint
 
-Restore the configured help on the existing Song Tag catalog editor through the
-localized Markdown owner. Compare the reference help/editor composition and
-preserved source, verify independent band/language values alongside the migrated
-catalog editor, and exercise save/cancel/reset and fresh localization authority in
-the built browser. Remove only the covered `catalog-help` reference after evidence;
-keep catalog search/localized-name obligations, other features and A1/B open.
+The audit against `f027830a9790` and the preserved source confirms that configured
+`editSongTags_markdown` help remains immediately above the editable Song Tag grid.
+The page already composes the registered `BandLocalizedMarkdown` owner with the
+migrated `bandSongTagView`, typed columns and dashboard reference store. Its registry
+description now explains the help's location; the empty default and Markdown format
+are unchanged. No parallel help/editor path or legacy Setting storage is introduced.
+
+The existing owner keeps inherited display text separate from exact drafts,
+preserves intentional blanks, resets only the selected band/key/language override
+and refreshes publication after save. Localization authority remains independent
+of catalog administration. Fresh revoked grants reject stale writes; focus refresh
+disables help controls, retains the draft and leaves authorized catalog editing
+available. Band changes discard the old draft. Unscoped access is denied without
+selecting an implicit band, and anonymous access displays sign-in without editors.
+
+Focused/native checks and five built-browser groups pass as recorded below.
+French/Dutch layouts are visually inspected. The single covered `catalog-help`
+block/reference is removed; all other references and seven deferred specifications
+remain intact. Production-copy help mapping, localized-name search, other
+obligations and A1/B stay open.
+
+## Next slice: Activity-report restoration
+
+Restore the original activity-report query and UI composition through its existing
+owners. Start with fresh selected-band snapshots, shared-person versus membership
+identities, localized references, date policy and the timeline/date controls. Retain
+filters, facets, drill-down detail and CSV obligations as the remaining composition
+is migrated; do not introduce a parallel simplified report. Reactivate preserved
+projection/filter specifications and verify two-band privacy, grant revocation and
+context changes in native tests and the built browser. Remove only fully covered
+references after evidence; keep full report parity and A1/B open until their
+remaining obligations are verified.
 
 ## Localized catalog text search exception
 
@@ -1561,3 +1589,29 @@ the File checkpoint; the runner still stops before later jsdom batches, which pa
 in the focused run. Preservation verifies 224 references, seven whole-file deferred
 specifications and sixteen pending features. Only `settings-editors` is closed in
 this slice; production inventory/rehearsal, other obligations and A1/B remain open.
+
+The **catalog-help parity and preservation checkpoint** passes normal typecheck,
+targeted lint, a normal production build with isolated output, 140 focused cases
+across seven files and 19 native MariaDB cases across three files. Existing
+specifications cover registered translation ownership, strict writes, fallback,
+blank/reset, failed saves/retry, context changes, localized catalog columns/view
+contracts and native Song Tag CRUD/privacy/audits. No redundant page-composition
+test is added; the actual built page establishes that composition.
+
+Five production Chromium groups pass French inherited help above the catalog,
+empty exact drafts/cancel/intentional blank/reload/reset; independent language and
+band save/reload; fresh grant rejection, focus-driven help disablement and retained
+draft retry alongside catalog editing/cancel; actual band-switch draft discard
+and unscoped HTTP 403; and anonymous sign-in without help or catalog editors.
+French/Dutch layouts are visually inspected. No uncaught page or unexpected RPC
+errors occur. Original platform/band translations are restored exactly; fixture
+tags, dependent dynamic values, grants, enabled locales, sessions, actions and
+audits are removed, the private native database is dropped, and the owned server
+is stopped. Evidence is in `temp/catalog-help-browser-result.json`.
+
+The complete suite retains 203 failed tests and ten suite-load failures, with
+1943 passed and 720 skipped. Its 163 normalized failure labels add or remove none
+versus the settings checkpoint; later jsdom batches still require the focused
+run. Preservation verifies 223 references, seven deferred specifications and
+fifteen pending features. Only `catalog-help` is closed; production inventory/
+rehearsal, localized-name search, other obligations and A1/B remain open.
