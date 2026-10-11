@@ -497,25 +497,6 @@ describe("schema-owned table authorization", () => {
 // MIGRATION_REFERENCE_END
 
 
-// MIGRATION_RESTORE: settings-editors
-// Source: 14c644c1242b8bfac9190afe3ac05ebf2573c49d:tests/authorization/db3TableAuthorization.test.ts:152-162
-// Reason: The old generic settings descriptor and editors use removed storage APIs.
-// Restore: Account for legacy settings and branding editor workflows using typed hives and per-key authorization; preserve scheduling reanchor and cache invalidation semantics.
-// Verification: Adapt preserved user/branding/setting authorization specifications and native time-zone tests; verify editor saves and resets in the built app.
-// SHA256: bdbb497d9b1dbab20eca1d34a3c4be149cbd1b476169494d884e13b6649a0456
-// MIGRATION_REFERENCE_BEGIN
-//   it.each([db3.xSetting])(
-//     "uses the operation map for $tableName access",
-//     table => {
-//       expect(table.authorizeTableForView(sysadminGrant)).toBe(true)
-//       expect(table.authorizeTableForEdit(sysadminGrant)).toBe(true)
-//       expect(table.authorizeRowBeforeInsert({ auth: sysadminGrant })).toBe(true)
-//       expect(table.authorizeTableForView(userManager)).toBe(false)
-//       expect(table.authorizeTableForEdit(userManager)).toBe(false)
-//       expect(table.authorizeRowBeforeInsert({ auth: userManager })).toBe(false)
-//     },
-//   )
-// MIGRATION_REFERENCE_END
 
 // MIGRATION_RESTORE: audit-log
 // Source: 6ee055895a049d6f105d775b4e2e563542f34d32:tests/authorization/db3TableAuthorization.test.ts:72-90

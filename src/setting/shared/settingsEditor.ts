@@ -28,6 +28,7 @@ export const settingLabelKeys = {
         "siteCustomization.themeColors.secondaryMain": "settings.field.secondaryColor",
         "siteCustomization.themeColors.backgroundDefault": "settings.field.backgroundColor",
         "siteCustomization.themeColors.backgroundPaper": "settings.field.paperColor",
+        "siteCustomization.themeColors.textPrimary": "settings.field.textPrimaryColor",
         "siteCustomization.themeColors.contrastText": "settings.field.contrastColor",
         "dateTime.bandTimeZone": "settings.field.timeZone",
         "ical.calendarName": "settings.field.calendarName",

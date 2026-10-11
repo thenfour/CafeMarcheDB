@@ -10,6 +10,7 @@ import { loadBandTimeZone } from "src/server/bandTimeZone";
 import { loadLocalizationCatalog, lookupStaticTranslation, resolveAuthorizedDynamicStrings } from "src/locale/server/localization";
 import { loadSettingsSnapshot, writeSettings } from "src/setting/server/settings";
 import { readSettingSnapshot } from "src/setting/shared/settingsContract";
+import { Permission } from "shared/permissions";
 import { settingsMysqlTestUrl, withSettingsMysqlFixture, type SettingsMysqlFixture } from "./support/settingsMysqlFixture";
 
 const testUrl = settingsMysqlTestUrl;
@@ -126,6 +127,63 @@ describe.skipIf(!testUrl)("phase-2 foundations on MariaDB/MySQL", () => {
         const inactive = await auth.refresh(tx);
         expect((await loadSettingsSnapshot(tx, inactive)).bandUser).toEqual({});
         await expect(writeSettings(tx, inactive, [{ hive: "bandUser", key: "calendar.locale", operation: { kind: "set", value: "fr-BE" } }], CreateChangeContext("inactive"))).rejects.toThrow();
+    }));
+
+    it("persists optional text color independently and distinguishes clearing from resetting", () => withFixture(async (tx, fixture) => {
+        const key = "siteCustomization.themeColors.textPrimary";
+        const first = fixture.bands[0]!, second = fixture.bands[1]!;
+        const firstMember = await tx.bandUser.findUniqueOrThrow({ where: { bandId_userId: { bandId: first.id, userId: fixture.user.id } } });
+        await tx.bandUser.update({ where: { bandId_userId: { bandId: second.id, userId: fixture.user.id } }, data: { bandRoleId: firstMember.bandRoleId } });
+        const firstAuth = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(first.publicId));
+        const secondAuth = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(second.publicId));
+        await writeSettings(tx, firstAuth, [{ hive: "band", key, operation: { kind: "set", value: "#123456" } }], CreateChangeContext("first-text-color"));
+        await writeSettings(tx, secondAuth, [{ hive: "band", key, operation: { kind: "set", value: "rgb(45, 67, 89)" } }], CreateChangeContext("second-text-color"));
+        const publicAuth = await loadAuthorizationForUser(null, tx, parsePublicId<"Band">(first.publicId));
+        expect(readSettingSnapshot(await loadSettingsSnapshot(tx, publicAuth), "band", key)).toBe("#123456");
+        await writeSettings(tx, firstAuth, [{ hive: "band", key, operation: { kind: "set", value: "" } }], CreateChangeContext("clear-text-color"));
+        expect((await loadSettingsSnapshot(tx, firstAuth)).band[key]).toMatchObject({ value: "", source: "stored" });
+        await writeSettings(tx, firstAuth, [{ hive: "band", key, operation: { kind: "reset" } }], CreateChangeContext("reset-text-color"));
+        expect(await tx.bandSetting.findUnique({ where: { bandId_name: { bandId: first.id, name: key } } })).toBeNull();
+        expect((await loadSettingsSnapshot(tx, firstAuth)).band[key]).toMatchObject({ value: "", source: "default" });
+        expect(readSettingSnapshot(await loadSettingsSnapshot(tx, secondAuth), "band", key)).toBe("rgb(45, 67, 89)");
+        expect(await tx.change.count({ where: { table: "BandSetting", userId: fixture.user.id } })).toBe(4);
+    }));
+
+    it("refreshes per-key grants and validates the whole batch before changing an authorized preference", () => withFixture(async (tx, fixture) => {
+        const auth = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(fixture.bands[0]!.publicId));
+        const permission = await tx.permission.findUniqueOrThrow({ where: { name: Permission.manage_site_branding } });
+        await tx.bandRolePermission.deleteMany({ where: { bandRoleId: auth.membership!.bandRoleId!, permissionId: permission.id } });
+        const revoked = await auth.refresh(tx);
+        expect(revoked.hasPermission(Permission.manage_band_settings)).toBe(true);
+        expect(revoked.hasPermission(Permission.manage_site_branding)).toBe(false);
+        await expect(writeSettings(tx, revoked, [
+            { hive: "user", key: "calendar.showDeclinedEvents", operation: { kind: "set", value: false } },
+            { hive: "band", key: "siteCustomization.themeColors.textPrimary", operation: { kind: "set", value: "#123456" } },
+        ], CreateChangeContext("revoked-branding-batch"))).rejects.toThrow();
+        expect(await tx.userSetting.count({ where: { userId: fixture.user.id } })).toBe(0);
+        expect(await tx.bandSetting.count({ where: { bandId: fixture.bands[0]!.id } })).toBe(0);
+        expect(await tx.change.count({ where: { userId: fixture.user.id } })).toBe(0);
+    }));
+
+    it("shares account preferences across bands while keeping membership locales and other people independent", () => withFixture(async (tx, fixture) => {
+        const first = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(fixture.bands[0]!.publicId));
+        const second = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(fixture.bands[1]!.publicId));
+        await writeSettings(tx, first, [
+            { hive: "user", key: "calendar.showDeclinedEvents", operation: { kind: "set", value: false } },
+            { hive: "user", key: "calendar.showUninvitedEvents", operation: { kind: "set", value: false } },
+            { hive: "bandUser", key: "calendar.locale", operation: { kind: "set", value: "fr-be" } },
+        ], CreateChangeContext("account-first-band"));
+        await writeSettings(tx, second, [{ hive: "bandUser", key: "calendar.locale", operation: { kind: "set", value: "nl-be" } }], CreateChangeContext("membership-second-band"));
+        expect(readSettingSnapshot(await loadSettingsSnapshot(tx, second), "user", "calendar.showUninvitedEvents")).toBe(false);
+        expect(readSettingSnapshot(await loadSettingsSnapshot(tx, first), "bandUser", "calendar.locale")).toBe("fr-BE");
+        expect(readSettingSnapshot(await loadSettingsSnapshot(tx, second), "bandUser", "calendar.locale")).toBe("nl-BE");
+        const other = await loadAuthorizationForUser(fixture.admin, tx);
+        expect(readSettingSnapshot(await loadSettingsSnapshot(tx, other), "user", "calendar.showDeclinedEvents")).toBe(true);
+        await writeSettings(tx, second, [{ hive: "user", key: "calendar.showDeclinedEvents", operation: { kind: "reset" } }], CreateChangeContext("account-reset"));
+        const account = (await loadSettingsSnapshot(tx, first)).user;
+        expect(account["calendar.showDeclinedEvents"]).toMatchObject({ value: true, source: "default" });
+        expect(account["calendar.showUninvitedEvents"]?.value).toBe(false);
+        expect(await tx.userSetting.count({ where: { userId: fixture.user.id } })).toBe(1);
     }));
 
     it("reanchors only the selected band's all-day spans and derived bounds", () => withFixture(async (tx, fixture) => {

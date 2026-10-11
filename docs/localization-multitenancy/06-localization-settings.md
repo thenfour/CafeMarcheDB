@@ -85,6 +85,67 @@ Abandon pending clipboard reads on scope changes; await invalidation after saves
 The developer text palette remains a global registered setting; color-map edits
 remain source-export previews.
 
+The settings page requires an active account, with each hive/key's capabilities
+controlling visible values and writes. Band-settings managers can use it without
+Sysadmin or branding authority. The branding page still requires branding authority.
+Calendar preference controls share these account values and use localized labels
+and feedback. A focus refresh loads fresh settings/grants and keeps same-scope drafts.
+
+## Legacy settings account
+
+The reference settings grid's create/rename/delete of arbitrary names is replaced
+by registered hive fields and explicit reset. Copy/import remains available for
+the selected hive with typed `{ key, value }` entries. There is no runtime alias or
+legacy `{ name, value }` import. The production-copy inventory/rehearsal must map
+existing values to these destinations and report unknown rows before cutover;
+the application does not convert them at startup.
+
+| Legacy setting name | Destination |
+| --- | --- |
+| `Dashboard_SiteTitle` | Band `siteCustomization.title` |
+| `Dashboard_SiteTitlePrefix` | Band `siteCustomization.titlePrefix` |
+| `Dashboard_SiteFaviconUrl` | Band `siteCustomization.faviconUrl` |
+| `Dashboard_SiteLogoUrl` | Band `siteCustomization.logoUrl` |
+| `Dashboard_Theme_PrimaryMain` | Band `siteCustomization.themeColors.primaryMain` |
+| `Dashboard_Theme_SecondaryMain` | Band `siteCustomization.themeColors.secondaryMain` |
+| `Dashboard_Theme_BackgroundDefault` | Band `siteCustomization.themeColors.backgroundDefault` |
+| `Dashboard_Theme_BackgroundPaper` | Band `siteCustomization.themeColors.backgroundPaper` |
+| `Dashboard_Theme_TextPrimary` | Band `siteCustomization.themeColors.textPrimary` |
+| `Dashboard_Theme_ContrastText` | Band `siteCustomization.themeColors.contrastText` |
+| `BandTimeZone` | Band `dateTime.bandTimeZone` |
+| `Ical_CalendarName` | Band `ical.calendarName` |
+| `Ical_CalendarCompany` | Band `ical.calendarCompany` |
+| `Ical_CalendarProduct` | Band `ical.calendarProduct` |
+| `Ical_CalendarEventPrefix` | Band `ical.calendarEventPrefix` |
+| `textPalette` | Global `global.dev.textPalette` |
+| `maxImageDimension` | Global `global.files.upload.maxImageDimension` |
+| `*.visiblePermission.SelectStyle` | Global `global.ui.visiblePermission.selectStyle` |
+| `event.expectedAttendanceUserTag.SelectStyle` | Global `global.ui.event.expectedAttendanceUserTag.selectStyle` |
+| `event.status.SelectStyle`, `EventSegment.status.SelectStyle` | Global `global.ui.event.status.selectStyle` |
+| `event.type.SelectStyle` | Global `global.ui.event.type.selectStyle` |
+| `eventSegmentUserResponse.attendance.SelectStyle` | Global `global.ui.event.attendance.selectStyle` |
+| `Event.tags.SelectStyle` | Global `global.ui.event.tags.selectStyle` |
+| `songCredit.type.SelectStyle` | Global `global.ui.songCredit.type.selectStyle` |
+| `user.role.SelectStyle` | Global `global.ui.user.role.selectStyle` |
+| `Song.tags.SelectStyle` | Global `global.ui.song.tags.selectStyle` |
+| `calendar.showDeclinedEvents`, `calendar.showUninvitedEvents` | Same registered keys in the current person's User hive |
+| `Dashboard_HostingMode` | Deployment `CMDB_HOSTING_MODE` |
+
+Former Markdown/plain-text configuration belongs to the static localized-string
+registry with explicit band/locale ownership. Arbitrary per-page Wiki help follows
+the registered page-path mapping below. Obsolete declarations without a reference
+consumer (including `BackstageFrontpageCurrentSongMaxAgeDays`) do not gain arbitrary
+storage/editor access; unknown stored rows remain an inventory obligation. Several
+per-field style aliases merge into a single registered policy; conflicting old
+values need an explicit inventory decision, not last-write-wins conversion.
+
+Native JSON and schema validation deliberately replace the old preference loader's
+silent coercion/defaulting of corrupt stored values. Missing rows use defaults;
+invalid types fail visibly and can be repaired through a valid write or reset.
+Anonymous callers have no account/membership hive. The old blanket Sysadmin grid
+policy is replaced by per-key permissions; timezone requires `manage_band_settings`
+even through the branding aggregate. Blanks are values, not implicit deletions.
+
 ## Branding, timezone and Markdown
 
 Branding uses selected-band settings with registry validation/defaults and cache
@@ -93,7 +154,13 @@ identity including trusted band/host. Café Marché deployment configures
 asset URLs remain intentional. Favicon and logo use registered band URL settings;
 the restored logo key is `siteCustomization.logoUrl`, with the existing URL
 validation and branding write permission. No global setting storage or database
-column is added; optional primary text color remains deferred.
+column is added. Optional primary text color uses the registered
+`siteCustomization.themeColors.textPrimary` key with the same color validation
+and branding authority. Empty text lets the application theme choose the color;
+reset removes the row. Colors remain independent for each band and page bootstrap
+refreshes committed changes for an immediate reload. Color validation rejects
+surrounding whitespace and uppercase functions such as `RGB(...)`, which MUI
+cannot apply to the theme.
 
 Branding upload tools set a draft and preserve separate save/cancel/reset. Local
 Files are public and belong to the explicit selected band; their download URLs

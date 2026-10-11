@@ -12,6 +12,9 @@ file runs in a fresh process, preventing React, Emotion, and MUI module state
 from crossing jsdom environments. This avoids both observed failure modes: the
 Windows worker-pool crash and the shared-worker DOM contamination.
 
+Both `tests/` and tests beside their feature under `src/` participate in focused
+and complete runs. The Vitest include patterns match the runner's discovery.
+
 A focused run uses the same runner and accepts one or more files or directories:
 
 ```powershell

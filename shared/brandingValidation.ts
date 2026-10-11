@@ -4,8 +4,15 @@ import { HostingMode, type DbBrandConfig } from "./brandConfigBase";
 
 function hasMuiSupportedColorSyntax(value: string): boolean {
     const trimmed = value.trim();
-    if (!/^(#|rgba?\(|hsla?\()/i.test(trimmed)) return false;
-    try { return parseCssColor(trimmed) !== null; } catch { return false; }
+    // MUI requires lowercase color functions and no surrounding whitespace.
+    if (value !== trimmed || !/^(#|rgba?\(|hsla?\()/.test(trimmed)) {
+        return false;
+    }
+    try {
+        return parseCssColor(trimmed) !== null;
+    } catch {
+        return false;
+    }
 }
 
 function isBrandAssetUrl(value: string): boolean {

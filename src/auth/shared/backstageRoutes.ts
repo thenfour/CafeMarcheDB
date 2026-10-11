@@ -78,7 +78,8 @@ const routes = [
     { key: "editFiles", pattern: "/backstage/editFiles", caption: "Files", permission: Permission.admin_files },
     { key: "editFrontpageGalleryItems", pattern: "/backstage/editFrontpageGalleryItems", caption: "Front page gallery", permission: Permission.sysadmin },
 
-    { key: "settings", pattern: "/backstage/settings", caption: "Settings", permission: Permission.sysadmin },
+    // The hive snapshot owns per-key access; every active account can edit its own preferences.
+    { key: "settings", pattern: "/backstage/settings", caption: "Settings", permission: Permission.login },
     { key: "roles", pattern: "/backstage/roles", caption: "Roles", permission: Permission.sysadmin },
     { key: "permissions", pattern: "/backstage/permissions", caption: "Permissions", permission: Permission.sysadmin },
     { key: "rolePermissions", pattern: "/backstage/rolePermissions", caption: "Permission matrix", permission: Permission.sysadmin },

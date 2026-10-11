@@ -14,6 +14,7 @@ import { Permission } from "shared/permissions";
 // - Dashboard_Theme_SecondaryMain -> band.theme.secondaryMainColor
 // - Dashboard_Theme_BackgroundDefault -> band.theme.backgroundDefaultColor
 // - Dashboard_Theme_BackgroundPaper -> band.theme.backgroundPaperColor
+// - Dashboard_Theme_TextPrimary -> band.siteCustomization.themeColors.textPrimary
 // - Dashboard_Theme_ContrastText -> band.theme.contrastTextColor
 //    BandTimeZone = "BandTimeZone", -> band.dateTime.bandTimeZone
 // - Ical_CalendarName -> band.ical.calendarName
@@ -69,6 +70,13 @@ export const kBandSettingsRegistry = freezeRegistry({
     }),
     "siteCustomization.themeColors.backgroundPaper": stringSetting({
         defaultValue: DefaultDbBrandConfig.theme!.backgroundPaper!,
+        writePermission: Permission.manage_site_branding,
+        schema: OptionalBrandColorSchema,
+        stringFormat: "plain",
+    }),
+    "siteCustomization.themeColors.textPrimary": stringSetting({
+        // Empty leaves primary text color to the application theme.
+        defaultValue: DefaultDbBrandConfig.theme?.textPrimary ?? "",
         writePermission: Permission.manage_site_branding,
         schema: OptionalBrandColorSchema,
         stringFormat: "plain",

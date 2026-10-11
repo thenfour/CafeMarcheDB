@@ -23,14 +23,16 @@ vi.mock("@blitzjs/auth", () => ({ useSession: vi.fn() }));
 vi.mock("src/blitz-client", () => ({ queryClient: { invalidateQueries: vi.fn(async () => {}) } }));
 vi.mock("src/locale/queries/getPresentationData", () => ({ default: vi.fn() }));
 vi.mock("src/setting/server/mutations/updateSetting", () => ({ default: vi.fn() }));
-vi.mock("src/core/components/SnackbarContext", () => ({ useSnackbar: () => ({ showSuccess: () => {}, showError: () => {} }) }));
+vi.mock("src/core/components/SnackbarContext", () => ({ useSnackbar: () => ({ showSuccess: () => {}, showError: showPreferenceError }) }));
 
 let root: Root;
 let container: HTMLDivElement;
 let sessionUserId: number | null;
 let serverText: string;
 let declined: boolean;
+let uninvited: boolean;
 const mutate = vi.fn();
+const showPreferenceError = vi.fn();
 const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_REACT_ACT_ENVIRONMENT");
 const firstBand = parsePublicId<"Band">("Band000000000001");
 const secondBand = parsePublicId<"Band">("Band000000000002");
@@ -50,7 +52,7 @@ function dataFor(input: PresentationInput): PresentationData {
         localization: { bandPublicId: band, preferences, availability, strings, formattingLocale: selectFormattingLocale(preferences), cacheKey: "fixture", payloadBytes: 1 },
         settings: { global: {}, band: band ? { "siteCustomization.title": { value: band, source: "stored", capabilities: { canView: true, canEdit: true } } } : {},
             user: { "calendar.showDeclinedEvents": { value: declined, source: "stored", capabilities: { canView: true, canEdit: true } },
-                "calendar.showUninvitedEvents": { value: true, source: "default", capabilities: { canView: true, canEdit: true } } }, bandUser: {} },
+                "calendar.showUninvitedEvents": { value: uninvited, source: "default", capabilities: { canView: true, canEdit: true } } }, bandUser: {} },
     };
 }
 
@@ -59,8 +61,9 @@ beforeEach(() => {
     vi.spyOn(navigator, "languages", "get").mockReturnValue(["en-US"]);
     container = document.createElement("div"); document.body.appendChild(container);
     root = createRoot(container);
-    sessionUserId = 42; serverText = "Initial"; declined = true;
+    sessionUserId = 42; serverText = "Initial"; declined = true; uninvited = true;
     mutate.mockReset();
+    showPreferenceError.mockClear();
     // The mock exposes only the session fields and query methods used by these hooks.
     vi.mocked(useSession).mockImplementation(() => ({ userId: sessionUserId, permissionNames: [] }) as unknown as ReturnType<typeof useSession>);
     vi.mocked(useQuery).mockImplementation((_query, input, options) => [options?.initialData ?? dataFor(input), { refetch: vi.fn() }] as unknown as ReturnType<typeof useQuery>);
@@ -129,18 +132,34 @@ describe("presentation and settings delivery", () => {
         await act(async () => window.dispatchEvent(new Event("focus")));
         expect(container.textContent).toContain("Fresh grants");
     });
-    it("sends the band ID with validated commands and refreshes every mounted calendar preference control", async () => {
-        mutate.mockImplementation(async input => { declined = input.operation.value; });
+    it.each(["calendar.showDeclinedEvents", "calendar.showUninvitedEvents"] as const)("saves %s and refreshes every mounted calendar preference control", async key => {
+        mutate.mockImplementation(async input => {
+            if (key === "calendar.showDeclinedEvents") {
+                declined = input.operation.value;
+            } else {
+                uninvited = input.operation.value;
+            }
+        });
         const initial = dataFor({ bandPublicId: firstBand, browserLanguages: ["en-US"] });
         await act(async () => root.render(<PresentationProvider initial={initial}>
             <CalendarUserSettingsControl /><CalendarUserSettingsControl />
         </PresentationProvider>));
-        const inputs = () => [...container.querySelectorAll<HTMLInputElement>('input[name="calendar.showDeclinedEvents"]')];
+        const inputs = () => [...container.querySelectorAll<HTMLInputElement>(`input[name="${key}"]`)];
         expect(inputs().map(input => input.checked)).toEqual([true, true]);
         await act(async () => inputs()[0]!.click());
-        expect(mutate).toHaveBeenCalledWith({ hive: "user", key: "calendar.showDeclinedEvents", operation: { kind: "set", value: false },
+        expect(mutate).toHaveBeenCalledWith({ hive: "user", key, operation: { kind: "set", value: false },
             bandPublicId: firstBand });
         expect(inputs().map(input => input.checked)).toEqual([false, false]);
+    });
+    it.each(["calendar.showDeclinedEvents", "calendar.showUninvitedEvents"] as const)("retains %s and reports a failed save", async key => {
+        mutate.mockRejectedValueOnce(new Error("Permission revoked"));
+        const initial = dataFor({ bandPublicId: firstBand, browserLanguages: ["en-US"] });
+        await act(async () => root.render(<PresentationProvider initial={initial}><CalendarUserSettingsControl /></PresentationProvider>));
+        const input = container.querySelector<HTMLInputElement>(`input[name="${key}"]`)!;
+        await act(async () => input.click());
+        expect(input.checked).toBe(true);
+        expect(queryClient.invalidateQueries).not.toHaveBeenCalled();
+        expect(showPreferenceError).toHaveBeenCalledWith("Could not save your calendar preference. Please try again.");
     });
     it("keeps stored values after failed mutations and makes reset explicit", async () => {
         let actions: ReturnType<typeof useUserSettings> | undefined;
@@ -187,138 +206,3 @@ describe("presentation and settings delivery", () => {
         expect(container.querySelector("button")?.textContent).toBe("unsaved");
     });
 });
-
-
-// MIGRATION_RESTORE: settings-editors
-// Source: c4002c5f2ee1f79ee5f0501fb8f2382a32f2e8c4:tests/userSettingsContext.test.ts:1-125
-// Reason: Old setting readers, writers and tests were removed while typed settings replaced the storage contract.
-// Restore: Account for legacy settings and branding editor workflows using typed hives and per-key authorization; preserve scheduling reanchor and cache invalidation semantics.
-// Verification: Adapt preserved user/branding/setting authorization specifications and native time-zone tests; verify editor saves and resets in the built app.
-// SHA256: a723f90b597fd74b93979ee031fa93675dc7a229834fad07c3f8d83dfc65a3f1
-// MIGRATION_REFERENCE_BEGIN
-// // @vitest-environment jsdom
-// import React from "react";
-// import { act } from "react-dom/test-utils";
-// import { createRoot, Root } from "react-dom/client";
-// import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-//
-// vi.mock("@blitzjs/rpc", async () => ({
-//     ...await vi.importActual<typeof import("@blitzjs/rpc")>("@blitzjs/rpc"),
-//     useQuery: vi.fn(), useMutation: vi.fn(), setQueryData: vi.fn(),
-// }));
-// vi.mock("@blitzjs/auth", async () => ({
-//     ...await vi.importActual<typeof import("@blitzjs/auth")>("@blitzjs/auth"), useSession: vi.fn(),
-// }));
-// vi.mock("src/auth/hooks/useCurrentUser", () => ({ useCurrentUser: vi.fn() }));
-// vi.mock("shared/brandConfig", () => ({ useBrand: vi.fn() }));
-// vi.mock("src/auth/queries/getDashboardData", () => ({ default: vi.fn() }));
-// vi.mock("src/auth/mutations/updateMyUserSettings", () => ({ default: vi.fn() }));
-// vi.mock("src/auth/mutations/setShowingAdminControls", () => ({ default: vi.fn() }));
-// vi.mock("src/core/components/AppContext", () => ({ useAppContext: vi.fn() }));
-// vi.mock("src/core/components/SnackbarContext", () => ({ useSnackbar: vi.fn() }));
-//
-// import { useSession } from "@blitzjs/auth";
-// import { setQueryData, useMutation, useQuery } from "@blitzjs/rpc";
-// import { DefaultDbBrandConfig } from "shared/brandConfigBase";
-// import { useBrand } from "shared/brandConfig";
-// import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-// import getDashboardData from "src/auth/queries/getDashboardData";
-// import updateMyUserSettings from "@/src/setting/server/mutations/updateMyUserSettings";
-// import { DashboardContextProvider, useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
-// import { CalendarUserSettingsControl } from "src/core/components/user/UserSettingsControls";
-// import { useSnackbar } from "src/core/components/SnackbarContext";
-//
-// let root: Root;
-// let container: HTMLDivElement;
-// let userId = 10;
-// let data: any;
-// let notify: () => void;
-// const update = vi.fn();
-// const errorMessage = vi.fn();
-// const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_REACT_ACT_ENVIRONMENT");
-//
-// const dashboardData = (showDeclinedEvents: boolean) => ({
-//     ...Object.fromEntries([
-//         "permission", "effectivePermissionNames", "userTag", "wikiPageTag", "role",
-//         "eventType", "eventStatus", "eventTag", "eventAttendance", "fileTag", "instrumentFunctionalGroup",
-//         "songTag", "songCreditType", "relevantEventIds", "dynMenuLinks", "instrument",
-//     ].map(name => [name, []])),
-//     bandTimeZone: "Europe/Brussels",
-//     userSettings: { "calendar.showDeclinedEvents": showDeclinedEvents, "calendar.showUninvitedEvents": true },
-// });
-//
-// beforeEach(() => {
-//     document.body.innerHTML = "<div id='root'></div>";
-//     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-//     container = document.getElementById("root") as HTMLDivElement;
-//     root = createRoot(container);
-//     userId = 10;
-//     data = dashboardData(true);
-//     vi.mocked(useSession).mockImplementation(() => ({ userId, permissionNames: [] }) as any);
-//     vi.mocked(useCurrentUser).mockImplementation(() => [{ id: userId }] as any);
-//     vi.mocked(useBrand).mockReturnValue(DefaultDbBrandConfig);
-//     vi.mocked(useSnackbar).mockReturnValue({ showSuccess: vi.fn(), showError: errorMessage } as any);
-//     vi.mocked(useMutation).mockImplementation(resolver => [resolver === updateMyUserSettings ? update : vi.fn()] as any);
-//     vi.mocked(useQuery).mockImplementation(() => {
-//         const [, rerender] = React.useState(0);
-//         notify = () => rerender(value => value + 1);
-//         return [data, { refetch: vi.fn() }] as any;
-//     });
-//     vi.mocked(setQueryData).mockImplementation(async (_query, _args, updater: any) => {
-//         data = updater(data);
-//         notify();
-//     });
-// });
-//
-// afterEach(async () => {
-//     await act(async () => root?.unmount());
-//     document.body.replaceChildren();
-//     if (originalActEnvironment) Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", originalActEnvironment);
-//     else Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
-// });
-//
-// describe("user settings in dashboard context", () => {
-//     it("publishes changed preferences to existing consumers while preserving runtime registrations", async () => {
-//         const Probe = () => {
-//             const context = useDashboardContext();
-//             React.useEffect(() => { context.metronomeSilencers.push(() => undefined); }, []);
-//             return React.createElement("span", null, String(context.userSettings["calendar.showDeclinedEvents"]));
-//         };
-//         const child = React.createElement(Probe);
-//         await act(async () => root.render(React.createElement(DashboardContextProvider, null, child)));
-//         const original = (window as any).cmdbDashboardContext;
-//         expect(container.textContent).toBe("true");
-//         data = dashboardData(false);
-//         await act(async () => notify());
-//         expect(container.textContent).toBe("false");
-//         expect((window as any).cmdbDashboardContext).toBe(original);
-//         expect(original.metronomeSilencers).toHaveLength(1);
-//     });
-//
-//     it.each(["calendar.showDeclinedEvents", "calendar.showUninvitedEvents"] as const)("saves %s and updates every mounted preference control", async name => {
-//         update.mockResolvedValue({ ...data.userSettings, [name]: false });
-//         await act(async () => root.render(React.createElement(DashboardContextProvider, null,
-//             React.createElement(CalendarUserSettingsControl), React.createElement(CalendarUserSettingsControl),
-//         )));
-//         const inputs = () => [...container.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`)];
-//         expect(inputs().map(input => input.checked)).toEqual([true, true]);
-//         await act(async () => inputs()[0]!.click());
-//         expect(update).toHaveBeenCalledWith({ [name]: false });
-//         expect(inputs().map(input => input.checked)).toEqual([false, false]);
-//         expect([...container.querySelectorAll<HTMLInputElement>(`input:not([name="${name}"])`)]
-//             .every(input => input.checked)).toBe(true);
-//         expect(setQueryData).toHaveBeenCalledWith(getDashboardData, {}, expect.any(Function), { refetch: false });
-//     });
-//
-//     it.each(["calendar.showDeclinedEvents", "calendar.showUninvitedEvents"] as const)("retains %s and reports a failed save", async name => {
-//         update.mockRejectedValue(new Error("Save failed"));
-//         await act(async () => root.render(React.createElement(DashboardContextProvider, null, React.createElement(CalendarUserSettingsControl))));
-//         const input = container.querySelector<HTMLInputElement>(`input[name="${name}"]`)!;
-//         await act(async () => input.click());
-//         expect(input.checked).toBe(true);
-//         expect(input.disabled).toBe(false);
-//         expect(errorMessage).toHaveBeenCalled();
-//         expect(setQueryData).not.toHaveBeenCalled();
-//     });
-// });
-// MIGRATION_REFERENCE_END

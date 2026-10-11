@@ -1,121 +1,153 @@
-// MIGRATION_DEFERRED_TEST
-// Preserved migration reference only. The empty export keeps this file a TypeScript module.
-export {};
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { parsePublicId } from "shared/publicId";
+import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
+import getPresentationData from "src/locale/queries/getPresentationData";
+import updateSetting from "src/setting/server/mutations/updateSetting";
+import updateBulkSettings from "src/setting/server/mutations/updateBulkSettings";
+import { loadSettingsSnapshot } from "src/setting/server/settings";
+import { readSettingSnapshot, type SettingsKey } from "src/setting/shared/settingsContract";
+import { clearBrandCache } from "src/server/brand";
+import { authorizationTestDb } from "tests/authorization/support/inMemoryPrisma";
+import { invokeResolver } from "tests/authorization/support/resolverHarness";
+import {
+    firstSettingsBand, secondSettingsBand, otherSettingsUserId, resetSettingsAuthorizationFixture,
+    settingsOwnerId, settingsTestContext, settingsTestDatabase, settingsTransactionFixture,
+} from "tests/support/settingsAuthorizationFixture";
 
+vi.mock("db", async () => {
+    const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client");
+    const { authorizationTestDb } = await import("../../../tests/authorization/support/inMemoryPrisma");
+    return { ...prisma, default: authorizationTestDb };
+});
+vi.mock("src/server/brand", () => ({ clearBrandCache: vi.fn() }));
 
-// MIGRATION_RESTORE: settings-editors
-// Source: 1cdb8299f3f0b373ade44adc44de26e06fd59b6a:src/setting/tests/userSettings.test.ts:1-108
-// Reason: Old setting readers, writers and tests were removed while typed settings replaced the storage contract.
-// Restore: Account for legacy settings and branding editor workflows using typed hives and per-key authorization; preserve scheduling reanchor and cache invalidation semantics.
-// Verification: Adapt preserved user/branding/setting authorization specifications and native time-zone tests; verify editor saves and resets in the built app.
-// SHA256: 7853c35b634ec3d07ebca2c519b43dde6284a964da842c7d2edfb6e3abcf9731
-// MIGRATION_REFERENCE_BEGIN
-// import { beforeEach, describe, expect, it, vi } from "vitest";
-//
-// vi.mock("db", async () => {
-//     const { authorizationTestDb } = await import("../../../tests/authorization/support/inMemoryPrisma");
-//     return {
-//         ...await vi.importActual<typeof import("@prisma/client")>("@prisma/client"),
-//         default: new Proxy(authorizationTestDb, {
-//             // Dashboard relevance is unrelated to settings ownership.
-//             get: (database, key) => key === "$queryRaw" ? async () => [] : Reflect.get(database, key),
-//         }),
-//     };
-// });
-//
-// import updateMyUserSettings from "@/src/setting/server/mutations/updateMyUserSettings";
-// import getDashboardData from "src/auth/queries/getDashboardData";
-// import { loadUserSettings } from "@/src/setting/server/userSettings";
-// import { createAuthorizationPersona, createAuthorizationTestUser } from "../../../tests/authorization/support/authorizationFixtures";
-// import { authorizationTestDb } from "../../../tests/authorization/support/inMemoryPrisma";
-// import { invokeResolver } from "../../../tests/authorization/support/resolverHarness";
-//
-// const owner = createAuthorizationTestUser("normal", { id: 10 });
-// const other = createAuthorizationTestUser("normal", { id: 20 });
-// const settingName = "calendar.showDeclinedEvents";
-//
-// beforeEach(() => authorizationTestDb.reset({
-//     user: [owner, other],
-//     userSetting: [{ id: 1, userId: other.id, name: settingName, value: false }],
-// }));
-//
-// describe("own user settings", () => {
-//     it.each(["normal", "public"] as const)("dashboard settings follow the %s session, ignoring the cache discriminator", async persona => {
-//         const { ctx } = createAuthorizationPersona(persona, { id: owner.id });
-//         const dashboard = await invokeResolver(getDashboardData, { userId: other.id }, ctx);
-//         expect(dashboard).toMatchObject({
-//             userSettings: { [settingName]: true },
-//         });
-//     });
-//
-//     it("loads defaults anonymously and only the specified user's preferences", async () => {
-//         expect(await loadUserSettings(null)).toEqual({ [settingName]: true, "calendar.showUninvitedEvents": true });
-//         expect(await loadUserSettings(owner.id)).toEqual({ [settingName]: true, "calendar.showUninvitedEvents": true });
-//         expect(await loadUserSettings(other.id)).toEqual({ [settingName]: false, "calendar.showUninvitedEvents": true });
-//         expect(authorizationTestDb.snapshot("userSetting")).toHaveLength(1);
-//     });
-//
-//     it("creates, updates and audits a preference without duplicating the row", async () => {
-//         const { ctx } = createAuthorizationPersona("normal", { id: owner.id });
-//         expect(await invokeResolver(updateMyUserSettings, { [settingName]: false }, ctx))
-//             .toEqual({ [settingName]: false, "calendar.showUninvitedEvents": true });
-//         expect(await invokeResolver(updateMyUserSettings, { [settingName]: true }, ctx))
-//             .toEqual({ [settingName]: true, "calendar.showUninvitedEvents": true });
-//         await invokeResolver(updateMyUserSettings, { [settingName]: true }, ctx);
-//
-//         expect(authorizationTestDb.snapshot("userSetting")).toEqual([
-//             { id: 1, userId: other.id, name: settingName, value: false },
-//             { id: 2, userId: owner.id, name: settingName, value: true },
-//         ]);
-//         expect(authorizationTestDb.snapshot("change")).toEqual([
-//             expect.objectContaining({ table: "UserSetting", userId: owner.id, action: "insert" }),
-//             expect.objectContaining({ table: "UserSetting", userId: owner.id, action: "update" }),
-//         ]);
-//     });
-//
-//     it("does not overwrite unsubmitted preferences", async () => {
-//         await authorizationTestDb.userSetting!.create({ data: { userId: owner.id, name: "future.preference", value: "kept" } });
-//         const { ctx } = createAuthorizationPersona("normal", { id: owner.id });
-//         await invokeResolver(updateMyUserSettings, { [settingName]: false }, ctx);
-//         expect(authorizationTestDb.snapshot("userSetting")).toContainEqual(
-//             expect.objectContaining({ name: "future.preference", value: "kept" }),
-//         );
-//     });
-//
-//     it("saves each calendar preference independently and returns both through the dashboard", async () => {
-//         const { ctx } = createAuthorizationPersona("normal", { id: owner.id });
-//         await invokeResolver(updateMyUserSettings, { [settingName]: false }, ctx);
-//         expect(await invokeResolver(updateMyUserSettings, { "calendar.showUninvitedEvents": false }, ctx))
-//             .toEqual({ [settingName]: false, "calendar.showUninvitedEvents": false });
-//         expect(await invokeResolver(updateMyUserSettings, { [settingName]: true }, ctx))
-//             .toEqual({ [settingName]: true, "calendar.showUninvitedEvents": false });
-//         expect(await invokeResolver(getDashboardData, {}, ctx)).toMatchObject({
-//             userSettings: { [settingName]: true, "calendar.showUninvitedEvents": false },
-//         });
-//         expect(await loadUserSettings(other.id))
-//             .toEqual({ [settingName]: false, "calendar.showUninvitedEvents": true });
-//     });
-//
-//     it.each(["public", "deactivated", "missing"])("rejects writes for a %s principal", async kind => {
-//         const { ctx } = createAuthorizationPersona(kind === "public" ? "public" : "normal", { id: owner.id });
-//         if (kind === "deactivated") await authorizationTestDb.user!.update({ where: { id: owner.id }, data: { isDeleted: true } });
-//         if (kind === "missing") await authorizationTestDb.user!.delete({ where: { id: owner.id } });
-//         await expect(invokeResolver(updateMyUserSettings, { [settingName]: false }, ctx)).rejects.toThrow();
-//         expect(authorizationTestDb.snapshot("userSetting")).toHaveLength(1);
-//         expect(authorizationTestDb.snapshot("change")).toHaveLength(0);
-//     });
-//
-//     it("rejects forged ownership and invalid patches before any writes", async () => {
-//         const { ctx } = createAuthorizationPersona("normal", { id: owner.id });
-//         for (const patch of [
-//             { [settingName]: false, userId: other.id },
-//             { [settingName]: "false" },
-//             { [settingName]: false, "unknown.setting": true },
-//         ]) {
-//             await expect(invokeResolver(updateMyUserSettings, patch as never, ctx)).rejects.toThrow();
-//         }
-//         expect(authorizationTestDb.snapshot("userSetting")).toHaveLength(1);
-//         expect(authorizationTestDb.snapshot("change")).toHaveLength(0);
-//     });
-// });
-// MIGRATION_REFERENCE_END
+beforeEach(() => {
+    resetSettingsAuthorizationFixture();
+    vi.mocked(clearBrandCache).mockClear();
+});
+afterEach(() => { vi.restoreAllMocks(); });
+
+const setPreference = (key: SettingsKey<"user">, value: boolean) => ({
+    hive: "user" as const, key, operation: { kind: "set" as const, value },
+});
+const firstPreference = "calendar.showDeclinedEvents";
+
+describe("own registered user settings", () => {
+    it("delivers defaults only to the active owner, without creating rows", async () => {
+        const owner = await loadAuthorizationForUser({ id: settingsOwnerId }, settingsTestDatabase);
+        const other = await loadAuthorizationForUser({ id: otherSettingsUserId }, settingsTestDatabase);
+        const anonymous = await loadAuthorizationForUser(null, settingsTestDatabase);
+        expect((await loadSettingsSnapshot(settingsTestDatabase, anonymous)).user).toEqual({});
+        expect(readSettingSnapshot(await loadSettingsSnapshot(settingsTestDatabase, owner), "user", firstPreference)).toBe(true);
+        expect(readSettingSnapshot(await loadSettingsSnapshot(settingsTestDatabase, other), "user", firstPreference)).toBe(false);
+        expect(authorizationTestDb.snapshot("userSetting")).toHaveLength(1);
+        expect(authorizationTestDb.snapshot("change")).toEqual([]);
+    });
+
+    it.each([null, firstSettingsBand, secondSettingsBand])("derives the preference owner from the session in context %s", async bandPublicId => {
+        const ctx = settingsTestContext();
+        await invokeResolver(updateSetting, setPreference(firstPreference, false), ctx);
+        const data = await invokeResolver(getPresentationData, { bandPublicId, clientRequestId: String(otherSettingsUserId) }, ctx);
+        expect(data.authorization.userPublicId).toBe(parsePublicId<"User">("User000000000042"));
+        expect(data.settings.user[firstPreference]?.value).toBe(false);
+        expect(data.input.clientRequestId).toBe(String(otherSettingsUserId));
+        expect(authorizationTestDb.snapshot("userSetting").filter(row => row.userId === otherSettingsUserId))
+            .toEqual([{ id: 1, userId: otherSettingsUserId, name: firstPreference, value: false }]);
+    });
+
+    it("inserts, updates, skips unchanged values and audits reset without duplicating rows", async () => {
+        const ctx = settingsTestContext();
+        await invokeResolver(updateSetting, setPreference(firstPreference, false), ctx);
+        await invokeResolver(updateSetting, setPreference(firstPreference, true), ctx);
+        await invokeResolver(updateSetting, setPreference(firstPreference, true), ctx);
+        expect(authorizationTestDb.snapshot("userSetting").filter(row => row.userId === settingsOwnerId)).toHaveLength(1);
+        expect(authorizationTestDb.snapshot("change").map(row => row.action)).toEqual(["insert", "update"]);
+        await invokeResolver(updateSetting, { hive: "user", key: firstPreference, operation: { kind: "reset" } }, ctx);
+        await invokeResolver(updateSetting, { hive: "user", key: firstPreference, operation: { kind: "reset" } }, ctx);
+        expect(authorizationTestDb.snapshot("change").map(row => row.action)).toEqual(["insert", "update", "delete"]);
+        expect(authorizationTestDb.snapshot("change").every(row => row.table === "UserSetting" && row.userId === settingsOwnerId)).toBe(true);
+        expect((await invokeResolver(getPresentationData, {}, ctx)).settings.user[firstPreference]).toMatchObject({ value: true, source: "default" });
+    });
+
+    it("saves both calendar preferences independently and preserves unsubmitted or retired rows", async () => {
+        await authorizationTestDb.getDelegate("userSetting").create({ data: { userId: settingsOwnerId, name: "future.preference", value: "kept" } });
+        const ctx = settingsTestContext();
+        await invokeResolver(updateBulkSettings, { commands: [
+            setPreference(firstPreference, false), setPreference("calendar.showUninvitedEvents", false),
+        ] }, ctx);
+        await invokeResolver(updateSetting, setPreference(firstPreference, true), ctx);
+        const data = await invokeResolver(getPresentationData, {}, ctx);
+        expect(data.settings.user[firstPreference]?.value).toBe(true);
+        expect(data.settings.user["calendar.showUninvitedEvents"]?.value).toBe(false);
+        expect(data.settings.user["future.preference"]).toBeUndefined();
+        expect(authorizationTestDb.snapshot("userSetting")).toContainEqual(expect.objectContaining({
+            userId: settingsOwnerId, name: "future.preference", value: "kept",
+        }));
+    });
+
+    it("fails invalid stored types visibly and repairs them through an explicit reset", async () => {
+        // Typed hives deliberately reject corrupt values rather than silently selecting a default.
+        await authorizationTestDb.getDelegate("userSetting").create({ data: { userId: settingsOwnerId, name: firstPreference, value: "false" } });
+        const auth = await loadAuthorizationForUser({ id: settingsOwnerId }, settingsTestDatabase);
+        await expect(loadSettingsSnapshot(settingsTestDatabase, auth)).rejects.toThrow();
+        await invokeResolver(updateSetting, { hive: "user", key: firstPreference, operation: { kind: "reset" } }, settingsTestContext());
+        expect(readSettingSnapshot(await loadSettingsSnapshot(settingsTestDatabase, auth), "user", firstPreference)).toBe(true);
+    });
+
+    it.each(["anonymous", "deleted", "missing", "merged"] as const)("rejects writes for the %s principal", async kind => {
+        const ctx = settingsTestContext(kind === "anonymous" ? null : settingsOwnerId);
+        if (kind === "deleted") {
+            await authorizationTestDb.getDelegate("user").update({ where: { id: settingsOwnerId }, data: { isDeleted: true } });
+        } else if (kind === "missing") {
+            await authorizationTestDb.getDelegate("user").delete({ where: { id: settingsOwnerId } });
+        } else if (kind === "merged") {
+            await authorizationTestDb.getDelegate("user").update({ where: { id: settingsOwnerId }, data: { mergedIntoUserId: otherSettingsUserId } });
+        }
+        await expect(invokeResolver(updateSetting, setPreference(firstPreference, false), ctx)).rejects.toThrow();
+        expect(authorizationTestDb.snapshot("userSetting")).toHaveLength(1);
+        expect(authorizationTestDb.snapshot("change")).toEqual([]);
+        expect(clearBrandCache).not.toHaveBeenCalled();
+    });
+
+    it("refreshes account status inside the transaction after a cached successful request", async () => {
+        const ctx = settingsTestContext();
+        await invokeResolver(getPresentationData, {}, ctx);
+        const transact = settingsTransactionFixture.transaction.bind(settingsTransactionFixture);
+        vi.spyOn(settingsTransactionFixture, "transaction").mockImplementationOnce(async work => {
+            await authorizationTestDb.getDelegate("user").update({ where: { id: settingsOwnerId }, data: { isDeleted: true } });
+            return transact(work);
+        });
+        await expect(invokeResolver(updateSetting, setPreference(firstPreference, false), ctx)).rejects.toThrow();
+        expect(authorizationTestDb.snapshot("userSetting")).toHaveLength(1);
+        expect(authorizationTestDb.snapshot("change")).toEqual([]);
+        expect(clearBrandCache).not.toHaveBeenCalled();
+    });
+
+    it("rejects forged ownership, unknown keys and invalid batches before any writes", async () => {
+        const ctx = settingsTestContext();
+        for (const command of [
+            { ...setPreference(firstPreference, false), userId: otherSettingsUserId },
+            { ...setPreference(firstPreference, false), key: "unknown.setting" },
+            { ...setPreference(firstPreference, false), operation: { kind: "set" as const, value: "false" } },
+        ]) {
+            await expect(invokeResolver(updateSetting, command, ctx)).rejects.toThrow();
+        }
+        await expect(invokeResolver(updateBulkSettings, { commands: [setPreference(firstPreference, false), {
+            hive: "user", key: "calendar.showUninvitedEvents", operation: { kind: "set", value: "false" },
+        }] }, ctx)).rejects.toThrow();
+        const forgedPresentationInput = { userId: otherSettingsUserId };
+        // The resolver must reject this intentionally malformed transport payload at runtime.
+        await expect(invokeResolver(getPresentationData, forgedPresentationInput as never, ctx)).rejects.toThrow();
+        expect(authorizationTestDb.snapshot("userSetting")).toHaveLength(1);
+        expect(authorizationTestDb.snapshot("change")).toEqual([]);
+    });
+
+    it("rolls back preferences and audits without invalidating caches when the audit fails", async () => {
+        const failure = new Error("Preference audit failed");
+        vi.spyOn(authorizationTestDb.getDelegate("change"), "create").mockRejectedValueOnce(failure);
+        await expect(invokeResolver(updateSetting, setPreference(firstPreference, false), settingsTestContext())).rejects.toBe(failure);
+        expect(authorizationTestDb.snapshot("userSetting")).toHaveLength(1);
+        expect(authorizationTestDb.snapshot("change")).toEqual([]);
+        expect(clearBrandCache).not.toHaveBeenCalled();
+    });
+});

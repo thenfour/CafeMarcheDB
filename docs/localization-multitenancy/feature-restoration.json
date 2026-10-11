@@ -101,12 +101,17 @@
     },
     {
       "id": "settings-editors",
-      "reason": "Old setting readers, writers and tests were removed while typed settings replaced the storage contract.",
+      "reason": "Reference settings, account preferences and branding editors are accounted for through typed hives and registered keys, including optional primary text color, fresh per-key authorization, cache publication and band-only scheduling reanchor.",
       "restore": "Account for legacy settings and branding editor workflows using typed hives and per-key authorization; preserve scheduling reanchor and cache invalidation semantics.",
       "verification": "Adapt preserved user/branding/setting authorization specifications and native time-zone tests; verify editor saves and resets in the built app.",
-      "status": "pending",
+      "status": "restored",
       "evidence": [
-        "2026-10-11: Branding favicon/logo upload, preview, clear, direct-URL paste/drop and draft/save/cancel/reset controls now compose with the existing typed-hive editor through a generic draft-tools contract. Logo is a registered band URL setting with existing validation and branding authority. The production browser reproduced independent page/RPC brand caches retaining the old header after an immediate save/reload; page bootstrap now explicitly refreshes committed branding while preserving last-known-good error behavior. Existing branding lifecycle test mocks were repaired. Full settings/legacy-specification parity and optional primary text color remain pending; no preservation references are removed."
+        "2026-10-11: Branding favicon/logo upload, preview, clear, direct-URL paste/drop and draft/save/cancel/reset controls now compose with the existing typed-hive editor through a generic draft-tools contract. Logo is a registered band URL setting with existing validation and branding authority. The production browser reproduced independent page/RPC brand caches retaining the old header after an immediate save/reload; page bootstrap now explicitly refreshes committed branding while preserving last-known-good error behavior. Existing branding lifecycle test mocks were repaired. Full settings/legacy-specification parity and optional primary text color remain pending; no preservation references are removed.",
+        "2026-10-11: Audited the reference settings/branding pages and preserved specifications against f027830a9790. Restored optional primary text color as siteCustomization.themeColors.textPrimary with the existing optional color schema and manage_site_branding authority, including the typed branding aggregate and page theme. A stored blank lets the application theme choose text color; explicit reset deletes the row. The legacy settings account in 06-localization-settings.md maps all runtime configuration/preferences and selector aliases, separates deployment hosting mode and localized content, and leaves unknown/conflicting production rows for the production-copy inventory. Arbitrary setting names, raw DB3 storage, implicit blank deletion and per-page Wiki injection are not reintroduced.",
+        "Reactivated three whole-file specifications through current contracts: tests/userSettings.test.ts, src/setting/tests/userSettings.test.ts and tests/authorization/settingAuthorization.test.ts. They cover strict attendance boundaries, both native boolean preferences, ownership derived from the session, partial writes/noops/audits/reset, unrelated rows, corrupt-value failure and repair, anonymous/deleted/missing/merged principals, forged owners, invalid batch rollback, public presentation/private-key redaction, role-carried platform authority, independent branding/scheduling permissions and transaction-time grant/account refresh. Typed hives deliberately replace legacy corrupt-value fallback and anonymous account defaults; those differences are executable and documented. Existing preference context specs now cover both success and failure controls, same-scope drafts and focus refresh; brand loading includes optional color clear/reset and expired last-known-good cache behavior. Existing native time-zone specs cover timed/mixed spans, feed revisions, DST dates, reset, failure rollback and selected-band-only UTC repair/migration.",
+        "Two additional runtime gaps were found during verification: the settings page retained the obsolete blanket Sysadmin gate, and presentation snapshots lacked their documented focus refresh. The settings route now requires an active account while registry capabilities protect each key/hive; a band-settings manager needs no branding or Sysadmin grant to edit scheduling. The branding page retains its separate branding gate. Focus refresh reloads fresh settings and grants and retains readable same-scope drafts. Calendar preference labels/help/feedback now use the localized registry. Test discovery and Vitest includes now agree on tests/ and src/, so the feature-owned preference suite actually executes in focused and complete runs; the React environment check covers both roots.",
+        "Verification passes normal typecheck, targeted lint and a normal production build with isolated output, 276 focused cases across sixteen files and 36 native MariaDB cases across five files. Ten built Chromium groups cover French/Dutch branding validation/cancel/save/clear/reset/reload and applied text colors; DST reanchor/reset and timed/foreign-band preservation; stale Save denial, focus-driven per-key controls and retained-draft retry; typed clipboard copy/import and invalid-batch no write; both preferences through settings/profile/shared-person band switches; normalized independent membership locales and account reset; draft discard and independent color publication on a band switch; role-carried platform enum save/reset without a band or legacy Sysadmin flag; another account preferences and anonymous denial. No uncaught page or unexpected RPC errors. Fixture settings, memberships, labels, grants, original Event/segment rows and revisions are restored, fixture Events/audits/actions are removed, private native databases are dropped and the owned server is stopped. Shared branding validation rejects padded colors and uppercase color functions that crash the MUI theme; authorization regressions and the built editor verify these inputs before save.",
+        "The complete suite retains 203 failed tests and ten suite-load failures, with 1943 passed and 720 skipped. Its 163 normalized failure labels add or remove none versus the File-creation checkpoint; the runner still stops before later jsdom batches, which pass in the focused run. Nineteen fully covered reference blocks across seventeen paths are removed, together with five reference-only modules and their two empty barrel exports; all other references remain unchanged. Three deferred-test guards are replaced by executable tests. Preservation verifies 224 references, seven whole-file deferred specifications and sixteen pending features. Only settings-editors is closed; production inventory/rehearsal, other obligations and A1/B remain open."
       ]
     },
     {
@@ -963,124 +968,10 @@
       "sha256": "5244e8b648c4c6b5622153ec73ce512ed4d33942216cceab684928dc884d22dc"
     },
     {
-      "file": "src/setting/server/settingWrite.ts",
-      "featureId": "settings-editors",
-      "source": "c4002c5f2ee1f79ee5f0501fb8f2382a32f2e8c4:src/setting/server/settingWrite.ts:1-100",
-      "sha256": "70681f1055d04fdf0214763c835127aef761f1e6c9f2b34efa3e027a206da465"
-    },
-    {
-      "file": "src/setting/shared/userSettings.ts",
-      "featureId": "settings-editors",
-      "source": "c4002c5f2ee1f79ee5f0501fb8f2382a32f2e8c4:src/setting/shared/userSettings.ts:1-45",
-      "sha256": "688435560a01de7ac9036e712c5c3fc5a5f1fc031089e112a59bdd61b4951a83"
-    },
-    {
-      "file": "src/setting/server/userSettings.ts",
-      "featureId": "settings-editors",
-      "source": "c4002c5f2ee1f79ee5f0501fb8f2382a32f2e8c4:src/setting/server/userSettings.ts:1-16",
-      "sha256": "708d5fc20503aba62af635dca5c3d8f3d901d19d3f342d2b3ed4586cd9917097"
-    },
-    {
-      "file": "tests/authorization/settingAuthorization.test.ts",
-      "featureId": "settings-editors",
-      "source": "c4002c5f2ee1f79ee5f0501fb8f2382a32f2e8c4:tests/authorization/settingAuthorization.test.ts:1-374",
-      "sha256": "4e4c07c3dcda55385a78fa0bda4a1430bb31b0f450b2d56c0caf6401c3938dae"
-    },
-    {
-      "file": "tests/userSettings.test.ts",
-      "featureId": "settings-editors",
-      "source": "c4002c5f2ee1f79ee5f0501fb8f2382a32f2e8c4:tests/userSettings.test.ts:1-47",
-      "sha256": "c3f264e7da685686c89e8317439f82c698757d36922f738356cd6d6c5b42202d"
-    },
-    {
-      "file": "tests/userSettingsContext.test.tsx",
-      "featureId": "settings-editors",
-      "source": "c4002c5f2ee1f79ee5f0501fb8f2382a32f2e8c4:tests/userSettingsContext.test.ts:1-125",
-      "sha256": "a723f90b597fd74b93979ee031fa93675dc7a229834fad07c3f8d83dfc65a3f1"
-    },
-    {
-      "file": "src/setting/server/mutations/updateSetting.ts",
-      "featureId": "settings-editors",
-      "source": "c4002c5f2ee1f79ee5f0501fb8f2382a32f2e8c4:src/setting/server/mutations/updateMyUserSettings.ts:1-41",
-      "sha256": "4a1e2a70983b22639b4bfe547e58f7e8704a5a0eb6577e83328035872216aa00"
-    },
-    {
-      "file": "src/setting/server/settings.ts",
-      "featureId": "settings-editors",
-      "source": "c4002c5f2ee1f79ee5f0501fb8f2382a32f2e8c4:src/setting/server/queries/getSetting.ts:1-21",
-      "sha256": "23a26e289e1425c961abf3b13601d97e38664fe6a0a72c08e6d7525cd7f466d3"
-    },
-    {
-      "file": "src/setting/server/settings.ts",
-      "featureId": "settings-editors",
-      "source": "c4002c5f2ee1f79ee5f0501fb8f2382a32f2e8c4:src/setting/server/queries/getSiteBrandingSettings.ts:1-19",
-      "sha256": "d481accedcdcd24be33c8302defe64f5f1ddb192dcf9b7c6c904e3a893206951"
-    },
-    {
-      "file": "src/setting/tests/userSettings.test.ts",
-      "featureId": "settings-editors",
-      "source": "1cdb8299f3f0b373ade44adc44de26e06fd59b6a:src/setting/tests/userSettings.test.ts:1-108",
-      "sha256": "7853c35b634ec3d07ebca2c519b43dde6284a964da842c7d2edfb6e3abcf9731"
-    },
-    {
-      "file": "tests/authorization/settingAuthorization.test.ts",
-      "featureId": "settings-editors",
-      "source": "1cdb8299f3f0b373ade44adc44de26e06fd59b6a:tests/authorization/settingAuthorization.test.ts:1-145",
-      "sha256": "43082deeada64497fbfb3ff01b01be3e41f461d520ec2d3ab14c37f954b8e51a"
-    },
-    {
-      "file": "tests/brandLoading.test.ts",
-      "featureId": "settings-editors",
-      "source": "1cdb8299f3f0b373ade44adc44de26e06fd59b6a:tests/brandLoading.test.ts:1-118",
-      "sha256": "c7dfb282ee35f25772a20e6e0a132cbd08c95b7dfa988722d970a1db98f6a742"
-    },
-    {
-      "file": "tests/datetime/bandPolicy.mysql.test.ts",
-      "featureId": "settings-editors",
-      "source": "1cdb8299f3f0b373ade44adc44de26e06fd59b6a:tests/datetime/bandPolicy.mysql.test.ts:1-207",
-      "sha256": "dbec63f32dcf6f9039293011ec1e412f1188575ee053e1f3207e2208cb27dc01"
-    },
-    {
-      "file": "tests/datetime/bandTimeZoneWrites.test.ts",
-      "featureId": "settings-editors",
-      "source": "1cdb8299f3f0b373ade44adc44de26e06fd59b6a:tests/datetime/bandTimeZoneWrites.test.ts:1-200",
-      "sha256": "d768fc49a5640e3299acd219592fff7413b271a0ee099d07e01e8534c1c56812"
-    },
-    {
       "file": "src/pages/backstage/editSongTags.tsx",
       "featureId": "catalog-help",
       "source": "c4df4fe07549d210e476ef5f0d24731bdf338a67:src/pages/backstage/editSongTags.tsx:1-42",
       "sha256": "853d987f30c5e4468e513900dc0b27c654163c7c2bef7a747798555404aee075"
-    },
-    {
-      "file": "src/core/db3/shared/db3schema.ts",
-      "featureId": "settings-editors",
-      "source": "14c644c1242b8bfac9190afe3ac05ebf2573c49d:src/core/db3/shared/db3schema.ts:1-69",
-      "sha256": "eb5512fffa700c89878b510c6385d7062956957d68bceb080e5e7a18d6626935"
-    },
-    {
-      "file": "src/core/db3/shared/entities/setting/settingViews.ts",
-      "featureId": "settings-editors",
-      "source": "14c644c1242b8bfac9190afe3ac05ebf2573c49d:src/core/db3/shared/entities/setting/settingViews.ts:1-17",
-      "sha256": "4df162f6690b88127c7a43bcb0b7c94c401b8bc8a505b1bf6ef2f50ec0f5f6fd"
-    },
-    {
-      "file": "src/pages/backstage/settings.tsx",
-      "featureId": "settings-editors",
-      "source": "14c644c1242b8bfac9190afe3ac05ebf2573c49d:src/pages/backstage/settings.tsx:1-92",
-      "sha256": "3656d18d7155df7a125f6d881f6f868c40d7813d609446ec48a2b57fb3c67f65"
-    },
-    {
-      "file": "src/pages/backstage/brand.tsx",
-      "featureId": "settings-editors",
-      "source": "14c644c1242b8bfac9190afe3ac05ebf2573c49d:src/pages/backstage/brand.tsx:1-345",
-      "sha256": "3365c3407de4c0c6b97e5fc812c7c9c01fbb2d9eff3c538b6ab7aaeba964d75e"
-    },
-    {
-      "file": "tests/authorization/db3TableAuthorization.test.ts",
-      "featureId": "settings-editors",
-      "source": "14c644c1242b8bfac9190afe3ac05ebf2573c49d:tests/authorization/db3TableAuthorization.test.ts:152-162",
-      "sha256": "bdbb497d9b1dbab20eca1d34a3c4be149cbd1b476169494d884e13b6649a0456"
     },
     {
       "file": "src/core/db3/shared/schema/prismArgs.ts",

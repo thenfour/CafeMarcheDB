@@ -27,7 +27,10 @@ function fail(message) {
   process.exit(1)
 }
 
-const allTestFiles = findTestFiles(testsRoot).sort()
+const allTestFiles = [
+  ...findTestFiles(testsRoot),
+  ...findTestFiles(path.join(projectRoot, "src"))
+].sort()
 const selectors = []
 const vitestArgs = []
 const optionsWithValues = new Set(["--reporter", "--testNamePattern", "-t", "--mode", "--testTimeout", "--hookTimeout"])

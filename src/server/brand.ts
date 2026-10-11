@@ -38,6 +38,7 @@ export async function loadDbBrandConfig({ hostHeader, bandId: selectedBandId, fr
                 secondaryMain: read("siteCustomization.themeColors.secondaryMain") || defaultTheme.secondaryMain,
                 backgroundDefault: read("siteCustomization.themeColors.backgroundDefault") || defaultTheme.backgroundDefault,
                 backgroundPaper: read("siteCustomization.themeColors.backgroundPaper") || defaultTheme.backgroundPaper,
+                textPrimary: read("siteCustomization.themeColors.textPrimary") || undefined,
                 contrastText: read("siteCustomization.themeColors.contrastText") || defaultTheme.contrastText,
             },
         });

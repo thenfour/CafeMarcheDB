@@ -33,7 +33,9 @@ or incomplete. Song credit editing and performance history, public
 homepage/feed delivery and frontpage gallery editing/bake are restored below.
 General File search/detail/metadata pages, associated uploads, the image fork
 service and band branding uploads are restored. The File-creation parity audit
-is complete, including preserved originals and resized image children. The
+is complete, including preserved originals and resized image children. Settings,
+preferences and branding parity is also complete, including primary text color,
+per-key access, focus refresh and band-only time-zone reanchor. The
 [restoration manifest](feature-restoration.json) records the individual obligations
 and verification criteria; use `yarn migration:status` rather than maintaining a
 second restriction table. Keep every deferred page, RPC/API, generic DB3 root,
@@ -732,8 +734,8 @@ an explicit refresh from the existing loader, retaining its last-known-good erro
 behavior. Immediate reload displays the committed favicon and logo in each band.
 The existing branding lifecycle test's missing bootstrap/router/RPC mocks are
 repaired. All source archives and deferred specifications remain preserved;
-`file-creation` and `settings-editors` still need their final parity/specification
-audit, and optional primary text color remains deferred. A1/B remain open.
+Their final File/settings parity audits are recorded below, including the restored
+optional primary text color. A1/B remain open.
 
 ## Localized Markdown editing and page-help checkpoint
 
@@ -797,17 +799,45 @@ Only the forty completed `file-creation` source blocks/references are removed an
 that feature is marked restored. The ten whole-file deferred specifications, other
 feature obligations, settings-editor audit and A1/B remain open.
 
-## Next slice: Settings-editor parity and preservation audit
+## Settings-editor parity and preservation checkpoint
 
-Compare the restored settings, preferences and branding editors with the functional
-baseline and their preserved specifications. Make remaining user/setting
-authorization cases executable through typed hives and registered keys, and verify
-fresh per-key/scope authority, independent bands, save/reset, cache refresh and
-scheduling time-zone reanchor behavior. Account for legacy keys and optional
-primary text color without recreating arbitrary setting storage or per-page Wiki
-injection. Remove only fully covered settings source references/specification
-guards after native and built-browser evidence; leave other obligations and A1/B
-open.
+The audit against `f027830a9790` restores optional primary text color through the
+registered band key, existing color schema/branding authority, typed aggregate and
+page theme. Stored blank selects the application theme; reset deletes the row.
+The [legacy settings account](06-localization-settings.md#legacy-settings-account)
+maps runtime configuration, preferences and selector aliases, and records the
+intentional typed-hive differences. Production-copy mapping/rehearsal remains
+required; there is no arbitrary-name storage, startup conversion or Wiki injection.
+
+The settings route now admits active accounts while hive/key capabilities protect
+values and edits. Band-settings managers can edit scheduling without Sysadmin or
+branding authority; the separate branding page retains its branding gate.
+Presentation focus refresh is restored and retains same-scope drafts while loading
+fresh grants/settings. Calendar preference labels/help/feedback are localized.
+
+Three whole-file user/setting specifications are executable again. They cover both
+preferences, strict native values, self ownership, preserved unrelated rows, noops,
+audits/reset, invalid batches, inactive/forged principals, per-key/scope grants,
+public/private reads and fresh transaction authority. Partial cache/context and
+native time-zone specifications are covered by the current owners. Test discovery
+now includes feature-owned tests under `src/`, matching Vitest's include patterns;
+the previously excluded preference file actually runs in focused/full batches.
+
+Focused/native checks and ten built-browser groups pass as recorded below. Only
+the nineteen completed `settings-editors` blocks/references are removed, together
+with five reference-only modules and their empty barrel exports. Three deferred
+guards are replaced by executable tests. Other references and the seven remaining
+whole-file deferred specifications remain intact; settings parity is closed while
+other obligations and A1/B stay open.
+
+## Next slice: Catalog-help parity and preservation audit
+
+Restore the configured help on the existing Song Tag catalog editor through the
+localized Markdown owner. Compare the reference help/editor composition and
+preserved source, verify independent band/language values alongside the migrated
+catalog editor, and exercise save/cancel/reset and fresh localization authority in
+the built browser. Remove only the covered `catalog-help` reference after evidence;
+keep catalog search/localized-name obligations, other features and A1/B open.
 
 ## Localized catalog text search exception
 
@@ -1499,3 +1529,35 @@ now-passing fixtures. The runner still stops before later jsdom batches. Preserv
 verifies 243 source references, ten whole-file deferred specifications and seventeen
 pending features. Only `file-creation` is closed in this slice; settings parity,
 broader translation tooling, other feature obligations and A1/B remain open.
+
+The **settings-editor parity and preservation checkpoint** passes normal typecheck,
+targeted lint and a normal production build with isolated output. Its 276 focused
+cases across sixteen files include the three reactivated specifications, registered
+editors/clipboard, both mounted calendar controls and failed saves, brand loading/
+lifecycle/uploads, fresh page/key authority, strict timezone writes/loading and
+preservation. Branding validation also rejects padded colors and uppercase color
+functions that MUI cannot apply. Native MariaDB checks pass 36 cases across five files, covering
+independent text color and blank/reset, shared account preferences versus membership
+locales, revoked per-key batches, native JSON migration, branding Files, personalized
+feeds and the retained transactional time-zone/DST/rollback/migration specifications.
+Private native databases are removed.
+
+Ten built Chromium groups pass French/Dutch branding color validation/cancel/save/
+clear/reset/reload, DST reanchor/reset with timed/foreign-band preservation, stale
+Save rejection and focus-driven per-key controls with retained drafts/retry, typed
+clipboard copy/import and invalid-batch no-write, both preferences through settings
+and localized profile controls, independent normalized membership locales/account
+reset, color-draft discard on band switch, role-carried platform enum save/reset
+without a band or legacy Sysadmin flag, independent other-account preferences and
+anonymous denial. French/Dutch color-editor layouts are visually inspected. No
+uncaught page or unexpected RPC errors occur. Original settings, labels, grants,
+Event/segment rows and revisions are restored; fixture Events, actions and audits
+are removed, and the owned server is stopped. Evidence is in
+`temp/settings-parity-browser-result.json`.
+
+The complete suite retains 203 failed tests and ten suite-load failures, with 1943
+passed and 720 skipped. Its 163 normalized failure labels add or remove none versus
+the File checkpoint; the runner still stops before later jsdom batches, which pass
+in the focused run. Preservation verifies 224 references, seven whole-file deferred
+specifications and sixteen pending features. Only `settings-editors` is closed in
+this slice; production inventory/rehearsal, other obligations and A1/B remain open.

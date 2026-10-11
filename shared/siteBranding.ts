@@ -3,7 +3,6 @@ import { BandSettingsRegistryKey, kBandSettingsRegistry } from "src/setting/shar
 
 // The form edits only registered band settings; shared platform settings are excluded.
 export const siteBrandingSettingByField = {
-    // todo: localize
     siteTitle: "siteCustomization.title" satisfies BandSettingsRegistryKey,
     siteTitlePrefix: "siteCustomization.titlePrefix" satisfies BandSettingsRegistryKey,
 
@@ -11,7 +10,6 @@ export const siteBrandingSettingByField = {
     siteLogoUrl: "siteCustomization.logoUrl" satisfies BandSettingsRegistryKey,
     bandTimeZone: "dateTime.bandTimeZone" satisfies BandSettingsRegistryKey,
 
-    // todo: localize
     calendarName: "ical.calendarName" satisfies BandSettingsRegistryKey,
 
     calendarCompany: "ical.calendarCompany" satisfies BandSettingsRegistryKey,
@@ -21,6 +19,7 @@ export const siteBrandingSettingByField = {
     themeSecondaryMain: "siteCustomization.themeColors.secondaryMain" satisfies BandSettingsRegistryKey,
     themeBackgroundDefault: "siteCustomization.themeColors.backgroundDefault" satisfies BandSettingsRegistryKey,
     themeBackgroundPaper: "siteCustomization.themeColors.backgroundPaper" satisfies BandSettingsRegistryKey,
+    themeTextPrimary: "siteCustomization.themeColors.textPrimary" satisfies BandSettingsRegistryKey,
     themeContrastText: "siteCustomization.themeColors.contrastText" satisfies BandSettingsRegistryKey,
 } as const;
 
@@ -38,14 +37,8 @@ export const SiteBrandingSettingsSchema = z.object({
     themeSecondaryMain: kBandSettingsRegistry[siteBrandingSettingByField.themeSecondaryMain].schema,
     themeBackgroundDefault: kBandSettingsRegistry[siteBrandingSettingByField.themeBackgroundDefault].schema,
     themeBackgroundPaper: kBandSettingsRegistry[siteBrandingSettingByField.themeBackgroundPaper].schema,
+    themeTextPrimary: kBandSettingsRegistry[siteBrandingSettingByField.themeTextPrimary].schema,
     themeContrastText: kBandSettingsRegistry[siteBrandingSettingByField.themeContrastText].schema,
 }).strict();
 
 export type SiteBrandingSettings = z.infer<typeof SiteBrandingSettingsSchema>;
-//export const siteBrandingSettingNames = Object.values(siteBrandingSettingByField);
-
-// export function siteBrandingSettingsFromValues(values: ReadonlyMap<string, string>): SiteBrandingSettings //
-//  {
-//     return SiteBrandingSettingsSchema.parse(Object.fromEntries(Object.entries(siteBrandingSettingByField).map(([field, key]) =>
-//         [field, values.has(key) ? values.get(key) : kBandSettingsRegistry[key].defaultValue])));
-// }

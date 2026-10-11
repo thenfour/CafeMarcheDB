@@ -112,6 +112,25 @@ afterEach(async () => {
 });
 
 describe("registered settings editor", () => {
+    it("validates optional primary text color and distinguishes a stored blank from reset", async () => {
+        const key = "siteCustomization.themeColors.textPrimary";
+        setSettings({ ...presentation.data!.settings, band: {
+            [key]: { value: "#123456", source: "stored", capabilities: { canView: true, canEdit: true } },
+        } });
+        await render();
+        expect(row(key).querySelector("label")?.textContent).toContain("Primary text color (optional)");
+        await edit("var(--text-primary)", key);
+        expect(button("Save", row(key)).disabled).toBe(true);
+        await edit("", key);
+        await act(async () => button("Save", row(key)).click());
+        expect(mutate).toHaveBeenLastCalledWith({ bandPublicId: bandA, commands: [{
+            hive: "band", key, operation: { kind: "set", value: "" },
+        }] });
+        expect(invalidate).toHaveBeenCalledOnce();
+        await act(async () => button("Reset to default", row(key)).click());
+        expect(mutate).toHaveBeenLastCalledWith({ bandPublicId: bandA, commands: [{ hive: "band", key, operation: { kind: "reset" } }] });
+        expect(row(key).querySelector("input")?.value).toBe("");
+    });
     it("does not expose values or request strings before presentation loads", async () => {
         presentation = { ...presentation, data: null };
         await render();

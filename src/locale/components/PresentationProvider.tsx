@@ -77,9 +77,13 @@ export function PresentationProvider({ initial, bandPublicId, routeLocale, child
         const storageUpdate = (event: StorageEvent) => { if (event.key === changeEvent) update(); };
         window.addEventListener(changeEvent, update);
         window.addEventListener("storage", storageUpdate);
+        // do not automatically refresh on window focus; it's
+        // distracting and unnecessary.
+        // window.addEventListener("focus", update);
         return () => {
             window.removeEventListener(changeEvent, update);
             window.removeEventListener("storage", storageUpdate);
+            // window.removeEventListener("focus", update);
         };
     }, []);
 

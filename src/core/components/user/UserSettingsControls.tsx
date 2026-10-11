@@ -2,9 +2,11 @@ import { Checkbox, FormControl, FormControlLabel, FormHelperText } from "@mui/ma
 import React from "react";
 import { useSnackbar } from "../SnackbarContext";
 import { useUserSettings } from "@/src/setting/client/useSettings";
+import { useLocale } from "src/locale/components/useLocale";
 
 export const CalendarUserSettingsControl = () => {
     const userSettings = useUserSettings();
+    const locale = useLocale();
     const [saving, setSaving] = React.useState(false);
     const snackbar = useSnackbar();
     const descriptionId = React.useId();
@@ -14,9 +16,9 @@ export const CalendarUserSettingsControl = () => {
         setSaving(true);
         try {
             await proc();
-            snackbar.showSuccess("Calendar preference saved");
+            snackbar.showSuccess(locale.getPlainString("settings.preference.saved"));
         } catch {
-            snackbar.showError("Could not save your calendar preference. Please try again.");
+            snackbar.showError(locale.getPlainString("settings.preference.failed"));
         } finally {
             setSaving(false);
         }
@@ -24,7 +26,7 @@ export const CalendarUserSettingsControl = () => {
 
     return <FormControl disabled={saving}>
         <FormControlLabel
-            label="Show declined events in my calendar feed"
+            label={locale.getPlainString("settings.preference.showDeclined")}
             control={<Checkbox
                 checked={userSettings.getValue("calendar.showDeclinedEvents")}
                 name="calendar.showDeclinedEvents"
@@ -36,10 +38,10 @@ export const CalendarUserSettingsControl = () => {
             />}
         />
         <FormHelperText id={descriptionId}>
-            When disabled, events are hidden if you aren't going.
+            {locale.getPlainString("settings.preference.declinedHelp")}
         </FormHelperText>
         <FormControlLabel
-            label="Show events I'm not invited to in my calendar feed"
+            label={locale.getPlainString("settings.preference.showUninvited")}
             control={<Checkbox
                 checked={userSettings.getValue("calendar.showUninvitedEvents")}
                 name="calendar.showUninvitedEvents"
@@ -49,10 +51,10 @@ export const CalendarUserSettingsControl = () => {
             />}
         />
         <FormHelperText id={invitationDescriptionId}>
-            When disabled, events you're not explicitly attending are hidden if you aren't invited.
+            {locale.getPlainString("settings.preference.uninvitedHelp")}
         </FormHelperText>
         <FormHelperText>
-            Changes appear when your calendar app next refreshes.
+            {locale.getPlainString("settings.preference.refreshHelp")}
         </FormHelperText>
     </FormControl>;
 };

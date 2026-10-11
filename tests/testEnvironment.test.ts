@@ -11,7 +11,7 @@ function findTestFiles(directory: string): string[] {
   })
 }
 
-const testFiles = findTestFiles(path.join(process.cwd(), "tests"))
+const testFiles = ["tests", "src"].flatMap(directory => findTestFiles(path.join(process.cwd(), directory)))
 
 describe("Vitest environment boundaries", () => {
   it("uses Vitest's jsdom environment for every React DOM test", () => {
