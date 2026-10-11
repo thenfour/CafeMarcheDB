@@ -1,3 +1,4 @@
+import { authorizationBandId, resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("db", async () => {
@@ -30,43 +31,43 @@ import updateAttendance from "@db3/mutations/updateUserEventAttendanceMutation";
 import { createActionRecord } from "@db3/server/recordActionServer";
 import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/featureReports/activityTracking";
 
-import { isPublicId, parsePublicId } from "shared/publicId";
+import { isPublicId } from "shared/publicId";
 import { Permission } from "shared/permissions";
 import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
 import { attendancePublicId } from "../support/eventAttendanceFixtures";
-import { createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures";
+import { authorizationPermissionId, createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { forgeDb3Query } from "./support/db3RequestBuilders";
 import { invokeResolver } from "./support/resolverHarness";
 
 let forbidOuterWrites = false;
-const attendanceBandPublicId = parsePublicId<"Band">("AttendanceBand01");
+const attendanceBandPublicId = authorizationBandId;
 
 const permissions = [Permission.login, Permission.manage_events, Permission.admin_events, Permission.view_events_nonpublic,
     Permission.respond_to_events, Permission.change_others_event_responses];
 const actor = createAuthorizationTestUser("normal", { id: 93, permissions });
 let { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions });
-const event = { id: 100, publicId: eventPublicId(100), name: "Concert", locationDescription: "", locationURL: "", isDeleted: false,
-    createdByUserId: null, visiblePermissionId: 920_002, revision: 1, calendarInputHash: "old", startsAt: null };
+const event = { id: 100, bandId: 1, publicId: eventPublicId(100), name: "Concert", locationDescription: "", locationURL: "", isDeleted: false,
+    createdByUserId: null, visiblePermissionId: authorizationPermissionId(Permission.visibility_public), revision: 1, calendarInputHash: "old", startsAt: null };
 const segment = (id: number, eventId = event.id) => ({ id, publicId: segmentPublicId(id), eventId, name: `Set ${id}`,
     description: "", startsAt: null, durationMillis: BigInt(0), isAllDay: false, statusId: null,
     dateTimeVersion: 1, uid: `calendar-segment-${id}` });
 const response = (id: number, segmentId: number, userId: number) => ({ id, publicId: segmentResponsePublicId(id),
-    eventSegmentId: segmentId, userId, attendanceId: 2, createdAt: new Date("2026-01-01"), updatedAt: new Date("2026-01-01"),
+    eventSegmentId: segmentId, bandUserId: userId, attendanceId: 2, createdAt: new Date("2026-01-01"), updatedAt: new Date("2026-01-01"),
     createdByUserId: actor.id, updatedByUserId: actor.id });
-const eventResponse = { id: 301, publicId: eventResponsePublicId(301), eventId: event.id, userId: actor.id,
-    instrumentId: null, userComment: "hello", isInvited: true, revision: 1 };
+const eventResponse = { id: 301, publicId: eventResponsePublicId(301), eventId: event.id, bandUserId: actor.id,
+    bandInstrumentId: null, userComment: "hello", isInvited: true, revision: 1 };
 function reset(overrides: Parameters<typeof authorizationTestDb.reset>[0] = {}) {
     ctx = createAuthorizationPersona("normal", { id: actor.id, permissions }).ctx;
-    authorizationTestDb.reset({ user: [actor], event: [event], eventSegment: [segment(1), segment(2)],
+    resetAuthorizationDatabase({ user: [actor, createAuthorizationTestUser("normal", { id: 94 }), createAuthorizationTestUser("normal", { id: 95 })], event: [event], eventSegment: [segment(1), segment(2)],
         eventSegmentUserResponse: [response(11, 1, actor.id), response(12, 1, 94), response(21, 2, 95)],
-        eventUserResponse: [eventResponse], eventAttendance: [{ id: 2, publicId: attendancePublicId(2), isDeleted: false }],
+        eventUserResponse: [eventResponse], eventAttendance: [{ id: 2, publicId: attendancePublicId(2), isDeleted: false, isActive: true }],
         eventStatus: [], setting: [], change: [], action: [], ...overrides });
 }
 const copy = () => invokeResolver(copyResponses, { bandPublicId: attendanceBandPublicId, fromEventSegmentId: segmentPublicId(1), toEventSegmentId: segmentPublicId(2) }, ctx);
 const clear = () => invokeResolver(clearResponses, { bandPublicId: attendanceBandPublicId, eventSegmentId: segmentPublicId(2) }, ctx);
 const operations = db3.eventSegmentEditorView.crud.operations;
-const command = (commandID: string, payload: unknown) => invokeResolver(executeCommand, { commandID, payload }, ctx);
+const command = (commandID: string, payload: unknown) => invokeResolver(executeCommand, { bandPublicId: authorizationBandId, commandID, payload }, ctx);
 const snapshots = () => ["event", "eventSegment", "eventSegmentUserResponse", "eventUserResponse", "change"]
     .map(table => authorizationTestDb.snapshot(table));
 
@@ -90,7 +91,7 @@ describe("Event segment and response public identities", () => {
 
     it("projects the standalone segment and both response views", async () => {
         for (const view of [db3.eventSegmentEditorView, db3.eventSegmentUserResponseView, db3.eventUserResponseView]) {
-            const result = await invokeResolver(query, forgeDb3Query(view.entity.tableID, {
+            const result = await invokeResolver(query, forgeDb3Query(view.entity.tableID, authorizationBandId, {
                 table: { tableID: view.entity.tableID, tableName: view.entity.tableName, viewID: view.viewID },
             }), ctx);
             expect(result.items.length).toBeGreaterThan(0);
@@ -106,7 +107,7 @@ describe("Event segment and response public identities", () => {
     it.each(["hidden", "deleted"])("excludes children of a %s event from direct queries and mutations", async kind => {
         reset({ event: [{ ...event, isDeleted: kind === "deleted", visiblePermissionId: null }] });
         for (const table of ["EventSegment", "EventSegmentUserResponse", "EventUserResponse"]) {
-            expect((await invokeResolver(query, forgeDb3Query(table), ctx)).items).toEqual([]);
+            expect((await invokeResolver(query, forgeDb3Query(table, authorizationBandId), ctx)).items).toEqual([]);
         }
         const before = snapshots();
         await expect(copy()).rejects.toThrow();
@@ -118,7 +119,7 @@ describe("Event segment and response public identities", () => {
     it("rejects numeric identities at query, CRUD, copy, and clear boundaries", async () => {
         const before = snapshots();
         for (const table of ["EventSegment", "EventSegmentUserResponse", "EventUserResponse"]) {
-            await expect(invokeResolver(query, forgeDb3Query(table, { filter: { items: [], pks: [1] } }), ctx)).rejects.toThrow();
+            await expect(invokeResolver(query, forgeDb3Query(table, authorizationBandId, { filter: { items: [], pks: [1] } }), ctx)).rejects.toThrow();
         }
         await expect(command(operations.update.command.commandID, { identity: 1, patch: { name: "Bad" } })).rejects.toThrow();
         // Deliberately forged transport values test server validation, independent of branded client types.
@@ -154,7 +155,7 @@ describe("Event segment and response public identities", () => {
         await copy();
         const rows = authorizationTestDb.snapshot("eventSegmentUserResponse");
         const target = rows.filter(row => row.eventSegmentId === 2);
-        expect(target.map(row => row.userId)).toEqual([actor.id, 94]);
+        expect(target.map(row => row.bandUserId)).toEqual([actor.id, 94]);
         expect(target.every(row => isPublicId(row.publicId))).toBe(true);
         expect(new Set(rows.map(row => row.publicId)).size).toBe(4);
         expect(target.some(row => row.publicId === segmentResponsePublicId(21))).toBe(false);
@@ -170,8 +171,8 @@ describe("Event segment and response public identities", () => {
         reset({ event: [event, { ...event, id: 999 }], eventSegment: [segment(1), segment(2, 999)] });
         await expect(copy()).rejects.toThrow("same event");
         reset({ eventSegment: [segment(1)] });
-        await expect(copy()).rejects.toThrow("not found");
-        await expect(clear()).rejects.toThrow("not found");
+        await expect(copy()).rejects.toThrow("This could not be found");
+        await expect(clear()).rejects.toThrow("This could not be found");
         const revokedActor = createAuthorizationTestUser("normal", { id: actor.id, permissions: [Permission.login] });
         reset({ user: [revokedActor] });
         ctx = createAuthorizationPersona("normal", { id: actor.id, permissions: [Permission.login] }).ctx;

@@ -1,3 +1,4 @@
+import { authorizationBandId, resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("db", async () => {
@@ -18,7 +19,7 @@ import { isPublicId, parsePublicId } from "shared/publicId";
 import { listPublicId, listSongPublicId, listDividerPublicId } from "../support/eventSongListFixtures";
 import { eventPublicId } from "../support/eventResponseFixtures";
 import { songPublicId } from "../support/songFixtures";
-import { createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures";
+import { authorizationPermissionId, createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { forgeDb3Query } from "./support/db3RequestBuilders";
 import { invokeResolver } from "./support/resolverHarness";
@@ -27,8 +28,8 @@ const permissions = [Permission.login, Permission.manage_events, Permission.admi
 const actor = createAuthorizationTestUser("normal", { id: 93, permissions });
 const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions });
 const event = {
-    id: 100, publicId: eventPublicId(100), name: "Concert", locationDescription: "", isDeleted: false, createdByUserId: null,
-    visiblePermissionId: 920_002, revision: 1, calendarInputHash: "unchanged",
+    id: 100, bandId: 1, publicId: eventPublicId(100), name: "Concert", locationDescription: "", isDeleted: false, createdByUserId: null,
+    visiblePermissionId: authorizationPermissionId(Permission.visibility_public), revision: 1, calendarInputHash: "unchanged",
     startsAt: null, segments: [],
 };
 const parentFields = {
@@ -40,13 +41,13 @@ const dividerFields = {
     isSong: false, subtitleIfSong: null, lengthSeconds: null, textStyle: null,
 };
 const song = {
-    id: 300, publicId: songPublicId(300), name: "Tune", description: "", aliases: "", isDeleted: false,
-    visiblePermissionId: 920_002, createdByUserId: null, tags: [],
+    id: 300, bandId: 1, publicId: songPublicId(300), name: "Tune", description: "", aliases: "", isDeleted: false,
+    visiblePermissionId: authorizationPermissionId(Permission.visibility_public), createdByUserId: null, tags: [],
     lengthSeconds: 120, startBPM: null, endBPM: null, pinnedRecordingId: null,
 };
 
 function reset(overrides: Parameters<typeof authorizationTestDb.reset>[0] = {}) {
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
         user: [actor], event: [event], song: [song],
         eventSongList: [{ id: 50, publicId: listPublicId(50), ...parentFields, eventId: event.id }],
         eventSongListSong: [{ id: 501, publicId: listSongPublicId(501), eventSongListId: 50, songId: 300, sortOrder: 0, subtitle: "Intro" }],
@@ -55,7 +56,7 @@ function reset(overrides: Parameters<typeof authorizationTestDb.reset>[0] = {}) 
         ...overrides,
     });
 }
-const save = (payload: unknown) => invokeResolver(executeCommand, {
+const save = (payload: unknown) => invokeResolver(executeCommand, { bandPublicId: authorizationBandId,
     commandID: db3.saveEventSongListCommand.commandID, payload,
 }, ctx);
 const updatePayload = {
@@ -68,7 +69,7 @@ describe("Event setlist public identities", () => {
     beforeEach(() => { vi.restoreAllMocks(); reset(); });
 
     it("projects public parent and child identity through a named view", async () => {
-        const result = await invokeResolver(query, forgeDb3Query("EventSongList", {
+        const result = await invokeResolver(query, forgeDb3Query("EventSongList", authorizationBandId, {
             table: { tableID: "EventSongList", tableName: "EventSongList", viewID: db3.eventSongListDetailView.viewID },
             filter: { items: [], publicIds: [listPublicId(50)] },
         }), ctx);
@@ -157,16 +158,16 @@ describe("Event setlist public identities", () => {
 
     it("keeps hidden parents inaccessible through reads and all commands", async () => {
         reset({ event: [{ ...event, visiblePermissionId: 999, createdByUserId: 999 }] });
-        const result = await invokeResolver(query, forgeDb3Query("EventSongList", {
+        const result = await invokeResolver(query, forgeDb3Query("EventSongList", authorizationBandId, {
             table: { tableID: "EventSongList", tableName: "EventSongList", viewID: db3.eventSongListDetailView.viewID },
             filter: { items: [], publicIds: [listPublicId(50)] },
         }), ctx);
         expect(result.items).toEqual([]);
         await expect(save(updatePayload)).rejects.toThrow();
-        await expect(invokeResolver(executeCommand, {
+        await expect(invokeResolver(executeCommand, { bandPublicId: authorizationBandId,
             commandID: db3.deleteEventSongListCommand.commandID, payload: { publicId: listPublicId(50) },
         }, ctx)).rejects.toThrow();
-        await expect(invokeResolver(executeCommand, {
+        await expect(invokeResolver(executeCommand, { bandPublicId: authorizationBandId,
             commandID: db3.reorderEventSongListsCommand.commandID,
             payload: { eventId: event.publicId, movingItemId: listPublicId(50), newPositionItemId: listPublicId(50), scopeRowIds: [listPublicId(50)] },
         }, ctx)).rejects.toThrow();
@@ -185,7 +186,7 @@ describe("Event setlist public identities", () => {
             { ...parentFields, eventId: event.id, id: 51, publicId: listPublicId(51), sortOrder: 8 },
             { ...parentFields, eventId: event.id, id: 52, publicId: listPublicId(52), sortOrder: 5 },
         ] });
-        await invokeResolver(executeCommand, {
+        await invokeResolver(executeCommand, { bandPublicId: authorizationBandId,
             commandID: db3.reorderEventSongListsCommand.commandID,
             payload: { eventId: event.publicId, movingItemId: listPublicId(50), newPositionItemId: listPublicId(51), scopeRowIds: [listPublicId(50), listPublicId(51)] },
         }, ctx);

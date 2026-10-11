@@ -1,29 +1,13 @@
-type TestRow = {
+import { Prisma } from "@prisma/client";
+
+// Prisma model rows vary across the fixture's delegates.
+export type TestRow = {
   id: number
   [key: string]: unknown
 }
-import { Permission } from "shared/permissions"
 
-type Seed = Record<string, TestRow[]>
-
-const defaultAuthorizationRoles: TestRow[] = [
-  {
-    id: 900_001,
-    name: "Public",
-    isPublicRole: true,
-    isSysAdminRole: false,
-    permissions: ["always_grant", "public", "visibility_public", "view_events", "view_files", "practice_tools_use"]
-      .map((name, index) => ({ id: 910_000 + index, permissionId: 920_000 + index, permission: { id: 920_000 + index, name } })),
-  },
-  {
-    id: 900_002,
-    name: "Sysadmin",
-    isPublicRole: false,
-    isSysAdminRole: true,
-    permissions: Object.values(Permission).filter(name => name !== Permission.never_grant)
-      .map((name, index) => ({ id: 930_000 + index, permissionId: 940_000 + index, permission: { id: 940_000 + index, name } })),
-  },
-]
+// This double stores rows from several Prisma models without owning their policies.
+export type Seed = Record<string, TestRow[]>
 
 const clone = <T>(value: T): T => structuredClone(value)
 
@@ -97,113 +81,73 @@ interface QueryArgs {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value)
 
+// Prisma scalar updates change the stored number instead of storing the operation object.
+function applyScalarUpdates(row: TestRow, data: Record<string, unknown>): TestRow {
+  const updated = { ...row }
+  for (const [field, value] of Object.entries(data)) {
+    const current = row[field]
+    if (isRecord(value) && typeof value.increment === "number" && typeof current === "number") {
+      updated[field] = current + value.increment
+    } else {
+      updated[field] = clone(value)
+    }
+  }
+  return updated
+}
+
 type Relation = { table: string; local: string; foreign: string; many?: boolean }
-// Dynamic table names mirror Prisma; only relations exercised by these integration tests are listed.
-const testRelations: Record<string, Record<string, Relation>> = {
-  user: {
-    globalRole: { table: "globalRole", local: "globalRoleId", foreign: "id" },
-    signInMethods: { table: "userSignInMethod", local: "id", foreign: "userId", many: true },
-  },
-  band: {
-    locales: { table: "bandLocale", local: "id", foreign: "bandId", many: true },
-  },
-  bandLocale: {
-    locale: { table: "locale", local: "localeId", foreign: "id" },
-  },
-  locale: {
-    bandLocales: { table: "bandLocale", local: "id", foreign: "localeId", many: true },
-  },
-  staticLocalizedStringValue: { locale: { table: "locale", local: "localeId", foreign: "id" } },
-  bandStaticLocalizedStringValue: { locale: { table: "locale", local: "localeId", foreign: "id" } },
-  dynamicLocalizedStringValue: { locale: { table: "locale", local: "localeId", foreign: "id" } },
-  bandDynamicLocalizedStringValue: { locale: { table: "locale", local: "localeId", foreign: "id" } },
-  globalRole: {
-    permissions: { table: "globalRolePermission", local: "id", foreign: "globalRoleId", many: true },
-  },
-  globalRolePermission: {
-    permission: { table: "permission", local: "permissionId", foreign: "id" },
-  },
-  bandRole: {
-    bandRolePermissions: { table: "bandRolePermission", local: "id", foreign: "bandRoleId", many: true },
-  },
-  bandRolePermission: {
-    permission: { table: "permission", local: "permissionId", foreign: "id" },
-  },
-  bandUser: {
-    user: { table: "user", local: "userId", foreign: "id" },
-    bandRole: { table: "bandRole", local: "bandRoleId", foreign: "id" },
-    bandUserInstruments: { table: "bandUserInstrument", local: "id", foreign: "bandUserId", many: true },
-    bandUserTagAssignments: { table: "bandUserTagAssignment", local: "id", foreign: "bandUserId", many: true },
-  },
-  bandUserInstrument: {
-    bandUser: { table: "bandUser", local: "bandUserId", foreign: "id" },
-    bandInstrument: { table: "bandInstrument", local: "bandInstrumentId", foreign: "id" },
-  },
-  bandUserTagAssignment: {
-    bandUser: { table: "bandUser", local: "bandUserId", foreign: "id" },
-    bandUserTag: { table: "bandUserTag", local: "bandUserTagId", foreign: "id" },
-  },
-  wikiPage: {
-    revisions: { table: "wikiPageRevision", local: "id", foreign: "wikiPageId", many: true },
-    createdByUser: { table: "user", local: "createdByUserId", foreign: "id" },
-    visiblePermission: { table: "permission", local: "visiblePermissionId", foreign: "id" },
-    lockedByUser: { table: "user", local: "lockedByUserId", foreign: "id" },
-    currentRevision: { table: "wikiPageRevision", local: "currentRevisionId", foreign: "id" },
-  },
-  wikiPageRevision: { wikiPage: { table: "wikiPage", local: "wikiPageId", foreign: "id" } },
-  event: {
-    createdByUser: { table: "user", local: "createdByUserId", foreign: "id" },
-    visiblePermission: { table: "permission", local: "visiblePermissionId", foreign: "id" },
-    responses: { table: "eventUserResponse", local: "id", foreign: "eventId", many: true },
-    segments: { table: "eventSegment", local: "id", foreign: "eventId", many: true },
-    songLists: { table: "eventSongList", local: "id", foreign: "eventId", many: true },
-  },
-  eventSongList: {
-    event: { table: "event", local: "eventId", foreign: "id" },
-    songs: { table: "eventSongListSong", local: "id", foreign: "eventSongListId", many: true },
-    dividers: { table: "eventSongListDivider", local: "id", foreign: "eventSongListId", many: true },
-  },
-  frontpageGalleryItem: {
-    file: { table: "file", local: "fileId", foreign: "id" },
-  },
-  eventSongListSong: {
-    eventSongList: { table: "eventSongList", local: "eventSongListId", foreign: "id" },
-    song: { table: "song", local: "songId", foreign: "id" },
-  },
-  eventSongListDivider: {
-    eventSongList: { table: "eventSongList", local: "eventSongListId", foreign: "id" },
-  },
-  eventSegment: {
-    event: { table: "event", local: "eventId", foreign: "id" },
-    status: { table: "eventStatus", local: "statusId", foreign: "id" },
-    responses: { table: "eventSegmentUserResponse", local: "id", foreign: "eventSegmentId", many: true },
-  },
-  eventUserResponse: {
-    event: { table: "event", local: "eventId", foreign: "id" },
-    instrument: { table: "instrument", local: "instrumentId", foreign: "id" },
-  },
-  eventSegmentUserResponse: {
-    eventSegment: { table: "eventSegment", local: "eventSegmentId", foreign: "id" },
-    attendance: { table: "eventAttendance", local: "attendanceId", foreign: "id" },
-  },
-  songCredit: {
-    user: { table: "user", local: "userId", foreign: "id" },
-    song: { table: "song", local: "songId", foreign: "id" },
-  },
-  userSignInMethod: {
-    user: { table: "user", local: "userId", foreign: "id" },
-  },
-  change: {
-    user: { table: "user", local: "userId", foreign: "id" },
-  },
-  setlistPlan: {
-    createdByUser: { table: "user", local: "createdByUserId", foreign: "id" },
-    visiblePermission: { table: "permission", local: "visiblePermissionId", foreign: "id" },
-    group: { table: "setlistPlanGroup", local: "groupId", foreign: "id" },
-  },
-  setlistPlanGroup: {
-    createdByUser: { table: "user", local: "createdByUserId", foreign: "id" },
-  },
+// The generated schema supplies relation keys; the double owns no model policy.
+function buildTestRelations(): Record<string, Record<string, Relation>> {
+  const models = Prisma.dmmf.datamodel.models;
+  const result: Record<string, Record<string, Relation>> = {};
+  for (const model of models) {
+    const relations: Record<string, Relation> = {};
+    for (const field of model.fields.filter(field => field.kind === "object")) {
+      let local = field.relationFromFields?.[0];
+      let foreign = field.relationToFields?.[0];
+      if (!local || !foreign) {
+        const inverse = models.find(target => target.name === field.type)?.fields.find(candidate =>
+          candidate.type === model.name && candidate.relationName === field.relationName
+          && candidate.relationFromFields?.length === 1);
+        local = inverse?.relationToFields?.[0];
+        foreign = inverse?.relationFromFields?.[0];
+      }
+      if (local && foreign) {
+        const table = field.type.charAt(0).toLowerCase() + field.type.slice(1);
+        relations[field.name] = { table, local, foreign, many: field.isList };
+      }
+    }
+    result[model.name.charAt(0).toLowerCase() + model.name.slice(1)] = relations;
+  }
+  return result;
+}
+const testRelations = buildTestRelations();
+
+function normalizePrismaScalars(table: string, row: TestRow): TestRow {
+  const model = Prisma.dmmf.datamodel.models.find(model => model.name.charAt(0).toLowerCase() + model.name.slice(1) === table);
+  for (const field of model?.fields ?? []) {
+    const value = row[field.name];
+    if (field.type === "BigInt" && typeof value === "number") {
+      row[field.name] = BigInt(value);
+    }
+  }
+  return row;
+}
+
+function normalizePrismaUniqueWhere(table: string, where: QueryArgs["where"]): QueryArgs["where"] {
+  const model = Prisma.dmmf.datamodel.models.find(model => model.name.charAt(0).toLowerCase() + model.name.slice(1) === table);
+  const normalized = { ...where };
+  for (const index of model?.uniqueIndexes ?? []) {
+    const key = index.name ?? index.fields.join("_");
+    const value = normalized[key];
+    if (isRecord(value)) {
+      delete normalized[key];
+      for (const member of index.fields) {
+        normalized[member] = value[member];
+      }
+    }
+  }
+  return normalized;
 }
 
 export class InMemoryDelegate {
@@ -214,6 +158,7 @@ export class InMemoryDelegate {
     private readonly readRelations: (row: TestRow, args: QueryArgs) => TestRow = row => row,
     private readonly onDelete: (rows: TestRow[]) => Promise<void> = async () => {},
     private readonly normalizeWrite: (row: TestRow) => TestRow = row => row,
+    private readonly normalizeUniqueWhere: (where: QueryArgs["where"]) => QueryArgs["where"] = where => where,
   ) {}
 
   reset(rows: TestRow[]) {
@@ -229,7 +174,7 @@ export class InMemoryDelegate {
   }
 
   async findUnique(args: QueryArgs = {}) {
-    return this.findFirst(args)
+    return this.findFirst({ ...args, where: this.normalizeUniqueWhere(args.where) })
   }
 
   async findUniqueOrThrow(args: QueryArgs = {}) {
@@ -274,7 +219,7 @@ export class InMemoryDelegate {
   async update(args: { where: { id: number }; data: Record<string, unknown>; select?: Record<string, unknown>; include?: Record<string, unknown> }) {
     const index = this.rows.findIndex((row) => row.id === args.where.id)
     if (index < 0) throw new Error(`In-memory row ${args.where.id} was not found`)
-    this.rows[index] = this.normalizeWrite(requireTestRow({ ...this.rows[index], ...clone(args.data) }))
+    this.rows[index] = this.normalizeWrite(applyScalarUpdates(this.rows[index]!, args.data))
     return clone(this.readRelations(clone(this.rows[index]), args))
   }
 
@@ -293,7 +238,7 @@ export class InMemoryDelegate {
     this.rows = this.rows.map((row) => {
       if (!matchesWhere(row, args.where)) return row
       count += 1
-      return this.normalizeWrite(requireTestRow({ ...row, ...clone(args.data) }))
+      return this.normalizeWrite(applyScalarUpdates(row, args.data))
     })
     return { count }
   }
@@ -318,25 +263,17 @@ export class InMemoryDelegate {
 class AuthorizationTestDatabase {
   private delegates = new Map<string, InMemoryDelegate>()
 
-  reset(seed: Seed = {}, options: { includeAuthorizationRoles?: boolean } = {}) {
+  reset(seed: Seed = {}) {
     for (const delegate of this.delegates.values()) {
       delegate.reset([])
     }
     for (const [tableName, rows] of Object.entries(seed)) {
       this.getDelegate(tableName).reset(rows)
     }
-    const suppliedRoles = seed.role || []
-    const missingDefaults = options.includeAuthorizationRoles === false || seed.role !== undefined ? [] : defaultAuthorizationRoles.filter(defaultRole => !suppliedRoles.some(role => (
-      (defaultRole.isPublicRole && role.isPublicRole) || (defaultRole.isSysAdminRole && role.isSysAdminRole)
-    )))
-    this.getDelegate("role").reset([...suppliedRoles, ...missingDefaults])
   }
 
   snapshot(tableName: string) {
-    const rows = this.getDelegate(tableName).snapshot()
-    return tableName.toLowerCase() === "role"
-      ? rows.filter(row => row.id < 900_000)
-      : rows
+    return this.getDelegate(tableName).snapshot()
   }
 
   async transaction(callback: () => Promise<unknown>) {
@@ -405,9 +342,8 @@ class AuthorizationTestDatabase {
             await this.getDelegate(child).deleteMany({ where: { eventSongListId: { in: rows.map(row => row.id) } } })
           }
         },
-        row => prismaDelegateName === "event" && typeof row.durationMillis === "number"
-          ? { ...row, durationMillis: BigInt(row.durationMillis) }
-          : row,
+        row => normalizePrismaScalars(prismaDelegateName, row),
+        where => normalizePrismaUniqueWhere(prismaDelegateName, where),
       )
       this.delegates.set(prismaDelegateName, delegate)
     }

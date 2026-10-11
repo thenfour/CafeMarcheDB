@@ -423,7 +423,7 @@ describe("DB3 named views", () => {
                 externalURI: null,
                 uploadedByUserId: null,
                 visiblePermissionId: 7,
-                visiblePermission: { id: 7, name: Permission.visibility_public, roles: [] },
+                visiblePermission: { id: 7, name: Permission.visibility_public, isDeleted: false, roles: [] },
             },
         };
         const menuLink = {
@@ -1305,7 +1305,7 @@ describe("DB3 named views", () => {
             lengthSeconds: null,
             createdByUserId: 100,
             visiblePermissionId: 3,
-            visiblePermission: { publicId: permissionPublicId },
+            visiblePermission: { publicId: permissionPublicId, isDeleted: false },
             pinnedRecordingId: null,
             isDeleted: false,
             tags: [{
@@ -1330,7 +1330,7 @@ describe("DB3 named views", () => {
                     uploadedAt,
                     uploadedByUserId: 100,
                     visiblePermissionId: 3,
-                    visiblePermission: { publicId: permissionPublicId },
+                    visiblePermission: { publicId: permissionPublicId, isDeleted: false },
                     isDeleted: false,
                     sizeBytes: 123,
                     storedLeafName: "stored.pdf",

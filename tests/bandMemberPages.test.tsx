@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { act } from "react-dom/test-utils";
+import { act, Simulate } from "react-dom/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
@@ -9,6 +9,10 @@ import { kStaticLocalizedStringRegistry, type LocalizedPlainStringKey } from "sr
 import { bandUserProfileView } from "src/core/db3/shared/entities/user/bandUserProfile";
 import { BandMemberProfile, BandMemberProfileEditor } from "src/core/components/user/BandMemberProfile";
 import { BandMemberDirectory } from "src/core/components/user/BandMemberDirectory";
+import { createDashboardReferenceStore } from "src/core/db3/shared/references/dashboardReferences";
+import { MakeEmptySearchResultsRet, type GetSearchResultsInput, type SearchResultsFacet } from "src/core/db3/shared/apiTypes";
+import { CMClientAuthorization } from "src/auth/shared/cmAuthorization";
+import { PermissionSet } from "src/auth/shared/PermissionSet";
 
 interface ReadInput {
     readonly bandPublicId?: string;
@@ -21,7 +25,11 @@ vi.mock("src/core/db3/components/useDB3Command", () => ({ useDB3Command: () => (
 vi.mock("src/core/db3/components/useDB3Context", () => ({ useDB3QueryContext: () => ({ bandPublicId: bandId, routeLocale: "fr-BE", browserLanguages: ["nl-BE"], clientRequestId: requestId }) }));
 vi.mock("src/core/db3/queries/db3queries", () => ({ default: vi.fn() }));
 vi.mock("src/core/db3/queries/db3paginatedQueries", () => ({ default: vi.fn() }));
-vi.mock("@blitzjs/rpc", () => ({ useQuery: (_resolver: unknown, args: ReadInput) => {
+vi.mock("src/core/components/search/SearchBase", () => ({ fetchSearchResultsApi: async (args: GetSearchResultsInput) => {
+    searchRequests.push(args);
+    return { ...MakeEmptySearchResultsRet(), results: [currentMember], rowCount: 25, facets: directoryFacets };
+} }));
+vi.mock("@blitzjs/rpc", async () => ({ ...await vi.importActual<typeof import("@blitzjs/rpc")>("@blitzjs/rpc"), useQuery: (_resolver: unknown, args: ReadInput) => {
     queries.push(args);
     return [{ items: args.table.viewID === bandUserProfileView.viewID ? [currentMember] : [], count: 25, hasMore: true },
         { refetch, isFetching: false, error: null }];
@@ -29,12 +37,21 @@ vi.mock("@blitzjs/rpc", () => ({ useQuery: (_resolver: unknown, args: ReadInput)
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({
     refreshCachedData: refreshDashboard, userTag: { items: [], getById: () => undefined },
     instrument: { items: directoryInstruments, getById: (id: string) => directoryInstruments.find(item => item.publicId === id) },
+    referenceStore: references, authorizationContext: { bandPublicId: bandId },
+    authorization: new CMClientAuthorization({ id: 1, publicId: personId }, new PermissionSet(permissions)),
+    localePreferences: { routeLocale: "fr-BE", browserLanguages: ["nl-BE"] },
+    memberPresentation: { bandPublicId: bandId, routeLocale: "fr-BE" },
+    isAuthorized: (permission: Permission) => permissions.includes(permission),
 }) }));
-vi.mock("src/core/components/SnackbarContext", () => ({ useSnackbar: () => ({ showMessage: vi.fn() }) }));
+vi.mock("src/core/components/SnackbarContext", async () => ({ ...await vi.importActual<typeof import("src/core/components/SnackbarContext")>("src/core/components/SnackbarContext"),
+    useSnackbar: () => ({ showMessage: vi.fn() }) }));
 vi.mock("src/core/components/CMLink", () => ({ CMLink: ({ href, children }: React.PropsWithChildren<{ href: string }>) => <a href={href}>{children}</a> }));
 vi.mock("src/core/components/user/BandUserInstruments", () => ({ BandUserInstrumentsEditor: () => <span>Instrument assignments</span> }));
 vi.mock("src/core/components/user/BandUserTags", () => ({ BandUserTagsEditor: () => <span>Tag assignments</span> }));
 vi.mock("src/core/components/user/BandUserRoles", () => ({ BandUserRoleEditor: () => <span>Role assignment</span> }));
+// Account controls and analytics have separate specifications; these cases own membership composition.
+vi.mock("src/core/components/user/UserDetail", () => ({ UserDetail: () => null }));
+vi.mock("next/router", () => ({ useRouter: () => ({ pathname: "/backstage/users", query: {}, asPath: "/backstage/users", replace: vi.fn() }) }));
 vi.mock("src/locale/components/PresentationProvider", () => ({ usePresentation: () => ({ bandPublicId: bandId, data: {
     authorization: { userPublicId: actorId, effectivePermissionNames: permissions }, input: { clientRequestId: requestId },
 }, invalidate }) }));
@@ -50,6 +67,8 @@ const refetch = vi.fn(async () => {});
 const refreshDashboard = vi.fn(async () => {});
 const invalidate = vi.fn(async () => {});
 const queries: ReadInput[] = [];
+const searchRequests: GetSearchResultsInput[] = [];
+const references = createDashboardReferenceStore();
 interface DirectoryInstrument {
     readonly publicId: string;
     readonly name: string;
@@ -57,6 +76,7 @@ interface DirectoryInstrument {
     readonly functionalGroup: { readonly isHidden: boolean };
 }
 let directoryInstruments: DirectoryInstrument[];
+let directoryFacets: SearchResultsFacet[];
 let currentMember = member;
 let actorId: string;
 let permissions: Permission[];
@@ -75,11 +95,13 @@ beforeEach(() => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     currentMember = member;
     actorId = personId;
-    permissions = [Permission.login, Permission.view_users_basic_info];
+    permissions = [Permission.login, Permission.view_users_basic_info, Permission.search_users];
     bandId = "Band000000000001";
     requestId = "first";
     queries.length = 0;
+    searchRequests.length = 0;
     directoryInstruments = [];
+    directoryFacets = [];
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -190,7 +212,7 @@ describe("band member profile controls", () => {
 });
 
 describe("member directory", () => {
-    it("redacts instruments in hidden groups from cards and selectable filters", async () => {
+    it("redacts hidden instrument cards and displays the authorized server facets", async () => {
         directoryInstruments = [
             { publicId: "Instrument000001", name: "Hidden group trumpet", isHidden: false, functionalGroup: { isHidden: true } },
             { publicId: "Instrument000002", name: "Visible drums", isHidden: false, functionalGroup: { isHidden: false } },
@@ -199,27 +221,39 @@ describe("member directory", () => {
             bandUserInstruments: [{ publicId: "Assignment000001", bandInstrumentId: directoryInstruments[0]!.publicId,
                 bandInstrument: { publicId: directoryInstruments[0]!.publicId }, isPrimary: true }],
         });
+        // Facet authorization belongs to the native search reader; the UI displays its result.
+        directoryFacets = [{ db3Column: "bandUserInstruments", items: [{
+            id: "Instrument000002", label: "Visible drums", rowCount: 1,
+            color: null, iconName: null, tooltip: null, shape: undefined,
+        }] }];
         await renderDirectory();
-        expect(container.textContent).toContain(kStaticLocalizedStringRegistry["membership.instruments.unavailable"].defaultValue);
+        expect(container.querySelector(".instruments")?.textContent).toBe("");
         expect(container.textContent).not.toContain("Hidden group trumpet");
-        const label = [...container.querySelectorAll<HTMLLabelElement>("label")].find(element => element.textContent === "Member instruments");
-        const select = label && document.getElementById(label.htmlFor);
-        if (!select) {
-            throw new Error("Missing instrument filter");
-        }
-        await act(async () => select.dispatchEvent(new window.MouseEvent("mousedown", { bubbles: true, button: 0 })));
-        const options = document.querySelector('[role="listbox"]');
+        const expand = container.querySelector<HTMLElement>(".headerExpandableButton")!;
+        await act(async () => expand.click());
+        const options = [...container.querySelectorAll(".filterGroup")].find(group => group.querySelector(".filterGroupLabel")?.textContent === "Instruments");
         expect(options?.textContent).toContain("Visible drums");
         expect(options?.textContent).not.toContain("Hidden group trumpet");
+        currentMember = bandUserProfileView.parseDto({ ...member,
+            bandUserInstruments: [{ publicId: "Assignment000002", bandInstrumentId: "Instrument000002",
+                bandInstrument: { publicId: "Instrument000002" }, isPrimary: true }],
+        });
+        requestId = "visible instrument";
+        await renderDirectory();
+        expect(container.querySelector(".instruments")?.textContent).toContain("Visible drums");
     });
     it("pages with scoped requests and resets to the first page when the search changes", async () => {
         await renderDirectory();
-        const link = [...container.querySelectorAll<HTMLAnchorElement>("a")].find(element => element.textContent === "Alice");
+        const link = [...container.querySelectorAll<HTMLAnchorElement>("a")].find(element => element.textContent?.trim() === "Alice");
         expect(link?.getAttribute("href")).toBe(`/backstage/user/${personId}?bandPublicId=${bandId}&routeLocale=fr-BE`);
-        await click("Next");
-        expect(queries[queries.length - 1]).toMatchObject({ bandPublicId: bandId, skip: 20 });
-        await fill("Search member names", "Alice Alpha");
-        expect(queries[queries.length - 1]).toMatchObject({ skip: 0, filter: { quickFilterValues: ["alice", "alpha"] } });
+        await click("Load more results...");
+        expect(searchRequests.at(-1)).toMatchObject({ bandPublicId: bandId, routeLocale: "fr-BE", offset: 1 });
+        const search = container.querySelector<HTMLInputElement>('input[placeholder="Search"]')!;
+        await act(async () => {
+            search.value = "Alice Alpha";
+            Simulate.change(search, { target: search });
+        });
+        expect(searchRequests.at(-1)).toMatchObject({ bandPublicId: bandId, offset: 0, quickFilter: "Alice Alpha" });
     });
     it("does not retain old rows across band/permission refreshes", async () => {
         await renderDirectory();

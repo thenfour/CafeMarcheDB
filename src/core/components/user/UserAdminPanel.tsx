@@ -60,7 +60,7 @@ export const DeactivateUserButton = ({ capabilities, user, onOK }: DeactivateUse
                         snackbar.showSuccess("User deactivated");
                         if (dashboardContext.currentUser?.publicId === user.publicId) {
                             window.location.assign("/backstage");
-                        } else if (!dashboardContext.isAuthorized(Permission.recover_users)) {
+                        } else if (!dashboardContext.isAuthorized(Permission.manage_global_users)) {
                             await router.replace(dashboardContext.isAuthorized(Permission.search_users)
                                 ? Routes.UserSearchPage() : "/backstage");
                         } else {

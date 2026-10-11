@@ -1,3 +1,4 @@
+import { authorizationBandId, resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { eventPublicId, segmentPublicId } from "../support/eventResponseFixtures";
 import { testBandAuthorization } from "tests/support/serverAuthorization";
 import { Prisma } from "@prisma/client"
@@ -13,7 +14,8 @@ import * as db3 from "@db3/db3"
 import db3Query from "@db3/queries/db3queries"
 import db3PaginatedQuery from "@db3/queries/db3paginatedQueries"
 import executeCommand from "@db3/mutations/executeDB3Command"
-import { createAuthorizationPersona } from "./support/authorizationFixtures"
+import { Permission } from "shared/permissions"
+import { authorizationPermissionId, createAuthorizationPersona } from "./support/authorizationFixtures"
 import { forgeDb3Query } from "./support/db3RequestBuilders"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
@@ -26,10 +28,10 @@ const makeSegment = (id: number, eventId: number) => ({
   durationMillis: BigInt(60_000), isAllDay: false, dateTimeVersion: 2,
 } satisfies Prisma.EventSegmentGetPayload<{}>)
 
-const events = [10, 20].map(id => ({ id, publicId: eventPublicId(id), name: `Event ${id}`, isDeleted: false, visiblePermissionId: 920_002, createdByUserId: null }));
+const events = [10, 20].map(id => ({ id, bandId: 1, publicId: eventPublicId(id), name: `Event ${id}`, isDeleted: false, visiblePermissionId: authorizationPermissionId(Permission.visibility_public), createdByUserId: null }));
 const segments = [makeSegment(1, 10), makeSegment(2, 20)]
 
-beforeEach(() => authorizationTestDb.reset())
+beforeEach(() => resetAuthorizationDatabase())
 
 describe.each([
   ["ordinary", db3Query],
@@ -43,8 +45,8 @@ describe.each([
     { params: { eventId: eventPublicId(10) }, ids: [1] },
   ])("loads sysadmin grid rows with tableParams=$params", async ({ params, ids }) => {
     const { user, ctx } = createAuthorizationPersona("sysadmin")
-    authorizationTestDb.reset({ user: [user!], event: events, eventSegment: segments })
-    const request = forgeDb3Query("EventSegment", { filter: { items: [], tableParams: params } })
+    resetAuthorizationDatabase({ user: [user!], event: events, eventSegment: segments })
+    const request = forgeDb3Query("EventSegment", authorizationBandId, { filter: { items: [], tableParams: params } })
     const result = await invokeResolver(resolver, resolver === db3PaginatedQuery
       ? { ...request, skip: 0, take: 20 }
       : request, ctx)
@@ -57,6 +59,8 @@ describe.each([
         event: events.map(event => ({
           publicId: event.publicId,
           name: event.name,
+          bandId: 1,
+          visiblePermissionId: null,
           isDeleted: event.isDeleted,
           createdByUserId: event.createdByUserId,
         }))
@@ -69,9 +73,9 @@ describe.each([
 
   it("rejects an unknown Event public ID before querying segments", async () => {
     const { user, ctx } = createAuthorizationPersona("sysadmin")
-    authorizationTestDb.reset({ user: [user!], event: events, eventSegment: segments })
+    resetAuthorizationDatabase({ user: [user!], event: events, eventSegment: segments })
     const lookup = vi.spyOn(authorizationTestDb.getDelegate("eventSegment"), "findMany")
-    const request = forgeDb3Query("EventSegment", {
+    const request = forgeDb3Query("EventSegment", authorizationBandId, {
       filter: { items: [], tableParams: { eventId: eventPublicId(999) } },
     })
     await expect(invokeResolver(resolver, resolver === db3PaginatedQuery
@@ -83,9 +87,9 @@ describe.each([
   it.each(["10", 1.5, NaN, Number.MAX_SAFE_INTEGER + 1, false, {}, []])(
     "rejects invalid eventId=%s before querying segments", async eventId => {
       const { user, ctx } = createAuthorizationPersona("sysadmin")
-      authorizationTestDb.reset({ user: [user!] })
+      resetAuthorizationDatabase({ user: [user!] })
       const lookup = vi.spyOn(authorizationTestDb.getDelegate("eventSegment"), "findMany")
-      const request = forgeDb3Query("EventSegment", { filter: { items: [], tableParams: { eventId } } })
+      const request = forgeDb3Query("EventSegment", authorizationBandId, { filter: { items: [], tableParams: { eventId } } })
       await expect(invokeResolver(resolver, resolver === db3PaginatedQuery
         ? { ...request, skip: 0, take: 20 }
         : request, ctx)).rejects.toThrow("filter.tableParams.eventId")
@@ -108,9 +112,9 @@ describe("EventSegment generated UID", () => {
 
   it("keeps the generated UID protected from generic updates", async () => {
     const { user, ctx } = createAuthorizationPersona("sysadmin")
-    authorizationTestDb.reset({ user: [user!], event: events, eventSegment: segments })
+    resetAuthorizationDatabase({ user: [user!], event: events, eventSegment: segments })
     await expect(invokeResolver(executeCommand,
-      { commandID: db3.eventSegmentEditorView.crud.operations.update.command.commandID, payload: { identity: segmentPublicId(1), patch: { uid: "replacement" } } }, ctx,
+      { bandPublicId: authorizationBandId, commandID: db3.eventSegmentEditorView.crud.operations.update.command.commandID, payload: { identity: segmentPublicId(1), patch: { uid: "replacement" } } }, ctx,
     )).rejects.toThrow("uid")
     expect(authorizationTestDb.snapshot("eventSegment")[0]!.uid).toBe("segment-uid")
   })

@@ -57,7 +57,7 @@ describe("membership profile data visibility", () => {
             bandUserInstrument: [{ id: 11, publicId: "BandUserInstr011", bandUserId: target.id, bandInstrumentId: 21, isPrimary: true }],
             bandUserTagAssignment: [{ id: 12, publicId: "BandUserTagAs012", bandUserId: target.id, bandUserTagId: 22 }],
             userSignInMethod: [{ id: 2, publicId: "SignInMethod0002", userId: target.id, createdAt: new Date(), type: "google", identifier: "target-google", displayId: "target-google@example.com" }],
-        }, { includeAuthorizationRoles: false });
+        });
     });
 
     it("lets a roleless member read their own shared contact data through their membership", async () => {

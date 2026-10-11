@@ -1,3 +1,4 @@
+import { authorizationBandId, resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -21,26 +22,31 @@ import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/feature
 import { Permission } from "shared/permissions";
 import { isPublicId, parsePublicId, type EventAttendancePublicId } from "shared/publicId";
 import { attendancePublicId } from "../support/eventAttendanceFixtures";
-import { createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures";
+import { authorizationPermissionId, createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { forgeDb3Query } from "./support/db3RequestBuilders";
 import { invokeResolver } from "./support/resolverHarness";
 
-const attendanceBandPublicId = parsePublicId<"Band">("AttendanceBand01");
+const attendanceBandPublicId = authorizationBandId;
 
 const permissions = [Permission.login, Permission.admin_events, Permission.manage_events,
+    Permission.manage_global_catalogs,
     Permission.view_events_nonpublic, Permission.respond_to_events, Permission.change_others_event_responses, Permission.edit_public_homepage, Permission.visibility_members];
 const actor = createAuthorizationTestUser("normal", { id: 93, permissions });
 let { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions });
 const statusId = parsePublicId<"EventStatus">("AttendStatus0001");
+const text = (value: string) => ({ kind: "set", stringPublicId: null, localeTag: "en-US", value });
 const attendanceFields = {
-    text: "Going", personalText: "I am going", pastText: "Went", pastPersonalText: "I went",
-    strength: 100, isActive: true, isDeleted: false, sortOrder: 0, description: "", iconName: null, color: null,
+    buttonCaption: text("Going"), personalCaption: text("I am going"), pastCaption: text("Went"), personalPastCaption: text("I went"),
+    strength: 100, isActive: true, isDeleted: false, sortOrder: 0, description: text(""), iconName: null, color: null,
 };
-const attendance = { id: 2, publicId: attendancePublicId(2), ...attendanceFields };
+const attendance = {
+    id: 2, publicId: attendancePublicId(2), strength: 100, isActive: true, isDeleted: false, sortOrder: 0, iconName: null, color: null,
+    buttonCaptionId: null, personalCaptionId: null, pastCaptionId: null, personalPastCaptionId: null, descriptionId: null,
+};
 const event = {
-    id: 100, publicId: eventPublicId(100), name: "Concert", locationDescription: "", locationURL: "", isDeleted: false, createdByUserId: null,
-    visiblePermissionId: 920_002, revision: 1, calendarInputHash: "unchanged",
+    id: 100, bandId: 1, publicId: eventPublicId(100), name: "Concert", locationDescription: "", locationURL: "", isDeleted: false, createdByUserId: null,
+    visiblePermissionId: authorizationPermissionId(Permission.visibility_public), revision: 1, calendarInputHash: "unchanged",
     startsAt: new Date("2099-01-01T12:00:00Z"), durationMillis: BigInt(3600000), isAllDay: false,
     frontpageVisible: false,
     frontpageDate: "", frontpageTime: "", frontpageDetails: "",
@@ -56,20 +62,21 @@ const segment = {
     durationMillis: event.durationMillis, isAllDay: false, dateTimeVersion: 1, statusId: 8,
 };
 const response = {
-    id: 201, publicId: segmentResponsePublicId(201), eventSegmentId: segment.id, userId: actor.id, attendanceId: attendance.id,
+    id: 201, publicId: segmentResponsePublicId(201), eventSegmentId: segment.id, bandUserId: actor.id, attendanceId: attendance.id,
     createdByUserId: actor.id, updatedByUserId: actor.id, createdAt: new Date(), updatedAt: new Date(),
 };
 function reset(overrides: Parameters<typeof authorizationTestDb.reset>[0] = {}) {
     ctx = createAuthorizationPersona("normal", { id: actor.id, permissions }).ctx;
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
         user: [actor], event: [event], eventSegment: [segment], eventAttendance: [attendance],
+        globalLocale: [{ id: 1, localeId: 1, sortOrder: 1 }],
         eventStatus: [{ id: 8, publicId: statusId, isDeleted: false, significance: null }],
         eventSegmentUserResponse: [response], eventUserResponse: [], change: [], action: [], setting: [],
         ...overrides,
     });
 }
 const operations = db3.eventAttendanceEditorView.crud.operations;
-const command = (commandID: string, payload: unknown) => invokeResolver(executeCommand, { commandID, payload }, ctx);
+const command = (commandID: string, payload: unknown) => invokeResolver(executeCommand, { bandPublicId: null, commandID, payload }, ctx);
 const changeResponse = (attendanceId: EventAttendancePublicId | null) =>
     invokeResolver(updateAttendance, { bandPublicId: attendanceBandPublicId, eventId: event.publicId, userId: actor.publicId, segmentResponses: { [segment.publicId]: { attendanceId } } }, ctx);
 
@@ -78,22 +85,23 @@ describe("EventAttendance public identities", () => {
     afterEach(() => { vi.unstubAllEnvs(); });
 
     it("generates public identities for CRUD and preserves numeric audit keys and soft deletion", async () => {
-        const created = operations.create.command.parseResult(await command(operations.create.command.commandID, { ...attendanceFields, text: "Maybe" }));
+        const created = operations.create.command.parseResult(await command(operations.create.command.commandID, { ...attendanceFields, buttonCaption: text("Maybe") }));
         expect(isPublicId(created.identity)).toBe(true);
         expect(created).not.toHaveProperty("id");
         expect(await command(operations.update.command.commandID, {
-            identity: attendance.publicId, patch: { text: "Attending" },
+            identity: attendance.publicId, patch: { buttonCaption: text("Attending") },
         })).toEqual({ identity: attendance.publicId });
         expect(await command(operations.delete.command.commandID, { identity: attendance.publicId }))
             .toEqual({ identity: attendance.publicId });
-        expect(authorizationTestDb.snapshot("eventAttendance")[0]).toMatchObject({ id: 2, text: "Attending", isDeleted: true });
+        expect(authorizationTestDb.snapshot("eventAttendance")[0]).toMatchObject({ id: 2, isDeleted: true });
+        expect(authorizationTestDb.snapshot("dynamicLocalizedStringValue")).toContainEqual(expect.objectContaining({ indexedValue: "Attending" }));
         expect(authorizationTestDb.snapshot("change")).toEqual(expect.arrayContaining([
             expect.objectContaining({ table: "EventAttendance", recordId: 2 }),
         ]));
     });
 
     it("rejects numeric query and command identities", async () => {
-        await expect(invokeResolver(query, forgeDb3Query("EventAttendance", {
+        await expect(invokeResolver(query, forgeDb3Query("EventAttendance", authorizationBandId, {
             filter: { items: [], pks: [2] },
         }), ctx)).rejects.toThrow();
         await expect(command(operations.update.command.commandID, { identity: 2, patch: { text: "Forged" } })).rejects.toThrow();
@@ -101,12 +109,12 @@ describe("EventAttendance public identities", () => {
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
 
-    it("retains admin and recovery permissions with public targets", async () => {
+    it("requires platform catalog authority and permits authorized recovery with public targets", async () => {
         reset({ user: [createAuthorizationTestUser("normal", { id: actor.id, permissions: [Permission.login, Permission.respond_to_events] })] });
         await expect(command(operations.update.command.commandID, { identity: attendance.publicId, patch: { text: "Forged" } })).rejects.toThrow();
         reset({ eventAttendance: [{ ...attendance, isDeleted: true }] });
-        await expect(command(operations.update.command.commandID, { identity: attendance.publicId, patch: { isDeleted: false } })).rejects.toThrow();
-        expect(authorizationTestDb.snapshot("change")).toEqual([]);
+        await expect(command(operations.update.command.commandID, { identity: attendance.publicId, patch: { isDeleted: false } })).resolves.toEqual({ identity: attendance.publicId });
+        expect(authorizationTestDb.snapshot("eventAttendance")[0]).toMatchObject({ id: 2, isDeleted: false });
     });
 
     it("projects attendance references in named Event graphs", async () => {
@@ -114,7 +122,7 @@ describe("EventAttendance public identities", () => {
             { tableID: db3.xEvent.tableID, tableName: "Event", viewID: db3.eventDetailView.viewID },
             { tableID: db3.xEvent.tableID, tableName: "Event", viewID: db3.eventSearchView.viewID },
         ]) {
-            const result = await invokeResolver(query, forgeDb3Query(table.tableID, { table }), ctx);
+            const result = await invokeResolver(query, forgeDb3Query(table.tableID, authorizationBandId, { table }), ctx);
             expect(result.items[0]!.segments[0].responses[0]).toMatchObject({
                 publicId: response.publicId, attendanceId: attendance.publicId,
             });
@@ -126,7 +134,7 @@ describe("EventAttendance public identities", () => {
     });
 
     it("treats the current public choice idempotently and allows clearing it", async () => {
-        reset({ eventUserResponse: [{ id: 202, publicId: eventResponsePublicId(202), eventId: event.id, userId: actor.id, revision: 1, userComment: "" }] });
+        reset({ eventUserResponse: [{ id: 202, publicId: eventResponsePublicId(202), eventId: event.id, bandUserId: actor.id, revision: 1, userComment: "" }] });
         expect(await changeResponse(attendance.publicId)).toMatchObject({ segmentResponses: { [segment.publicId]: { attendanceId: attendance.publicId } } });
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
         await changeResponse(null);

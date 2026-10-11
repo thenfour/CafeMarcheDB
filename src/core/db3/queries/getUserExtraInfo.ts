@@ -29,7 +29,7 @@ export default resolver.pipe(
             filter: { publicIds: [args.userId] },
             orderBy: undefined,
             take: 1,
-            includeDeleted: auth.hasPermission(Permission.recover_users),
+            includeDeleted: auth.hasPermission(Permission.manage_global_users),
         }, auth);
         const user = result.items[0];
         if (!user) throw new NotFoundError();

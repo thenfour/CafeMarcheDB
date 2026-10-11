@@ -12,7 +12,7 @@ import { revokeUserSignInState } from "../server/signInMethods";
 
 export default resolver.pipe(
     resolver.zod(z.object({ userId: UserPublicIdSchema }).strict()),
-    cmauthorize(Permission.recover_users),
+    cmauthorize({ permission: Permission.manage_global_users, requireUser: true }),
     async ({ userId }, ctx) => db.$transaction(async tx => {
         const [actor, target] = await Promise.all([
             findUserManagementActor(tx, ctx.session.userId),

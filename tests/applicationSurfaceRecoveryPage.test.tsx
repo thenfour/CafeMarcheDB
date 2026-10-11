@@ -22,14 +22,8 @@ import EditEvents from "src/pages/backstage/editEvents";
 import EditSegments from "src/pages/backstage/editEventSegments";
 import Agenda from "src/pages/backstage/frontpageEvents";
 import EditSongs from "src/pages/backstage/editSongs";
-import Files from "src/pages/backstage/files";
-import File from "src/pages/backstage/file/[...id_slug_tab]";
-import EditFiles from "src/pages/backstage/editFiles";
-import Gallery from "src/pages/backstage/frontpagegallery";
-import EditGallery from "src/pages/backstage/editFrontpageGalleryItems";
 import Examples from "src/pages/backstage/gallery";
 import GridExamples from "src/pages/backstage/test";
-import WikiSearch from "src/pages/backstage/wikiPages";
 
 let language = "en-US";
 let root: Root;
@@ -47,7 +41,8 @@ afterEach(async () => {
     vi.unstubAllGlobals();
 });
 
-const pages = [ EditEvents, EditSegments, Agenda, EditSongs, Files, File, EditFiles, Gallery, EditGallery, Examples, GridExamples, WikiSearch];
+// Restored File, gallery and Wiki workflows have their own active editor/read specifications.
+const pages = [EditEvents, EditSegments, Agenda, EditSongs, Examples, GridExamples];
 describe("reachable deferred application pages", () => {
     it.each(pages.map((Page, index) => ({ Page, index })))("renders page $index without readers/editors and updates its localized notice", async ({ Page }) => {
         await act(async () => root.render(<Page />));

@@ -1,3 +1,6 @@
+import executeCommand from "@db3/mutations/executeDB3Command";
+import { authorizationPermissionId } from "./support/authorizationFixtures";
+import { authorizationBandId, resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { loadAuthorizationForUser } from "@/src/auth/server/serverAuthorization";
 import type { Prisma } from "@prisma/client";
 import { bindDB3ReadSnapshot } from "@db3/server/db3ReadExecution";
@@ -24,7 +27,6 @@ import {
   validateDB3PaginatedQueryRequest,
   validateDB3QueryRequest,
 } from "@db3/server/db3RequestValidation";
-import type { UserWithRolesPayload } from "@db3/shared/schema/userPayloads";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import deactivateUser from "src/auth/mutations/deactivateUser";
@@ -53,7 +55,6 @@ import {
   type AuthorizationTargetKind,
 } from "./support/authorizationFixtures";
 import {
-  forgeDb3Delete,
   forgeDb3Insert,
   forgeDb3PublicDelete,
   forgeDb3PublicUpdate,
@@ -103,7 +104,7 @@ describe("authorization test personas", () => {
 
     expect(target.id).toBeGreaterThan(0)
     expect(target.isSysAdmin).toBe(targetKind === "isSysAdmin")
-    expect(target.role?.permissions.some((entry) => entry.permission.name === Permission.sysadmin)).toBe(
+    expect(target.globalRole?.permissions.some((entry) => entry.permission.name === Permission.sysadmin)).toBe(
       targetKind === "protectedRole",
     )
   })
@@ -117,7 +118,7 @@ describe("generic DB3 resolver harness", () => {
   })
 
   beforeEach(() => {
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [sysadmin, target],
       change: [],
     })
@@ -128,7 +129,7 @@ describe("generic DB3 resolver harness", () => {
 
     const result = await invokeResolver(
       db3Query,
-      forgeDb3Query("User"),
+      forgeDb3Query("User", authorizationBandId),
       ctx,
     )
 
@@ -146,9 +147,9 @@ describe("generic DB3 resolver harness", () => {
 
     const result = await invokeResolver(
       db3Mutation,
-      forgeDb3Update("User", target.id, {
+      forgeDb3PublicUpdate("PlatformUser", null, target.publicId, {
         name: "After mutation",
-      }),
+      }, { tableName: "User" }),
       ctx,
     )
 
@@ -172,7 +173,7 @@ describe("BA-A001 generic DB3 request validation", () => {
   const target = createAuthorizationTestUser("normal", { id: 3 })
 
   beforeEach(() => {
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [sysadmin, moderator, target],
       change: [],
       eventType: [],
@@ -180,31 +181,31 @@ describe("BA-A001 generic DB3 request validation", () => {
   })
 
   it("rejects unknown and mismatched table identifiers", () => {
-    expect(() => validateDB3QueryRequest(forgeDb3Query("UnknownTable"))).toThrow(
+    expect(() => validateDB3QueryRequest(forgeDb3Query("UnknownTable", authorizationBandId))).toThrow(
       "unknown table ID 'UnknownTable'",
     )
     expect(() =>
-      validateDB3QueryRequest(forgeDb3Query("User", { table: { tableID: "User", tableName: "Role" } })),
+      validateDB3QueryRequest(forgeDb3Query("User", authorizationBandId, { table: { tableID: "User", tableName: "Role" } })),
     ).toThrow("table name 'Role' does not match table ID 'User'")
   })
 
   it("rejects unknown request properties, including caller-provided authorization", () => {
     expect(() =>
       validateDB3QueryRequest({
-        ...forgeDb3Query("User"),
+        ...forgeDb3Query("User", authorizationBandId),
         authorization: { permissions: [Permission.sysadmin] },
       }),
     ).toThrow(/Unrecognized key.*authorization/)
 
     expect(() =>
-      validateDB3QueryRequest({ ...forgeDb3Query("User"), rawPrismaArgs: {} }),
+      validateDB3QueryRequest({ ...forgeDb3Query("User", authorizationBandId), rawPrismaArgs: {} }),
     ).toThrow(/Unrecognized key.*rawPrismaArgs/)
   })
 
   it("rejects unsupported query operators and non-scalar filter values", () => {
     expect(() =>
       validateDB3QueryRequest(
-        forgeDb3Query("User", {
+        forgeDb3Query("User", authorizationBandId, {
           filter: { items: [{ field: "name", operator: "contains" as "equals", value: "x" }] },
         }),
       ),
@@ -212,7 +213,7 @@ describe("BA-A001 generic DB3 request validation", () => {
 
     expect(() =>
       validateDB3QueryRequest(
-        forgeDb3Query("User", {
+        forgeDb3Query("User", authorizationBandId, {
           filter: {
             items: [{ field: "name", operator: "equals", value: { contains: "x" } }],
           },
@@ -222,7 +223,7 @@ describe("BA-A001 generic DB3 request validation", () => {
 
     expect(() =>
       validateDB3QueryRequest(
-        forgeDb3Query("User", {
+        forgeDb3Query("User", authorizationBandId, {
           filter: { items: [{ field: "name", operator: "equals" }] } as never,
         }),
       ),
@@ -232,26 +233,26 @@ describe("BA-A001 generic DB3 request validation", () => {
   it("rejects unknown filter and ordering fields", () => {
     expect(() =>
       validateDB3QueryRequest(
-        forgeDb3Query("User", {
+        forgeDb3Query("User", authorizationBandId, {
           filter: { items: [{ field: "notAColumn", operator: "equals", value: 1 }] },
         }),
       ),
     ).toThrow("unknown filter field 'notAColumn' on table 'User'")
 
     expect(() =>
-      validateDB3QueryRequest(forgeDb3Query("User", { orderBy: { notAColumn: "asc" } })),
+      validateDB3QueryRequest(forgeDb3Query("User", authorizationBandId, { orderBy: { notAColumn: "asc" } })),
     ).toThrow("unknown order field 'notAColumn' on table 'User'")
 
     expect(() =>
       validateDB3QueryRequest(
-        forgeDb3Query("User", { orderBy: { name: "sideways" } }),
+        forgeDb3Query("User", authorizationBandId, { orderBy: { name: "sideways" } }),
       ),
     ).toThrow("Invalid enum value")
   })
 
   it("validates table parameters against the selected table contract", () => {
     const valid = validateDB3QueryRequest(
-      forgeDb3Query("User", {
+      forgeDb3Query("User", authorizationBandId, {
         filter: { items: [], tableParams: { userId: target.publicId, userIds: [target.publicId] } },
       }),
     )
@@ -259,13 +260,13 @@ describe("BA-A001 generic DB3 request validation", () => {
 
     expect(() =>
       validateDB3QueryRequest(
-        forgeDb3Query("User", { filter: { items: [], tableParams: { userId: 3 } } }),
+        forgeDb3Query("User", authorizationBandId, { filter: { items: [], tableParams: { userId: 3 } } }),
       ),
     ).toThrow("filter.tableParams.userId: Expected string")
 
     expect(() =>
       validateDB3QueryRequest(
-        forgeDb3Query("User", { filter: { items: [], tableParams: { rawWhere: {} } } }),
+        forgeDb3Query("User", authorizationBandId, { filter: { items: [], tableParams: { rawWhere: {} } } }),
       ),
     ).toThrow(/Unrecognized key.*rawWhere/)
   })
@@ -273,7 +274,7 @@ describe("BA-A001 generic DB3 request validation", () => {
   it("validates pagination bounds", () => {
     expect(() =>
       validateDB3PaginatedQueryRequest({
-        ...forgeDb3Query("User"),
+        ...forgeDb3Query("User", authorizationBandId),
         skip: 0,
         take: 50,
       }),
@@ -281,7 +282,7 @@ describe("BA-A001 generic DB3 request validation", () => {
 
     expect(() =>
       validateDB3PaginatedQueryRequest({
-        ...forgeDb3Query("User"),
+        ...forgeDb3Query("User", authorizationBandId),
         skip: -1,
         take: 50,
       }),
@@ -301,13 +302,13 @@ describe("BA-A001 generic DB3 request validation", () => {
 
     expect(() =>
       validateDB3MutationRequest(
-        forgeDb3Update("User", target.id, { notAColumn: "value" }),
+        forgeDb3Update("User", null, target.id, { notAColumn: "value" }),
       ),
     ).toThrow("unknown mutation field 'notAColumn' on table 'User'")
 
     expect(() =>
       validateDB3MutationRequest(
-        forgeDb3Update("User", target.id, { publicId: userPublicId(target.id + 1), name: "mismatch" }),
+        forgeDb3Update("User", null, target.id, { publicId: userPublicId(target.id + 1), name: "mismatch" }),
       ),
     ).toThrow("field 'publicId' is immutable")
   })
@@ -315,29 +316,31 @@ describe("BA-A001 generic DB3 request validation", () => {
   it("uses database authorization and excludes deleted rows for every actor by default", async () => {
     const visibleEventTypePublicId = parsePublicId<"EventType">("AuthEventType001")
     const deletedEventTypePublicId = parsePublicId<"EventType">("AuthEventType002")
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [sysadmin, moderator, { ...target, isDeleted: true }],
       change: [],
       eventType: [
-        { id: 10, publicId: visibleEventTypePublicId, isDeleted: false, text: "Visible event type" },
-        { id: 11, publicId: deletedEventTypePublicId, isDeleted: true, text: "Deleted event type" },
+        { id: 10, publicId: visibleEventTypePublicId, isDeleted: false, color: null, sortOrder: 0, iconName: null, significance: null },
+        { id: 11, publicId: deletedEventTypePublicId, isDeleted: true, color: null, sortOrder: 1, iconName: null, significance: null },
       ],
     })
 
     const { ctx: moderatorCtx } = createAuthorizationPersona("moderator", { id: moderator.id })
-    const moderatorResult = await invokeResolver(db3Query, forgeDb3Query("User"), moderatorCtx)
+    const moderatorResult = await invokeResolver(db3Query, forgeDb3Query("User", authorizationBandId), moderatorCtx)
     expect(moderatorResult.items).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ id: target.id })]),
     )
 
     const { ctx: sysadminCtx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-    const sysadminResult = await invokeResolver(db3Query, forgeDb3Query("User"), sysadminCtx)
+    const sysadminResult = await invokeResolver(db3Query, forgeDb3Query("User", authorizationBandId), sysadminCtx)
     expect(sysadminResult.items).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ id: target.id })]),
     )
 
     const { ctx: publicCtx } = createAuthorizationPersona("public")
-    const publicResult = await invokeResolver(db3Query, forgeDb3Query("EventType"), publicCtx)
+    const publicResult = await invokeResolver(db3Query, forgeDb3Query("EventType", authorizationBandId, {
+      table: { tableID: "EventType", tableName: "EventType", viewID: db3.eventTypeDashboardView.viewID },
+    }), publicCtx)
     expect(publicResult.items).toEqual(
       expect.arrayContaining([expect.objectContaining({ publicId: visibleEventTypePublicId })]),
     )
@@ -362,7 +365,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
   const deletedTarget = createAuthorizationTestUser("normal", { id: 4, isDeleted: true })
 
   beforeEach(() => {
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [sysadmin, normal, activeTarget, deletedTarget],
       change: [{ id: 1, table: "User", recordId: activeTarget.id }],
       event: [],
@@ -371,7 +374,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
   })
 
   function grantAccountLogin() {
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [{ ...normal, mergedIntoUserId: null, globalRoleId: 10_000 }],
       globalRole: [{ id: 10_000, isDeleted: false }],
       globalRolePermission: [{ id: 1, globalRoleId: 10_000, permissionId: 1 }],
@@ -384,7 +387,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
     const findMany = vi.spyOn(authorizationTestDb.getDelegate("userSignInMethod"), "findMany")
     const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
 
-    await expect(invokeResolver(db3Query, forgeDb3Query("UserSignInMethod"), ctx)).rejects.toThrow(
+    await expect(invokeResolver(db3Query, forgeDb3Query("UserSignInMethod", authorizationBandId), ctx)).rejects.toThrow(
       "Not authorized to perform this query.",
     )
     expect(findMany).not.toHaveBeenCalled()
@@ -400,7 +403,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
     await expect(
       invokeResolver(
         db3PaginatedQuery,
-        { ...forgeDb3Query("UserSignInMethod"), skip: 0, take: 50 },
+        { bandPublicId: authorizationBandId, ...forgeDb3Query("UserSignInMethod", authorizationBandId), skip: 0, take: 50 },
         ctx,
       ),
     ).rejects.toThrow("Not authorized to perform this query.")
@@ -409,12 +412,12 @@ describe("BA-A002 generic DB3 query authorization", () => {
   })
 
   it("rejects an internal query without the table's required effective permission", async () => {
-    const findMany = vi.spyOn(authorizationTestDb.getDelegate("user"), "findMany")
-    const databaseNormal = normal as unknown as UserWithRolesPayload
+    const authorization = await loadAuthorizationForUser(normal)
+    const findMany = vi.spyOn(authorizationTestDb.getDelegate("userSignInMethod"), "findMany")
 
     await expect(queryTable({
-      ...forgeDb3Query("Role"),
-    }, await loadAuthorizationForUser(databaseNormal))).rejects.toThrow("Not authorized to perform this query.")
+      ...forgeDb3Query("UserSignInMethod", null),
+    }, authorization)).rejects.toThrow("Not authorized to perform this query.")
     expect(findMany).not.toHaveBeenCalled()
   })
 
@@ -439,7 +442,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
     const snapshot = await bindDB3ReadSnapshot(authorizationTestDb as unknown as Prisma.TransactionClient, auth, { isolationLevel: "Serializable" })
 
     await expect(
-      queryTable(forgeDb3Query("Event", request), auth, snapshot),
+      queryTable(forgeDb3Query("Event", authorizationBandId, request), auth, snapshot),
     ).rejects.toThrow("Not authorized to perform this query.")
     expect(findMany).not.toHaveBeenCalled()
   })
@@ -479,22 +482,12 @@ describe("BA-A002 generic DB3 query authorization", () => {
   })
 
   it("returns IDs only for rows inside the server-enforced visibility scope", async () => {
-    const publicPermissionId = 700
-    const loggedInPermissionId = 701
-    authorizationTestDb.reset({
+    const publicPermissionId = authorizationPermissionId(Permission.visibility_public)
+    const loggedInPermissionId = authorizationPermissionId(Permission.visibility_logged_in_users)
+    resetAuthorizationDatabase({
       user: [],
-      role: [{
-        id: 900,
-        isPublicRole: true,
-        permissions: [
-          { permissionId: publicPermissionId, permission: { id: publicPermissionId, name: Permission.visibility_public } },
-          { permissionId: 702, permission: { id: 702, name: Permission.view_events } },
-          { permissionId: 703, permission: { id: 703, name: Permission.always_grant } },
-          { permissionId: 704, permission: { id: 704, name: Permission.public } },
-        ],
-      }],
       event: [
-        {
+        { bandId: 1,
           id: 20,
           publicId: eventPublicId(20),
           name: "Public event",
@@ -504,7 +497,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
           visiblePermission: { id: publicPermissionId, name: Permission.visibility_public },
           frontpageVisible: true,
         },
-        {
+        { bandId: 1,
           id: 21,
           publicId: eventPublicId(21),
           name: "Members event",
@@ -514,7 +507,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
           visiblePermission: { id: loggedInPermissionId, name: Permission.visibility_logged_in_users },
           frontpageVisible: true,
         },
-        {
+        { bandId: 1,
           id: 22,
           publicId: eventPublicId(22),
           name: "Deleted public event",
@@ -528,7 +521,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
     })
     const { ctx } = createAuthorizationPersona("public")
 
-    const result = await invokeResolver(db3Query, forgeDb3Query("Event"), ctx)
+    const result = await invokeResolver(db3Query, forgeDb3Query("Event", authorizationBandId), ctx)
 
     expect(result.items).toEqual([
       expect.objectContaining({ publicId: eventPublicId(20), name: "Public event" }),
@@ -541,7 +534,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
     const { ctx: normalCtx } = createAuthorizationPersona("normal", { id: normal.id })
     const normalResult = await invokeResolver(
       db3PaginatedQuery,
-      { ...forgeDb3Query("User"), skip: 0, take: 50 },
+      { bandPublicId: authorizationBandId, ...forgeDb3Query("User", authorizationBandId), skip: 0, take: 50 },
       normalCtx,
     )
 
@@ -552,8 +545,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
 
     const normalDeletedOnlyResult = await invokeResolver(
       db3PaginatedQuery,
-      {
-        ...forgeDb3Query("User", {
+      { bandPublicId: authorizationBandId,
+        ...forgeDb3Query("User", authorizationBandId, {
           filter: {
             items: [{ field: "isDeleted", operator: "equals", value: true }],
           },
@@ -569,7 +562,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
     const { ctx: sysadminCtx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
     const sysadminResult = await invokeResolver(
       db3PaginatedQuery,
-      { ...forgeDb3Query("User"), skip: 0, take: 50 },
+      { bandPublicId: authorizationBandId, ...forgeDb3Query("User", authorizationBandId), skip: 0, take: 50 },
       sysadminCtx,
     )
 
@@ -580,8 +573,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
 
     const sysadminDeletedOnlyResult = await invokeResolver(
       db3PaginatedQuery,
-      {
-        ...forgeDb3Query("User", {
+      { bandPublicId: authorizationBandId,
+        ...forgeDb3Query("User", authorizationBandId, {
           filter: {
             items: [{ field: "isDeleted", operator: "equals", value: true }],
           },
@@ -604,13 +597,11 @@ describe("BA-A002 generic DB3 query authorization", () => {
       id: normal.id,
       permissions: visibilityPermissions,
     })
-    const publicPermissionId = visibilityUser.role!.permissions.find(
-      entry => entry.permission.name === Permission.visibility_public,
-    )!.permissionId
-    authorizationTestDb.reset({
+    const publicPermissionId = authorizationPermissionId(Permission.visibility_public)
+    resetAuthorizationDatabase({
       user: [visibilityUser],
       event: [
-        {
+        { bandId: 1,
           id: 30,
           publicId: eventPublicId(30),
           name: "Visible event",
@@ -619,7 +610,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
           visiblePermissionId: publicPermissionId,
           visiblePermission: { id: publicPermissionId, name: Permission.visibility_public },
         },
-        {
+        { bandId: 1,
           id: 31,
           publicId: eventPublicId(31),
           name: "Hidden event",
@@ -628,7 +619,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
           visiblePermissionId: 999,
           visiblePermission: { id: 999, name: Permission.visibility_members },
         },
-        {
+        { bandId: 1,
           id: 32,
           publicId: eventPublicId(32),
           name: "Deleted event",
@@ -646,7 +637,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
 
     const result = await invokeResolver(
       db3PaginatedQuery,
-      { ...forgeDb3Query("Event"), skip: 0, take: 50 },
+      { bandPublicId: authorizationBandId, ...forgeDb3Query("Event", authorizationBandId), skip: 0, take: 50 },
       ctx,
     )
 
@@ -665,13 +656,11 @@ describe("BA-A002 generic DB3 query authorization", () => {
       Permission.visibility_public,
     ]
     const recoveryAdmin = createAuthorizationTestUser("bandAdmin", { id: 40, permissions })
-    const publicVisibilityId = recoveryAdmin.role!.permissions.find(
-      entry => entry.permission.name === Permission.visibility_public,
-    )!.permissionId
-    authorizationTestDb.reset({
+    const publicVisibilityId = authorizationPermissionId(Permission.visibility_public)
+    resetAuthorizationDatabase({
       user: [recoveryAdmin],
       event: [
-        {
+        { bandId: 1,
           id: 41,
           publicId: eventPublicId(41),
           name: "Deleted band event",
@@ -680,7 +669,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
           visiblePermissionId: publicVisibilityId,
           visiblePermission: { id: publicVisibilityId, name: Permission.visibility_public },
         },
-        {
+        { bandId: 1,
           id: 42,
           publicId: eventPublicId(42),
           name: "Someone else's private event",
@@ -689,7 +678,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
           visiblePermissionId: null,
           visiblePermission: null,
         },
-        {
+        { bandId: 1,
           id: 43,
           publicId: eventPublicId(43),
           name: "Own private event",
@@ -705,8 +694,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
       permissions,
     })
 
-    const result = await invokeResolver(db3PaginatedQuery, {
-      ...forgeDb3Query("Event"),
+    const result = await invokeResolver(db3PaginatedQuery, { bandPublicId: authorizationBandId,
+      ...forgeDb3Query("Event", authorizationBandId),
       includeDeleted: true,
       skip: 0,
       take: 50,
@@ -723,7 +712,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
   it("rejects includeDeleted before querying when recovery permission is absent", async () => {
     const permissions = [Permission.login, Permission.view_events, Permission.manage_events]
     const ordinaryManager = createAuthorizationTestUser("moderator", { id: 44, permissions })
-    authorizationTestDb.reset({ user: [ordinaryManager], event: [] })
+    resetAuthorizationDatabase({ user: [ordinaryManager], event: [] })
     const { ctx } = createAuthorizationPersona("moderator", {
       id: ordinaryManager.id,
       permissions,
@@ -732,8 +721,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
     const findMany = vi.spyOn(eventDelegate, "findMany")
     const count = vi.spyOn(eventDelegate, "count")
 
-    await expect(invokeResolver(db3PaginatedQuery, {
-      ...forgeDb3Query("Event"),
+    await expect(invokeResolver(db3PaginatedQuery, { bandPublicId: authorizationBandId,
+      ...forgeDb3Query("Event", authorizationBandId),
       includeDeleted: true,
       skip: 0,
       take: 50,
@@ -756,10 +745,8 @@ describe("Band Admin soft-delete recovery", () => {
     id: 50,
     permissions: recoveryPermissions,
   })
-  const publicVisibilityId = recoveryAdmin.role!.permissions.find(
-    entry => entry.permission.name === Permission.visibility_public,
-  )!.permissionId
-  const deletedPublicSong = {
+  const publicVisibilityId = authorizationPermissionId(Permission.visibility_public)
+  const deletedPublicSong = { bandId: 1,
     id: 51,
     publicId: songPublicId(51),
     name: "Deleted public song",
@@ -780,7 +767,7 @@ describe("Band Admin soft-delete recovery", () => {
   }
 
   beforeEach(() => {
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [recoveryAdmin],
       song: [deletedPublicSong, deletedPrivateSong],
       change: [],
@@ -796,7 +783,7 @@ describe("Band Admin soft-delete recovery", () => {
 
     await invokeResolver(
       db3Mutation,
-      forgeDb3PublicUpdate("Song", deletedPublicSong.publicId, { isDeleted: false }),
+      forgeDb3PublicUpdate("Song", authorizationBandId, deletedPublicSong.publicId, { isDeleted: false }),
       ctx,
     )
 
@@ -814,7 +801,7 @@ describe("Band Admin soft-delete recovery", () => {
 
     await expect(invokeResolver(
       db3Mutation,
-      forgeDb3PublicUpdate("Song", deletedPrivateSong.publicId, { isDeleted: false }),
+      forgeDb3PublicUpdate("Song", authorizationBandId, deletedPrivateSong.publicId, { isDeleted: false }),
       ctx,
     )).rejects.toThrow("Song was not found.")
 
@@ -824,13 +811,13 @@ describe("Band Admin soft-delete recovery", () => {
   it("does not treat ordinary song management as recovery authority", async () => {
     const permissions = recoveryPermissions.filter(permission => permission !== Permission.recover_songs)
     const manager = createAuthorizationTestUser("moderator", { id: 53, permissions })
-    authorizationTestDb.reset({ user: [manager], song: [deletedPublicSong], change: [] })
+    resetAuthorizationDatabase({ user: [manager], song: [deletedPublicSong], change: [] })
     const { ctx } = createAuthorizationPersona("moderator", { id: manager.id, permissions })
     const update = vi.spyOn(authorizationTestDb.getDelegate("song"), "update")
 
     await expect(invokeResolver(
       db3Mutation,
-      forgeDb3PublicUpdate("Song", deletedPublicSong.publicId, { isDeleted: false }),
+      forgeDb3PublicUpdate("Song", authorizationBandId, deletedPublicSong.publicId, { isDeleted: false }),
       ctx,
     )).rejects.toThrow("Song was not found.")
 
@@ -849,7 +836,7 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
   })
 
   beforeEach(() => {
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [sysadmin, moderator, bandAdmin, target],
       change: [],
     })
@@ -864,7 +851,7 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
     await expect(
       invokeResolver(
         db3Mutation,
-        forgeDb3Update("User", target.id, {
+        forgeDb3Update("User", null, bandAdmin.id, {
           name: "Must not be persisted",
           isSysAdmin: true,
         }),
@@ -889,17 +876,17 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
     "rejects an isSysAdmin update from a %s actor",
     async (persona) => {
       const actor = createAuthorizationTestUser(persona, { id: 20 })
-      authorizationTestDb.reset({ user: [actor, target], change: [] })
+      resetAuthorizationDatabase({ user: [actor, target], change: [] })
       const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
       const { ctx } = createAuthorizationPersona(persona, { id: actor.id })
 
       await expect(
         invokeResolver(
           db3Mutation,
-          forgeDb3Update("User", target.id, { isSysAdmin: true }),
+          forgeDb3Update("User", null, actor.id, { isSysAdmin: true }),
           ctx,
         ),
-      ).rejects.toThrow(persona === "limited" ? "User was not found." : "Not authorized to mutate User fields")
+      ).rejects.toThrow("Not authorized to mutate User fields")
 
       expect(update).not.toHaveBeenCalled()
       expect(authorizationTestDb.snapshot("user")).toEqual(
@@ -918,7 +905,7 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
     await expect(
       invokeResolver(
         db3Mutation,
-        forgeDb3Insert("User", {
+        forgeDb3Insert("User", null, {
           name: "Crafted sysadmin",
           email: "crafted@test.invalid",
           isSysAdmin: true,
@@ -934,13 +921,13 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
   it("enforces table authorization before insert", async () => {
     const create = vi.spyOn(authorizationTestDb.getDelegate("user"), "create")
     const limited = createAuthorizationTestUser("limited", { id: 20 })
-    authorizationTestDb.reset({ user: [limited, target], change: [] })
+    resetAuthorizationDatabase({ user: [limited, target], change: [] })
     const { ctx } = createAuthorizationPersona("limited", { id: limited.id })
 
     await expect(
       invokeResolver(
         db3Mutation,
-        forgeDb3Insert("User", {
+        forgeDb3Insert("User", null, {
           name: "Unauthorized insert",
           email: "unauthorized@test.invalid",
         }),
@@ -957,10 +944,10 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
 
     const result = await invokeResolver(
       db3Mutation,
-      forgeDb3Insert("User", {
+      forgeDb3Insert("PlatformUser", null, {
         name: "Authorized insert",
         email: "authorized@test.invalid",
-      }),
+      }, { tableName: "User" }),
       ctx,
     )
 
@@ -976,11 +963,11 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
   })
 
   it("persists an authorized update from the sanitized model", async () => {
-    const { ctx } = createAuthorizationPersona("moderator", { id: moderator.id })
+    const { ctx } = createAuthorizationPersona("normal", { id: target.id })
 
     const result = await invokeResolver(
       db3Mutation,
-      forgeDb3Update("User", target.id, {
+      forgeDb3Update("User", null, target.id, {
         name: "Authorized mutation",
       }),
       ctx,
@@ -989,8 +976,8 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
     expect(result).toEqual(expect.objectContaining({
       publicId: target.publicId,
       name: "Authorized mutation",
-      isSysAdmin: false,
     }))
+    expect(authorizationTestDb.snapshot("user")).toContainEqual(expect.objectContaining({ id: target.id, isSysAdmin: false }))
     expect(authorizationTestDb.snapshot("change")).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ table: "User", recordId: target.id, action: "update" }),
@@ -1033,7 +1020,7 @@ describe("BA-U001 user management boundaries", () => {
   }
 
   beforeEach(() => {
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [
         sysadmin,
         bandAdmin,
@@ -1049,7 +1036,7 @@ describe("BA-U001 user management boundaries", () => {
     vi.restoreAllMocks()
   })
 
-  it("allows an anonymous actor when the public permission set grants the action", () => {
+  it("denies shared-account deactivation from a public band grant", () => {
     expect(canManageUser({
       actor: {
         principal: null,
@@ -1057,7 +1044,7 @@ describe("BA-U001 user management boundaries", () => {
       },
       target: asUserManagementTarget(ordinaryUser),
       action: "deactivate",
-    })).toBe(true)
+    })).toBe(false)
   })
 
   it("does not let generic user creation assign any role", async () => {
@@ -1067,7 +1054,7 @@ describe("BA-U001 user management boundaries", () => {
     await expect(
       invokeResolver(
         db3Mutation,
-        forgeDb3Insert("User", {
+        forgeDb3Insert("User", null, {
           name: "Forbidden protected user",
           email: "protected@test.invalid",
           roleId: protectedRole.publicId,
@@ -1133,23 +1120,23 @@ describe("BA-U001 user management boundaries", () => {
     await expect(
       invokeResolver(
         db3Mutation,
-        forgeDb3Update("User", ordinaryUser.id, {
+        forgeDb3Update("User", null, ordinaryUser.id, {
           roleId: ordinaryRole.publicId,
         }),
         ctx,
       ),
-    ).rejects.toThrow("Role was not found")
+    ).rejects.toThrow("unknown mutation field")
     await expect(
       invokeResolver(
         db3Mutation,
-        forgeDb3Update("User", protectedRoleUser.id, {
+        forgeDb3Update("User", null, protectedRoleUser.id, {
           name: "Forbidden protected edit",
         }),
         ctx,
       ),
-    ).resolves.toEqual(expect.objectContaining({ name: "Forbidden protected edit" }))
+    ).rejects.toThrow("User was not found")
 
-    expect(update).toHaveBeenCalledTimes(1)
+    expect(update).not.toHaveBeenCalled()
   })
 })
 
@@ -1196,7 +1183,7 @@ describe("BA-U002 delegated user administration", () => {
   const unknownRole = makeRole(104, "Unknown role", ["unknown_permission"])
 
   beforeEach(() => {
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [sysadmin, bandAdmin, ordinaryUser],
       role: [peerRole, ordinaryRole, unheldRole, protectedRole, unknownRole],
       session: [],
@@ -1236,26 +1223,12 @@ describe("BA-U002 delegated user administration", () => {
     expect(warnings).toEqual([])
   })
 
-  it("applies the same continuity acknowledgement and session revocation to deactivation", async () => {
-    authorizationTestDb.reset({
-      user: [bandAdmin, ordinaryUser],
-      session: [{ id: 1, userId: bandAdmin.id }],
-      change: [],
-    })
-    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
-
-    await expect(invokeResolver(deactivateUser, {
-      userId: bandAdmin.publicId,
-      acknowledgeContinuityRisk: false,
-    }, ctx)).rejects.toThrow("CONTINUITY_ACKNOWLEDGEMENT_REQUIRED")
-
-    await invokeResolver(deactivateUser, {
-      userId: bandAdmin.publicId,
-      acknowledgeContinuityRisk: true,
-    }, ctx)
-    expect(authorizationTestDb.snapshot("user")).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: bandAdmin.id, isDeleted: true }),
-    ]))
+  it("revokes shared-account sessions with platform deactivation authority", async () => {
+    resetAuthorizationDatabase({ user: [sysadmin, ordinaryUser],
+      session: [{ id: 1, userId: ordinaryUser.id }], change: [] })
+    await invokeResolver(deactivateUser, { userId: ordinaryUser.publicId, acknowledgeContinuityRisk: false },
+      createAuthorizationPersona("sysadmin", { id: sysadmin.id }).ctx)
+    expect(authorizationTestDb.snapshot("user")).toContainEqual(expect.objectContaining({ id: ordinaryUser.id, isDeleted: true }))
     expect(authorizationTestDb.snapshot("session")).toEqual([])
   })
 
@@ -1288,10 +1261,10 @@ describe("BA-U002 delegated user administration", () => {
 
     const result = await invokeResolver(
       db3Mutation,
-      forgeDb3Insert("User", {
+      forgeDb3Insert("PlatformUser", null, {
         name: "New unprivileged user",
         email: "new-user@test.invalid",
-      }),
+      }, { tableName: "User" }),
       ctx,
     )
 
@@ -1325,7 +1298,7 @@ describe("BA-U002 delegated user administration", () => {
       color: null,
       iconName: null,
     }
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [ordinaryUser],
       permission: [visibilityPermission],
     })
@@ -1337,7 +1310,7 @@ describe("BA-U002 delegated user administration", () => {
 
     await expect(invokeResolver(
       db3Mutation,
-      forgeDb3PublicUpdate("Permission", visibilityPermission.publicId, {
+      forgeDb3PublicUpdate("Permission", null, visibilityPermission.publicId, {
         description: "Forged",
       }, { tableName: "Permission" }),
       ctx,
@@ -1356,7 +1329,7 @@ describe("BA-U003 password-reset hardening", () => {
   }
 
   beforeEach(() => {
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [sysadmin, bandAdmin, target],
       token: [],
       session: [],
@@ -1386,7 +1359,7 @@ describe("BA-U003 password-reset hardening", () => {
       isSysAdmin: false,
       permissions: [Permission.login, Permission.sysadmin],
     })
-    authorizationTestDb.reset({ user: [roleGrantedSysadmin, target], token: [] })
+    resetAuthorizationDatabase({ user: [roleGrantedSysadmin, target], token: [] })
     const targetLookup = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst")
     const tokenCreate = vi.spyOn(authorizationTestDb.getDelegate("token"), "create")
     const { ctx } = createAuthorizationPersona("normal", {
@@ -1442,7 +1415,7 @@ describe("BA-U003 password-reset hardening", () => {
   it("records password completion without credentials in the activity log", async () => {
     const rawToken = "single-use-reset-token"
     const newPassword = "new-password-value"
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [target],
       token: [{
         id: 1,
@@ -1490,7 +1463,7 @@ describe("BA-U004 impersonation hardening", () => {
   })
 
   beforeEach(() => {
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [sysadmin, target],
       change: [],
     })
@@ -1531,7 +1504,7 @@ describe("BA-U004 impersonation hardening", () => {
       isSysAdmin: false,
       permissions: [Permission.login, Permission.impersonate_user],
     })
-    authorizationTestDb.reset({ user: [roleGrantedImpersonator, target], change: [] })
+    resetAuthorizationDatabase({ user: [roleGrantedImpersonator, target], change: [] })
     const userFind = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst")
     const { ctx } = createAuthorizationPersona("normal", {
       id: roleGrantedImpersonator.id,
@@ -1558,7 +1531,7 @@ describe("BA-U004 impersonation hardening", () => {
       id: 30,
       permissions: [Permission.login, permission],
     })
-    authorizationTestDb.reset({ user: [sysadmin, protectedTarget], change: [] })
+    resetAuthorizationDatabase({ user: [sysadmin, protectedTarget], change: [] })
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
     const createSession = vi.spyOn(ctx.session, "$create")
 
@@ -1574,7 +1547,7 @@ describe("BA-U004 impersonation hardening", () => {
     ["the current actor", sysadmin],
     ["a deleted user", createAuthorizationTarget("ordinary", { id: 41, isDeleted: true })],
   ])("rejects %s as an impersonation target", async (_description, protectedTarget) => {
-    authorizationTestDb.reset({ user: [sysadmin, protectedTarget], change: [] })
+    resetAuthorizationDatabase({ user: [sysadmin, protectedTarget], change: [] })
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
     const createSession = vi.spyOn(ctx.session, "$create")
 
@@ -1591,7 +1564,7 @@ describe("BA-U004 impersonation hardening", () => {
       ...sysadmin,
       calendarFeedToken: "original-actor-calendar-feed-token-must-not-be-returned",
     }
-    authorizationTestDb.reset({ user: [originalActor, target], change: [] })
+    resetAuthorizationDatabase({ user: [originalActor, target], change: [] })
     const { ctx } = createAuthorizationPersona("normal", { id: target.id })
     ctx.session.$publicData.impersonatingFromUserId = originalActor.id
     const createSession = vi.spyOn(ctx.session, "$create")
@@ -1633,156 +1606,56 @@ describe("BA-U004 impersonation hardening", () => {
   })
 })
 
-describe("BA-A004 association authorization", () => {
-  const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
-  const bandAdmin = createAuthorizationTestUser("bandAdmin", { id: 2 })
+describe("BA-A004 membership association authorization", () => {
   const normal = createAuthorizationTestUser("normal", { id: 3 })
   const otherUser = createAuthorizationTestUser("normal", { id: 4 })
-  const instrument = {
-    id: 500,
-    publicId: "AbCdEfGhIjKlMn50",
-    name: "Trumpet",
-    description: "",
-    sortOrder: 1,
-    functionalGroupId: 1,
-    autoAssignFileLeafRegex: null,
-  }
-
-  const ordinaryRole = {
-    id: 100,
-    publicId: parsePublicId<"Role">("AuthAssocRole100"),
-    name: "Ordinary role",
-    description: "",
-    isRoleForNewUsers: false,
-    isPublicRole: false,
-    sortOrder: 10,
-    color: null,
-    significance: null,
-  }
-  const protectedRole = {
-    ...ordinaryRole,
-    id: 101,
-    publicId: parsePublicId<"Role">("AuthAssocRole101"),
-    name: "Protected role",
-  }
-  const ordinaryPermission = {
-    id: 200,
-    publicId: parsePublicId<"Permission">("AuthAssocPerm200"),
-    name: Permission.manage_events,
-    description: "",
-    isVisibility: false,
-    sortOrder: 10,
-    significance: null,
-    color: null,
-    iconName: null,
-  }
-  const protectedPermissions = [
-    { ...ordinaryPermission, id: 201, publicId: parsePublicId<"Permission">("AuthAssocPerm201"), name: Permission.sysadmin },
-    { ...ordinaryPermission, id: 202, publicId: parsePublicId<"Permission">("AuthAssocPerm202"), name: Permission.impersonate_user },
-    { ...ordinaryPermission, id: 203, publicId: parsePublicId<"Permission">("AuthAssocPerm203"), name: Permission.never_grant },
-  ]
-  const ordinaryRolePermission = {
-    id: 300,
-    publicId: parsePublicId<"RolePermission">("AuthAssocRP00300"),
-    roleId: ordinaryRole.id,
-    permissionId: ordinaryPermission.id,
-  }
-  const protectedRolePermission = {
-    id: 301,
-    publicId: parsePublicId<"RolePermission">("AuthAssocRP00301"),
-    roleId: protectedRole.id,
-    permissionId: protectedPermissions[0]!.id,
-  }
+  const instrument = { id: 500, bandId: 1, publicId: "AbCdEfGhIjKlMn50", isHidden: false,
+    globalInstrumentId: null, functionalGroupId: 1 }
+  const membershipId = (id: number) => "Member" + String(id).padStart(10, "0")
+  const replace = (id: number, instrumentIds: string[]) => invokeResolver(executeCommand, {
+    bandPublicId: authorizationBandId, commandID: db3.bandUserInstrumentsCommand.commandID,
+    payload: { kind: "replace", membershipId: membershipId(id), instrumentIds },
+  }, createAuthorizationPersona("normal", { id: normal.id }).ctx)
 
   beforeEach(() => {
-    authorizationTestDb.reset({
-      user: [sysadmin, bandAdmin, normal, otherUser],
-      role: [ordinaryRole, protectedRole],
-      permission: [ordinaryPermission, ...protectedPermissions],
-      rolePermission: [ordinaryRolePermission, protectedRolePermission],
-      instrument: [instrument],
-      userInstrument: [],
-      change: [],
-    })
     vi.restoreAllMocks()
+    resetAuthorizationDatabase({ user: [normal, otherUser], bandInstrument: [instrument],
+      bandInstrumentFunctionalGroup: [{ id: 1, bandId: 1, publicId: "AssocGroup000001", isHidden: false, globalFunctionalGroupId: null }],
+      bandUserInstrument: [], change: [] })
   })
 
-  it("rejects an association-only update outside the caller's row scope", async () => {
-    const associationDelegate = authorizationTestDb.getDelegate("userInstrument")
-    const findMany = vi.spyOn(associationDelegate, "findMany")
-    const create = vi.spyOn(associationDelegate, "create")
-    const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
-
-    await expect(
-      invokeResolver(
-        db3Mutation,
-        forgeDb3Update("User", otherUser.id, {
-          instruments: [instrument.publicId],
-        }),
-        ctx,
-      ),
-    ).rejects.toThrow("Not authorized to mutate User fields: instruments")
-
-    expect(findMany).not.toHaveBeenCalled()
+  it("rejects an association-only update outside the caller's membership", async () => {
+    const create = vi.spyOn(authorizationTestDb.getDelegate("bandUserInstrument"), "create")
+    await expect(replace(otherUser.id, [instrument.publicId])).rejects.toThrow()
     expect(create).not.toHaveBeenCalled()
-    expect(authorizationTestDb.snapshot("userInstrument")).toEqual([])
+    expect(authorizationTestDb.snapshot("bandUserInstrument")).toEqual([])
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
   it("awaits authorized association insertions and removals", async () => {
-    const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
-
-    await invokeResolver(
-      db3Mutation,
-      forgeDb3Update("User", normal.id, {
-        instruments: [instrument.publicId],
-      }),
-      ctx,
-    )
-    expect(authorizationTestDb.snapshot("userInstrument")).toEqual([
-      expect.objectContaining({ userId: normal.id, instrumentId: 500 }),
+    await replace(normal.id, [instrument.publicId])
+    expect(authorizationTestDb.snapshot("bandUserInstrument")).toEqual([
+      expect.objectContaining({ bandUserId: normal.id, bandInstrumentId: instrument.id }),
     ])
-
-    await invokeResolver(
-      db3Mutation,
-      forgeDb3Update("User", normal.id, {
-        instruments: [],
-      }),
-      ctx,
-    )
-    expect(authorizationTestDb.snapshot("userInstrument")).toEqual([])
-    expect(authorizationTestDb.snapshot("change")).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ table: "UserInstrument", action: "insert" }),
-        expect.objectContaining({ table: "UserInstrument", action: "delete" }),
-      ]),
-    )
+    await replace(normal.id, [])
+    expect(authorizationTestDb.snapshot("bandUserInstrument")).toEqual([])
+    expect(authorizationTestDb.snapshot("change")).toEqual(expect.arrayContaining([
+      expect.objectContaining({ table: db3.xBandUserInstrument.tableName, action: "insert" }),
+      expect.objectContaining({ table: db3.xBandUserInstrument.tableName, action: "delete" }),
+    ]))
   })
 
-  it("authorizes and awaits associations supplied during an actual-Sysadmin insert", async () => {
-    const { ctx } = createAuthorizationPersona("sysadmin", { id: 20 })
-    const sysadminUser = createAuthorizationTestUser("sysadmin", { id: 20 })
-    authorizationTestDb.reset({
-      user: [sysadminUser],
-      instrument: [instrument],
-      userInstrument: [],
-      change: [],
-    })
-
-    const result = await invokeResolver(
-      db3Mutation,
-      forgeDb3Insert("User", {
-        name: "User with instrument",
-        email: "instrument@test.invalid",
-        instruments: [instrument.publicId],
-      }),
-      ctx,
-    ) as { publicId: string } // The client result exposes the new public identity.
-
-    expect(result).toEqual(expect.objectContaining({ publicId: expect.any(String) }))
-    const insertedUser = authorizationTestDb.snapshot("user").find(user => user.publicId === result.publicId)
-    expect(authorizationTestDb.snapshot("userInstrument")).toEqual([
-      expect.objectContaining({ userId: insertedUser?.id, instrumentId: 500 }),
-    ])
+  it("rejects person-level assignments on account creation without creating a membership", async () => {
+    const sysadmin = createAuthorizationTestUser("sysadmin", { id: 20 })
+    resetAuthorizationDatabase({ user: [sysadmin], change: [] })
+    const create = vi.spyOn(authorizationTestDb.getDelegate("user"), "create")
+    const before = authorizationTestDb.snapshot("bandUser")
+    await expect(invokeResolver(db3Mutation, forgeDb3Insert("PlatformUser", null, {
+      name: "Forged account", email: "instrument@test.invalid", instruments: [instrument.publicId],
+    }, { tableName: "User" }), createAuthorizationPersona("sysadmin", { id: sysadmin.id }).ctx)).rejects.toThrow("instruments")
+    expect(create).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("bandUser")).toEqual(before)
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 })
 
@@ -1825,7 +1698,7 @@ describe("BA-A005 delete authorization", () => {
   }
 
   beforeEach(() => {
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [
         sysadmin,
         bandAdmin,
@@ -1871,7 +1744,7 @@ describe("BA-A005 delete authorization", () => {
     const deleteMany = vi.spyOn(delegate, "deleteMany")
 
     await expect(
-      invokeResolver(db3Mutation, forgeDb3PublicDelete(tableName, publicId, deleteType, { tableName: table.tableName }), ctx),
+      invokeResolver(db3Mutation, forgeDb3PublicDelete(tableName, authorizationBandId, publicId, deleteType, { tableName: table.tableName }), ctx),
     ).rejects.toThrow(`Not authorized to mutate ${table.tableName} fields`)
 
     expect(update).not.toHaveBeenCalled()
@@ -1879,18 +1752,11 @@ describe("BA-A005 delete authorization", () => {
   })
 
   it("soft-deletes a soft-delete table for an authorized actor", async () => {
-    const { ctx } = createAuthorizationPersona("bandAdmin", {
-      id: eventAdmin.id,
-      permissions: [
-        Permission.login,
-        Permission.manage_events,
-        Permission.admin_events,
-      ],
-    })
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
 
     await invokeResolver(
       db3Mutation,
-      forgeDb3PublicDelete("EventType", eventType.publicId, "softWhenPossible"),
+      forgeDb3PublicDelete("EventType", null, eventType.publicId, "softWhenPossible"),
       ctx,
     )
 
@@ -1906,7 +1772,7 @@ describe("BA-A005 delete authorization", () => {
     const deleteMany = vi.spyOn(delegate, "deleteMany")
 
     await expect(
-      invokeResolver(db3Mutation, forgeDb3PublicDelete("EventType", eventType.publicId, "hard"), ctx),
+      invokeResolver(db3Mutation, forgeDb3PublicDelete("EventType", authorizationBandId, eventType.publicId, "hard"), ctx),
     ).rejects.toThrow("Not authorized to mutate EventType fields")
 
     expect(update).not.toHaveBeenCalled()
@@ -1914,81 +1780,47 @@ describe("BA-A005 delete authorization", () => {
     expect(authorizationTestDb.snapshot("eventType")).toEqual([eventType])
   })
 
-  it("hard-deletes an allowlisted domain table for an authorized actor", async () => {
-    const { ctx } = createAuthorizationPersona("bandAdmin", {
-      id: eventAdmin.id,
-      permissions: [
-        Permission.login,
-        Permission.manage_events,
-        Permission.admin_events,
-      ],
-    })
-
-    await invokeResolver(
-      db3Mutation,
-      forgeDb3PublicDelete("EventTag", eventTag.publicId, "softWhenPossible"),
-      ctx,
-    )
-
-    expect(authorizationTestDb.snapshot("eventTag")).toEqual([])
-    expect(authorizationTestDb.snapshot("change")).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ table: "EventTag", recordId: eventTag.id, action: "delete" }),
-      ]),
-    )
+  it("hard-deletes an allowlisted band domain table for an authorized actor", async () => {
+    const manager = createAuthorizationTestUser("normal", { id: 40, permissions: [Permission.login, Permission.view_custom_links, Permission.manage_custom_links] })
+    const link = { id: 100, publicId: "AuthDeleteLink01", bandId: 1, fileId: null, name: "Delete link",
+      description: "", slug: "delete", destinationURL: "https://example.test", redirectType: "Temporary",
+      intermediateMessage: null, forwardQuery: false, createdByUserId: manager.id }
+    resetAuthorizationDatabase({ user: [manager], customLink: [link], change: [] })
+    await invokeResolver(db3Mutation, forgeDb3PublicDelete("CustomLink", authorizationBandId, link.publicId, "hard"),
+      createAuthorizationPersona("normal", { id: manager.id, permissions: manager.permissions }).ctx)
+    expect(authorizationTestDb.snapshot("customLink")).toEqual([])
+    expect(authorizationTestDb.snapshot("change")).toContainEqual(expect.objectContaining({ table: "CustomLink", recordId: link.id, action: "delete" }))
   })
 
-  it("authorizes a hard delete against the persisted target row", async () => {
+  it("authorizes association removal against the persisted membership", async () => {
     const normal = createAuthorizationTestUser("normal", { id: 20 })
     const otherUser = createAuthorizationTestUser("normal", { id: 21 })
-    const ownInstrument = { id: 300, publicId: "AuthUsrInstr0001", userId: normal.id, instrumentId: 500 }
-    const otherInstrument = { id: 301, publicId: "AuthUsrInstr0002", userId: otherUser.id, instrumentId: 500 }
-    authorizationTestDb.reset({
-      user: [normal, otherUser],
-      userInstrument: [ownInstrument, otherInstrument],
-      change: [],
-    })
-    const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
-
-    await expect(
-      invokeResolver(
-        db3Mutation,
-        forgeDb3PublicDelete("UserInstrument", otherInstrument.publicId, "hard"),
-        ctx,
-      ),
-    ).rejects.toThrow("Not authorized to mutate UserInstrument fields")
-    expect(authorizationTestDb.snapshot("userInstrument")).toEqual([
-      ownInstrument,
-      otherInstrument,
-    ])
-
-    await invokeResolver(
-      db3Mutation,
-      forgeDb3PublicDelete("UserInstrument", ownInstrument.publicId, "hard"),
-      ctx,
-    )
-    expect(authorizationTestDb.snapshot("userInstrument")).toEqual([otherInstrument])
+    const own = { id: 300, publicId: "AuthUsrInstr0001", bandUserId: normal.id, bandInstrumentId: 500, isPrimary: true }
+    const other = { id: 301, publicId: "AuthUsrInstr0002", bandUserId: otherUser.id, bandInstrumentId: 500, isPrimary: true }
+    resetAuthorizationDatabase({ user: [normal, otherUser], bandUserInstrument: [own, other],
+      bandInstrument: [{ id: 500, publicId: "DeleteInstr00001", bandId: 1, isHidden: false, globalInstrumentId: null }], change: [] })
+    const remove = (id: number) => invokeResolver(executeCommand, {
+      bandPublicId: authorizationBandId, commandID: db3.bandUserInstrumentsCommand.commandID,
+      payload: { kind: "replace", membershipId: "Member" + String(id).padStart(10, "0"), instrumentIds: [] },
+    }, createAuthorizationPersona("normal", { id: normal.id }).ctx)
+    await expect(remove(otherUser.id)).rejects.toThrow()
+    expect(authorizationTestDb.snapshot("bandUserInstrument")).toEqual([own, other])
+    await remove(normal.id)
+    expect(authorizationTestDb.snapshot("bandUserInstrument")).toEqual([other])
   })
 
-  it("lets Band Admin deactivate an ordinary user", async () => {
-    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
-
-    await invokeResolver(deactivateUser, {
-      userId: ordinaryUser.publicId,
-      acknowledgeContinuityRisk: false,
-    }, ctx)
-
-    expect(authorizationTestDb.snapshot("user")).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: ordinaryUser.id, isDeleted: true }),
-      ]),
-    )
-  })
+  it("denies Band Admin shared-account deactivation", async () => {
+        const before = authorizationTestDb.snapshot("user")
+        await expect(invokeResolver(deactivateUser, { userId: ordinaryUser.publicId, acknowledgeContinuityRisk: false },
+          createAuthorizationPersona("bandAdmin", { id: bandAdmin.id }).ctx)).rejects.toThrow("manage_global_users")
+        expect(authorizationTestDb.snapshot("user")).toEqual(before)
+        expect(authorizationTestDb.snapshot("change")).toEqual([])
+      })
 
   it.each([
     ["a user in a protected role", protectedRoleUser],
     ["a user with the isSysAdmin flag", isSysAdminUser],
-  ])("lets Band Admin deactivate %s when granted deactivate_users", async (_description, target) => {
+  ])("denies Band Admin shared-account deactivation of %s", async (_description, target) => {
     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
 
@@ -1998,84 +1830,49 @@ describe("BA-A005 delete authorization", () => {
         { userId: target.publicId, acknowledgeContinuityRisk: false },
         ctx,
       ),
-    ).resolves.toEqual(expect.objectContaining({ userId: target.publicId }))
+    ).rejects.toThrow("manage_global_users")
 
-    expect(update).toHaveBeenCalledTimes(1)
+    expect(update).not.toHaveBeenCalled()
     expect(authorizationTestDb.snapshot("user")).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: target.id, isDeleted: true }),
+        expect.objectContaining({ id: target.id, isDeleted: false }),
       ]),
     )
   })
 
-  it("keeps user hard deletion out of the generic endpoint", async () => {
-    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-    const deleteMany = vi.spyOn(authorizationTestDb.getDelegate("user"), "deleteMany")
-
-    await expect(
-      invokeResolver(db3Mutation, forgeDb3Delete("User", ordinaryUser.id, "hard"), ctx),
-    ).rejects.toThrow("Not authorized to mutate User fields")
-
-    expect(deleteMany).not.toHaveBeenCalled()
+  it("keeps shared-account hard deletion out of the generic endpoint", async () => {
+    const before = authorizationTestDb.snapshot("user")
+    const remove = vi.spyOn(authorizationTestDb.getDelegate("user"), "deleteMany")
+    await expect(invokeResolver(db3Mutation,
+      forgeDb3PublicDelete("PlatformUser", null, ordinaryUser.publicId, "hard", { tableName: "User" }),
+      createAuthorizationPersona("sysadmin", { id: sysadmin.id }).ctx,
+    )).rejects.toThrow("Not authorized to mutate User fields")
+    expect(remove).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("user")).toEqual(before)
   })
 
-  it("cannot trigger Role or Permission cascade and SetNull effects through generic delete", async () => {
-    const role = {
-      id: 200,
-      publicId: parsePublicId<"Role">("AuthDeleteRole20"),
-      name: "Protected role",
-      description: "",
-      isRoleForNewUsers: false,
-      isPublicRole: false,
-      sortOrder: 0,
-      color: null,
-      significance: null,
+  it("cannot trigger GlobalRole or Permission cascades through generic deletion", async () => {
+    const assigned = createAuthorizationTestUser("normal", { id: 203 })
+    resetAuthorizationDatabase({ user: [sysadmin, assigned], event: [{ id: 204, bandId: 1,
+      visiblePermissionId: authorizationPermissionId(Permission.visibility_public) }], change: [] })
+    const role = { id: 200, publicId: "AuthDeleteRole20", isDeleted: false, isSysAdminRole: false }
+    await authorizationTestDb.getDelegate("globalRole").create({ data: role })
+    await authorizationTestDb.getDelegate("user").update({ where: { id: assigned.id }, data: { globalRoleId: role.id } })
+    await authorizationTestDb.getDelegate("globalRolePermission").create({ data: {
+      id: 202, globalRoleId: role.id, permissionId: authorizationPermissionId(Permission.visibility_public) } })
+    const tables = ["globalRole", "globalRolePermission", "permission", "user", "event"]
+    const before = tables.map(table => authorizationTestDb.snapshot(table))
+    const permission = authorizationTestDb.snapshot("permission").find(row => row.name === Permission.visibility_public)
+    if (typeof permission?.publicId !== "string") {
+      throw new Error("Missing public visibility fixture")
     }
-    const permission = {
-      id: 201,
-      publicId: parsePublicId<"Permission">("AuthDeletePerm20"),
-      name: Permission.sysadmin,
-      description: "",
-      isVisibility: false,
-      sortOrder: 0,
-      significance: null,
-      color: null,
-      iconName: null,
-    }
-    const rolePermission = {
-      id: 202,
-      publicId: parsePublicId<"RolePermission">("AuthDeleteRP0202"),
-      roleId: role.id,
-      permissionId: permission.id,
-    }
-    const assignedUser = { ...ordinaryUser, id: 203, roleId: role.id }
-    const visibilityConsumer = { id: 204, visiblePermissionId: permission.id }
-    authorizationTestDb.reset({
-      user: [sysadmin, assignedUser],
-      role: [role],
-      permission: [permission],
-      rolePermission: [rolePermission],
-      event: [visibilityConsumer],
-      change: [],
-    })
-    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-
-    await expect(
-      invokeResolver(db3Mutation, forgeDb3PublicDelete("Role", role.publicId, "hard"), ctx),
-    ).rejects.toThrow("Not authorized to mutate Role fields")
-    await expect(
-      invokeResolver(db3Mutation, forgeDb3PublicDelete("Permission", permission.publicId, "hard"), ctx),
-    ).rejects.toThrow("Not authorized to mutate Permission fields")
-
-    expect(authorizationTestDb.snapshot("role")).toEqual([role])
-    expect(authorizationTestDb.snapshot("permission")).toEqual([permission])
-    expect(authorizationTestDb.snapshot("rolePermission")).toEqual([rolePermission])
-    expect(authorizationTestDb.snapshot("user")).toEqual(
-      expect.arrayContaining([expect.objectContaining({ id: assignedUser.id, roleId: role.id })]),
-    )
-    expect(authorizationTestDb.snapshot("event")).toEqual([
-      expect.objectContaining({ id: visibilityConsumer.id, visiblePermissionId: permission.id }),
-    ])
+    const ctx = createAuthorizationPersona("sysadmin", { id: sysadmin.id }).ctx
+    await expect(invokeResolver(db3Mutation, forgeDb3PublicDelete("GlobalRole", null, role.publicId, "hard"), ctx))
+      .rejects.toThrow("unknown table ID 'GlobalRole'")
+    await expect(invokeResolver(db3Mutation, forgeDb3PublicDelete("Permission", null, permission.publicId, "hard"), ctx))
+      .rejects.toThrow("Not authorized to mutate Permission fields")
+    expect(tables.map(table => authorizationTestDb.snapshot(table))).toEqual(before)
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 })
 

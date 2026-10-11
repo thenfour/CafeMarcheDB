@@ -1,3 +1,4 @@
+import { authorizationBandId } from "./support/authorizationSeed";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("db", async () => {
@@ -82,7 +83,7 @@ describe("Setlist planning public identities", () => {
             payload: { name: "Encore", description: "", color: null },
         }, ctx));
         expect(created.identity).toMatch(/^[A-Za-z0-9_-]{16}$/);
-        const result = await invokeResolver(query, forgeDb3Query("SetlistPlanGroup", {
+        const result = await invokeResolver(query, forgeDb3Query("SetlistPlanGroup", authorizationBandId, {
             bandPublicId,
             table: { tableID: "SetlistPlanGroup", tableName: "SetlistPlanGroup", viewID: db3.setlistPlanGroupEditorView.viewID },
             filter: { items: [], publicIds: [created.identity] },
@@ -166,7 +167,7 @@ describe("Setlist planning public identities", () => {
         const plans = await invokeResolver(getSetlistPlans, { bandPublicId, userId: null }, ctx);
         expect(plans.find(plan => plan.publicId === planId(30))).toMatchObject({ createdByUserId: null });
         expect(JSON.stringify(plans)).not.toContain('"bandId"');
-        const result = await invokeResolver(query, forgeDb3Query("SetlistPlanGroup", {
+        const result = await invokeResolver(query, forgeDb3Query("SetlistPlanGroup", authorizationBandId, {
             bandPublicId,
             table: { tableID: "SetlistPlanGroup", tableName: "SetlistPlanGroup", viewID: db3.setlistPlanGroupEditorView.viewID },
             filter: { items: [], publicIds: [groupId(20)] },

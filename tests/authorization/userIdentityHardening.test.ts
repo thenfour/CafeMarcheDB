@@ -1,3 +1,4 @@
+import { resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("db", async () => {
@@ -15,7 +16,7 @@ import {
   createAuthorizationPersona,
   createAuthorizationTestUser,
 } from "./support/authorizationFixtures"
-import { forgeDb3Insert, forgeDb3Update } from "./support/db3RequestBuilders"
+import { forgeDb3Insert, forgeDb3Update, forgeDb3PublicUpdate } from "./support/db3RequestBuilders"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
 
@@ -34,7 +35,7 @@ describe("BA-U006 generic User identity boundaries", () => {
   }
 
   beforeEach(() => {
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [sysadmin, bandAdmin, target],
       change: [],
     })
@@ -47,7 +48,7 @@ describe("BA-U006 generic User identity boundaries", () => {
 
     await expect(invokeResolver(
       db3Mutation,
-      forgeDb3Insert("User", {
+      forgeDb3Insert("User", null, {
         name: "Forged account",
         email: "forged@test.invalid",
       }),
@@ -67,15 +68,15 @@ describe("BA-U006 generic User identity boundaries", () => {
     ["uid", "attacker-server-uid"],
     ["mergedIntoUserId", 1],
     ["mergedAt", new Date("2026-09-14T12:00:00Z")],
-  ])("rejects delegated generic writes to authentication field %s", async (field, value) => {
+  ])("denies another account's authentication field %s before resolving the account", async (field, value) => {
     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
 
     await expect(invokeResolver(
       db3Mutation,
-      forgeDb3Update("User", target.id, { [field]: value }),
+      forgeDb3Update("User", null, target.id, { [field]: value }),
       ctx,
-    )).rejects.toThrow(`Not authorized to mutate User fields: ${field}`)
+    )).rejects.toThrow("User was not found")
 
     expect(update).not.toHaveBeenCalled()
   })
@@ -94,12 +95,28 @@ describe("BA-U006 generic User identity boundaries", () => {
 
     await expect(invokeResolver(
       db3Mutation,
-      forgeDb3Update("User", target.id, { [field]: value }),
+      forgeDb3PublicUpdate("PlatformUser", null, target.publicId, { [field]: value }, { tableName: "User" }),
       ctx,
-    )).rejects.toThrow(`Not authorized to mutate User fields: ${field}`)
+    )).rejects.toThrow(field)
 
     expect(update).not.toHaveBeenCalled()
   })
+})
+
+describe("generic owner authentication boundaries", () => {
+  it.each(["email", "signInMethods", "hashedPassword", "calendarFeedToken", "accessToken", "uid", "mergedIntoUserId", "mergedAt"])(
+    "keeps authentication field %s out of the owner's generic update", async field => {
+      const owner = createAuthorizationTestUser("normal", { id: 20 })
+      resetAuthorizationDatabase({ user: [owner], change: [] })
+      const before = authorizationTestDb.snapshot("user")
+      await expect(invokeResolver(db3Mutation,
+        forgeDb3Update("User", null, owner.id, { [field]: field === "email" ? "forged@example.test" : "forged" }),
+        createAuthorizationPersona("normal", { id: owner.id }).ctx,
+      )).rejects.toThrow(field)
+      expect(authorizationTestDb.snapshot("user")).toEqual(before)
+      expect(authorizationTestDb.snapshot("change")).toEqual([])
+    },
+  )
 })
 
 describe("BA-U006 verified Google email", () => {

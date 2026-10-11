@@ -1,3 +1,4 @@
+import { authorizationBandId, resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("db", async () => {
@@ -20,7 +21,7 @@ import { invokeResolver } from "./support/resolverHarness";
 
 const eventAdmin = createAuthorizationTestUser("normal", {
     id: 810,
-    permissions: [Permission.login, Permission.admin_events],
+    permissions: [Permission.login, Permission.manage_global_catalogs],
 });
 const roleCarriedSysadmin = createAuthorizationTestUser("normal", {
     id: 811,
@@ -40,7 +41,7 @@ describe("backstage server page guard", () => {
     });
 
     beforeEach(() => {
-        authorizationTestDb.reset({
+        resetAuthorizationDatabase({
             user: [eventAdmin, roleCarriedSysadmin, actualSysadmin],
         });
     });
@@ -52,7 +53,7 @@ describe("backstage server page guard", () => {
         )).resolves.toBeUndefined();
 
         await expect(authorizePageRequest(
-            "/backstage/editSongTags",
+            "/backstage/roles",
             eventAdmin.id,
         )).rejects.toThrow();
     });
@@ -65,7 +66,7 @@ describe("backstage server page guard", () => {
     });
 
     it("revalidates permission state from the database", async () => {
-        authorizationTestDb.reset({
+        resetAuthorizationDatabase({
             user: [createAuthorizationTestUser("normal", {
                 id: eventAdmin.id,
                 permissions: [Permission.login],
@@ -102,7 +103,7 @@ describe("backstage server page guard", () => {
     });
 
     it("allows any signed-in user to access their profile", async () => {
-        authorizationTestDb.reset({
+        resetAuthorizationDatabase({
             user: [createAuthorizationTestUser("normal", {
                 id: eventAdmin.id,
                 permissions: [Permission.login],
@@ -131,6 +132,9 @@ describe("backstage server page guard", () => {
     it("loads an Instrument page by public ID and rejects numeric route identity", async () => {
         const instrument = {
             id: 42,
+            bandId: 1,
+            isHidden: false,
+            globalInstrumentId: null,
             publicId: "AbCdEfGhIjKlMn42",
             name: "trumpet",
             description: "",
@@ -138,8 +142,11 @@ describe("backstage server page guard", () => {
             functionalGroupId: 7,
             autoAssignFileLeafRegex: null,
         };
-        const instrumentDelegate = authorizationTestDb.getDelegate("instrument");
+        const instrumentDelegate = authorizationTestDb.getDelegate("bandInstrument");
         instrumentDelegate.reset([instrument]);
+        authorizationTestDb.getDelegate("bandInstrumentFunctionalGroup").reset([
+            { id: 7, bandId: 1, publicId: "GuardGroup000001", isHidden: false, globalFunctionalGroupId: null },
+        ]);
         const load = vi.fn(where => instrumentDelegate.findFirst({ where }));
         const ctx = createAuthorizationTestContext(eventAdmin);
 
@@ -147,14 +154,16 @@ describe("backstage server page guard", () => {
             ctx,
             permission: Permission.login,
             table: xInstrument,
+            bandPublicId: authorizationBandId,
             identity: instrument.publicId,
             load,
-        })).resolves.toEqual(instrument);
+        })).resolves.toMatchObject(instrument);
 
         await expect(loadAuthorizedPageEntity({
             ctx,
             permission: Permission.login,
             table: xInstrument,
+            bandPublicId: authorizationBandId,
             identity: instrument.id,
             load,
         })).rejects.toThrow();//.resolves.toBeNull();

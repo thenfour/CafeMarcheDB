@@ -1,3 +1,5 @@
+import { authorizationPermissionId } from "./support/authorizationFixtures";
+import { authorizationBandId, resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { testBandAuthorization } from "tests/support/serverAuthorization";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -138,28 +140,26 @@ describe("BA-S005 server-rendered entity metadata", () => {
         Permission.visibility_members,
     ];
     const actor = createAuthorizationTestUser("normal", { id: 100, permissions });
-    const membersVisibilityId = actor.role!.permissions.find(
-        entry => entry.permission.name === Permission.visibility_members,
-    )!.permissionId;
+    const membersVisibilityId = authorizationPermissionId(Permission.visibility_members);
 
     const cases = [
         {
             delegate: "event",
             permission: Permission.view_events_nonpublic,
             table: db3.xEvent,
-            row: { id: 1, publicId: eventPublicId(1), name: "Private event", isDeleted: false, createdByUserId: null, visiblePermissionId: membersVisibilityId },
+            row: { bandId: 1, id: 1, publicId: eventPublicId(1), name: "Private event", isDeleted: false, createdByUserId: null, visiblePermissionId: membersVisibilityId },
         },
         {
             delegate: "file",
             permission: Permission.access_file_landing_page,
             table: db3.xFile,
-            row: { id: 2, publicId: filePublicId(2), fileLeafName: "private.pdf", isDeleted: false, uploadedByUserId: null, visiblePermissionId: membersVisibilityId },
+            row: { bandId: 1, id: 2, publicId: filePublicId(2), fileLeafName: "private.pdf", isDeleted: false, uploadedByUserId: null, visiblePermissionId: membersVisibilityId },
         },
         {
             delegate: "song",
             permission: Permission.view_songs,
             table: db3.xSong,
-            row: { id: 3, publicId: songPublicId(3), name: "Private song", isDeleted: false, createdByUserId: null, visiblePermissionId: membersVisibilityId },
+            row: { bandId: 1, id: 3, publicId: songPublicId(3), name: "Private song", isDeleted: false, createdByUserId: null, visiblePermissionId: membersVisibilityId },
         },
         {
             delegate: "user",
@@ -171,7 +171,7 @@ describe("BA-S005 server-rendered entity metadata", () => {
 
     beforeEach(() => {
         vi.restoreAllMocks();
-        authorizationTestDb.reset({ user: [actor] });
+        resetAuthorizationDatabase({ user: [actor, createAuthorizationTestUser("normal", { id: 4 })] });
     });
 
     it.each(cases)("applies the $delegate DB3 row policy before loading its title", async testCase => {
@@ -181,6 +181,7 @@ describe("BA-S005 server-rendered entity metadata", () => {
         const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions });
 
         const result = await loadAuthorizedPageEntity({
+            bandPublicId: authorizationBandId,
             ctx,
             permission: testCase.permission,
             table: testCase.table,
@@ -206,10 +207,10 @@ describe("BA-S005 server-rendered entity metadata", () => {
             load,
         };
 
-        songDelegate.reset([{ id: 3, publicId: songPublicId(3), name: "Hidden", isDeleted: false, createdByUserId: null, visiblePermissionId: 999_999 }]);
+        songDelegate.reset([{ bandId: 1, id: 3, publicId: songPublicId(3), name: "Hidden", isDeleted: false, createdByUserId: null, visiblePermissionId: 999_999 }]);
         await expect(loadAuthorizedPageEntity(baseArgs)).resolves.toBeNull();
 
-        songDelegate.reset([{ id: 3, publicId: songPublicId(3), name: "Deleted", isDeleted: true, createdByUserId: null, visiblePermissionId: membersVisibilityId }]);
+        songDelegate.reset([{ bandId: 1, id: 3, publicId: songPublicId(3), name: "Deleted", isDeleted: true, createdByUserId: null, visiblePermissionId: membersVisibilityId }]);
         await expect(loadAuthorizedPageEntity(baseArgs)).resolves.toBeNull();
 
         songDelegate.reset([]);
@@ -221,7 +222,7 @@ describe("BA-S005 server-rendered entity metadata", () => {
             id: actor.id,
             permissions: [Permission.login],
         });
-        authorizationTestDb.reset({ user: [databaseActor] });
+        resetAuthorizationDatabase({ user: [databaseActor] });
         const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions });
         const songLookup = vi.spyOn(authorizationTestDb.getDelegate("song"), "findFirst");
 
@@ -242,12 +243,12 @@ describe("BA-S005 telemetry identity and diagnostic route grants", () => {
 
     beforeEach(() => {
         vi.restoreAllMocks();
-        authorizationTestDb.reset({ action: [] });
+        resetAuthorizationDatabase({ action: [] });
     });
 
     it("replaces a client-supplied telemetry identity with the fresh authenticated actor", async () => {
         const actor = createAuthorizationTestUser("normal", { id: 300 });
-        authorizationTestDb.reset({ user: [{ ...actor, mergedIntoUserId: null, globalRoleId: null }], action: [] });
+        resetAuthorizationDatabase({ user: [{ ...actor, mergedIntoUserId: null, globalRoleId: null }], action: [] });
         const { ctx } = createAuthorizationPersona("normal", { id: actor.id });
 
         await recordAuthenticatedClientAction({ event: {
@@ -274,7 +275,7 @@ describe("BA-S005 telemetry identity and diagnostic route grants", () => {
 
     it("resolves a public SongCreditType telemetry identity before persistence", async () => {
         const actor = createAuthorizationTestUser("normal", { id: 301 });
-        authorizationTestDb.reset({
+        resetAuthorizationDatabase({
             user: [{ ...actor, mergedIntoUserId: null, globalRoleId: null }],
             songCreditType: [{
                 id: 41,
@@ -301,12 +302,12 @@ describe("BA-S005 telemetry identity and diagnostic route grants", () => {
 
     it("uses the fresh database actor for server-side page grants", async () => {
         const sysadmin = createAuthorizationTestUser("sysadmin", { id: 400 });
-        authorizationTestDb.reset({ user: [sysadmin] });
+        resetAuthorizationDatabase({ user: [sysadmin] });
         const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id });
         await expect(isAuthorizedForServerPage(ctx, Permission.sysadmin)).resolves.toBe(true);
 
         const revokedActor = createAuthorizationTestUser("normal", { id: sysadmin.id });
-        authorizationTestDb.reset({ user: [revokedActor] });
+        resetAuthorizationDatabase({ user: [revokedActor] });
         // A new request still carries the old session grants, but reloads the actor.
         const { ctx: nextRequest } = createAuthorizationPersona("sysadmin", { id: sysadmin.id });
         await expect(isAuthorizedForServerPage(nextRequest, Permission.sysadmin)).resolves.toBe(false);

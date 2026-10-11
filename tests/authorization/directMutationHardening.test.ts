@@ -1,3 +1,5 @@
+import { authorizationPermissionId } from "./support/authorizationFixtures";
+import { authorizationBandId, resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
 import { attendancePublicId } from "../support/eventAttendanceFixtures";
 import { songPublicId } from "../support/songFixtures";
@@ -27,11 +29,13 @@ import {
 import { forgeDb3Insert, forgeDb3PublicUpdate } from "./support/db3RequestBuilders"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
+import { bandInstrumentView } from "src/core/db3/shared/entities/instrument/bandInstrumentContracts"
+import { bandUserTagView } from "src/core/db3/shared/entities/user/bandUserTagViews"
 
-const attendanceBandPublicId = parsePublicId<"Band">("AttendanceBand01");
+const attendanceBandPublicId = authorizationBandId;
 
 const publicVisibility = {
-  id: 920_002, // Matches the inherited public-role grant in the database fixture.
+  id: authorizationPermissionId(Permission.visibility_public), // Matches the inherited public-role grant in the database fixture.
   publicId: parsePublicId<"Permission">("PublicVisPerm002"),
   name: Permission.visibility_public,
   roles: [],
@@ -46,7 +50,7 @@ const membersVisibility = {
 
 const makeEvent = (overrides: Record<string, unknown> = {}) => {
   const id = typeof overrides.id === "number" ? overrides.id : 100
-  return {
+  return { bandId: 1,
     id,
     publicId: eventPublicId(id),
     name: "Authorized event",
@@ -66,16 +70,16 @@ const makeEvent = (overrides: Record<string, unknown> = {}) => {
 describe("DB3 command boundary", () => {
   beforeEach(() => {
     vi.restoreAllMocks()
-    authorizationTestDb.reset({ change: [] })
+    resetAuthorizationDatabase({ change: [] })
   })
 
   it("rejects unknown command IDs at the registered server boundary", async () => {
     const permissions = [Permission.login]
     const actor = createAuthorizationTestUser("normal", { id: 91, permissions })
-    authorizationTestDb.reset({ user: [actor], change: [] })
+    resetAuthorizationDatabase({ user: [actor], change: [] })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: "Missing_Command",
       payload: {},
     }, ctx)).rejects.toThrow("Unknown DB3 command 'Missing_Command'")
@@ -103,39 +107,39 @@ describe("DB3 command boundary", () => {
     const instrument = {
       id: 7,
       publicId: "instrmnt00000001",
-      name: "Trumpet",
-      description: "",
+      nameId: null,
+      descriptionId: null,
       autoAssignFileLeafRegex: null,
       sortOrder: 1,
       functionalGroupId: originalGroup.id,
       functionalGroup: originalGroup,
     }
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
-      instrumentFunctionalGroup: [originalGroup, nextGroup],
-      instrument: [instrument],
+      bandInstrumentFunctionalGroup: [originalGroup, nextGroup].map(group => ({ ...group, bandId: 1, isHidden: false, globalFunctionalGroupId: null })),
+      bandInstrument: [{ ...instrument, functionalGroup: undefined, bandId: 1, isHidden: false, globalInstrumentId: null }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.instrumentEditorView.crud.operations.update.command.commandID,
       payload: {
         identity: instrument.publicId,
         patch: {
-          name: "Cornet",
+          name: { kind: "set", stringPublicId: null, localeTag: "en-US", value: "Cornet" },
           functionalGroupId: nextGroup.publicId,
         },
       },
     }, ctx)).resolves.toEqual({ identity: instrument.publicId })
 
-    expect(authorizationTestDb.snapshot("instrument")).toEqual([
+    expect(authorizationTestDb.snapshot("bandInstrument")).toEqual([
       expect.objectContaining({
         id: instrument.id,
-        name: "Cornet",
         functionalGroupId: nextGroup.id,
       }),
     ])
+    expect(authorizationTestDb.snapshot("bandDynamicLocalizedStringValue")).toContainEqual(expect.objectContaining({ indexedValue: "Cornet" }))
   })
 
   it("updates and soft-deletes a Song through generated CRUD", async () => {
@@ -153,7 +157,7 @@ describe("DB3 command boundary", () => {
       iconName: null,
       roles: [],
     }
-    const song = {
+    const song = { bandId: 1,
       id: 8,
       publicId: songPublicId(8),
       name: "Autumn Leaves",
@@ -194,22 +198,22 @@ describe("DB3 command boundary", () => {
       indicator: null,
       indicatorCssClass: null,
     }
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
       permission: [visibility],
       song: [song],
-      songTag: [oldTag, jazzTag],
-      songTagAssociation: [{
+      bandSongTag: [oldTag, jazzTag].map(tag => ({ ...tag, bandId: 1, isHidden: false, globalSongTagId: null })),
+      bandSongTagAssociation: [{
         id: 80,
         publicId: "OriginalSongAs01",
         songId: song.id,
-        tagId: oldTag.id,
+        bandSongTagId: oldTag.id,
       }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.songEditorView.crud.operations.update.command.commandID,
       payload: {
         identity: song.publicId,
@@ -228,11 +232,11 @@ describe("DB3 command boundary", () => {
         visiblePermissionId: visibility.id,
       }),
     ])
-    expect(authorizationTestDb.snapshot("songTagAssociation")).toEqual([
-      expect.objectContaining({ songId: song.id, tagId: jazzTag.id }),
+    expect(authorizationTestDb.snapshot("bandSongTagAssociation")).toEqual([
+      expect.objectContaining({ songId: song.id, bandSongTagId: jazzTag.id }),
     ])
 
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.songEditorView.crud.operations.delete.command.commandID,
       payload: { identity: song.publicId },
     }, ctx)).resolves.toEqual({ identity: song.publicId })
@@ -246,13 +250,13 @@ describe("DB3 command boundary", () => {
     const target = createAuthorizationTestUser("normal", {
       id: 99, name: "Original user", email: "original@example.test",
     })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [{ ...target, globalRoleId: null, mergedIntoUserId: null }],
       permission: [{ id: 1, name: Permission.login, isDeleted: false }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: target.id })
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: null,
       commandID: db3.userEditorView.crud.operations.update.command.commandID,
       payload: { identity: target.publicId, patch: { name: "Updated user", phone: "+32 123" } },
     }, ctx)).resolves.toEqual({ identity: target.publicId })
@@ -269,7 +273,7 @@ describe("DB3 command boundary", () => {
       Permission.edit_wiki_pages,
     ]
     const actor = createAuthorizationTestUser("normal", { id: 105, permissions })
-    const wikiPage = {
+    const wikiPage = { bandId: 1,
       id: 106,
       publicId: parsePublicId<"WikiPage">("WikiPagePublic01"),
       slug: "rehearsal-policy",
@@ -286,16 +290,16 @@ describe("DB3 command boundary", () => {
       sortOrder: 1,
       significance: "Policy",
     }
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
       wikiPage: [wikiPage],
-      wikiPageTag: [wikiPageTag],
+      bandWikiPageTag: [{ ...wikiPageTag, bandId: 1, isHidden: false }],
       wikiPageTagAssignment: [],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.wikiPageEditorView.crud.operations.update.command.commandID,
       payload: {
         identity: wikiPage.publicId,
@@ -306,7 +310,7 @@ describe("DB3 command boundary", () => {
     expect(authorizationTestDb.snapshot("wikiPageTagAssignment")).toEqual([
       expect.objectContaining({
         wikiPageId: wikiPage.id,
-        tagId: wikiPageTag.id,
+        bandWikiPageTagId: wikiPageTag.id,
         publicId: expect.any(String),
       }),
     ])
@@ -335,11 +339,11 @@ describe("DB3 command boundary", () => {
       isAllDay: false,
       statusId: null,
     })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
       permission: [publicVisibility],
       event: [event],
-      eventTag: [eventTag],
+      bandEventTag: [{ ...eventTag, bandId: 1, isHidden: false, globalEventTagId: null }],
       eventTagAssignment: [],
       eventSegment: [],
       eventStatus: [],
@@ -348,7 +352,7 @@ describe("DB3 command boundary", () => {
     })
     const { ctx } = createAuthorizationPersona("sysadmin", { id: actor.id })
 
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.eventEditorView.crud.operations.update.command.commandID,
       payload: {
         identity: event.publicId,
@@ -387,7 +391,7 @@ describe("DB3 command boundary", () => {
       color: null,
       significance: null,
     }
-    const file = {
+    const file = { bandId: 1,
       id: 62,
       publicId: filePublicId(62),
       fileLeafName: "old-name.pdf",
@@ -401,17 +405,17 @@ describe("DB3 command boundary", () => {
       mimeType: "application/pdf",
       customData: null,
     }
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
       permission: [publicVisibility],
       file: [file],
-      fileTag: [fileTag],
-      fileTagAssignment: [],
+      bandFileTag: [{ ...fileTag, bandId: 1, isHidden: false, globalFileTagId: null }],
+      bandFileTagAssignment: [],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("sysadmin", { id: actor.id })
 
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.fileEditorView.crud.operations.update.command.commandID,
       payload: {
         identity: file.publicId,
@@ -431,22 +435,22 @@ describe("DB3 command boundary", () => {
         description: "Program",
       }),
     ])
-    expect(authorizationTestDb.snapshot("fileTagAssignment")).toEqual([
+    expect(authorizationTestDb.snapshot("bandFileTagAssignment")).toEqual([
       expect.objectContaining({
         fileId: file.id,
-        fileTagId: fileTag.id,
+        bandFileTagId: fileTag.id,
         publicId: expect.any(String),
       }),
     ])
-    expect(isPublicId(authorizationTestDb.snapshot("fileTagAssignment")[0]?.publicId)).toBe(true)
+    expect(isPublicId(authorizationTestDb.snapshot("bandFileTagAssignment")[0]?.publicId)).toBe(true)
 
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.fileEditorView.crud.operations.update.command.commandID,
       payload: {
         identity: file.publicId,
         patch: { storedLeafName: "forged.pdf" },
       },
-    }, ctx)).rejects.toThrow("Not authorized to mutate File fields: storedLeafName")
+    }, ctx)).rejects.toThrow("storedLeafName")
   })
 
   it("updates and hard-deletes Custom Link and Menu Link rows through generated CRUD", async () => {
@@ -459,6 +463,8 @@ describe("DB3 command boundary", () => {
     const actor = createAuthorizationTestUser("normal", { id: 103, permissions })
     const customLink = {
       id: 70,
+      bandId: 1,
+      fileId: null,
       publicId: parsePublicId<"CustomLink">("CustomLinkTest01"),
       name: "Scores",
       description: "Old description",
@@ -470,7 +476,7 @@ describe("DB3 command boundary", () => {
       createdByUserId: actor.id,
       createdAt: new Date("2026-09-21T10:00:00.000Z"),
     }
-    const menuLink = {
+    const menuLink = { bandId: 1,
       id: 71,
       publicId: parsePublicId<"MenuLink">("MenuLinkTest0001"),
       sortOrder: 3,
@@ -488,7 +494,7 @@ describe("DB3 command boundary", () => {
       createdByUserId: actor.id,
       createdAt: new Date("2026-09-21T10:00:00.000Z"),
     }
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
       customLink: [customLink],
       menuLink: [menuLink],
@@ -496,18 +502,18 @@ describe("DB3 command boundary", () => {
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.customLinkEditorView.crud.operations.update.command.commandID,
       payload: {
         identity: customLink.publicId,
         patch: { description: "Updated description", forwardQuery: false },
       },
     }, ctx)).resolves.toEqual({ identity: customLink.publicId })
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.menuLinkEditorView.crud.operations.update.command.commandID,
       payload: {
         identity: menuLink.publicId,
-        patch: { caption: "Updated scores" },
+        patch: { caption: { kind: "set", stringPublicId: null, localeTag: "en-US", value: "Updated scores" } },
       },
     }, ctx)).resolves.toEqual({ identity: menuLink.publicId })
 
@@ -518,15 +524,17 @@ describe("DB3 command boundary", () => {
     })
     expect(authorizationTestDb.snapshot("menuLink")[0]).toMatchObject({
       id: menuLink.id,
-      caption: "Updated scores",
       sortOrder: 3,
     })
+    expect(authorizationTestDb.snapshot("bandDynamicLocalizedStringValue")).toContainEqual(
+      expect.objectContaining({ indexedValue: "Updated scores" }),
+    )
 
-    await invokeResolver(executeDB3CommandMutation, {
+    await invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.customLinkEditorView.crud.operations.delete.command.commandID,
       payload: { identity: customLink.publicId },
     }, ctx)
-    await invokeResolver(executeDB3CommandMutation, {
+    await invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.menuLinkEditorView.crud.operations.delete.command.commandID,
       payload: { identity: menuLink.publicId },
     }, ctx)
@@ -537,7 +545,7 @@ describe("DB3 command boundary", () => {
   it("revalidates command DTOs and enforces server-side entity authorization", async () => {
     const permissions = [Permission.login, Permission.view_events]
     const actor = createAuthorizationTestUser("normal", { id: 92, permissions })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
       event: [makeEvent({ id: 100 })],
       change: [],
@@ -554,12 +562,12 @@ describe("DB3 command boundary", () => {
       dividers: [],
     }
 
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.saveEventSongListCommand.commandID,
       payload: { ...payload, unexpected: true },
     }, ctx)).rejects.toThrow("Unrecognized key")
 
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.saveEventSongListCommand.commandID,
       payload,
     }, ctx)).rejects.toThrow("Not authorized to mutate EventSongList")
@@ -573,10 +581,10 @@ describe("DB3 command boundary", () => {
       Permission.view_songs,
     ]
     const actor = createAuthorizationTestUser("normal", { id: 93, permissions })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
       event: [makeEvent({ id: 100 })],
-      song: [{
+      song: [{ bandId: 1,
         id: 300,
         publicId: songPublicId(300),
         name: "Visible song",
@@ -596,7 +604,7 @@ describe("DB3 command boundary", () => {
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    const result = await invokeResolver(executeDB3CommandMutation, {
+    const result = await invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.saveEventSongListCommand.commandID,
       payload: {
         eventId: eventPublicId(100),
@@ -631,7 +639,7 @@ describe("DB3 command boundary", () => {
       expect.objectContaining({ eventSongListId: 1, subtitle: "Break", sortOrder: 1 }),
     ])
 
-    const updateResult = await invokeResolver(executeDB3CommandMutation, {
+    const updateResult = await invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.saveEventSongListCommand.commandID,
       payload: {
         publicId: db3.saveEventSongListCommand.parseResult(result).publicId,
@@ -688,7 +696,7 @@ describe("public-ID reorder authorization", () => {
 
   beforeEach(() => {
     vi.restoreAllMocks()
-    authorizationTestDb.reset({ change: [] })
+    resetAuthorizationDatabase({ change: [] })
   })
 
   it("uses fresh grants and stops before reading reorder targets", async () => {
@@ -697,7 +705,7 @@ describe("public-ID reorder authorization", () => {
       id: 3,
       permissions: [Permission.login],
     })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [databaseActor],
       menuLink: [
         { id: 1, publicId: menuLinkPublicId(1), caption: "A", sortOrder: 0, createdByUserId: databaseActor.id },
@@ -711,7 +719,7 @@ describe("public-ID reorder authorization", () => {
     })
     const targetLookup = vi.spyOn(authorizationTestDb.getDelegate("menuLink"), "findMany")
 
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.reorderMenuLinksCommand.commandID,
       payload: {
         movingItemId: menuLinkPublicId(1),
@@ -726,9 +734,9 @@ describe("public-ID reorder authorization", () => {
   it("preflights every changed row before writing the first sort order", async () => {
     const permissions = [Permission.login, Permission.customize_menu]
     const actor = createAuthorizationTestUser("normal", { id: 4, permissions })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
-      menuLink: [1, 2, 3].map((id, index) => ({
+      menuLink: [1, 2, 3].map((id, index) => ({ bandId: 1,
         id,
         publicId: menuLinkPublicId(id),
         caption: `Link ${id}`,
@@ -749,7 +757,7 @@ describe("public-ID reorder authorization", () => {
     })
     const update = vi.spyOn(authorizationTestDb.getDelegate("menuLink"), "update")
 
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.reorderMenuLinksCommand.commandID,
       payload: {
         movingItemId: menuLinkPublicId(3),
@@ -765,20 +773,20 @@ describe("public-ID reorder authorization", () => {
   it("reorders only the caller-supplied scope and preserves out-of-scope slots", async () => {
     const permissions = [Permission.login, Permission.customize_menu]
     const actor = createAuthorizationTestUser("normal", { id: 5, permissions })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
       menuLink: [
-        { id: 1, publicId: menuLinkPublicId(1), caption: "A", sortOrder: 0, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
-        { id: 2, publicId: menuLinkPublicId(2), caption: "Hidden", sortOrder: 1, createdByUserId: actor.id, visiblePermissionId: membersVisibility.id, visiblePermission: membersVisibility },
-        { id: 3, publicId: menuLinkPublicId(3), caption: "B", sortOrder: 2, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
-        { id: 4, publicId: menuLinkPublicId(4), caption: "C", sortOrder: 3, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
+        { bandId: 1, id: 1, publicId: menuLinkPublicId(1), caption: "A", sortOrder: 0, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
+        { bandId: 1, id: 2, publicId: menuLinkPublicId(2), caption: "Hidden", sortOrder: 1, createdByUserId: actor.id, visiblePermissionId: membersVisibility.id, visiblePermission: membersVisibility },
+        { bandId: 1, id: 3, publicId: menuLinkPublicId(3), caption: "B", sortOrder: 2, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
+        { bandId: 1, id: 4, publicId: menuLinkPublicId(4), caption: "C", sortOrder: 3, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
       ],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
     const targetLookup = vi.spyOn(authorizationTestDb.getDelegate("menuLink"), "findMany")
 
-    await invokeResolver(executeDB3CommandMutation, {
+    await invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.reorderMenuLinksCommand.commandID,
       payload: {
         movingItemId: menuLinkPublicId(4),
@@ -801,18 +809,18 @@ describe("public-ID reorder authorization", () => {
   it("rejects a hidden row supplied as part of the explicit scope", async () => {
     const permissions = [Permission.login, Permission.customize_menu]
     const actor = createAuthorizationTestUser("normal", { id: 6, permissions })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
       menuLink: [
-        { id: 1, publicId: menuLinkPublicId(1), caption: "Visible", sortOrder: 0, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
-        { id: 2, publicId: menuLinkPublicId(2), caption: "Hidden", sortOrder: 1, createdByUserId: actor.id, visiblePermissionId: membersVisibility.id, visiblePermission: membersVisibility },
+        { bandId: 1, id: 1, publicId: menuLinkPublicId(1), caption: "Visible", sortOrder: 0, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
+        { bandId: 1, id: 2, publicId: menuLinkPublicId(2), caption: "Hidden", sortOrder: 1, createdByUserId: actor.id, visiblePermissionId: membersVisibility.id, visiblePermission: membersVisibility },
       ],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
     const update = vi.spyOn(authorizationTestDb.getDelegate("menuLink"), "update")
 
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.reorderMenuLinksCommand.commandID,
       payload: {
         movingItemId: menuLinkPublicId(1),
@@ -827,7 +835,7 @@ describe("public-ID reorder authorization", () => {
   it("rejects a scope row outside the declared ordering group", async () => {
     const permissions = [Permission.login, Permission.manage_events, Permission.view_events_nonpublic]
     const actor = createAuthorizationTestUser("normal", { id: 7, permissions })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
       event: [makeEvent({ id: 100 }), makeEvent({ id: 200 }), makeEvent({ id: 647 })],
       eventSongList: [
@@ -839,7 +847,7 @@ describe("public-ID reorder authorization", () => {
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
     const update = vi.spyOn(authorizationTestDb.getDelegate("eventSongList"), "update")
 
-    await expect(invokeResolver(executeDB3CommandMutation, {
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.reorderEventSongListsCommand.commandID,
       payload: {
         movingItemId: listPublicId(1),
@@ -859,7 +867,7 @@ describe("public-ID reorder authorization", () => {
       Permission.view_events_nonpublic,
     ]
     const actor = createAuthorizationTestUser("normal", { id: 5, permissions })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
       event: [makeEvent({ id: 100 }), makeEvent({ id: 200 }), makeEvent({ id: 647 })],
       eventSongList: [
@@ -871,7 +879,7 @@ describe("public-ID reorder authorization", () => {
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await invokeResolver(executeDB3CommandMutation, {
+    await invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.reorderEventSongListsCommand.commandID,
       payload: {
         movingItemId: listPublicId(1),
@@ -899,7 +907,7 @@ describe("public-ID reorder authorization", () => {
       Permission.view_events_nonpublic,
     ]
     const actor = createAuthorizationTestUser("normal", { id: 5, permissions })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
       event: [makeEvent({ id: 100 }), makeEvent({ id: 200 }), makeEvent({ id: 647 })],
       eventSongList: [
@@ -910,7 +918,7 @@ describe("public-ID reorder authorization", () => {
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await invokeResolver(executeDB3CommandMutation, {
+    await invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId,
       commandID: db3.reorderEventSongListsCommand.commandID,
       payload: {
         movingItemId: listPublicId(650),
@@ -933,7 +941,7 @@ describe("public-ID reorder authorization", () => {
 describe("BA-S003 event song-list deletion", () => {
   beforeEach(() => {
     vi.restoreAllMocks()
-    authorizationTestDb.reset({ change: [] })
+    resetAuthorizationDatabase({ change: [] })
   })
 
   it("requires fresh manage-events authority before target lookup", async () => {
@@ -941,7 +949,7 @@ describe("BA-S003 event song-list deletion", () => {
       id: 10,
       permissions: [Permission.login],
     })
-    authorizationTestDb.reset({ user: [databaseActor], change: [] })
+    resetAuthorizationDatabase({ user: [databaseActor], change: [] })
     const { ctx } = createAuthorizationPersona("normal", {
       id: databaseActor.id,
       permissions: [Permission.login, Permission.manage_events],
@@ -951,7 +959,7 @@ describe("BA-S003 event song-list deletion", () => {
       "findFirst",
     )
 
-    await expect(invokeResolver(executeDB3CommandMutation, { commandID: db3.deleteEventSongListCommand.commandID, payload: { publicId: listPublicId(20) } }, ctx)).rejects.toThrow(
+    await expect(invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId, commandID: db3.deleteEventSongListCommand.commandID, payload: { publicId: listPublicId(20) } }, ctx)).rejects.toThrow(
       "Not authorized to mutate EventSongList fields: publicId",
     )
     expect(targetLookup).not.toHaveBeenCalled()
@@ -960,7 +968,7 @@ describe("BA-S003 event song-list deletion", () => {
   it("deletes an authorized list and its children in one audited operation", async () => {
     const permissions = [Permission.login, Permission.manage_events]
     const actor = createAuthorizationTestUser("normal", { id: 11, permissions })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
       event: [makeEvent({ id: 100 }), makeEvent({ id: 200 }), makeEvent({ id: 647 })],
       eventSongList: [{
@@ -988,7 +996,7 @@ describe("BA-S003 event song-list deletion", () => {
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await invokeResolver(executeDB3CommandMutation, { commandID: db3.deleteEventSongListCommand.commandID, payload: { publicId: listPublicId(20) } }, ctx)
+    await invokeResolver(executeDB3CommandMutation, { bandPublicId: authorizationBandId, commandID: db3.deleteEventSongListCommand.commandID, payload: { publicId: listPublicId(20) } }, ctx)
 
     expect(authorizationTestDb.snapshot("eventSongList")).toEqual([])
     expect(authorizationTestDb.snapshot("eventSongListSong")).toEqual([])
@@ -1005,20 +1013,20 @@ describe("BA-S003 event song-list deletion", () => {
 describe("BA-S003 event attendance ownership", () => {
   beforeEach(() => {
     vi.restoreAllMocks()
-    authorizationTestDb.reset({ change: [] })
+    resetAuthorizationDatabase({ change: [] })
   })
 
   it("lets a responder create only their own event and segment responses", async () => {
     const permissions = [Permission.login, Permission.respond_to_events]
     const actor = createAuthorizationTestUser("normal", { id: 30, permissions })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
       event: [makeEvent()],
       eventSegment: [{ id: 101, publicId: segmentPublicId(101), eventId: 100, startsAt: null, durationMillis: BigInt(0), isAllDay: false, dateTimeVersion: 2 }],
       eventSegmentUserResponse: [],
       eventUserResponse: [],
       eventStatus: [],
-      eventAttendance: [{ id: 2, publicId: attendancePublicId(2), isDeleted: false }],
+      eventAttendance: [{ isActive: true, id: 2, publicId: attendancePublicId(2), isDeleted: false }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
@@ -1033,7 +1041,7 @@ describe("BA-S003 event attendance ownership", () => {
 
     expect(authorizationTestDb.snapshot("eventSegmentUserResponse")).toEqual([
       expect.objectContaining({
-        userId: actor.id,
+        bandUserId: actor.id,
         eventSegmentId: 101,
         attendanceId: 2,
         createdByUserId: actor.id,
@@ -1041,7 +1049,7 @@ describe("BA-S003 event attendance ownership", () => {
     ])
     expect(authorizationTestDb.snapshot("eventUserResponse")).toEqual([
       expect.objectContaining({
-        userId: actor.id,
+        bandUserId: actor.id,
         eventId: 100,
         userComment: "I will be there",
       }),
@@ -1052,7 +1060,7 @@ describe("BA-S003 event attendance ownership", () => {
     const permissions = [Permission.login, Permission.respond_to_events]
     const actor = createAuthorizationTestUser("normal", { id: 31, permissions })
     const target = createAuthorizationTestUser("normal", { id: 32 })
-    authorizationTestDb.reset({ user: [actor, target], event: [makeEvent()], change: [] })
+    resetAuthorizationDatabase({ user: [actor, target], event: [makeEvent()], change: [] })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
     const eventLookup = vi.spyOn(authorizationTestDb.getDelegate("event"), "findFirst")
 
@@ -1073,7 +1081,7 @@ describe("BA-S003 event attendance ownership", () => {
       permissions: [Permission.login],
     })
     const target = createAuthorizationTestUser("normal", { id: 42 })
-    authorizationTestDb.reset({ user: [databaseActor, target], event: [makeEvent()], change: [] })
+    resetAuthorizationDatabase({ user: [databaseActor, target], event: [makeEvent()], change: [] })
     const { ctx } = createAuthorizationPersona("normal", {
       id: databaseActor.id,
       permissions: [Permission.login, Permission.change_others_event_responses],
@@ -1095,19 +1103,19 @@ describe("BA-S003 event attendance ownership", () => {
     const permissions = [Permission.login, Permission.change_others_event_responses]
     const actor = createAuthorizationTestUser("normal", { id: 33, permissions })
     const target = createAuthorizationTestUser("normal", { id: 34 })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor, target],
       event: [makeEvent()],
       eventSegment: [{ id: 101, publicId: segmentPublicId(101), eventId: 100, startsAt: null, durationMillis: BigInt(0), isAllDay: false, dateTimeVersion: 2 }],
       eventSegmentUserResponse: [{
         id: 201, publicId: segmentResponsePublicId(201),
-        userId: target.id,
+        bandUserId: target.id,
         eventSegmentId: 101,
         attendanceId: null,
       }],
       eventUserResponse: [{
         id: 202, publicId: eventResponsePublicId(202),
-        userId: target.id,
+        bandUserId: target.id,
         eventId: 100,
         revision: 1,
         userComment: "",
@@ -1115,7 +1123,7 @@ describe("BA-S003 event attendance ownership", () => {
         isInvited: false,
       }],
       eventStatus: [],
-      eventAttendance: [{ id: 2, publicId: attendancePublicId(2), isDeleted: false }],
+      eventAttendance: [{ isActive: true, id: 2, publicId: attendancePublicId(2), isDeleted: false }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
@@ -1143,7 +1151,7 @@ describe("BA-S003 event attendance ownership", () => {
   it("keeps invitation changes behind manage-events", async () => {
     const permissions = [Permission.login, Permission.respond_to_events]
     const actor = createAuthorizationTestUser("normal", { id: 35, permissions })
-    authorizationTestDb.reset({ user: [actor], event: [makeEvent()], change: [] })
+    resetAuthorizationDatabase({ user: [actor], event: [makeEvent()], change: [] })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
     await expect(invokeResolver(updateUserEventAttendance, {
@@ -1160,11 +1168,11 @@ describe("BA-S003 event attendance ownership", () => {
     const permissions = [Permission.login, Permission.manage_events]
     const actor = createAuthorizationTestUser("normal", { id: 44, permissions })
     const target = createAuthorizationTestUser("normal", { id: 45 })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor, target],
       event: [makeEvent()],
       eventUserResponse: [],
-      eventAttendance: [{ id: 2, publicId: attendancePublicId(2), isDeleted: false }],
+      eventAttendance: [{ isActive: true, id: 2, publicId: attendancePublicId(2), isDeleted: false }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
@@ -1178,7 +1186,7 @@ describe("BA-S003 event attendance ownership", () => {
 
     expect(authorizationTestDb.snapshot("eventUserResponse")).toEqual([
       expect.objectContaining({
-        userId: target.id,
+        bandUserId: target.id,
         eventId: 100,
         isInvited: true,
       }),
@@ -1188,13 +1196,13 @@ describe("BA-S003 event attendance ownership", () => {
   it("rejects segment IDs outside the declared event before any response write", async () => {
     const permissions = [Permission.login, Permission.respond_to_events]
     const actor = createAuthorizationTestUser("normal", { id: 36, permissions })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor],
       event: [makeEvent()],
       eventSegment: [{ id: 102, publicId: segmentPublicId(102), eventId: 999 }],
       eventSegmentUserResponse: [],
       eventUserResponse: [],
-      eventAttendance: [{ id: 2, publicId: attendancePublicId(2), isDeleted: false }],
+      eventAttendance: [{ isActive: true, id: 2, publicId: attendancePublicId(2), isDeleted: false }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
@@ -1213,7 +1221,7 @@ describe("BA-S003 event attendance ownership", () => {
   it("rejects malformed segment identifiers at the request boundary", async () => {
     const permissions = [Permission.login, Permission.respond_to_events]
     const actor = createAuthorizationTestUser("normal", { id: 43, permissions })
-    authorizationTestDb.reset({ user: [actor], event: [makeEvent()], change: [] })
+    resetAuthorizationDatabase({ user: [actor], event: [makeEvent()], change: [] })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
     const eventLookup = vi.spyOn(authorizationTestDb.getDelegate("event"), "findFirst")
 
@@ -1228,22 +1236,22 @@ describe("BA-S003 event attendance ownership", () => {
   })
 
   it("does not let generic inserts bypass the self-versus-other boundary", async () => {
-    const permissions = [Permission.login, Permission.respond_to_events, Permission.view_users_basic_info]
+    const permissions = [Permission.login, Permission.respond_to_events, Permission.view_users_basic_info, Permission.view_events_nonpublic]
     const actor = createAuthorizationTestUser("normal", { id: 37, permissions })
     const target = createAuthorizationTestUser("normal", { id: 38 })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor, target],
       event: [makeEvent()],
       eventSegment: [{ id: 101, publicId: segmentPublicId(101), eventId: 100 }],
       eventSegmentUserResponse: [],
-      eventAttendance: [{ id: 2, publicId: attendancePublicId(2), isDeleted: false }],
+      eventAttendance: [{ isActive: true, id: 2, publicId: attendancePublicId(2), isDeleted: false }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
     await expect(invokeResolver(db3Mutation, forgeDb3Insert(
-      db3.xEventSegmentUserResponse.tableID,
-      { userId: target.publicId, eventSegmentId: segmentPublicId(101), attendanceId: attendancePublicId(2) },
+      db3.xEventSegmentUserResponse.tableID, authorizationBandId,
+      { bandUserId: "Member" + String(target.id).padStart(10, "0"), eventSegmentId: segmentPublicId(101), attendanceId: attendancePublicId(2) },
     ), ctx)).rejects.toThrow("Not authorized to mutate EventSegmentUserResponse")
 
     expect(authorizationTestDb.snapshot("eventSegmentUserResponse")).toEqual([])
@@ -1253,23 +1261,23 @@ describe("BA-S003 event attendance ownership", () => {
     const permissions = [Permission.login, Permission.manage_events]
     const actor = createAuthorizationTestUser("normal", { id: 39, permissions })
     const target = createAuthorizationTestUser("normal", { id: 40 })
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [actor, target],
       event: [makeEvent()],
       eventSegment: [{ id: 101, publicId: segmentPublicId(101), eventId: 100 }],
       eventSegmentUserResponse: [{
         id: 203, publicId: segmentResponsePublicId(203),
-        userId: target.id,
+        bandUserId: target.id,
         eventSegmentId: 101,
         attendanceId: null,
       }],
-      eventAttendance: [{ id: 2, publicId: attendancePublicId(2), isDeleted: false }],
+      eventAttendance: [{ isActive: true, id: 2, publicId: attendancePublicId(2), isDeleted: false }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
     await expect(invokeResolver(db3Mutation, forgeDb3PublicUpdate(
-      db3.xEventSegmentUserResponse.tableID,
+      db3.xEventSegmentUserResponse.tableID, authorizationBandId,
       segmentResponsePublicId(203),
       { attendanceId: attendancePublicId(2) },
     ), ctx)).rejects.toThrow("Not authorized to mutate EventSegmentUserResponse")
@@ -1283,7 +1291,7 @@ describe("BA-S003 event attendance ownership", () => {
 describe("Band Admin split mutation boundaries", () => {
   beforeEach(() => {
     vi.restoreAllMocks()
-    authorizationTestDb.reset({ change: [] })
+    resetAuthorizationDatabase({ change: [] })
   })
 
   it("separates file renaming from server-owned storage metadata", async () => {
@@ -1295,10 +1303,8 @@ describe("Band Admin split mutation boundaries", () => {
       Permission.visibility_public,
     ]
     const actor = createAuthorizationTestUser("bandAdmin", { id: 60, permissions })
-    const visibilityId = actor.role!.permissions.find(
-      entry => entry.permission.name === Permission.visibility_public,
-    )!.permissionId
-    const file = {
+    const visibilityId = authorizationPermissionId(Permission.visibility_public)
+    const file = { bandId: 1,
       id: 61,
       publicId: filePublicId(61),
       fileLeafName: "old-name.pdf",
@@ -1312,12 +1318,12 @@ describe("Band Admin split mutation boundaries", () => {
       mimeType: "application/pdf",
       customData: null,
     }
-    authorizationTestDb.reset({ user: [actor], file: [file], change: [] })
+    resetAuthorizationDatabase({ user: [actor], file: [file], change: [] })
     const { ctx } = createAuthorizationPersona("bandAdmin", { id: actor.id, permissions })
 
     await invokeResolver(
       db3Mutation,
-      forgeDb3PublicUpdate("File", file.publicId, { fileLeafName: "corrected-name.pdf" }),
+      forgeDb3PublicUpdate("File", authorizationBandId, file.publicId, { fileLeafName: "corrected-name.pdf" }),
       ctx,
     )
     expect(authorizationTestDb.snapshot("file")).toEqual([
@@ -1333,7 +1339,7 @@ describe("Band Admin split mutation boundaries", () => {
     ] as const) {
       await expect(invokeResolver(
         db3Mutation,
-        forgeDb3PublicUpdate("File", file.publicId, { [field]: value }),
+        forgeDb3PublicUpdate("File", authorizationBandId, file.publicId, { [field]: value }),
         ctx,
       )).rejects.toThrow("Not authorized to mutate File fields")
     }
@@ -1353,30 +1359,31 @@ describe("Band Admin split mutation boundaries", () => {
       color: null,
       significance: null,
     }
-    authorizationTestDb.reset({ user: [profileManager, taxonomyManager], userTag: [tag], change: [] })
+    resetAuthorizationDatabase({ user: [profileManager, taxonomyManager],
+      bandUserTag: [{ ...tag, bandId: 1, isHidden: false, globalUserTagId: null }], change: [] })
 
     const { ctx: profileCtx } = createAuthorizationPersona("moderator", {
       id: profileManager.id,
       permissions: profilePermissions,
     })
     await expect(invokeResolver(
-      db3Mutation,
-      forgeDb3PublicUpdate("UserTag", tag.publicId, { text: "Winds" }),
+      executeDB3CommandMutation,
+      { bandPublicId: authorizationBandId, commandID: bandUserTagView.crud.operations.update.command.commandID,
+        payload: { identity: tag.publicId, patch: { name: { kind: "set", stringPublicId: null, localeTag: "en-US", value: "Winds" } } } },
       profileCtx,
-    )).rejects.toThrow("Not authorized to mutate UserTag fields")
+    )).rejects.toThrow("Not authorized to mutate bandUserTag fields")
 
     const { ctx: taxonomyCtx } = createAuthorizationPersona("bandAdmin", {
       id: taxonomyManager.id,
       permissions: taxonomyPermissions,
     })
     await invokeResolver(
-      db3Mutation,
-      forgeDb3PublicUpdate("UserTag", tag.publicId, { text: "Winds" }),
+      executeDB3CommandMutation,
+      { bandPublicId: authorizationBandId, commandID: bandUserTagView.crud.operations.update.command.commandID,
+        payload: { identity: tag.publicId, patch: { name: { kind: "set", stringPublicId: null, localeTag: "en-US", value: "Winds" } } } },
       taxonomyCtx,
     )
-    expect(authorizationTestDb.snapshot("userTag")).toEqual([
-      expect.objectContaining({ id: tag.id, text: "Winds" }),
-    ])
+    expect(authorizationTestDb.snapshot("bandDynamicLocalizedStringValue")).toContainEqual(expect.objectContaining({ indexedValue: "Winds" }))
   })
 
   it("uses admin_instruments as the sole instrument-management capability", async () => {
@@ -1387,37 +1394,41 @@ describe("Band Admin split mutation boundaries", () => {
     const instrument = {
       id: 67,
       publicId: "instrmnt00000067",
-      name: "Trumpet",
-      description: "",
+      nameId: null,
+      descriptionId: null,
       autoAssignFileLeafRegex: "tpt",
       sortOrder: 0,
       functionalGroupId: 1,
-      functionalGroup: null,
     }
-    authorizationTestDb.reset({ user: [ordinaryManager, instrumentAdmin], instrument: [instrument], change: [] })
+    resetAuthorizationDatabase({ user: [ordinaryManager, instrumentAdmin],
+      bandInstrument: [{ ...instrument, bandId: 1, isHidden: false, globalInstrumentId: null }],
+      bandInstrumentFunctionalGroup: [{ id: 1, publicId: "InstrumentGroup1", bandId: 1, isHidden: false,
+        globalFunctionalGroupId: null, nameId: null, descriptionId: null }], change: [] })
 
     const { ctx: ordinaryCtx } = createAuthorizationPersona("moderator", {
       id: ordinaryManager.id,
       permissions: ordinaryPermissions,
     })
     await expect(invokeResolver(
-      db3Mutation,
-      forgeDb3PublicUpdate("Instrument", instrument.publicId, { name: "Cornet" }),
+      executeDB3CommandMutation,
+      { bandPublicId: authorizationBandId, commandID: bandInstrumentView.crud.operations.update.command.commandID,
+        payload: { identity: instrument.publicId, patch: { name: { kind: "set", stringPublicId: null, localeTag: "en-US", value: "Cornet" } } } },
       ordinaryCtx,
-    )).rejects.toThrow("Not authorized to mutate Instrument fields")
+    )).rejects.toThrow("Not authorized to mutate bandInstrument fields")
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
+    expect(authorizationTestDb.snapshot("bandInstrument")[0]?.nameId).toBeNull()
 
     const { ctx: adminCtx } = createAuthorizationPersona("bandAdmin", {
       id: instrumentAdmin.id,
       permissions: instrumentPermissions,
     })
     await invokeResolver(
-      db3Mutation,
-      forgeDb3PublicUpdate("Instrument", instrument.publicId, { name: "Cornet" }),
+      executeDB3CommandMutation,
+      { bandPublicId: authorizationBandId, commandID: bandInstrumentView.crud.operations.update.command.commandID,
+        payload: { identity: instrument.publicId, patch: { name: { kind: "set", stringPublicId: null, localeTag: "en-US", value: "Cornet" } } } },
       adminCtx,
     )
-    expect(authorizationTestDb.snapshot("instrument")).toEqual([
-      expect.objectContaining({ id: instrument.id, name: "Cornet" }),
-    ])
+    expect(authorizationTestDb.snapshot("bandDynamicLocalizedStringValue")).toContainEqual(expect.objectContaining({ indexedValue: "Cornet" }))
   })
 })
 

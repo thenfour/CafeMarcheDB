@@ -98,7 +98,7 @@ describe("canonical permission registry", () => {
         { id: 1, permission: { id: 1, name: Permission.public, isDeleted: false } },
         { id: 2, permission: { id: 2, name: "retired_permission", isDeleted: false } },
       ] }],
-    }, { includeAuthorizationRoles: false })
+    })
     // The in-memory delegates implement the Prisma queries used by this loader.
     const database = authorizationTestDb as unknown as AuthorizationDatabase
     const permissions = await loadEffectivePermissions(database, null)

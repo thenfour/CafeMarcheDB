@@ -1,3 +1,4 @@
+import { resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { hash256 } from "@blitzjs/auth"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -21,13 +22,13 @@ import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
 
 // Existing accounts in these tests have migrated email sign-in ownership.
-const resetBootstrapDatabase = (seed: Parameters<typeof authorizationTestDb.reset>[0] = {}, options?: Parameters<typeof authorizationTestDb.reset>[1]) => {
-  authorizationTestDb.reset({
+const resetBootstrapDatabase = (seed: Parameters<typeof resetAuthorizationDatabase>[0] = {}) => {
+  resetAuthorizationDatabase({
     ...seed,
     userSignInMethod: (seed.user || []).map(user => ({
       id: user.id, userId: user.id, type: "email", identifier: String(user.email).toLowerCase().trim(),
     })),
-  }, options);
+  });
 };
 
 const bootstrapEmail = "recovery-admin@test.invalid"
@@ -60,7 +61,6 @@ describe("BA-U005 administrator bootstrap", () => {
 
   it("ignores privileged fields supplied to ordinary signup and never uses ADMIN_EMAIL", async () => {
     resetBootstrapDatabase({
-      role: [{ id: 10, isRoleForNewUsers: true }],
       user: [],
       change: [],
     })
@@ -82,7 +82,7 @@ describe("BA-U005 administrator bootstrap", () => {
       expect.objectContaining({
         id: 1,
         email: bootstrapEmail,
-        roleId: 10,
+        globalRoleId: null,
         isSysAdmin: false,
       }),
     ])
@@ -93,7 +93,7 @@ describe("BA-U005 administrator bootstrap", () => {
       name: "Recovery user",
       email: bootstrapEmail,
       isSysAdmin: false,
-      roleId: 10,
+      globalRoleId: null,
       authenticationMethod: "password",
     })
     expect(createSession).toHaveBeenCalledOnce()
@@ -105,17 +105,18 @@ describe("BA-U005 administrator bootstrap", () => {
       { id: 10, isRoleForNewUsers: true },
       { id: 11, isRoleForNewUsers: true },
     ]],
-  ])("fails signup closed when the default role is %s", async (_case, roles) => {
-    resetBootstrapDatabase({ role: roles, user: [], change: [] })
+  ])("creates a roleless account independently of %s membership defaults", async (_case, roles) => {
+    resetBootstrapDatabase({ bandRole: roles, user: [], change: [] })
     const { ctx } = createAuthorizationPersona("public")
 
     await expect(invokeResolver(signup, {
       email: "new-user@test.invalid",
       name: "New user",
       password: "valid password",
-    }, ctx)).rejects.toThrow(/Expected exactly one role for new users/)
+    }, ctx)).resolves.toMatchObject({ email: "new-user@test.invalid" })
 
-    expect(authorizationTestDb.snapshot("user")).toEqual([])
+    expect(authorizationTestDb.snapshot("user")[0]).toMatchObject({ globalRoleId: null, isSysAdmin: false });
+    expect(authorizationTestDb.snapshot("bandUser")).toEqual([]);
   })
 
   // it.each([
@@ -135,7 +136,7 @@ describe("BA-U005 administrator bootstrap", () => {
     const { ctx } = createAuthorizationPersona("public")
     const findUser = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst")
 
-    await expect(invokeResolver(getAdminBootstrapStatus, null, ctx)).rejects.toThrow("Unauthorized")
+    await expect(invokeResolver(getAdminBootstrapStatus, null, ctx)).rejects.toThrow("Not authorized for login")
     await expect(invokeResolver(claimAdminBootstrap, {
       secret: bootstrapSecret,
     }, ctx)).rejects.toThrow("Not authorized for login")
@@ -189,12 +190,7 @@ describe("BA-U005 administrator bootstrap", () => {
       email: actor.email,
     })
 
-    await expect(invokeResolver(getAdminBootstrapStatus, null, ctx)).resolves.toEqual({
-      isEligible: false,
-      isConfigured: false,
-      isClaimable: false,
-      isAlreadySysadmin: false,
-    })
+    await expect(invokeResolver(getAdminBootstrapStatus, null, ctx)).rejects.toMatchObject({ statusCode: 401 });
     await expect(invokeResolver(claimAdminBootstrap, {
       secret: bootstrapSecret,
     }, ctx)).rejects.toThrow("Not authorized for login")

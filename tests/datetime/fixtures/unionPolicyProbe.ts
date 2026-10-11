@@ -88,14 +88,14 @@ async function collect() {
     // transaction rollback is simulated; capture the actual persisted bounds.
     const rows = [...ordered, cancelled]
     const transaction = {
-      setting: { findFirst: async () => ({ value: Intl.DateTimeFormat().resolvedOptions().timeZone }) },
+      bandSetting: { findUnique: async () => ({ name: "dateTime.bandTimeZone", value: "Europe/Brussels" }) },
       eventSegment: { findMany: async (args: { where: { eventId: number } }) => {
         writerUsesEventFilter &&= args.where.eventId === 1
         return rows
       } },
       eventStatus: { findMany: async () => [{ id: 9 }] },
       event: {
-        findFirst: async () => ({ id: 1, name: "Event", revision: 1, calendarInputHash: "", locationDescription: "Hall", segments: rows, songLists: [] }),
+        findFirst: async () => ({ id: 1, bandId: 1, name: "Event", revision: 1, calendarInputHash: "", locationDescription: "Hall", segments: rows, songLists: [] }),
         update: async ({ data }: { data: { startsAt: Date | null; durationMillis: number; isAllDay: boolean; endDateTime: Date | null } }) => {
           writes.push({ start: data.startsAt?.toISOString() ?? null, duration: data.durationMillis, allDay: data.isAllDay, end: data.endDateTime?.toISOString() ?? null })
         },

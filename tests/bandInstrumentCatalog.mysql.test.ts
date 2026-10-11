@@ -216,7 +216,7 @@ describe.skipIf(!settingsMysqlTestUrl)("band-instrument vertical slice on MariaD
             filter: { items: [{ field: "functionalGroupId", operator: "equals", value: generatePublicId() }] } }, auth, await readSnapshot(tx, auth))).count).toBe(0);
         await expect(queryTable({ ...request, bandPublicId: parsePublicId<"Band">(fixture.bands[1]!.publicId) }, auth, await readSnapshot(tx, auth))).rejects.toThrow();
         await expect(queryTable({ ...request, filter: { pks: [1] } }, auth, await readSnapshot(tx, auth))).rejects.toThrow();
-        await expect(queryTable({ ...request, table: { tableID: "Event", tableName: "Event" } }, auth, await readSnapshot(tx, auth))).rejects.toThrow();
+        await expect(queryTable({ ...request, table: { tableID: "Event", tableName: "Event", viewID: bandInstrumentView.viewID } }, auth, await readSnapshot(tx, auth))).rejects.toThrow();
     }));
 
     it("keeps two opted-in bands' overrides separate and rejects revoked and inactive memberships", () => withFixture(async (tx, fixture) => {

@@ -39,5 +39,9 @@ afterEach(async () => {
 it.each([{ ids: [] }, { ids: [xEvent.parseIdentity("RelevantEvent001")] }])("fetches dashboard identities using publicIds, including empty lists: %j", async ({ ids }) => {
     dashboard.relevantEventIds = ids;
     await act(async () => root.render(React.createElement(RelevantEvents)));
-    expect(query).toHaveBeenCalledWith({ view: eventSearchView, filterSpec: { publicIds: ids } });
+    if (ids.length) {
+        expect(query).toHaveBeenCalledWith({ view: eventSearchView, filterSpec: { publicIds: ids } });
+    } else {
+        expect(query).not.toHaveBeenCalled();
+    }
 });

@@ -118,7 +118,7 @@ describe("presentation and settings delivery", () => {
         await act(async () => render(firstBand));
         expect(container.textContent).toContain("Fresh after switch");
     });
-    it("invalidates initial catalogs and settings after writes and remote/focus changes", async () => {
+    it("invalidates catalogs after writes and remote changes while keeping focus stable", async () => {
         const initial = dataFor({ browserLanguages: ["en-US"] });
         await act(async () => root.render(<PresentationProvider initial={initial}><Probe /></PresentationProvider>));
         serverText = "Updated";
@@ -129,8 +129,10 @@ describe("presentation and settings delivery", () => {
         await act(async () => window.dispatchEvent(new StorageEvent("storage", { key: "cmdb-presentation-changed" })));
         expect(container.textContent).toContain("Other tab");
         serverText = "Fresh grants";
+        const beforeFocus = vi.mocked(useQuery).mock.calls.length;
         await act(async () => window.dispatchEvent(new Event("focus")));
-        expect(container.textContent).toContain("Fresh grants");
+        expect(container.textContent).toContain("Other tab");
+        expect(vi.mocked(useQuery).mock.calls).toHaveLength(beforeFocus);
     });
     it.each(["calendar.showDeclinedEvents", "calendar.showUninvitedEvents"] as const)("saves %s and refreshes every mounted calendar preference control", async key => {
         mutate.mockImplementation(async input => {

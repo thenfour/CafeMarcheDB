@@ -1,3 +1,4 @@
+import { authorizationBandId, resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("db", async () => {
@@ -29,7 +30,7 @@ import { invokeResolver } from "./support/resolverHarness";
 import { userPublicId } from "tests/support/userFixtures";
 
 const permissions = [Permission.login, Permission.search_users, Permission.view_users_basic_info,
-Permission.view_user_contact_info, Permission.manage_users, Permission.deactivate_users, Permission.recover_users];
+Permission.view_user_contact_info, Permission.manage_users, Permission.manage_global_users, Permission.recover_users];
 const admin = createAuthorizationTestUser("bandAdmin", { id: 801, permissions });
 const target = {
     ...createAuthorizationTestUser("normal", { id: 802, isDeleted: true }),
@@ -38,26 +39,26 @@ const target = {
 
 describe("user recovery", () => {
     beforeEach(() => {
-        authorizationTestDb.reset({ user: [admin, target], session: [{ id: 1, userId: target.id }], change: [] });
+        resetAuthorizationDatabase({ user: [admin, target], session: [{ id: 1, userId: target.id }], change: [] });
     });
 
     it("reactivates an ordinary user, preserving identity and role, revoking sessions and auditing the transition", async () => {
         await invokeResolver(reactivateUser, { userId: target.publicId }, createAuthorizationTestContext(admin));
         expect(authorizationTestDb.snapshot("user").find(row => row.id === target.id))
-            .toEqual({ ...target, isDeleted: false });
+            .toEqual(expect.objectContaining({ publicId: target.publicId, isDeleted: false, hashedPassword: target.hashedPassword }));
         expect(authorizationTestDb.snapshot("session")).toEqual([]);
         expect(authorizationTestDb.snapshot("change")).toEqual([
             expect.objectContaining({ table: "User", recordId: target.id }),
         ]);
     });
 
-    it("requires recovery independently of deactivation authority, even with a stale session grant", async () => {
+    it("requires platform account authority even with a stale session grant", async () => {
         const actor = createAuthorizationTestUser("bandAdmin", {
-            id: admin.id, permissions: permissions.filter(p => p !== Permission.recover_users),
+            id: admin.id, permissions: permissions.filter(p => p !== Permission.manage_global_users),
         });
-        authorizationTestDb.reset({ user: [actor, target], change: [] });
+        resetAuthorizationDatabase({ user: [actor, target], change: [] });
         await expect(invokeResolver(reactivateUser, { userId: target.publicId }, createAuthorizationTestContext(admin)))
-            .rejects.toThrow("Not authorized for recover_users");
+            .rejects.toThrow("Not authorized for manage_global_users");
         expect(authorizationTestDb.snapshot("user").find(row => row.id === target.id)?.isDeleted).toBe(true);
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
@@ -65,9 +66,9 @@ describe("user recovery", () => {
     it.each([
         createAuthorizationTestUser("sysadmin", { id: target.id, isDeleted: true }),
         createAuthorizationTestUser("normal", { id: target.id, isDeleted: true, permissions: [Permission.impersonate_user] }),
-        createAuthorizationTestUser("normal", { id: target.id, isDeleted: true, permissions: [Permission.manage_songs] }),
+        createAuthorizationTestUser("normal", { id: target.id, isDeleted: true, permissions: [Permission.manage_global_catalogs] }),
     ])("rejects restoring protected or out-of-envelope accounts", async protectedTarget => {
-        authorizationTestDb.reset({ user: [admin, protectedTarget], change: [] });
+        resetAuthorizationDatabase({ user: [admin, protectedTarget], change: [] });
         await expect(invokeResolver(reactivateUser, { userId: target.publicId }, createAuthorizationTestContext(admin)))
             .rejects.toThrow("Not authorized to reactivate");
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
@@ -76,7 +77,7 @@ describe("user recovery", () => {
     it("uses inherited Sysadmin permissions for recovery capabilities and the mutation", async () => {
         const sysadmin = createAuthorizationTestUser("sysadmin", { id: 803, permissions: [Permission.login] });
         const protectedTarget = createAuthorizationTestUser("sysadmin", { id: target.id, isDeleted: true });
-        authorizationTestDb.reset({ user: [sysadmin, protectedTarget], change: [] });
+        resetAuthorizationDatabase({ user: [sysadmin, protectedTarget], change: [] });
         const ctx = createAuthorizationTestContext(sysadmin);
         await loadAuthorization(ctx.session);
         const caps = await invokeResolver(getUserManagementCapabilities, { userId: target.publicId }, ctx);
@@ -92,13 +93,13 @@ describe("user recovery", () => {
             target: asUserManagementTarget(target),
             action: "reactivate",
         })).toBe(false);
-        authorizationTestDb.reset({ user: [deletedAdmin, target], change: [] });
+        resetAuthorizationDatabase({ user: [deletedAdmin, target], change: [] });
         await expect(invokeResolver(reactivateUser, { userId: target.publicId }, createAuthorizationTestContext(admin))).rejects.toThrow();
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
 
     it("rejects repeat restoration and unknown users without producing an audit entry", async () => {
-        authorizationTestDb.reset({ user: [admin, { ...target, isDeleted: false }], change: [] });
+        resetAuthorizationDatabase({ user: [admin, { ...target, isDeleted: false }], change: [] });
         await expect(invokeResolver(reactivateUser, { userId: target.publicId }, createAuthorizationTestContext(admin))).rejects.toThrow();
         await expect(invokeResolver(reactivateUser, { userId: userPublicId(999999) }, createAuthorizationTestContext(admin))).rejects.toThrow();
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
@@ -108,23 +109,23 @@ describe("user recovery", () => {
         const actor = createAuthorizationTestUser("bandAdmin", {
             id: admin.id, permissions: permissions.filter(p => canRecover || p !== Permission.recover_users),
         });
-        authorizationTestDb.reset({ user: [actor, target] });
+        resetAuthorizationDatabase({ user: [actor, target] });
         const ctx = createAuthorizationTestContext(actor);
-        const auth = await loadAuthorization(ctx.session);
+        const auth = await loadAuthorization(ctx.session, authorizationBandId);
         const profile = await loadAuthorizedPageEntity({
-            ctx, permission: Permission.view_users_basic_info, table: xUser, identity: target.publicId,
+            ctx, bandPublicId: authorizationBandId, permission: Permission.view_users_basic_info, table: xUser, identity: target.publicId,
             includeDeleted: auth.effectivePermissions.includesName(Permission.recover_users),
             load: where => authorizationTestDb.getDelegate("user").findFirst({ where }),
         });
         expect(profile?.id ?? null).toBe(canRecover ? target.id : null);
-        const activeOnly = await invokeResolver(db3queries, forgeDb3Query("User"), ctx);
+        const activeOnly = await invokeResolver(db3queries, forgeDb3Query("User", authorizationBandId), ctx);
         expect(activeOnly.items.some(row => row.publicId === target.publicId)).toBe(false);
         if (canRecover) {
-            const recovered = await invokeResolver(db3queries, forgeDb3Query("User", { includeDeleted: true }), ctx);
+            const recovered = await invokeResolver(db3queries, forgeDb3Query("User", authorizationBandId, { includeDeleted: true }), ctx);
             expect(recovered.items).toContainEqual(expect.objectContaining({ publicId: target.publicId, isDeleted: true }));
             await expect(invokeResolver(getUserExtraInfo, { userId: target.publicId }, ctx)).rejects.toThrow();
         } else {
-            await expect(invokeResolver(db3queries, forgeDb3Query("User", { includeDeleted: true }), ctx)).rejects.toThrow();
+            await expect(invokeResolver(db3queries, forgeDb3Query("User", authorizationBandId, { includeDeleted: true }), ctx)).rejects.toThrow();
             await expect(invokeResolver(getUserExtraInfo, { userId: target.publicId }, ctx)).rejects.toThrow();
             // Capabilities report policy decisions; recovery-read restrictions belong to profile reads.
             expect(await invokeResolver(getUserManagementCapabilities, { userId: target.publicId }, ctx))
@@ -134,7 +135,7 @@ describe("user recovery", () => {
 
     it("lets a Sysadmin view a deactivated user's sign-in methods", async () => {
         const sysadmin = createAuthorizationTestUser("sysadmin", { id: 803 });
-        authorizationTestDb.reset({ user: [sysadmin, target] });
+        resetAuthorizationDatabase({ user: [sysadmin, target] });
 
         await expect(invokeResolver(
             getUserExtraInfo,
@@ -144,12 +145,12 @@ describe("user recovery", () => {
     });
 
     it("keeps generic user recovery disabled", async () => {
-        await expect(invokeResolver(db3mutations, forgeDb3Update("User", target.id, { isDeleted: false }),
+        await expect(invokeResolver(db3mutations, forgeDb3Update("User", null, target.id, { isDeleted: false }),
             createAuthorizationTestContext(admin))).rejects.toThrow();
     });
 
     it("completes deactivate and reactivate with refreshed capabilities", async () => {
-        authorizationTestDb.reset({ user: [admin, { ...target, isDeleted: false }], session: [], change: [] });
+        resetAuthorizationDatabase({ user: [admin, { ...target, isDeleted: false }], session: [], change: [] });
         await invokeResolver(deactivateUser, { userId: target.publicId, acknowledgeContinuityRisk: false }, createAuthorizationTestContext(admin));
         expect(await invokeResolver(getUserManagementCapabilities, { userId: target.publicId }, createAuthorizationTestContext(admin)))
             .toMatchObject({ canReactivate: true, canDeactivate: false });

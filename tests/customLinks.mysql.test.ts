@@ -110,8 +110,16 @@ describe.skipIf(!settingsMysqlTestUrl)("band custom links on MariaDB", () => {
         await expect(GetAuthorizedDirectDownloadFile(targets.local.storedLeafName, unscoped, await snapshot(tx, unscoped))).rejects.toThrow();
         await tx.file.update({ where: { id: targets.local.id }, data: { visiblePermissionId: null } });
         expect(await GetAuthorizedDirectDownloadFile(targets.local.storedLeafName, auth, await snapshot(tx, auth))).toBeNull();
+        // Exercise membership grant revocation without the separate anonymous download grant.
+        const publicRoles = await tx.bandRole.findMany({ where: { isPublicRole: true } });
+        const viewFiles = await tx.permission.findUniqueOrThrow({ where: { name: Permission.view_files } });
+        await tx.bandRolePermission.deleteMany({ where: {
+            bandRoleId: { in: publicRoles.map(role => role.id) }, permissionId: viewFiles.id,
+        } });
         await tx.bandUser.updateMany({ where: { bandId: fixture.bands[0]!.id, userId: fixture.user.id }, data: { isDeleted: true } });
-        expect(await GetAuthorizedDirectDownloadFile(targets.owned.storedLeafName, auth, await snapshot(tx, auth))).toBeNull();
+        await expect(GetAuthorizedDirectDownloadFile(targets.owned.storedLeafName, auth, await snapshot(tx, auth)))
+            .rejects.toThrow("Not authorized to perform this query.");
+        expect(await GetAuthorizedCustomLinkFile(targets.owned.publicId, auth, await snapshot(tx, auth))).toBeNull();
         expect(xCustomLinkFile.authorizeRowBeforeInsert({ auth })).toBe(false);
         expect(xCustomLinkFile.deletePolicy).toBe("disabled");
     }));

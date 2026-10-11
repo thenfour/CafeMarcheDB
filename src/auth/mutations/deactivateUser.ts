@@ -29,7 +29,7 @@ export const DeactivateUserInput = z.object({
 
 export default resolver.pipe(
     resolver.zod(DeactivateUserInput),
-    cmauthorize(Permission.deactivate_users),
+    cmauthorize({ permission: Permission.manage_global_users, requireUser: true }),
     async ({ userId, acknowledgeContinuityRisk }, ctx) => db.$transaction(
         async tx => {
             const [actor, target] = await Promise.all([

@@ -18,6 +18,7 @@ import * as db3 from "../db3core";
 import { GenericStringField } from "../columnTypes/genericString";
 import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserSafeArgs } from "./prismArgs";
 import { LocalizedStringField, localizedText } from "../columnTypes/localizedString";
+import { serverOwnedField } from "../columnTypes/inherited";
 import { getEmailSignInSearchExpression } from "./userSignInMethod";
 
 // Basic profile data is self-service for the account owner and readable for
@@ -247,6 +248,7 @@ export const xPermissionBaseArgs = db3.defineTableDesc({
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
         publicId: () => MakePublicIdField<PermissionPublicId>(),
+        isDeleted: () => serverOwnedField(MakeIsDeletedField({ authMap: xPermissionMetadataAuthMap })),
         name: columnName => new GenericStringField({
             columnName,
             allowNull: false,

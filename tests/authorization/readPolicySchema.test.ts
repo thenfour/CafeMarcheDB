@@ -1,9 +1,13 @@
+import { authorizationPermissionId } from "./support/authorizationFixtures";
+import { resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { Prisma } from "@prisma/client"
+import { existsSync } from "node:fs"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization"
 import { parsePublicId } from "shared/publicId"
 import { testBandAuthorization, testServerAuthorization } from "tests/support/serverAuthorization"
+import { xEventResponseMembership } from "src/core/db3/shared/entities/event/eventResponseMembership"
 
 vi.mock("db", async () => {
   const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client")
@@ -22,7 +26,7 @@ import {
   createAuthorizationSchemaData,
   createAuthorizationTestUser,
 } from "./support/authorizationFixtures"
-import { authorizationTestDb, matchesWhere } from "./support/inMemoryPrisma"
+import { matchesWhere } from "./support/inMemoryPrisma"
 
 const emptyFilter = { items: [], tableParams: {} }
 const registeredTables = Object.values(db3.gAllTables)
@@ -37,9 +41,7 @@ const actor = createAuthorizationTestUser("normal", {
   permissions: gPermissionOrdered,
 })
 const actorPublicData = createAuthorizationSchemaData(actor)
-const grantedVisibilityId = actor.role!.permissions.find(
-  entry => entry.permission.name === Permission.visibility_public,
-)!.permissionId
+const grantedVisibilityId = authorizationPermissionId(Permission.visibility_public)
 const policyPublicId = parsePublicId("PolicyRow0000001")
 
 function policyAuthorization(table: db3.xTable, auth = actorPublicData): CMServerAuthorization {
@@ -90,20 +92,48 @@ describe("schema-wide DB3 read-policy contracts", () => {
       expect(table.SqlGetVisFilterExpression({ auth, tableAlias: "P", includeDeleted: true })).toContain(`P.${column.member} IS NULL`)
     },
   )
-  it("registers DB3 policy metadata for every protected Prisma model", () => {
+  it("accounts for every protected Prisma model at its DB3 or authority-service owner", async () => {
+    // Foundation authority has dedicated loaders; role editors retain their manifest obligation.
+    const authorityOwners: Partial<Record<Prisma.ModelName, string>> = {
+      Locale: "src/locale/server/localization.ts",
+      Band: "src/auth/server/serverAuthorization.ts",
+      GlobalRole: "src/auth/server/serverAuthorization.ts",
+      BandRole: "src/auth/server/serverAuthorization.ts",
+    }
     const protectedModels = Prisma.dmmf.datamodel.models.filter(model => (
       model.fields.some(field => field.name === "isDeleted")
       || model.fields.some(field => field.name === "visiblePermissionId")
     ))
 
     for (const model of protectedModels) {
-      const tables = registeredTables.filter(table => table.tableName === model.name)
+      const tables = registeredTables.filter(table => table.tableName.toLowerCase() === model.name.toLowerCase())
+      if (!tables.length) {
+        const owner = authorityOwners[model.name]
+        expect(owner, `${model.name} has no registered descriptor or authority owner`).toBeTruthy()
+        expect(existsSync(owner!)).toBe(true)
+        continue
+      }
       expect(tables.length, `${model.name} has no registered DB3 descriptor`).toBeGreaterThan(0)
 
       for (const table of tables) {
         if (model.fields.some(field => field.name === "isDeleted")) {
-          expect(table.SqlSpecialColumns.isDeleted, `${table.tableID} omits isDeleted`).toBeTruthy()
-          expect(table.SqlSpecialColumns.isDeleted!.member).toBe("isDeleted")
+          if (table.SqlSpecialColumns.isDeleted) {
+            expect(table.SqlSpecialColumns.isDeleted.member).toBe("isDeleted")
+          } else if (table === xEventResponseMembership) {
+            // Answers retain former memberships through a read-only identity reference.
+            expect(table.deletePolicy).toBe("disabled")
+            expect(table.getSelectionArgs(emptyFilter, policyAuthorization(table))).toEqual({ select: { publicId: true } })
+            expect(table.authorizeTableForEdit(policyAuthorization(table))).toBe(false)
+          } else {
+            // A read-only authority projection can filter deletion without exposing that field.
+            expect(table.deletePolicy).toBe("disabled")
+            for (const includeDeleted of [false, true]) {
+              const auth = policyAuthorization(table)
+              const where = table.CalculateWhereClause({ filterModel: emptyFilter, auth, includeDeleted })
+              expect(matchesWhere(makePolicyRow(table, { isDeleted: false }), where), table.tableID).toBe(true)
+              expect(matchesWhere(makePolicyRow(table, { isDeleted: true }), where), table.tableID).toBe(false)
+            }
+          }
         }
         if (model.fields.some(field => field.name === "visiblePermissionId")) {
           expect(table.SqlSpecialColumns.visiblePermission, `${table.tableID} omits visibility`).toBeTruthy()
@@ -183,7 +213,7 @@ describe("schema-wide DB3 read-policy contracts", () => {
 
   it("uses only the public role's visibility permissions for anonymous queries", () => {
     const publicVisibilityId = 7_001
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       role: [{
         id: 90,
         isPublicRole: true,
@@ -250,7 +280,7 @@ describe("schema-wide DB3 read-policy contracts", () => {
 })
 
 describe("read-policy composition boundaries", () => {
-  beforeEach(() => authorizationTestDb.reset())
+  beforeEach(() => resetAuthorizationDatabase())
 
   it("ANDs trusted business predicates with DB3 policy predicates", async () => {
     const where = await GetAuthorizedTableReadWhere({

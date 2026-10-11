@@ -62,6 +62,7 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
   })
 
   it("preserves and returns the account owner's existing subscription", async () => {
+    const before = authorizationTestDb.snapshot("user")
     const { ctx } = createAuthorizationPersona("normal", {
       id: owner.id,
       calendarFeedToken: existingToken,
@@ -73,7 +74,7 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
       subscriptionUrl: `https://band.test/api/ical/user/${existingToken}/upcoming?bandPublicId=${calendarBandPublicId}`,
       webcalUrl: `webcal://band.test/api/ical/user/${existingToken}/upcoming?bandPublicId=${calendarBandPublicId}`,
     })
-    expect(authorizationTestDb.snapshot("user")).toEqual([expect.objectContaining(owner), expect.objectContaining(target)])
+    expect(authorizationTestDb.snapshot("user")).toEqual(before)
     expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
@@ -142,6 +143,7 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
   it("does not create a link for a deactivated account", async () => {
     const deletedOwner = { ...owner, isDeleted: true, calendarFeedToken: null }
     authorizationTestDb.reset(calendarAuthorizationSeed([deletedOwner]))
+    const before = authorizationTestDb.snapshot("user")
     const { ctx } = createAuthorizationPersona("normal", {
       id: owner.id,
       isDeleted: true,
@@ -149,7 +151,7 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
     })
 
     await expect(invokeResolver(getMyCalendarSubscription, context, ctx)).rejects.toThrow()
-    expect(authorizationTestDb.snapshot("user")).toEqual([expect.objectContaining(deletedOwner)])
+    expect(authorizationTestDb.snapshot("user")).toEqual(before)
     expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 

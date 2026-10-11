@@ -3,7 +3,7 @@ import { parsePublicId } from "shared/publicId";
 import { vi } from "vitest";
 import { selectPrismaTestRow } from "tests/support/prismaSelection";
 import type { DB3ReadSelectionArgs } from "src/core/db3/shared/core/db3ReadSelection";
-import type { AuthorizationTestUser } from "./authorizationFixtures";
+import { authorizationPermissionId, type AuthorizationTestUser } from "./authorizationFixtures";
 import { authorizationTestDb } from "./inMemoryPrisma";
 
 export const wikiFixtureBand = parsePublicId<"Band">("FixtureBand00001");
@@ -11,7 +11,13 @@ export const wikiFixtureBand = parsePublicId<"Band">("FixtureBand00001");
 /** Wiki resolver tests use real selected-band grants rather than the retired User.role relation. */
 export function seedWikiAuthorization(user: AuthorizationTestUser) {
     authorizationTestDb.getDelegate("user").reset([{ ...user, globalRoleId: null, mergedIntoUserId: null }]);
-    const grants = user.role?.permissions ?? [];
+    const grants = user.permissions.map((name, index) => ({
+        id: index + 1, permission: {
+            id: authorizationPermissionId(name), name,
+            publicId: `TestPerm${String(authorizationPermissionId(name)).padStart(8, "0")}`,
+            isDeleted: false,
+        },
+    }));
     authorizationTestDb.getDelegate("permission").reset(grants.map(grant => ({
         ...grant.permission, isDeleted: false,
         significance: grant.permission.name === Permission.visibility_members ? "Visibility_Members" : null,

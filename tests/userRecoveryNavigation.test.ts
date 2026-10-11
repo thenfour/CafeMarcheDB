@@ -63,14 +63,14 @@ afterEach(async () => {
 });
 
 describe("user profile lifecycle navigation", () => {
-    it.each([false, true])("redirects or refreshes after deactivation with recover_users=%s", async canRecover => {
+    it.each([false, true])("redirects or refreshes after deactivation with manage_global_users=%s", async canRecover => {
         const replace = vi.fn();
         const refresh = vi.fn();
         const deactivate = vi.fn().mockResolvedValue(true);
         vi.mocked(useRouter).mockReturnValue({ replace } as any);
         vi.mocked(useDashboardContext).mockReturnValue({
             currentUser: { publicId: userPublicId(1) },
-            isAuthorized: (permission: Permission) => permission === Permission.recover_users ? canRecover : true,
+            isAuthorized: (permission: Permission) => permission === Permission.manage_global_users ? canRecover : true,
         } as any);
         vi.mocked(useUserLifecycleActions).mockReturnValue({ deactivate, reactivate: vi.fn() });
         await act(async () => root.render(React.createElement(DeactivateUserButton, { user, capabilities, onOK: refresh })));

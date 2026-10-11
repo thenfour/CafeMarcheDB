@@ -1,3 +1,5 @@
+import { authorizationPermissionId } from "./support/authorizationFixtures";
+import { authorizationBandId, resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("db", async () => {
@@ -22,7 +24,8 @@ import {
   createAuthorizationPersona,
   createAuthorizationTestUser,
 } from "./support/authorizationFixtures"
-import { authorizationTestDb } from "./support/inMemoryPrisma"
+import { authorizationTestDb, matchesWhere } from "./support/inMemoryPrisma"
+import { useWikiPrismaSelections } from "./support/wikiFixtures"
 import { invokeResolver } from "./support/resolverHarness"
 import { songPublicId } from "../support/songFixtures"
 import { parsePublicId } from "shared/publicId"
@@ -39,21 +42,19 @@ const permissions = [
   Permission.visibility_members,
 ]
 const actor = createAuthorizationTestUser("normal", { id: 801, permissions })
-const publicVisibilityId = actor.role!.permissions.find(
-  entry => entry.permission.name === Permission.visibility_public,
-)!.permissionId
-const membersVisibilityId = actor.role!.permissions.find(
-  entry => entry.permission.name === Permission.visibility_members,
-)!.permissionId
+const publicVisibilityId = authorizationPermissionId(Permission.visibility_public)
+const membersVisibilityId = authorizationPermissionId(Permission.visibility_members)
 const hiddenVisibilityId = 999_999
 
 describe("direct DB3-managed reads use the canonical row scope", () => {
   beforeEach(() => {
-    authorizationTestDb.reset({ user: [actor] })
+    vi.restoreAllMocks()
+    resetAuthorizationDatabase({ user: [actor] })
+    useWikiPrismaSelections()
   })
 
   it("does not resolve a soft-deleted session actor as the current user", async () => {
-    authorizationTestDb.reset({ user: [{ ...actor, isDeleted: true }] })
+    resetAuthorizationDatabase({ user: [{ ...actor, isDeleted: true }] })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
     await expect(loadAuthorization(ctx.session)).resolves.toMatchObject({ user: null })
@@ -67,25 +68,25 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
       id: 803,
       permissions: pageOnlyPermissions,
     })
-    authorizationTestDb.reset({ user: [pageOnlyActor] })
+    resetAuthorizationDatabase({ user: [pageOnlyActor] })
     const { ctx } = createAuthorizationPersona("normal", {
       id: pageOnlyActor.id,
       permissions: pageOnlyPermissions,
     })
 
     await expect(invokeResolver(getWikiPageRevision, { bandPublicId: parsePublicId<"Band">("FixtureBand00001"), revisionId: parsePublicId<"WikiPageRevision">("WikiTestRev00001") }, ctx)).rejects.toThrow(
-      "Unauthorized test persona; required: view_wiki_page_revisions",
+      "Not authorized for view_wiki_page_revisions",
     )
     await expect(invokeResolver(
       getUserWikiContributions,
       { bandPublicId: parsePublicId<"Band">("FixtureBand00001"), userId: pageOnlyActor.publicId },
       ctx,
-    )).rejects.toThrow("Unauthorized test persona; required: view_wiki_page_revisions")
+    )).rejects.toThrow("Not authorized for view_wiki_page_revisions")
   })
 
   it("filters hidden and deleted songs in direct ID lookups", async () => {
     authorizationTestDb.getDelegate("song").reset([
-      {
+      { bandId: 1,
         id: 1,
         publicId: songPublicId(1),
         name: "Visible",
@@ -96,11 +97,11 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
           id: 70,
           publicId: "SongAssocPublic1",
           songId: 1,
-          tagId: 20,
-          tag: { id: 20, publicId: "SongTagPublic001" },
+          bandSongTagId: 20,
+          tag: { id: 20, bandId: 1, publicId: "SongTagPublic001", isHidden: false, globalSongTagId: null },
         }],
       },
-      {
+      { bandId: 1,
         id: 2,
         publicId: songPublicId(2),
         name: "Hidden",
@@ -109,7 +110,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
         visiblePermissionId: hiddenVisibilityId,
         tags: [],
       },
-      {
+      { bandId: 1,
         id: 3,
         publicId: songPublicId(3),
         name: "Deleted",
@@ -121,24 +122,24 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     ])
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await expect(invokeResolver(getFilteredSongs, { id: songPublicId(1) }, ctx)).resolves.toEqual({
+    await expect(invokeResolver(getFilteredSongs, { bandPublicId: authorizationBandId, id: songPublicId(1) }, ctx)).resolves.toEqual({
       matchingItem: expect.objectContaining({
         publicId: songPublicId(1),
         name: "Visible",
         tags: [{
           publicId: "SongAssocPublic1",
           songId: songPublicId(1),
-          tagId: "SongTagPublic001",
+          bandSongTagId: "SongTagPublic001",
         }],
       }),
     })
-    await expect(invokeResolver(getFilteredSongs, { id: songPublicId(2) }, ctx)).resolves.toEqual({ matchingItem: null })
-    await expect(invokeResolver(getFilteredSongs, { id: songPublicId(3) }, ctx)).resolves.toEqual({ matchingItem: null })
+    await expect(invokeResolver(getFilteredSongs, { bandPublicId: authorizationBandId, id: songPublicId(2) }, ctx)).resolves.toEqual({ matchingItem: null })
+    await expect(invokeResolver(getFilteredSongs, { bandPublicId: authorizationBandId, id: songPublicId(3) }, ctx)).resolves.toEqual({ matchingItem: null })
   })
 
   it("returns private songs to their owner without widening the requested ID", async () => {
     authorizationTestDb.getDelegate("song").reset([
-      {
+      { bandId: 1,
         id: 10,
         publicId: songPublicId(10),
         name: "Mine",
@@ -147,7 +148,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
         visiblePermissionId: null,
         tags: [],
       },
-      {
+      { bandId: 1,
         id: 11,
         publicId: songPublicId(11),
         name: "Also mine",
@@ -159,7 +160,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     ])
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    const result = await invokeResolver(getFilteredSongs, { id: songPublicId(10) }, ctx)
+    const result = await invokeResolver(getFilteredSongs, { bandPublicId: authorizationBandId, id: songPublicId(10) }, ctx)
 
     expect(result.matchingItem).toEqual(expect.objectContaining({ publicId: songPublicId(10) }))
   })
@@ -173,32 +174,45 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
 
   it("scopes public user-tag assignments to active users", async () => {
     const userTagPublicId = parsePublicId<"UserTag">("UserTagPublic061")
-    authorizationTestDb.getDelegate("userTag").reset([{
+    authorizationTestDb.getDelegate("bandUserTag").reset([{
       id: 61,
       publicId: userTagPublicId,
-      text: "Members",
+      bandId: 1, isHidden: false, globalUserTagId: null, nameId: null,
       description: "",
-      userAssignments: [],
+      bandUserTagAssignments: [],
     }])
-    const findMany = vi.spyOn(authorizationTestDb.getDelegate("userTag"), "findMany")
+    const findMany = vi.spyOn(authorizationTestDb.getDelegate("bandUserTag"), "findMany")
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await invokeResolver(getUserTagWithAssignments, { bandPublicId: parsePublicId<"Band">("InvitationBand01"), userTagIds: [userTagPublicId] }, ctx)
+    await invokeResolver(getUserTagWithAssignments, { bandPublicId: authorizationBandId, userTagIds: [userTagPublicId] }, ctx)
 
     expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
       select: expect.objectContaining({
-        userAssignments: expect.objectContaining({
+        bandUserTagAssignments: expect.objectContaining({
           where: expect.objectContaining({
-            AND: expect.arrayContaining([{ user: { isDeleted: false } }]),
+            AND: expect.any(Array),
           }),
         }),
       }),
     }))
+    // The heterogeneous delegate captured this view's Prisma collection selection.
+    const assignments = findMany.mock.calls.map(([args]) => args?.select?.bandUserTagAssignments).find(Boolean) as { where: Record<string, unknown> }
+    const member = { bandId: 1, userId: actor.id, isDeleted: false, user: { id: actor.id, isDeleted: false, mergedIntoUserId: null } }
+    const assignment = { id: 1, bandUser: member, bandUserTag: { bandId: 1, isHidden: false, globalUserTagId: null } }
+    expect(matchesWhere(assignment, assignments.where)).toBe(true)
+    for (const changedMember of [
+      { ...member, isDeleted: true }, { ...member, bandId: 2 },
+      { ...member, user: { ...member.user, isDeleted: true } },
+      { ...member, user: { ...member.user, mergedIntoUserId: 999 } },
+    ]) {
+      expect(matchesWhere({ ...assignment, bandUser: changedMember }, assignments.where)).toBe(false)
+    }
+    expect(matchesWhere({ ...assignment, bandUserTag: { ...assignment.bandUserTag, bandId: 2 } }, assignments.where)).toBe(false)
   })
 
   it("filters hidden SetlistPlan rows before deserialization", async () => {
     const bandPublicId = parsePublicId<"Band">("SetlistBand00001")
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
       user: [{ ...actor, isDeleted: false, mergedIntoUserId: null, globalRoleId: null }],
       band: [{ id: 1, publicId: bandPublicId, isDeleted: false }],
       bandUser: [{ id: 1, publicId: "BandUser00000001", userId: actor.id, bandId: 1, bandRoleId: 20, isDeleted: false }],
@@ -231,6 +245,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     const privateRevisionPublicId = parsePublicId<"WikiPageRevision">("WikiRevPrivat001")
     const hiddenRevision = {
       id: 401,
+      wikiPageId: 40,
       publicId: hiddenRevisionPublicId,
       name: "Hidden revision",
       content: "Hidden content",
@@ -250,11 +265,12 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     const privateOwnerRevision = {
       ...hiddenRevision,
       id: 411,
+      wikiPageId: 41,
       publicId: privateRevisionPublicId,
       name: "Private owner revision",
       content: "Private owner content",
     }
-    const hiddenPage = {
+    const hiddenPage = { bandId: 1,
       id: 40,
       publicId: hiddenPagePublicId,
       slug: "hidden",
@@ -263,7 +279,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
       revisions: [hiddenRevision],
       currentRevision: hiddenRevision,
     }
-    const privateOwnerPage = {
+    const privateOwnerPage = { bandId: 1,
       id: 41,
       publicId: privatePagePublicId,
       slug: "private-owner",
@@ -338,9 +354,12 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
       slug: "member-page",
       createdByUserId: revisionOnlyActor.id,
       visiblePermissionId: null,
+      revisions: [{ ...privateOwnerRevision, wikiPageId: 42 }],
+      currentRevision: { ...privateOwnerRevision, wikiPageId: 42 },
     }
-    authorizationTestDb.getDelegate("user").reset([revisionOnlyActor])
-    authorizationTestDb.getDelegate("wikiPage").reset([memberPage])
+    resetAuthorizationDatabase({ user: [revisionOnlyActor], wikiPage: [memberPage],
+      wikiPageRevision: [{ ...privateOwnerRevision, wikiPageId: memberPage.id }],
+    })
     const { ctx: revisionOnlyCtx } = createAuthorizationPersona("normal", {
       id: revisionOnlyActor.id,
       permissions: revisionOnlyPermissions,
@@ -354,7 +373,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     expect(historyWithoutUserAccess?.revisions?.[0]).toEqual(
       expect.objectContaining({ publicId: privateRevisionPublicId }),
     )
-    expect(historyWithoutUserAccess?.revisions?.[0]).not.toHaveProperty("createdByUser")
+    expect(historyWithoutUserAccess?.revisions?.[0]?.createdByUser).toBeNull()
   })
 })
 

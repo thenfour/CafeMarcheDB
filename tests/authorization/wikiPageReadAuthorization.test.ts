@@ -7,6 +7,7 @@ vi.mock("db", async () => {
 });
 
 import { seedWikiAuthorization, useWikiPrismaSelections } from "./support/wikiFixtures";
+import { authorizationPermissionId } from "./support/authorizationFixtures";
 import { AuthorizationError } from "blitz";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
@@ -30,9 +31,12 @@ const permissions = [
     Permission.visibility_members,
 ];
 const actor = createAuthorizationTestUser("normal", { id: 812, permissions });
-const membersPermission = actor.role!.permissions.find(
-    entry => entry.permission.name === Permission.visibility_members,
-)!.permission;
+const membersPermission = {
+    id: authorizationPermissionId(Permission.visibility_members),
+    publicId: parsePublicId<"Permission">(`TestPerm${String(authorizationPermissionId(Permission.visibility_members)).padStart(8, "0")}`),
+    name: Permission.visibility_members,
+    isDeleted: false,
+};
 const revisionPublicId = parsePublicId<"WikiPageRevision">("AnnouncementRev1");
 const args = {
     bandPublicId: parsePublicId<"Band">("FixtureBand00001"),

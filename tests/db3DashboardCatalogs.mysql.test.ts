@@ -13,6 +13,8 @@ import { hydrateDashboardData, type DashboardDataDto } from "src/core/db3/shared
 import { bandInstrumentView, bandInstrumentGroupView, xBandInstrument, xBandInstrumentFunctionalGroup } from "src/core/db3/shared/entities/instrument/bandInstrumentContracts";
 import { bandSongTagView, xBandSongTag } from "src/core/db3/shared/entities/song/bandSongTagViews";
 import { executeCatalogCrud } from "./support/db3CatalogFixture";
+import { queryView } from "src/core/db3/server/db3QueryCore";
+import { permissionEditorView } from "src/core/db3/shared/entities/user/permissionViews";
 import { settingsMysqlTestUrl, withSettingsMysqlFixture, type SettingsMysqlFixture } from "./support/settingsMysqlFixture";
 
 describe.skipIf(!settingsMysqlTestUrl)("dashboard catalog references on MariaDB", () => {
@@ -68,6 +70,24 @@ describe.skipIf(!settingsMysqlTestUrl)("dashboard catalog references on MariaDB"
             eventAttendance: [], songCreditType: [], dynMenuLinks: [], relevantEventIds: [], hasLimitedAccess: false,
             serverBaseUri: "https://example.test", serverStartupState: null, bandTimeZone: "Europe/Brussels" };
     }
+
+    it("excludes deleted global permission metadata for members and platform administrators", () =>
+        withSettingsMysqlFixture(database, async (tx, fixture) => {
+            const permission = await tx.permission.findUniqueOrThrow({ where: { name: Permission.visibility_members } });
+            const actors = await Promise.all([loadAuthorizationForUser(fixture.user, tx), loadAuthorizationForUser(fixture.admin, tx)]);
+            const read = async (auth: CMServerAuthorization, includeDeleted: boolean) => queryView({
+                view: permissionEditorView, filter: { publicIds: [parsePublicId<"Permission">(permission.publicId)] }, includeDeleted,
+                orderBy: undefined, take: 1, cmdbQueryContext: "permission-deletion-policy-test",
+            }, auth, await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" }));
+            for (const auth of actors) {
+                expect((await read(auth, false)).items).toHaveLength(1);
+            }
+            await tx.permission.update({ where: { id: permission.id }, data: { isDeleted: true } });
+            for (const auth of actors) {
+                expect((await read(auth, false)).items).toEqual([]);
+                await expect(read(auth, true)).rejects.toThrow("Not authorized to perform this query.");
+            }
+        }));
 
     it("hydrates effective localized values and shares the dashboard store with editor references", () =>
         withSettingsMysqlFixture(database, async (tx, fixture) => {

@@ -1,9 +1,8 @@
-import { testServerAuthorization } from "tests/support/serverAuthorization";
 import { resolver } from "@blitzjs/rpc";
 import type { TAnyModel } from "@/shared/rootroot";
 import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
 import { Permission } from "shared/permissions";
-import type { AuthenticatedCtx } from "blitz";
+import type { Ctx } from "blitz";
 import db, { Prisma } from "db";
 import * as db3 from "src/core/db3/db3";
 import * as mutationCore from "src/core/db3/server/db3mutationCore";
@@ -15,6 +14,8 @@ import {
 } from "src/core/db3/server/db3PublicIds";
 import { validateDB3MutationRequest } from "src/core/db3/server/db3RequestValidation";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
+import { BandPublicIdSchema } from "src/locale/shared/presentationInput";
+import { z } from "zod";
 
 /**
  * Test-only compatibility harness for the retired generic DB3 mutation RPC.
@@ -23,17 +24,13 @@ import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
  * as an application endpoint.
  */
 export default resolver.pipe(
-    // Blitz cannot infer the discriminated legacy request union through its
-    // authorize middleware, while the following stage validates it at runtime.
-    resolver.authorize(Permission.login) as any,
-    async (untrustedInput: unknown, ctx: AuthenticatedCtx) => {
-        const input = validateDB3MutationRequest(untrustedInput);
+    async (untrustedInput: unknown, ctx: Ctx) => {
+        // Band context belongs to this test envelope, not the retired mutation transport.
+        const { bandPublicId, ...request } = z.object({ bandPublicId: BandPublicIdSchema.nullish() }).passthrough().parse(untrustedInput);
+        const input = validateDB3MutationRequest(request);
         const table = db3.GetTableById(input.tableID);
-        const serverAuthorization = await loadAuthorization(ctx.session);
-        const publicData = testServerAuthorization(
-            serverAuthorization.user,
-            serverAuthorization.effectivePermissions,
-        );
+        const publicData = await loadAuthorization(ctx.session, bandPublicId);
+        publicData.requirePermission(Permission.login);
 
         if (input.mutationType !== "insert" && !table.authorizeTableForEdit(publicData)) {
             throw new mutationCore.DB3MutationAuthorizationError(table.tableName, [table.pkMember]);

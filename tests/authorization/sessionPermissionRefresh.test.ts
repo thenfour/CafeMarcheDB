@@ -23,13 +23,13 @@ const permissionId = (permission: Permission) => gPermissionRegistry.findIndex(d
 
 /** Persist separate global/public role grants; legacy fixture roles describe stale session data only. */
 function seedSessionAuthorization(principal: AuthorizationTestUser | null) {
-    const grants = principal?.role?.permissions ?? [];
+    const grants = principal?.globalRole?.permissions ?? [];
     authorizationTestDb.reset({
-        user: principal ? [{ ...principal, globalRoleId: principal.roleId, mergedIntoUserId: null }] : [],
+        user: principal ? [{ ...principal, globalRoleId: principal.globalRoleId, mergedIntoUserId: null }] : [],
         permission: gPermissionRegistry.map((definition, index) => ({ id: index + 1, name: definition.key, publicId: parsePublicId<"Permission">(`SessionPerm${String(index + 1).padStart(5, "0")}`), isDeleted: false,
             description: "", sortOrder: index, isVisibility: false, significance: null, color: null, iconName: null })),
-        globalRole: principal?.role ? [{ id: principal.role.id, isDeleted: false, isSysAdminRole: false }] : [],
-        globalRolePermission: grants.map((grant, index) => ({ id: index + 1, globalRoleId: principal!.roleId,
+        globalRole: principal?.globalRole ? [{ id: principal.globalRole.id, isDeleted: false, isSysAdminRole: false }] : [],
+        globalRolePermission: grants.map((grant, index) => ({ id: index + 1, globalRoleId: principal!.globalRoleId,
             permissionId: permissionId(grant.permission.name) })),
         bandRole: [{ id: 1, isDeleted: false, isPublicRole: true, isRoleForNewUsers: false }],
         bandRolePermission: testPublicRolePermissions.map((permission, index) => ({ id: index + 1, bandRoleId: 1, permissionId: permissionId(permission) })),
@@ -145,7 +145,7 @@ describe("authorization refresh on every request", () => {
 
     it("drops assigned global grants but retains account login when the role is removed", async () => {
         const { session } = createAuthorizationTestContext(user);
-        seedSessionAuthorization({ ...user, roleId: null, role: null });
+        seedSessionAuthorization({ ...user, globalRoleId: null, globalRole: null });
         await loadAuthorization(session);
         expect(session.$publicData.permissionNames).not.toContain(Permission.manage_global_users);
         expect(session.$publicData.permissionNames).toContain(Permission.login);

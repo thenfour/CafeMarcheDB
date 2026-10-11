@@ -30,10 +30,10 @@ async function collect() {
   }))
   await RecalcEventDateRangeAndIncrementRevision({
     eventId: 1, updatingEventModel: {}, db: {
-      setting: { findFirst: async () => ({ value: "Europe/Brussels" }) },
+      bandSetting: { findUnique: async () => ({ name: "dateTime.bandTimeZone", value: "Europe/Brussels" }) },
       eventSegment: { findMany: async () => segments }, eventStatus: { findMany: async () => [] },
       event: {
-        findFirst: async () => ({ id: 1, revision: 1, name: "Event", locationDescription: "", segments, songLists: [] }),
+        findFirst: async () => ({ id: 1, bandId: 1, revision: 1, name: "Event", locationDescription: "", segments, songLists: [] }),
         update: async ({ data }: { data: unknown }) => { persisted = data }
       },
     }

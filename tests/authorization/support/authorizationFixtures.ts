@@ -5,12 +5,12 @@ import {
 } from "src/auth/server/userManagementState";
 import { testServerAuthorization } from "tests/support/serverAuthorization";
 import type { AuthenticatedCtx, Ctx } from "blitz"
-import { Permission } from "shared/permissions"
+import { gPermissionRegistry, getPermissionDefinition, Permission } from "shared/permissions"
 import {
   parsePublicId,
   type PermissionPublicId,
-  type RolePermissionPublicId,
-  type RolePublicId,
+  type PublicId,
+  type GlobalRolePublicId,
   type UserPublicId,
 } from "shared/publicId"
 import { userPublicId } from "tests/support/userFixtures"
@@ -31,14 +31,14 @@ export type AuthorizationTargetKind =
   | "protectedRole"
   | "isSysAdmin"
 
-type TestRole = {
+type TestGlobalRole = {
   id: number
-  publicId: RolePublicId
+  publicId: GlobalRolePublicId
   name: string
   permissions: Array<{
     id: number
-    publicId: RolePermissionPublicId
-    roleId: number
+    publicId: PublicId<"GlobalRolePermission">
+    globalRoleId: number
     permissionId: number
     permission: {
       id: number
@@ -58,10 +58,12 @@ export type AuthorizationTestUser = {
   isDeleted: boolean
   mergedIntoUserId: number | null
   createdAt: Date
-  roleId: number | null
+  globalRoleId: number | null
   cssClass: string | null
   calendarFeedToken: string | null
-  role: TestRole | null
+  globalRole: TestGlobalRole | null
+  // Persona grants seed separate platform and membership roles, not User columns.
+  permissions: Permission[]
 }
 
 const personaPermissions: Record<Exclude<AuthorizationPersona, "public">, Permission[]> = {
@@ -105,7 +107,7 @@ export const testPublicRolePermissions: Permission[] = [
 ]
 
 export type AuthorizationUserOverrides = Partial<
-  Omit<AuthorizationTestUser, "role" | "roleId" | "isSysAdmin">
+  Omit<AuthorizationTestUser, "globalRole" | "globalRoleId" | "isSysAdmin" | "permissions">
 > & {
   permissions?: Permission[]
   isSysAdmin?: boolean
@@ -116,7 +118,7 @@ export function createAuthorizationTestUser(
   overrides: AuthorizationUserOverrides = {},
 ): AuthorizationTestUser {
   const id = overrides.id ?? 100
-  const roleId = id + 10_000
+  const globalRoleId = id + 10_000
   const permissions = overrides.permissions ?? personaPermissions[persona]
 
   return {
@@ -129,21 +131,22 @@ export function createAuthorizationTestUser(
     isDeleted: overrides.isDeleted ?? false,
     mergedIntoUserId: overrides.mergedIntoUserId ?? null,
     createdAt: overrides.createdAt ?? new Date("2026-01-01T00:00:00.000Z"),
-    roleId,
+    globalRoleId,
     cssClass: overrides.cssClass ?? null,
     calendarFeedToken: overrides.calendarFeedToken ?? null,
-    role: {
-      id: roleId,
-      publicId: parsePublicId<"Role">(`TestRole${roleId.toString().padStart(8, "0").slice(-8)}`),
+    permissions,
+    globalRole: {
+      id: globalRoleId,
+      publicId: parsePublicId<"GlobalRole">(`TestRole${globalRoleId.toString().padStart(8, "0").slice(-8)}`),
       name: persona,
-      permissions: permissions.map((permission, index) => ({
-        id: roleId * 100 + index,
-        publicId: parsePublicId<"RolePermission">(`RolePerm${(roleId * 100 + index).toString().padStart(8, "0").slice(-8)}`),
-        roleId,
-        permissionId: index + 1,
+      permissions: permissions.filter(permission => getPermissionDefinition(permission).scope !== "band").map((permission, index) => ({
+        id: globalRoleId * 100 + index,
+        publicId: parsePublicId<"GlobalRolePermission">(`RolePerm${(globalRoleId * 100 + index).toString().padStart(8, "0").slice(-8)}`),
+        globalRoleId,
+        permissionId: authorizationPermissionId(permission),
         permission: {
-          id: index + 1,
-          publicId: parsePublicId<"Permission">(`TestPerm${(index + 1).toString().padStart(8, "0")}`),
+          id: authorizationPermissionId(permission),
+          publicId: parsePublicId<"Permission">(`TestPerm${authorizationPermissionId(permission).toString().padStart(8, "0")}`),
           name: permission,
         },
       })),
@@ -158,8 +161,9 @@ export function createAuthorizationPublicData(
     userId: user?.id ?? 0,
     isSysAdmin: user?.isSysAdmin ?? false,
     permissionNames: [
-      ...testPublicRolePermissions,
-      ...(user?.role?.permissions.map((entry) => entry.permission.name) ?? []),
+      ...testPublicRolePermissions.filter(permission => getPermissionDefinition(permission).scope !== "band"),
+      ...(user ? [Permission.login, Permission.visibility_logged_in_users] : []),
+      ...(user?.globalRole?.permissions.map((entry) => entry.permission.name) ?? []),
     ],
     impersonatingFromUserId: null,
     showAdminControls: false,
@@ -200,6 +204,7 @@ export function createAuthorizationTestContext(
     },
   }
 
+  // Blitz's remaining context services are not used by resolver fixtures.
   return { session } as unknown as Ctx | AuthenticatedCtx
 }
 
@@ -241,12 +246,15 @@ export function createAuthorizationTarget(
   }
 }
 
-// Direct schema tests use synthetic row IDs from the fixture's assigned role.
-// Server-path tests resolve inherited role IDs through the real loader.
+export function authorizationPermissionId(permission: Permission): number {
+  return gPermissionRegistry.findIndex(definition => definition.key === permission) + 1;
+}
+
+// Direct field-policy tests supply grants explicitly; server tests load persisted roles.
 export function createAuthorizationSchemaData(user: AuthorizationTestUser | null) {
   return testServerAuthorization(user, new ServerPermissionSet([
-    ...testPublicRolePermissions.map((name, index) => ({ id: 920_000 + index, name })),
-    ...(user?.role?.permissions.map(entry => entry.permission) ?? []),
+    ...testPublicRolePermissions.map(name => ({ id: authorizationPermissionId(name), name })),
+    ...(user?.permissions.map(name => ({ id: authorizationPermissionId(name), name })) ?? []),
   ]))
 }
 

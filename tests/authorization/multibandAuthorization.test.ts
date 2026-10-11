@@ -67,7 +67,7 @@ function resetFixture(): void {
         bandRolePermission: [bandGrant(1, 10, Permission.public), bandGrant(2, 10, Permission.view_events),
             bandGrant(3, 20, Permission.manage_events), bandGrant(4, 21, Permission.view_songs),
             bandGrant(5, 22, Permission.respond_to_events)],
-    }, { includeAuthorizationRoles: false });
+    });
 }
 
 const sessionForAccount = () => {

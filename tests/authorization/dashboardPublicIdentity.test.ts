@@ -1,14 +1,25 @@
+import { authorizationBandId, resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 
 const { relevanceQuery } = vi.hoisted(() => ({ relevanceQuery: vi.fn() }));
 vi.mock("db", async () => {
     const { authorizationTestDb } = await import("./support/inMemoryPrisma");
+    const snapshotDatabase = new Proxy(authorizationTestDb, {
+        get: (database, key) => {
+            if (key === "$queryRaw") {
+                return relevanceQuery;
+            }
+            if (key === "$transaction") {
+                // Keep the SQL spy inside the same rollback-capable read transaction.
+                return (read: (transaction: typeof authorizationTestDb) => Promise<unknown>) =>
+                    database.transaction(() => read(snapshotDatabase));
+            }
+            return Reflect.get(database, key);
+        },
+    });
     return {
         ...await vi.importActual<typeof import("@prisma/client")>("@prisma/client"),
-        default: new Proxy(authorizationTestDb, {
-            // Only raw relevance selection is stubbed; subsequent DB3 reads use real policy.
-            get: (database, key) => key === "$queryRaw" ? relevanceQuery : Reflect.get(database, key),
-        }),
+        default: snapshotDatabase,
     };
 });
 
@@ -31,7 +42,7 @@ import { invokeResolver } from "./support/resolverHarness";
 
 const now = new Date("2026-09-26T12:00:00Z");
 const event = {
-    id: 100, publicId: eventPublicId(100), name: "Rehearsal", revision: 1,
+    id: 100, bandId: 1, publicId: eventPublicId(100), name: "Rehearsal", revision: 1,
     createdAt: now, createdByUserId: 42, isDeleted: false, visiblePermissionId: null,
     locationDescription: "", locationURL: "", typeId: null, statusId: null,
     relevanceClassOverride: null, expectedAttendanceUserTagId: null,
@@ -48,6 +59,7 @@ const upcoming = {
 const privateEvent = { ...event, id: 102, publicId: eventPublicId(102), createdByUserId: 999 };
 const deletedEvent = { ...event, id: 103, publicId: eventPublicId(103), isDeleted: true };
 const request = (filter: CMDBTableFilterModel): db3.QueryRequestInput => ({
+    bandPublicId: authorizationBandId,
     table: { tableID: "Event", tableName: "Event", viewID: db3.eventSearchView.viewID },
     filter, orderBy: undefined, cmdbQueryContext: "dashboard-relevant-events-test",
 });
@@ -64,35 +76,28 @@ describe.each(["normal", "sysadmin"] as const)("dashboard public identities for 
         const user = createAuthorizationTestUser(persona, persona === "normal" ? {
             id: 42, permissions: [Permission.always_grant, Permission.public, Permission.login, Permission.view_events, Permission.view_events_nonpublic],
         } : { id: 42 });
-        authorizationTestDb.reset({
+        resetAuthorizationDatabase({
             user: [user],
-            role: [{
-                ...user.role!, isPublicRole: false, isSysAdminRole: persona === "sysadmin",
-                isRoleForNewUsers: false, description: "", sortOrder: 1, color: null, significance: null
-            }],
             event: [event, upcoming, privateEvent, deletedEvent],
-            eventStatus: cancelledStatusIds.map(id => ({ id, significance: db3.EventStatusSignificance.Cancelled, isDeleted: true })),
+            eventStatus: cancelledStatusIds.map(id => ({ id, publicId: `Cancelled${String(id).padStart(7, "0")}`,
+                color: null, sortOrder: 1, iconName: null, significance: db3.EventStatusSignificance.Cancelled, isDeleted: true })),
         });
         return createAuthorizationTestContext(user);
     }
 
     it("returns name-only grants and relevance-ranked public IDs that the Event view can fetch", async () => {
         const ctx = seedActor();
-        relevanceQuery.mockResolvedValue([upcoming, event].map(row => ({
-            publicId: row.publicId, startsAt: row.startsAt, endDateTime: row.endDateTime,
-            durationMillis: row.durationMillis, isAllDay: row.isAllDay, relevanceClassOverride: row.relevanceClassOverride,
-        })));
-        const dto = await invokeResolver(getDashboardData, {}, ctx);
+        relevanceQuery.mockResolvedValue([upcoming, event].map(row => ({ id: row.id })));
+        const dto = await invokeResolver(getDashboardData, { bandPublicId: authorizationBandId,}, ctx);
         expect(dto).not.toHaveProperty("effectivePermissionIds");
         expect(new PermissionSet(dto.authorization.effectivePermissionNames).includesName(Permission.login)).toBe(true);
         expectTypeOf(dto.relevantEventIds).toEqualTypeOf<EventPublicId[]>();
         expect(dto.relevantEventIds).toEqual([event.publicId, upcoming.publicId]);
-        expect(relevanceQuery.mock.calls[0]![0].sql).toMatch(/SELECT\s+e\.publicId,/);
-        expect(relevanceQuery.mock.calls[0]![0].sql).not.toMatch(/e\.id\b/);
+        expect(relevanceQuery.mock.calls[0]![0].sql).toContain("bandId");
         expect(relevanceQuery.mock.calls[0]![0].sql).not.toMatch(/NOT IN\s*\(\s*\)/);
-        const authorization = await loadAuthorization(ctx.session);
+        const authorization = await loadAuthorization(ctx.session, authorizationBandId);
         expect(relevanceQuery.mock.calls[0]![0].sql)
-            .toContain(`e.visiblePermissionId IN (${authorization.effectivePermissions.ids.join(",")})`);
+            .toContain(`visiblePermissionId IN (${authorization.effectivePermissions.ids.join(",")})`);
 
         const result = await invokeResolver(db3Query, request({ publicIds: dto.relevantEventIds }), ctx);
         expect(result.items.map(item => item.publicId).sort()).toEqual([...dto.relevantEventIds].sort());
@@ -105,14 +110,17 @@ describe.each(["normal", "sysadmin"] as const)("dashboard public identities for 
 
     it("preserves empty relevance without broadening the follow-up query", async () => {
         const ctx = seedActor();
-        const dto = await invokeResolver(getDashboardData, {}, ctx);
+        const dto = await invokeResolver(getDashboardData, { bandPublicId: authorizationBandId,}, ctx);
         expect(dto.relevantEventIds).toEqual([]);
         expect((await invokeResolver(db3Query, request({ publicIds: dto.relevantEventIds }), ctx)).items).toEqual([]);
     });
 
     it("uses retired cancelled statuses when selecting relevant events", async () => {
-        await invokeResolver(getDashboardData, {}, seedActor([51, 52]));
-        expect(relevanceQuery.mock.calls[0]![0].sql).toContain("e.statusId NOT IN (51, 52)");
+        await invokeResolver(getDashboardData, { bandPublicId: authorizationBandId,}, seedActor([51, 52]));
+        const sql = relevanceQuery.mock.calls[0]![0].sql;
+        expect(sql).toContain("FROM EventStatus relevanceStatus");
+        expect(sql).toContain("relevanceStatus.significance = 'Cancelled'");
+        expect(sql).not.toContain("relevanceStatus.isDeleted");
     });
 
     it.each([
@@ -125,7 +133,7 @@ describe.each(["normal", "sysadmin"] as const)("dashboard public identities for 
         const find = vi.spyOn(authorizationTestDb.getDelegate("event"), "findMany");
         const count = vi.spyOn(authorizationTestDb.getDelegate("event"), "count");
         await expect(invokeResolver(db3Query, request(filter), ctx)).rejects.toThrow("queries require public identity");
-        await expect(invokeResolver(db3PaginatedQuery, { ...request(filter), skip: 0, take: 10 }, ctx))
+        await expect(invokeResolver(db3PaginatedQuery, { bandPublicId: authorizationBandId, ...request(filter), skip: 0, take: 10 }, ctx))
             .rejects.toThrow("queries require public identity");
         expect(find).not.toHaveBeenCalled();
         expect(count).not.toHaveBeenCalled();
@@ -135,7 +143,8 @@ describe.each(["normal", "sysadmin"] as const)("dashboard public identities for 
         const ctx = seedActor();
         const result = await queryView({
             view: db3.eventSearchView, filter: {}, orderBy: undefined, cmdbQueryContext: "trusted-event-read",
-        }, await loadAuthorization(ctx.session), undefined, { trustedNaturalPrimaryKeys: [event.id] });
+            bandPublicId: authorizationBandId,
+        }, await loadAuthorization(ctx.session, authorizationBandId), undefined, { trustedNaturalPrimaryKeys: [event.id] });
         expect(result.items.map(row => row.publicId)).toEqual([event.publicId]);
     });
 });

@@ -1,3 +1,4 @@
+import { authorizationBandId } from "./support/authorizationSeed";
 import type { AuthenticatedCtx, Ctx } from "blitz";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { describe, expect, it, vi } from "vitest";
@@ -91,14 +92,14 @@ describe("deferred audit log readers", () => {
 
     it("rejects crafted generic audit reads and writes before database access", () => {
         expect(() => db3.GetTableById("Change")).toThrow("was not found");
-        expect(() => validateDB3QueryRequest(forgeDb3Query("Change")))
+        expect(() => validateDB3QueryRequest(forgeDb3Query("Change", authorizationBandId)))
             .toThrow("unknown table ID 'Change'");
-        expect(() => validateDB3PaginatedQueryRequest({ ...forgeDb3Query("Change"), skip: 0, take: 50 }))
+        expect(() => validateDB3PaginatedQueryRequest({ ...forgeDb3Query("Change", authorizationBandId), skip: 0, take: 50 }))
             .toThrow("unknown table ID 'Change'");
         const requests = [
-            forgeDb3Insert("Change", { table: "User" }),
-            forgeDb3PublicUpdate("Change", userId, { table: "User" }),
-            forgeDb3PublicDelete("Change", userId),
+            forgeDb3Insert("Change", null, { table: "User" }),
+            forgeDb3PublicUpdate("Change", null, userId, { table: "User" }),
+            forgeDb3PublicDelete("Change", null, userId),
         ];
         for (const request of requests) {
             expect(() => validateDB3MutationRequest(request)).toThrow("unknown table ID 'Change'");
@@ -125,9 +126,9 @@ describe("deferred shared-account operations", () => {
 
     it.each(["Role", "RolePermission", "UserInstrument", "Setting", "GlobalSetting", "BandSetting", "UserSetting", "BandUserSetting"])("rejects crafted generic writes to %s before database access", tableID => {
         const requests = [
-            forgeDb3Insert(tableID, { name: "Retired" }),
-            forgeDb3PublicUpdate(tableID, roleId, { name: "Retired" }),
-            forgeDb3PublicDelete(tableID, roleId),
+            forgeDb3Insert(tableID, null, { name: "Retired" }),
+            forgeDb3PublicUpdate(tableID, null, roleId, { name: "Retired" }),
+            forgeDb3PublicDelete(tableID, null, roleId),
         ];
         for (const request of requests) {
             expect(() => validateDB3MutationRequest(request)).toThrow(`unknown table ID '${tableID}'`);

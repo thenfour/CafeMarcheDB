@@ -1095,15 +1095,38 @@ unavailable are removed. Their active contract, authorization, native and browse
 checks remain. Account analysis and platform account/lifecycle obligations retain
 their own deferred implementations and specifications.
 
-## Next slice: Full-suite readiness
+## Full-suite readiness
 
-Repair the inherited complete-suite failures before accepting A1, beginning with
-the legacy authorization fixtures and account/role/band expectations. Trace each
-failure to the target contract and retain its behavioral coverage; reactivate
-preserved specifications when their owner is restored. Keep the working core
-workflow owners, completed File/image creation parity and the A1 catalog-name
-search exception. The profile's remaining account-analysis/administration gaps,
-production inventory/rehearsal and the rest of B remain open under their owners.
+Authorization fixtures now persist explicit GlobalRole and BandRole grants,
+selected-band memberships and registry permission IDs. The Prisma double derives
+relations and compound identities from the generated schema and supplies no
+authorization defaults. Response/instrument/tag expectations use BandUser;
+account writes, profile links and audit authors retain User identity. Existing
+hostile request, field-policy, visibility and session-refresh checks remain active.
+
+The restored directory and membership picker specifications exercise their current
+domain-search/view owners. Six obsolete assertions that restored File, gallery
+and Wiki pages remain unavailable are removed; still-deferred pages retain their
+guards. Vitest uses Next's automatic JSX runtime. Presentation tests retain the
+current provider's stable-focus policy, explicit write/storage invalidation and
+scope changes; prior focus-refresh evidence does not describe this current policy.
+
+Verification also repairs two production gaps: account deactivation/reactivation
+and deleted-account sign-in summaries require fresh manage_global_users authority,
+independent of band lifecycle grants; Permission metadata uses its server-owned
+deletion field so retired rows cannot appear in ordinary reads. Ordinary account
+deactivation retains memberships and credentials while revoking sessions. Broader
+role continuity, account merge/analysis and lifecycle parity remain open.
+
+## Next slice: Role administration
+
+Restore the preserved role/matrix editors, designations, account role assignment
+and continuity safeguards through GlobalRole/BandRole and their existing owners.
+Verify protected grants, atomic designations, current request authorization,
+auditing and actual editors across two bands. Keep account merge/dependency
+analysis under their separate obligations. Full profile parity, production
+inventory/rehearsal, A1/B and the localized catalog-name search exception remain
+open; complete-suite readiness alone does not accept those gates.
 
 ## Localized catalog text search exception
 
@@ -1174,6 +1197,40 @@ client together with writes stopped and matching upload backups.
 
 ## Verification status
 
+The **full-suite readiness** checkpoint passes `yarn typecheck`, targeted ESLint
+across all fifty changed TypeScript files and a normal production build with
+isolated output. The tested build's five production changes match the final
+workspace sources. `yarn test --reporter=dot` completes all 278 selected files:
+2,425 Node cases and 488 cases across 62 isolated jsdom files pass, for **2,913
+passed and 827 skipped**, with no test or suite-load failures. Existing conditional
+gates remain; no new skip guards are added. Six obsolete recovery-page assertions
+are removed, and the old remote-user picker expectations now exercise the current
+membership view, local filtering, exclusion, selected identity and cancellation.
+
+The native run selects all 63 `.mysql.test.ts` files through the repository runner
+on a disposable phase-two database: **797 passed and 24 skipped** across 59 passing
+and four gated suites. Demo/development seeding, calendar-window and performance
+suites retain their separate fixture gates. Native checks cover the migrated
+authorization/catalog/workflow contracts, hostile view/entity mismatches, fresh
+File grant revocation and deleted Permission metadata for members and Sysadmins.
+The private database is dropped; the development database is untouched.
+
+Sixteen built Chromium assertion groups pass on disposable two-band data. They
+retain the populated profile, French/Dutch date/label, paging, context-switch and
+fresh grant checks above. Additional lifecycle checks deny a band manager, allow
+an operator with only manage_global_users and no selected band, revoke sessions
+while retaining both memberships and credentials, read the deleted account's
+Sysadmin sign-in summary, restore it without reviving sessions, reject revoked
+global authority and retain two User-owned audits. No uncaught page or unexpected
+RPC errors occur. The owned server, disposable database and demo assets are removed.
+
+Evidence is in `temp/readiness-full-final.log`, `temp/readiness-native-final.log`,
+`temp/readiness-browser-result.json` and `temp/readiness-results.json`.
+`yarn migration:verify` retains **189 source references, six whole-file deferred
+specifications and thirteen pending features**. No obligation is closed in this
+slice. Complete-suite readiness is achieved; full profile/account parity,
+localized-name matching, production inventory/rehearsal and A1/B remain open.
+
 The **core workflow parity review** passes normal typecheck, targeted lint across
 all changed TypeScript files and a normal production build with isolated output.
 Its 222 focused cases across fourteen files cover populated profile counts,
@@ -1212,13 +1269,11 @@ untouched. Evidence is in `temp/core-parity-browser-result.json`, with screensho
 in `temp/core-parity-attendance-fr.png`, `temp/core-parity-attendance-nl.png` and
 `temp/core-parity-wiki-fr.png`.
 
-The complete suite retains 203 failed tests and ten suite-load failures, with
-2,106 passed and 826 skipped. All 163 normalized failure labels match the preceding
-activity-export checkpoint; later jsdom batches are covered by the focused run.
-Preservation verifies 189 references, six whole-file deferred specifications and
-thirteen pending features. Only the legacy facet/filter overlap is closed. Full
-profile/account parity, complete-suite readiness, production inventory/rehearsal
-and A1/B remain open.
+At the preceding core-workflow checkpoint, the complete suite retained 203 failed
+tests and ten suite-load failures, with 2,106 passed and 826 skipped. The full-suite
+readiness work above resolves those inherited fixture/contract failures and runs
+the later isolated jsdom batches too. Its final verification is recorded below.
+Full profile/account parity, production inventory/rehearsal and A1/B remain open.
 
 The event-search checkpoint (2026-10-08) passed normal typecheck/build, focused
 lint, 123 focused tests across 13 executable files and 30 native MariaDB tests

@@ -1,3 +1,4 @@
+import { authorizationBandId, resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { SecurePassword } from "@blitzjs/auth/secure-password";
 import { hash256 } from "@blitzjs/auth";
 import { beforeAll, beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
@@ -31,6 +32,7 @@ import db3Mutation from "./db3MutationTestResolver";
 
 const admin = createAuthorizationTestUser("sysadmin", { id: 1 });
 const bandAdmin = createAuthorizationTestUser("bandAdmin", { id: 2 });
+const globalManager = createAuthorizationTestUser("normal", { id: 50, permissions: [Permission.manage_global_users] });
 const target = createAuthorizationTestUser("normal", { id: 10, email: "contact@test.invalid" });
 const other = createAuthorizationTestUser("normal", { id: 11, email: target.email });
 const methods = [
@@ -45,12 +47,11 @@ let hashedPassword: string;
 
 beforeAll(async () => { hashedPassword = await SecurePassword.hash(validPassword); });
 beforeEach(() => {
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
         user: [admin, bandAdmin, { ...target, hashedPassword }, { ...other, hashedPassword }],
         userSignInMethod: methods,
         session: [{ id: 1, userId: target.id }, { id: 2, userId: admin.id }],
         token: [{ id: 1, userId: target.id, type: "RESET_PASSWORD" }],
-        role: [{ id: 50, isRoleForNewUsers: true }],
     });
 });
 
@@ -143,6 +144,22 @@ describe("multiple sign-in resolution", () => {
         expect(authorizationTestDb.snapshot("user")).toHaveLength(4);
     });
 
+    it("uses global account authority without band lifecycle grants and observes revocation", async () => {
+        resetAuthorizationDatabase({ user: [admin, globalManager, { ...target, hashedPassword }, { ...other, hashedPassword }],
+            userSignInMethod: methods, session: [{ id: 1, userId: target.id }, { id: 2, userId: admin.id }],
+            token: [{ id: 1, userId: target.id, type: "RESET_PASSWORD" }] });
+        await invokeResolver(deactivateUser, { userId: target.publicId }, createAuthorizationTestContext(globalManager));
+        expect(authorizationTestDb.snapshot("user").find(user => user.id === target.id)?.isDeleted).toBe(true);
+        expect(authorizationTestDb.snapshot("session").some(session => session.userId === target.id)).toBe(false);
+        await invokeResolver(reactivateUser, { userId: target.publicId }, createAuthorizationTestContext(globalManager));
+        expect(authorizationTestDb.snapshot("user").find(user => user.id === target.id)?.isDeleted).toBe(false);
+        expect(authorizationTestDb.snapshot("userSignInMethod")).toEqual(methods);
+        const before = authorizationTestDb.snapshot("user");
+        await authorizationTestDb.getDelegate("globalRolePermission").deleteMany({ where: { globalRoleId: globalManager.globalRoleId } });
+        await expect(invokeResolver(deactivateUser, { userId: target.publicId }, createAuthorizationTestContext(globalManager))).rejects.toThrow();
+        expect(authorizationTestDb.snapshot("user")).toEqual(before);
+    });
+
     it("preserves reservations on deactivation and restores access through the same methods", async () => {
         await invokeResolver(deactivateUser, { userId: target.publicId }, adminContext());
         expect(authorizationTestDb.snapshot("userSignInMethod")).toEqual(methods);
@@ -180,14 +197,14 @@ describe("Sysadmin sign-in maintenance", () => {
     });
 
     it("rechecks a stale Sysadmin session before exposing identifiers", async () => {
-        await authorizationTestDb.getDelegate("user").update({ where: { id: admin.id }, data: { isSysAdmin: false, role: { permissions: [] } } });
+        await authorizationTestDb.getDelegate("user").update({ where: { id: admin.id }, data: { isSysAdmin: false, globalRoleId: null, globalRole: null } });
         await expect(invokeResolver(getUserSignInMethods, { userId: target.publicId }, adminContext())).rejects.toThrow();
         await expect(invokeResolver(removeUserSignInMethod, { userId: target.publicId, methodPublicId: methods[0]!.publicId }, adminContext())).rejects.toThrow();
     });
 
     it("accepts a fresh role-carried Sysadmin grant consistently with other maintenance operations", async () => {
         const actor = createAuthorizationTestUser("normal", { id: 30, permissions: [Permission.sysadmin] });
-        await authorizationTestDb.getDelegate("user").create({ data: actor });
+        resetAuthorizationDatabase({ user: [actor, { ...target, hashedPassword }], userSignInMethod: methods });
         await expect(invokeResolver(getUserSignInMethods, { userId: target.publicId }, createAuthorizationTestContext(actor)))
             .resolves.toMatchObject({ hasPassword: true });
     });
@@ -280,7 +297,7 @@ describe("Sysadmin sign-in maintenance", () => {
         { mutationType: "update", updatePublicId: methods[0]!.publicId, updateModel: { identifier: "bypass@test.invalid" } },
         { mutationType: "delete", deletePublicId: methods[0]!.publicId, deleteType: "hard" },
     ])("prevents generic maintenance bypass even for Sysadmins: $mutationType", async operation => {
-        await expect(invokeResolver(db3Mutation, {
+        await expect(invokeResolver(db3Mutation, { bandPublicId: authorizationBandId,
             tableID: xUserSignInMethod.tableID, tableName: xUserSignInMethod.tableName, ...operation,
         }, adminContext())).rejects.toThrow("Not authorized");
         expect(authorizationTestDb.snapshot("userSignInMethod")).toEqual(methods);

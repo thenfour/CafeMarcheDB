@@ -47,7 +47,8 @@ const displayTag = { ...songTagReferenceFixture(parsePublicId<"SongTag">("Displa
 const dashboardStore = createDashboardReferenceStore();
 registerDashboardReferences(dashboardStore, { instrumentFunctionalGroup: [displayGroup], instrument: [displayInstrument], songTag: [displayTag] });
 const dashboard = { referenceStore: dashboardStore, instrument: new TableAccessor([displayInstrument]),
-    instrumentFunctionalGroup: new TableAccessor([displayGroup]), songTag: new TableAccessor([displayTag]), refreshCachedData: vi.fn() };
+    instrumentFunctionalGroup: new TableAccessor([displayGroup]), songTag: new TableAccessor([displayTag]), refreshCachedData: vi.fn(),
+    memberPresentation: { bandPublicId: "Band000000000001", routeLocale: "en-US", browserLanguages: ["fr-BE"] } };
 
 const authorization = new CMClientAuthorization({ id: 1, publicId: parsePublicId<"User">("User000000000001") },
     new PermissionSet([Permission.login, Permission.always_grant, Permission.admin_instruments]));
