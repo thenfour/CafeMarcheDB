@@ -1,70 +1,68 @@
-// Preserved migration reference only. The empty export keeps this file a TypeScript module.
-export {};
+import { AuthorizationError, NotFoundError } from "blitz";
+import { Permission } from "shared/permissions";
+import { parsePublicId, type UserPublicId } from "shared/publicId";
+import type { LocalePreferenceInput } from "src/locale/shared/localePreferences";
+import { resolveAuthorizedDynamicStrings } from "src/locale/server/localization";
+import type { MergeIdentity, UserMergeParticipants } from "../../userMergeSchemas";
+import { PermissionSet } from "../../shared/PermissionSet";
+import { canManageUser, type UserManagementActor } from "../userManagementPolicy";
+import { makePermissionSetFromRole, makeUserManagementTarget } from "../userManagementState";
+import { mergeUserInclude, type MergeAuthority, type MergeCandidate, type MergeContext, type MergeDatabase, type MergeUser } from "./types";
 
-
-// MIGRATION_RESTORE: account-merge
-// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/mergeEligibility.ts:1-58
-// Reason: The legacy person-level merge policies have no complete cross-band replacement.
-// Restore: Restore candidate search, preview, confirmation, credential/session handling and transactional merging across all owned records and memberships.
-// Verification: Adapt policy, picker, authorization and native transaction tests, including stale previews, audit rollback, concurrency and idempotency; exercise the merge dialog.
-// SHA256: b1be924791d3323165d525bf5b25ce6775485a73421fb26a47ee2cae77a75391
-// MIGRATION_REFERENCE_BEGIN
-// import type { Ctx } from "@blitzjs/next";
-// import { AuthorizationError, NotFoundError } from "blitz";
-// import { Permission } from "shared/permissions";
-// import type { MergeIdentity, UserMergeParticipants } from "../../userMergeSchemas";
-// import { canManageUser } from "../userManagementPolicy";
-// import { makeUserManagementActor, makeUserManagementTarget } from "../userManagementState";
-// import type { MergeContext, MergeDatabase, MergeUser } from "./types";
-// import { xRole, xUser } from "@/src/core/db3/db3";
-// import { loadAuthorization } from "../serverAuthorization";
-//
-// export async function authorizeMergeActor(db: MergeDatabase, ctx: Ctx) {
-//     // Disallow impersonated users from performing a merge. a bit arbitrary...
-//     if (ctx.session.$publicData.impersonatingFromUserId != null) {
-//         throw new AuthorizationError();
-//     }
-//     const auth = await (await loadAuthorization(ctx.session)).refresh(db);
-//     auth.requirePermission(Permission.merge_users);
-//     return makeUserManagementActor(auth.requireUser().user, auth);
-// }
-//
-// // also does auth check
-// export async function loadMergeContext(db: MergeDatabase, ctx: Ctx, participants: UserMergeParticipants): Promise<MergeContext> {
-//     const actor = await authorizeMergeActor(db, ctx);
-//     if (participants.mainUserId === participants.retiringUserId) {
-//         throw new Error("Choose two different accounts.");
-//     }
-//     const users = await db.user.findMany({
-//         where: { publicId: { in: [participants.mainUserId, participants.retiringUserId] } },
-//         include: { role: { include: { permissions: { include: { permission: true } } } } },
-//         orderBy: { id: "asc" },
-//     });
-//     const main = users.find(user => user.publicId === participants.mainUserId);
-//     const retiring = users.find(user => user.publicId === participants.retiringUserId);
-//     if (!main || !retiring) throw new NotFoundError();
-//     for (const target of [main, retiring]) {
-//         if (!canManageUser({
-//             actor,
-//             target: makeUserManagementTarget(target),
-//             action: "merge",
-//         })) {
-//             throw new AuthorizationError();
-//         }
-//     }
-//     return { db, main, retiring, mainUserId: main.id, retiringUserId: retiring.id };
-// }
-//
-// // converts a MergeUser object (straight from db) to a MergeIdentity object (merge context-facing)
-// export function mergeIdentity(user: MergeUser): MergeIdentity {
-//     return {
-//         publicId: xUser.parseIdentity(user.publicId),
-//         name: user.name,
-//         email: user.email,
-//         createdAt: user.createdAt,
-//         roleId: user.role ? xRole.parseIdentity(user.role.publicId) : null,
-//         isDeleted: user.isDeleted,
-//         isSysAdmin: user.isSysAdmin,
-//     };
-// }
-// MIGRATION_REFERENCE_END
+export async function authorizeMergeActor(db: MergeDatabase, authority: MergeAuthority): Promise<UserManagementActor> {
+    if (authority.isImpersonating) {
+        throw new AuthorizationError();
+    }
+    const auth = (await authority.authorization.refresh(db)).requireUser();
+    auth.requirePermission(Permission.merge_users);
+    auth.requirePermission(Permission.manage_global_users);
+    return { principal: auth.user, auth };
+}
+export function canMergeAccount(actor: UserManagementActor, target: MergeCandidate): boolean {
+    if (!canManageUser({ actor, target: makeUserManagementTarget(target), action: "merge" })) {
+        return false;
+    }
+    if (actor.auth.hasPermission(Permission.sysadmin)) {
+        return true;
+    }
+    if (target.isSysAdmin) {
+        return false;
+    }
+    // A selected-band grant cannot authorize account-wide changes in other bands.
+    const globalEnvelope = makePermissionSetFromRole(actor.auth.user?.globalRole);
+    if (!globalEnvelope.hasAllDelegable(makeUserManagementTarget(target).rolePermissions)) {
+        return false;
+    }
+    return target.bandUsersByUser.every(member => {
+        const grants = member.bandRole && !member.bandRole.isDeleted
+            ? member.bandRole.bandRolePermissions.filter(grant => !grant.permission.isDeleted).map(grant => grant.permission.name) : [];
+        return globalEnvelope.hasAllDelegable(new PermissionSet(grants));
+    });
+}
+export async function loadEligibleMergeUser(db: MergeDatabase, actor: UserManagementActor, userId: UserPublicId): Promise<MergeUser> {
+    const user = await db.user.findUnique({ where: { publicId: userId }, include: mergeUserInclude });
+    if (!user) {
+        throw new NotFoundError();
+    }
+    if (!canMergeAccount(actor, user)) {
+        throw new AuthorizationError("Not authorized to merge this account.");
+    }
+    return user;
+}
+export async function loadMergeContext(db: MergeDatabase, authority: MergeAuthority, participants: UserMergeParticipants): Promise<MergeContext> {
+    const actor = await authorizeMergeActor(db, authority);
+    if (participants.mainUserId === participants.retiringUserId) {
+        throw new AuthorizationError("Choose two different accounts.");
+    }
+    const main = await loadEligibleMergeUser(db, actor, participants.mainUserId);
+    const retiring = await loadEligibleMergeUser(db, actor, participants.retiringUserId);
+    const mainByBand = new Map(main.bandUsersByUser.map(member => [member.bandId, member]));
+    return { db, authorization: actor.auth, main, retiring, mainUserId: main.id, retiringUserId: retiring.id,
+        memberships: retiring.bandUsersByUser.map(member => ({ main: mainByBand.get(member.bandId) ?? null, retiring: member })) };
+}
+export async function mergeIdentity(db: MergeDatabase, user: MergeCandidate, locale: LocalePreferenceInput): Promise<MergeIdentity> {
+    const labels = await resolveAuthorizedDynamicStrings(db, { band: null }, user.globalRole ? [user.globalRole.nameId] : [], locale);
+    return { publicId: parsePublicId<"User">(user.publicId), name: user.name, email: user.email, createdAt: user.createdAt,
+        roleId: user.globalRole ? parsePublicId<"GlobalRole">(user.globalRole.publicId) : null,
+        roleName: user.globalRole ? labels.get(user.globalRole.nameId)?.value ?? null : null, isDeleted: user.isDeleted, isSysAdmin: user.isSysAdmin };
+}

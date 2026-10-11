@@ -1188,22 +1188,74 @@ unknown activity stays null and comparison-only populated sections remain visibl
 
 The account-analysis obligation is closed: four source blocks/references and its
 unused recovery flag/string are removed. Two obsolete availability-guard cases
-are removed; the retained page guard now requires Sysadmin. Account merge and its
-four deferred specifications, broader profile/lifecycle parity, production
+are removed; the retained page guard now requires Sysadmin. Account merge is
+restored in the checkpoint below. Broader profile/lifecycle parity, production
 inventory/rehearsal, localized-name matching and A1/B remain open.
 
-## Next slice: Shared-account merge
+## Shared-account merge checkpoint
 
-Restore the preserved candidate search, aggregate preview, confirmation and
-transactional merge through their existing UI and policy owners. Adapt the fixed
-policies to shared User identity and each BandUser's owned records, including
-credentials/sessions, account roles, memberships, authored content and history.
-Use the restored analysis contracts without treating its risk heuristic as write
-authorization or inheriting a band participant picker's eligibility policy.
-Revalidate current authority and preview state at commit; retain atomic audit
-rollback, continuity, concurrency and idempotency behavior. Reactivate the four
-preserved merge specifications and verify the original built confirmation flow
-on disposable two-band data.
+The original profile action and a lazy platform-account-grid entry open the same
+merge dialog. The shared picker searches words across name, email and public
+identity, excludes the operator/profile account and retains clear/reopen behavior.
+Main/Retiring summaries, swap, aggregate policy report, blockers and one
+accept/cancel decision retain the reference workflow. New controls and membership
+policy text use registered strings; existing English chrome follows the A1
+exception. Account GlobalRole labels resolve globally, preserving locale order
+and intentional blanks; dates/counts use explicit viewer presentation.
+
+Search, merge-specific analysis, preview and commit require fresh `merge_users`
+and `manage_global_users` authority from an active, unmerged operator, without
+impersonation or self-merging. Delegated global authority covers every target's
+global and band-role grants, including inactive memberships. Sysadmin can manage
+protected targets. Selected-band authority never authorizes this account-wide
+operation. The analysis inventory is reused behind that feature boundary;
+ordinary Mass Analysis remains separately Sysadmin-only.
+
+Policy version 2 assigns every User/BandUser foreign key exactly once. Main
+retains shared identity/contact/global role/account settings and each overlapping
+membership identity/role/state/preferences, including blanks/defaults. Missing
+responses, attendance, instruments and File tags transfer within their band;
+Main wins overlaps, defaults and shared-band member tags. Retiring-only
+memberships reparent with their identity/state/preferences/associations intact,
+but their band roles are cleared to preserve the never-combine-privileges rule.
+Inactive memberships and retired bands stay inactive.
+
+Account-wide sign-in methods, credits, uploaded Files and authored content follow
+the fixed policies. Main's password wins when present, both accounts' sessions,
+impersonation sessions started by either, and reset tokens are revoked, and only
+Main's calendar subscription remains valid. Historical attribution stays on its
+original account/editor; Retiring's Wiki editing locks are released. An inactive
+Main, no usable login, prior received merges, invalid primary instruments and
+embedded/unreadable plan JSON block retirement. The report includes global and
+band continuity consequences without exposing private linked content/settings.
+
+Preview and Serializable commit rebuild the same policies under fresh authority.
+An opaque HMAC binds direction, operator, version, participants, memberships,
+grants and relevant hidden rows. Even a hidden comment change with unchanged
+counts requires review again. Policy effects, retirement and one aggregate audit
+commit atomically; audit failure rolls everything back. A concurrent/repeated
+request cannot duplicate effects or audits: an already merged participant is
+rejected by fresh eligibility. No persistent confirmation or operation model is
+added. Transaction conflict has a distinct retry response.
+
+The dialog locks selection/confirmation while pending. Failed commit discards
+the report; failed authorization hides cached results. Profile, band, route,
+ordered preferences, presentation revision and actor changes close the dialog,
+reset selection and discard late replies. Four preserved specifications are
+executable, six obsolete availability-rejection cases and the unused recovery
+flag are removed, and all 29 completed source blocks/references are removed.
+The current contract is documented in [userMerge.md](../userMerge.md).
+
+## Next slice: Audit log
+
+Restore the preserved audit browser, filters, historical JSON inspection and
+detail/navigation/clipboard actions through their existing page and server
+owners. Retain immutable recording while distinguishing account-wide platform
+authority from band-owned rows and independently authorizing historical
+references. Reactivate the remaining deferred audit specification; verify
+redaction, deleted references, fresh revocation, two-band localization and the
+original built-browser workflow on disposable data. Keep broader profile parity,
+localized-name matching, production inventory/rehearsal and A1/B open.
 
 ## Localized catalog text search exception
 
@@ -1274,7 +1326,50 @@ client together with writes stopped and matching upload backups.
 
 ## Verification status
 
-The **account dependency analysis** checkpoint passes normal `yarn typecheck`,
+The **shared-account merge** checkpoint passes normal `yarn typecheck`,
+targeted ESLint across **42 changed TypeScript files** and a normal production
+build with isolated output. The complete repository
+runner selects **290 files: 2,994 passed and 903 skipped**, with no test or
+suite-load failures. Existing native gates remain; the 27 restored merge cases
+run separately on their own database rather than skipping an unrelated check.
+Focused policy/request/dialog/recovery/analysis checks pass **84 cases in six
+files**. Four deferred merge specifications are executable; six obsolete
+availability-rejection cases are removed, and the lifecycle navigation spec
+isolates the merge component behind its own mounted coverage.
+
+All **65 existing native MySQL specifications** pass **846 cases with 24 existing
+fixture-gated skips**, plus **27 merge cases** on a separate disposable database.
+Coverage includes every User/BandUser foreign key, Main blanks/defaults and
+two-band response/segment revisions, imported inactive memberships/preferences,
+role clearing, exact credit deduplication, hidden/deleted current ownership,
+unchanged history, credentials/calendar/sessions/reset tokens and Wiki locks.
+Delegated authority, every membership ceiling, revoked/deleted/merged/anonymous/
+impersonated actors, no-band/numeric/decision rejection, localized global role
+blanks/preference order, global/band continuity, same-count hidden changes,
+audit rollback, concurrent commits and exact replay are exercised. Both private
+databases are dropped. The merge runner now uses the required repository wrapper.
+
+**Seven built Chromium groups** verify lazy original profile and platform-grid
+entries, actual shared-picker word search/exclusion without a request loop,
+swap/blockers, French/Dutch global labels and explicit Tokyo dates, two-band
+aggregate privacy, forged public requests, same-count hidden-comment changes,
+captured commits denied after fresh revocation, cache hiding and explicit retry,
+held old-context replies and a real inactive-account merge. Main's exact account
+values remain, both bands' responses and sign-in methods transfer and one audit
+records retirement. Band-only managers and anonymous clients are denied. French
+profile/grid layouts are visually inspected; no uncaught page or unexpected RPC
+errors occur. The owned server/database/assets are removed.
+
+Evidence is in `temp/user-merge-full-suite.log`, `temp/user-merge-all-native.log`,
+`temp/user-merge-native.log`, `temp/user-merge-focused.log` and
+`temp/user-merge-browser-result.json`. Final build/lint/compiler and source
+correspondence are recorded in `temp/user-merge-final-results.json`. Preservation
+verifies **93 source references, one whole-file deferred specification and ten
+pending features**. Account merge is restored; audit browsing is next. Broader
+profile parity, localized-name matching, production inventory/rehearsal and A1/B
+remain open.
+
+The preceding **account dependency analysis** checkpoint passes normal `yarn typecheck`,
 targeted ESLint across twenty-one changed TypeScript files and a normal production
 build with isolated output. The complete repository runner selects **286 files:
 2,965 passed and 876 skipped**, with no test or suite-load failures. Existing
@@ -1306,9 +1401,9 @@ Evidence is in `temp/account-analysis-full-suite.log`,
 `temp/account-analysis-all-native.log`, `temp/account-analysis-final-focused.log`
 and `temp/account-analysis-browser-result.json`. Final build/lint/compiler and
 source correspondence are recorded in `temp/account-analysis-final-results.json`.
-Preservation verifies **122 source references, five whole-file deferred
+At that checkpoint, preservation verifies **122 source references, five whole-file deferred
 specifications and eleven pending features**. Account analysis is restored;
-account merge is next. Broader profile parity, production inventory/rehearsal,
+account merge follows in the checkpoint above. Broader profile parity, production inventory/rehearsal,
 localized catalog-name matching and A1/B remain open.
 
 The preceding **role administration** checkpoint passes normal `yarn typecheck`, targeted

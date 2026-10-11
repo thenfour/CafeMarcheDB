@@ -1,53 +1,50 @@
-// Preserved migration reference only. The empty export keeps this file a TypeScript module.
-export {};
+import { Prisma } from "@prisma/client";
+import type { MergeReportSection, MergeReportText, UserMergeDatabaseParticipants } from "../../userMergeSchemas";
+import type { CMServerAuthorization } from "../serverAuthorization";
 
-
-// MIGRATION_RESTORE: account-merge
-// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/types.ts:1-41
-// Reason: The legacy person-level merge policies have no complete cross-band replacement.
-// Restore: Restore candidate search, preview, confirmation, credential/session handling and transactional merging across all owned records and memberships.
-// Verification: Adapt policy, picker, authorization and native transaction tests, including stale previews, audit rollback, concurrency and idempotency; exercise the merge dialog.
-// SHA256: 1a6d615760d2df4a6c1eaf5dc90174b78c23e667583b0d492d405f6d4f349ade
-// MIGRATION_REFERENCE_BEGIN
-// import type { Prisma } from "db";
-// import type { MergeReportSection, UserMergeDatabaseParticipants } from "../../userMergeSchemas";
-//
-//
-// // types and utilities shared by merge policies
-//
-// export type MergeDatabase = Prisma.TransactionClient;
-//
-// export type MergeUser = Prisma.UserGetPayload<{
-//     include: { role: { include: { permissions: { include: { permission: true } } } } }
-// }>;
-//
-// export interface MergeContext extends UserMergeDatabaseParticipants {
-//     db: MergeDatabase;
-//     main: MergeUser;
-//     retiring: MergeUser;
-// }
-//
-// export interface PreparedMergeStep {
-//     report: MergeReportSection;
-//     // Used only on the server to bind confirmation to the data that was reviewed.
-//     reviewState: unknown;
-//     apply: (db: MergeDatabase) => Promise<void>;
-// }
-//
-// export interface MergePolicy {
-//     key: string;
-//     // Every foreign key to User must have an intentional disposition.
-//     // and should never be covered by more than one policy.
-//     // so this has a unit test ensuring no overlap between policies.
-//     userRelations: readonly string[];
-//     prepare: (context: MergeContext) => Promise<PreparedMergeStep>;
-// }
-//
-// // pass-through to change shape from "x", y to { label: "x", count: y }
-// export const countEffect = (label: string, count: number) => ({ label, count });
-//
-// // prisma where clause for selecting participants in a user merge
-// export const participantWhere = (context: UserMergeDatabaseParticipants) => ({
-//     userId: { in: [context.mainUserId, context.retiringUserId] },
-// });
-// MIGRATION_REFERENCE_END
+export type MergeDatabase = Prisma.TransactionClient;
+// Only transaction execution is needed from the root Prisma/Blitz client.
+export interface MergeRootDatabase {
+    $transaction<T>(operation: (database: MergeDatabase) => Promise<T>, options: {
+        isolationLevel: "Serializable"; timeout?: number; maxWait?: number;
+    }): Promise<T>;
+}
+export interface MergeAuthority { authorization: CMServerAuthorization; isImpersonating: boolean }
+export const mergeUserInclude = Prisma.validator<Prisma.UserInclude>()({
+    globalRole: { include: { permissions: { include: { permission: true }, orderBy: { id: "asc" } } } },
+    bandUsersByUser: { orderBy: { id: "asc" }, include: {
+        band: true, bandRole: { include: { bandRolePermissions: { include: { permission: true }, orderBy: { id: "asc" } } } },
+    } },
+});
+export type MergeUser = Prisma.UserGetPayload<{ include: typeof mergeUserInclude }>;
+export const mergeCandidateSelect = Prisma.validator<Prisma.UserSelect>()({
+    id: true, publicId: true, name: true, email: true, createdAt: true, isDeleted: true, isSysAdmin: true,
+    globalRoleId: true, mergedIntoUserId: true, ...mergeUserInclude,
+});
+export type MergeCandidate = Prisma.UserGetPayload<{ select: typeof mergeCandidateSelect }>;
+export type MergeMembership = MergeUser["bandUsersByUser"][number];
+export interface MembershipMerge { main: MergeMembership | null; retiring: MergeMembership }
+export interface MergeContext extends UserMergeDatabaseParticipants {
+    db: MergeDatabase;
+    authorization: CMServerAuthorization;
+    main: MergeUser;
+    retiring: MergeUser;
+    memberships: readonly MembershipMerge[];
+}
+export interface PreparedMergeStep {
+    report: MergeReportSection;
+    // Policies own different shapes; this opaque state is hashed, never disclosed.
+    reviewState: unknown;
+    apply: (db: MergeDatabase) => Promise<void>;
+}
+export interface MergePolicy {
+    key: string;
+    // Every foreign key to User or BandUser has exactly one intentional disposition.
+    userRelations: readonly string[];
+    prepare: (context: MergeContext) => Promise<PreparedMergeStep>;
+}
+export const countEffect = (label: MergeReportText, count: number) => ({ label, count });
+export const participantWhere = (context: UserMergeDatabaseParticipants) => ({ userId: { in: [context.mainUserId, context.retiringUserId] } });
+export const membershipWhere = (context: MergeContext) => ({ bandUserId: { in: [
+    ...context.main.bandUsersByUser.map(member => member.id), ...context.retiring.bandUsersByUser.map(member => member.id),
+] } });

@@ -1,5 +1,4 @@
 import { authorizationBandId } from "./support/authorizationSeed";
-import type { AuthenticatedCtx, Ctx } from "blitz";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { describe, expect, it, vi } from "vitest";
 
@@ -22,9 +21,6 @@ import { validateDB3MutationRequest, validateDB3PaginatedQueryRequest, validateD
 import getAdminLogItemInfo from "@db3/queries/getAdminLogItemInfo";
 import getDistinctChangeFilterValues from "@db3/queries/getDistinctChangeFilterValues";
 import { insertImpl } from "@db3/server/db3mutationCore";
-import mergeUsers from "src/auth/mutations/mergeUsers";
-import previewUserMerge from "src/auth/queries/previewUserMerge";
-import searchUserMergeCandidates from "src/auth/queries/searchUserMergeCandidates";
 import { ApplicationFeatureUnavailableError } from "src/core/shared/applicationRecovery";
 import { parsePublicId } from "shared/publicId";
 
@@ -37,14 +33,6 @@ import { forgeDb3Insert, forgeDb3PublicUpdate, forgeDb3PublicDelete, forgeDb3Que
 const member = createAuthorizationTestUser("normal", { id: 10 });
 const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 });
 const userId = member.publicId;
-const participants = { mainUserId: userId, retiringUserId: sysadmin.publicId };
-type RequestContext = Ctx | AuthenticatedCtx;
-
-const deferredEndpoints = [
-    { name: "search merge candidates", call: (ctx: RequestContext) => invokeResolver(searchUserMergeCandidates, { query: "", excludeUserId: userId }, ctx) },
-    { name: "preview account merge", call: (ctx: RequestContext) => invokeResolver(previewUserMerge, participants, ctx) },
-    { name: "commit account merge", call: (ctx: RequestContext) => invokeResolver(mergeUsers, { participants, confirmation: "a".repeat(64) }, ctx) },
-];
 
 const deferredAuditEndpoints = [
     { name: "historical audit references", resolve: getAdminLogItemInfo },
@@ -101,18 +89,6 @@ describe("deferred audit log readers", () => {
 });
 
 describe("deferred shared-account operations", () => {
-    it.each(deferredEndpoints)("rejects $name for members and platform administrators without database access", async ({ call }) => {
-        for (const actor of [member, sysadmin]) {
-            await expect(call(createAuthorizationTestContext(actor)))
-                .rejects.toThrow(ApplicationFeatureUnavailableError);
-        }
-    });
-
-    it.each(deferredEndpoints)("requires login before reporting availability for $name", async ({ call }) => {
-        await expect(call(createAuthorizationTestContext(null)))
-            .rejects.toThrow("login");
-    });
-
     it.each(["Role", "RolePermission", "UserInstrument", "Setting", "GlobalSetting", "BandSetting", "UserSetting", "BandUserSetting"])("does not register obsolete or command-owned %s storage", tableID => {
         expect(() => db3.GetTableById(tableID)).toThrow("was not found");
     });

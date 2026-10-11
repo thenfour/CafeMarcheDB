@@ -252,8 +252,15 @@ async function presentAccountInventory(database: Prisma.TransactionClient,
 
 async function readAuthorizedInventory(context: DB3ReadContext, userId: UserPublicId, locale: LocalePreferenceInput): Promise<UserMassAnalysisResult> {
     context.authorization.requireUser().requirePermission(Permission.sysadmin);
-    const inventory = await loadAccountInventory(context.database, userId, locale);
-    return presentAccountInventory(context.database, inventory, locale);
+    return readAccountDependencyInventory(context.database, userId, locale);
+}
+
+/** Internal inventory composition. The feature owner must authorize its account-wide read first. */
+export async function readAccountDependencyInventory(database: Prisma.TransactionClient, userId: UserPublicId,
+    locale: LocalePreferenceInput,
+): Promise<UserMassAnalysisResult> {
+    const inventory = await loadAccountInventory(database, userId, locale);
+    return presentAccountInventory(database, inventory, locale);
 }
 
 export function readUserMassAnalysis(database: DB3ReadDatabase, authorization: CMServerAuthorization,

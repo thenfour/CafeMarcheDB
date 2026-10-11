@@ -51,8 +51,14 @@
       "reason": "The legacy person-level merge policies have no complete cross-band replacement.",
       "restore": "Restore candidate search, preview, confirmation, credential/session handling and transactional merging across all owned records and memberships.",
       "verification": "Adapt policy, picker, authorization and native transaction tests, including stale previews, audit rollback, concurrency and idempotency; exercise the merge dialog.",
-      "status": "pending",
-      "evidence": []
+      "status": "restored",
+      "evidence": [
+        "2026-10-12: The original profile merge action and lazy platform-account-grid entry retain selection, Main/Retiring swap, dependency summaries, fixed-policy aggregate preview, blockers and one accept/cancel decision. The actual shared selection UI supports case-insensitive words across name/email/public identity without a request loop. Fresh merge-specific analysis reuses the dependency inventory while the public Mass Analysis reader remains Sysadmin-only.",
+        "Policy version 2 adapts every User and BandUser foreign key exactly once. Main retains shared identity/contact/global role/account settings and each overlapping membership role/state/preferences, including blanks/defaults. Retiring-only memberships retain their identity/state/settings/associations but clear their band roles; inactive memberships and retired bands remain inactive. Per-band response/segment/instrument/tag/File policies, account-wide credits/authored content, historical attribution, credentials/calendar/sessions/reset tokens, prior-merge and serialized-plan blockers and global/band continuity are covered. Wiki editing locks are now released as the reference documentation intended.",
+        "Search, aggregate analysis, preview and commit require fresh merge_users and manage_global_users authority from an active unmerged non-impersonated operator. Delegated authority covers every target global/band role through the global envelope; self/merged/protected targets remain restricted. Strict requests reject band scope, natural identities and client decisions. GlobalRole labels resolve globally with ordered locales and intentional blanks. Reports expose counts and opaque HMACs, never linked private content, credentials or settings.",
+        "Preview and Serializable commit rebuild the same stateless policies; HMAC review binds direction, operator, version, participants, memberships/grants and hidden rows. Changes with unchanged counts invalidate review. Audit failure rolls back all effects. Concurrent/repeated commits produce one merge and one audit; already merged participants are safely rejected by fresh eligibility. No persisted confirmation, operation model, broad compatibility guards or privilege-combining option is introduced.",
+        "All four preserved merge specifications are executable. Focused policy/authorization/dialog/recovery/analysis checks pass 84 cases in six files, 27 native merge cases pass on their own disposable database, and all 65 existing native specifications pass 846 cases with 24 existing gated skips. Seven built Chromium groups verify lazy profile/grid paths, swap/clear/blockers, French/Dutch global labels and Tokyo dates, two-band aggregate privacy, forged/stale captured RPCs, grant revocation/hiding/retry, held old-context replies, real inactive-account confirmation and band-only/anonymous denial. French profile/grid preview layouts are visually inspected with no uncaught page or unexpected RPC errors. Owned server/databases/assets are removed. Six obsolete availability-rejection cases and the unused recovery flag are removed; all 29 completed blocks/references are removed. Final full-suite/compiler/lint/build results are recorded in 04-implementation-plan.md#verification-status and temp/user-merge-final-results.json. Broader profile parity, audit browsing, localized-name matching, production inventory/rehearsal and A1/B remain open."
+      ]
     },
     {
       "id": "account-analysis",
@@ -393,180 +399,6 @@
     }
   ],
   "references": [
-    {
-      "file": "src/auth/mutations/mergeUsers.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/mutations/mergeUsers.ts:1-13",
-      "sha256": "9967571e5c9719d3826522471c42b4cf1a149c8ff8d1be9743da6aa8a94f374a"
-    },
-    {
-      "file": "src/auth/queries/previewUserMerge.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/queries/previewUserMerge.ts:1-15",
-      "sha256": "6989926517b44c6cbbae5b03864cc93a617b7c270ea533f978a89352f84b12c4"
-    },
-    {
-      "file": "src/auth/queries/searchUserMergeCandidates.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/queries/searchUserMergeCandidates.ts:1-75",
-      "sha256": "b873d125900fff9e87fe3e756a93119350ea7ab0a8b2115a33b39ae963464374"
-    },
-    {
-      "file": "src/auth/server/userMerge/classifyRecords.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/classifyRecords.ts:1-46",
-      "sha256": "fde76231c80c3502a49ae1469dbe48466050fdad1da7fee086f646f9bb7804dc"
-    },
-    {
-      "file": "src/auth/server/userMerge/commitUserMerge.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/commitUserMerge.ts:1-84",
-      "sha256": "df682b7edfdad9089ca50c70bac0e8248a2039ba03eaa7a28d12bca840408701"
-    },
-    {
-      "file": "src/auth/server/userMerge/mergeEligibility.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/mergeEligibility.ts:1-58",
-      "sha256": "b1be924791d3323165d525bf5b25ce6775485a73421fb26a47ee2cae77a75391"
-    },
-    {
-      "file": "src/auth/server/userMerge/policies.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/policies.ts:1-31",
-      "sha256": "8ebc71697df3c88b5fb2b962b4709e62441271f63bb07634643dc74eddadac81"
-    },
-    {
-      "file": "src/auth/server/userMerge/policies/authoredContent.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/policies/authoredContent.ts:1-109",
-      "sha256": "7c59fa3fd2ffee45afc02fe7a3a1e24963a89e1a54302e8d1b5935706c0c7d70"
-    },
-    {
-      "file": "src/auth/server/userMerge/policies/eventResponses.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/policies/eventResponses.ts:1-41",
-      "sha256": "881442cd13be9466bee1a0e659f0758cbec707004d90ef31db997552d367726a"
-    },
-    {
-      "file": "src/auth/server/userMerge/policies/files.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/policies/files.ts:1-32",
-      "sha256": "39b9fa4ed38a94a3b451f75ab322ff904a8e735e7aaf4345b12e5d3b05504566"
-    },
-    {
-      "file": "src/auth/server/userMerge/policies/history.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/policies/history.ts:1-25",
-      "sha256": "bafa2f369ef0b03345b6aa596eed9916ce9cc4fc089367921ad186303ea5a40c"
-    },
-    {
-      "file": "src/auth/server/userMerge/policies/instruments.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/policies/instruments.ts:1-36",
-      "sha256": "aa93974e51fc44b5d692f72e16561c990acf933e5db16c55a151b7b320d638f7"
-    },
-    {
-      "file": "src/auth/server/userMerge/policies/profile.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/policies/profile.ts:1-41",
-      "sha256": "355b6e7c08e8d2b4731f9d3b3859ba6737a5293e860e15063a18068cb2927175"
-    },
-    {
-      "file": "src/auth/server/userMerge/policies/segmentAttendance.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/policies/segmentAttendance.ts:1-62",
-      "sha256": "b86275b9703e8e87194f7d84eddc90ae68dee1dc283bffa67467dff585d833b7"
-    },
-    {
-      "file": "src/auth/server/userMerge/policies/setlistReferences.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/policies/setlistReferences.ts:1-51",
-      "sha256": "fd822d6cc9498485c0ad82630d49e35a6345a41320e6a2a60498cd797c4939a2"
-    },
-    {
-      "file": "src/auth/server/userMerge/policies/signInMethods.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/policies/signInMethods.ts:1-68",
-      "sha256": "f7279f269a1b1b7fd495d722b7132684e2d86b58765bbfe83cf67ea5dd697610"
-    },
-    {
-      "file": "src/auth/server/userMerge/policies/songCredits.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/policies/songCredits.ts:1-40",
-      "sha256": "efaa3443a8fbd7e545a1d618c3f17bec29dc0f7b7a7a16f109123f17e5f816a5"
-    },
-    {
-      "file": "src/auth/server/userMerge/policies/userTags.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/policies/userTags.ts:1-27",
-      "sha256": "99d820cceaea53b504a0b65f25b99122acac15e19e92b754346c550bfe3e6f08"
-    },
-    {
-      "file": "src/auth/server/userMerge/prepareUserMerge.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/prepareUserMerge.ts:1-62",
-      "sha256": "4fd5629a897b9fd5cf2a244d2da9396a81de22f5caca2d80f65359e8e917db6f"
-    },
-    {
-      "file": "src/auth/server/userMerge/publicResponse.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/publicResponse.ts:1-22",
-      "sha256": "d0b5ee26cf218e981bcaeccd9cdc87904eeca587243e98768d437ecd42ef7fd1"
-    },
-    {
-      "file": "src/auth/server/userMerge/types.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/types.ts:1-41",
-      "sha256": "1a6d615760d2df4a6c1eaf5dc90174b78c23e667583b0d492d405f6d4f349ade"
-    },
-    {
-      "file": "src/auth/userMergeSchemas.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/userMergeSchemas.ts:1-45",
-      "sha256": "507d4df11d742a8ea0b1f2ded6630f256cb21af112a4098f7a1af0948dcce2a6"
-    },
-    {
-      "file": "src/core/components/user/MergeUsersButton.tsx",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/user/MergeUsersButton.tsx:1-240",
-      "sha256": "b36414fa5304fee3ae461e467ce6894f0fb975080f29683fb2c5aaf29ec35a8a"
-    },
-    {
-      "file": "src/core/components/user/UserAdminPanel.tsx",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/user/UserAdminPanel.tsx:1-165",
-      "sha256": "23f553f37f775b848de5b7acff089c7d8fc34f8861d2df15905fc5427d798b74"
-    },
-    {
-      "file": "tests/authorization/userMerge.test.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/userMerge.test.ts:1-145",
-      "sha256": "a8061ff9c51ca57e29f5f40832debe891c302371b34c82787f8c0f29f8556d66"
-    },
-    {
-      "file": "tests/userMerge.mysql.test.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/userMerge.mysql.test.ts:1-279",
-      "sha256": "4b89ca335c3ed8cd719e63ee60e92ee80bb26db7c52637819e7108ba1924ca45"
-    },
-    {
-      "file": "tests/userMergePicker.test.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/userMergePicker.test.ts:1-178",
-      "sha256": "81a274f93ced0a2835108f704e723f005f4d21d911ca930084ab476accfb5b58"
-    },
-    {
-      "file": "tests/userMergePolicies.test.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/userMergePolicies.test.ts:1-134",
-      "sha256": "155275050f26b17e34cc1a79f6e48151debd8f8aa57e5d94bf20d578653b1de4"
-    },
-    {
-      "file": "tests/userRecoveryNavigation.test.ts",
-      "featureId": "account-merge",
-      "source": "ab71102f2df004302ff85cb652a1be4f49b54191:tests/userRecoveryNavigation.test.ts:1-117",
-      "sha256": "53012c773833d9c661a5b371ecb5537924f00dbeb693a21394dfaa791d03a4ce"
-    },
     {
       "file": "src/pages/backstage/users.tsx",
       "featureId": "directory-search",

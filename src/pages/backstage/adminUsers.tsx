@@ -14,6 +14,7 @@ import { useLocale } from "src/locale/components/useLocale";
 import React, { Suspense } from "react";
 import { AccountRoleAction } from "src/core/components/user/AccountRoleControl";
 import { AccountAnalysisAction } from "src/core/components/user/UserMassAnalysisTab";
+import { MergeUsersButton } from "src/core/components/user/MergeUsersButton";
 
 const makeDisplayOnlyColumn = <T extends DB3Client.IColumnClient>(column: T): T => {
     // This grid may inspect security state, but generic DB3 mutation must not
@@ -50,6 +51,8 @@ const UserListContent: React.FC<{}> = () => {
         return <div>
             <Suspense><AccountRoleAction userId={userPayload.publicId} onChanged={() => args.refetch()} /></Suspense>
             {auth.hasPermission(Permission.sysadmin) && <AccountAnalysisAction userId={userPayload.publicId} />}
+            {auth.hasPermission(Permission.merge_users) && auth.hasPermission(Permission.manage_global_users)
+                && auth.userPublicId !== userPayload.publicId && <MergeUsersButton user={userPayload} />}
             <ImpersonateUserButton userId={userPayload.publicId} />
             <AdminResetPasswordButton user={userPayload} />
             {dashboardContext.memberPresentation.bandPublicId

@@ -1,58 +1,34 @@
-// Preserved migration reference only. The empty export keeps this file a TypeScript module.
-export {};
+import type { MergeContext } from "./types";
 
-
-// MIGRATION_RESTORE: account-merge
-// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/auth/server/userMerge/classifyRecords.ts:1-46
-// Reason: The legacy person-level merge policies have no complete cross-band replacement.
-// Restore: Restore candidate search, preview, confirmation, credential/session handling and transactional merging across all owned records and memberships.
-// Verification: Adapt policy, picker, authorization and native transaction tests, including stale previews, audit rollback, concurrency and idempotency; exercise the merge dialog.
-// SHA256: fde76231c80c3502a49ae1469dbe48466050fdad1da7fee086f646f9bb7804dc
-// MIGRATION_REFERENCE_BEGIN
-//
-// type ClassifiableRecordBase = {
-//     id: number; // pk of the object
-//     userId: number | null; // user this record belongs to
-// };
-//
-// // walks through records and classifies each by
-// // - transfer: records that should be transferred to the main user
-// // - overlaps: records that conflict with existing main user records
-// // - remove: records that should be removed (i.e., discarded due to overlap)
-// // Stable/deterministic ordering,
-// // including duplicate associations which the database does not prohibit.
-// export function classifyRecords<T extends ClassifiableRecordBase>(
-//     records: readonly T[],
-//     mainUserId: number,
-//     getKey: (record: T) => string | number,
-// ) {
-//     const main = new Map(records
-//         .filter(record => record.userId === mainUserId)
-//         .map(record => [getKey(record), record])
-//     );
-//     const transfer: T[] = [];
-//     const overlaps: { retained: T; discarded: T }[] = [];
-//     for (const record of records) {
-//         if (record.userId === mainUserId) {
-//             continue;
-//         }
-//         const key = getKey(record);
-//         const retained = main.get(key);
-//         if (retained) {
-//             overlaps.push({ retained, discarded: record });
-//         }
-//         else {
-//             main.set(key, record);
-//             transfer.push(record);
-//         }
-//     }
-//     return {
-//         transfer,
-//         overlaps,
-//         remove: overlaps.map(pair => pair.discarded),
-//     };
-// }
-//
-// // used so commonly in merge policy classes this is warranted.
-// export const recordIds = (records: readonly { id: number }[]) => records.map(record => record.id);
-// MIGRATION_REFERENCE_END
+/** Stable decisions, with Main taking precedence even if Retiring's record was created first. */
+export function classifyRecords<T extends { id: number }>(records: readonly T[], mainOwnerId: number | null,
+    getOwnerId: (record: T) => number | null, getKey: (record: T) => string | number,
+) {
+    const retainedByKey = new Map(records.filter(record => getOwnerId(record) === mainOwnerId).map(record => [getKey(record), record]));
+    const transfer: T[] = [];
+    const overlaps: { retained: T; discarded: T }[] = [];
+    for (const record of records) {
+        if (getOwnerId(record) === mainOwnerId) {
+            continue;
+        }
+        const key = getKey(record);
+        const retained = retainedByKey.get(key);
+        if (retained) {
+            overlaps.push({ retained, discarded: record });
+        } else {
+            retainedByKey.set(key, record);
+            transfer.push(record);
+        }
+    }
+    return { transfer, overlaps, remove: overlaps.map(pair => pair.discarded) };
+}
+/** Match associations only within their own band. A missing Main membership transfers intact. */
+export function classifyMembershipRecords<T extends { id: number; bandUserId: number }>(context: MergeContext,
+    records: readonly T[], getKey: (record: T) => string | number,
+) {
+    return context.memberships.map(membership => ({ membership, ...classifyRecords(
+        records.filter(record => record.bandUserId === membership.main?.id || record.bandUserId === membership.retiring.id),
+        membership.main?.id ?? null, record => record.bandUserId, getKey,
+    ) }));
+}
+export const recordIds = (records: readonly { id: number }[]) => records.map(record => record.id);

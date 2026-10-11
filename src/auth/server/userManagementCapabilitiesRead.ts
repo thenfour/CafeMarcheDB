@@ -9,6 +9,8 @@ import type { CMServerAuthorization } from "./serverAuthorization";
 import { getContinuityWarningsForUserResult, evaluateUserManagementCapabilities, type UserManagementActor } from "./userManagementPolicy";
 import { findActiveNonSysadminUsers, findUserManagementTargetByPublicId, makePermissionSetFromRole } from "./userManagementState";
 import { PermissionSet } from "../shared/PermissionSet";
+import { canMergeAccount } from "./userMerge/mergeEligibility";
+import { mergeUserInclude } from "./userMerge/types";
 
 export function readUserManagementCapabilities(database: DB3ReadDatabase, authorization: CMServerAuthorization, userId: UserPublicId, locale: LocalePreferenceInput) {
     return executeDB3Read(database, authorization, async context => {
@@ -58,10 +60,12 @@ export function readUserManagementCapabilities(database: DB3ReadDatabase, author
             where: { id: target.principal.mergedIntoUserId },
             select: { publicId: true },
         });
+        const mergeTarget = capabilities.canMerge ? await context.database.user.findUniqueOrThrow({
+            where: { id: target.principal.id }, include: mergeUserInclude,
+        }) : null;
         return {
             ...capabilities,
-            // Shared-account merging remains a separate restoration obligation.
-            canMerge: false,
+            canMerge: mergeTarget !== null && canMergeAccount(actor, mergeTarget),
             currentRoleId: currentRole?.globalRole ? xGlobalRole.parseIdentity(currentRole.globalRole.publicId) : null,
             assignableRoles,
             mergedIntoUserId: replacement ? parsePublicId<"User">(replacement.publicId) : null,

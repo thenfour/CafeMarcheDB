@@ -38,10 +38,12 @@ describe.skipIf(!settingsMysqlTestUrl)("platform accounts on MariaDB", () => {
         const target = parsePublicId<"User">(person.publicId);
         expect(manager.auth.hasPermission(Permission.view_users_basic_info)).toBe(false);
         const result = await readUserManagementCapabilities(await snapshot(tx, manager.auth), manager.auth, target, {});
+        // Account management alone does not authorize merging either membership's grants.
         expect(result).toMatchObject({ canAssignRole: true, canMerge: false, mergedIntoUserId: null });
         expect(JSON.stringify(result)).not.toMatch(/"(?:id|email|phone)":/);
         const admin = await loadAuthorizationForUser(fixture.admin, tx);
-        expect(await readUserManagementCapabilities(await snapshot(tx, admin), admin, target, {})).toMatchObject({ canManageSignInMethods: true, canResetPassword: true });
+        expect(await readUserManagementCapabilities(await snapshot(tx, admin), admin, target, {}))
+            .toMatchObject({ canManageSignInMethods: true, canResetPassword: true, canMerge: true });
         const bandMember = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(fixture.bands[0]!.publicId));
         expect(await readUserManagementCapabilities(await snapshot(tx, bandMember), bandMember, target, {}))
             .toMatchObject({ canDeactivate: false, canReactivate: false, canImpersonate: false });

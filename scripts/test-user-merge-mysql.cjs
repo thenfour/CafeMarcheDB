@@ -21,7 +21,10 @@ async function main() {
         const env = { ...process.env, DATABASE_URL: target.toString(), USER_MERGE_TEST_DATABASE_URL: target.toString(), SESSION_SECRET_KEY: "merge-integration-test-secret-only" };
         const schema = spawnSync(process.execPath, ["node_modules/prisma/build/index.js", "db", "push", "--skip-generate"], { env, stdio: "inherit" });
         if (schema.status !== 0) throw new Error("Unable to create the disposable schema.");
-        const tests = spawnSync(process.execPath, ["node_modules/vitest/vitest.mjs", "run", "tests/userMerge.mysql.test.ts", "--threads=false"], { env, stdio: "inherit" });
+        const tests = spawnSync(process.platform === "win32" ? "cmd.exe" : "yarn",
+            process.platform === "win32" ? ["/d", "/s", "/c", "yarn test tests/userMerge.mysql.test.ts --reporter=dot"]
+                : ["test", "tests/userMerge.mysql.test.ts", "--reporter=dot"],
+            { env, stdio: "inherit", windowsHide: true });
         process.exitCode = tests.status || (tests.error ? 1 : 0);
     } finally {
         if (created) await admin.$executeRawUnsafe(`DROP DATABASE \`${databaseName}\``);

@@ -99,6 +99,7 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
     if (action === "merge") {
         return actor.auth.hasPermission(Permission.merge_users)
             && actor.principal?.id !== target.principal.id
+            && (!target.principal.isSysAdmin || actorIsSysadmin)
             && (!target.principal.isDeleted || actor.auth.hasPermission(Permission.manage_global_users))
             && (actorIsSysadmin || isRoleWithinDelegationEnvelope(actor, target.rolePermissions));
     }
