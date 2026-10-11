@@ -56,7 +56,8 @@ describe.skipIf(!settingsMysqlTestUrl)("activity details on MariaDB", () => {
         expect(detail.rows[0]!.userHash).toBe(facets.facets.users[0]!.key);
         expect(detail.rows[0]!.rowKey).toBe(ledger.rows.find(row => row.userHash !== null)!.rowKey);
         expect((await read(report, { facet: "contexts", key: "App/profile/" })).metrics.totalRowCount).toBe(2);
-        expect(JSON.stringify([facets, ledger, detail])).not.toMatch(/PrivateName|\/profile\/867|userId|bandId|uri|queryText|email|private@example/);
+        expect(ledger.rows.every(row => row.uri === null && row.queryText === null)).toBe(true);
+        expect(JSON.stringify([facets, ledger, detail])).not.toMatch(/PrivateName|\/profile\/867|userId|bandId|email|private@example/);
     }));
 
     it.each(["hidden", "private", "deleted", "foreign"])("redacts %s references without losing ledger actions or revealing them through a forged drill-down", mode => withFixture(async (tx, fixture) => {

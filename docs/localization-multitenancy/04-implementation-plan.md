@@ -1007,16 +1007,63 @@ shared localization registry. Saved URLs/search text, general detail and CSV
 remain visible restoration obligations. The two guarded RPCs and all 27 activity
 references remain; activity reports and A1/B are still open.
 
-## Next slice: Activity metadata and CSV
+## Activity-report metadata and CSV closure (2026-10-11)
 
-Finish saved query/URL disclosure and person redaction through the original detail
-owner. Reuse the selected-band selection, snapshot, tokens and all authorized
-reference owners in `getGeneralFeatureDetail` and CSV, retaining the original
-export limit, ordering, related columns and download workflow. Verify identifying
-and private saved metadata, formula-safe CSV, fresh revocation and two-band
-switches/exports in native tests and the built browser. Remove source references
-only after the remaining contracts and workflow have executable parity evidence;
-keep the two guards until their owners are safe.
+The remaining `getGeneralFeatureDetail` and `getDetailCsv` readers now compose
+through the existing selected-band detail owner. Ledger, general detail and CSV
+use the same strict selection filters, fresh repeatable authorization/data/zone
+snapshot, authorized references, safe contexts and scoped participant/row tokens.
+The original caps remain 200, 1,000 and 20,000 respectively, with exact matching
+totals and stable newest-first ordering. Clients cannot choose another limit or
+supply natural identities or a reporting zone.
+
+Saved metadata has an explicit disclosure owner. Recognized application URLs are
+reconstructed from authorized reference identities or fixed page paths; legacy
+numeric entity routes become public routes. Absolute URLs must match the trusted
+deployment origin. Saved slugs, filters, query parameters and fragments are
+discarded, and links carry the current band/route locale. Person, authentication,
+API/download, external, malformed and unrecognized routes stay NULL. Query text
+is shown only for the association-selection producer when it is a confirmed
+fragment of an authorized Song/Event/Wiki label and its context is not identifying.
+Unverified searches, including person/contact/credential text, and denied
+references are withheld. This preserves useful metadata without disclosing text beyond the
+reference owner's allowed presentation. The original row search/URL columns are
+active again, and the obsolete migration notice is removed.
+
+The original export button/confirmation/progress/success/error/retry workflow uses
+the shared CMDialog/ResponsiveDialog and CMButton controls with registered strings.
+It exports the complete current bucket/filter selection, reports counts and
+truncation, and discards late downloads after selection, band, refresh or mount
+changes. CSV retains the original columns, adds authorized auxiliary labels,
+uses stable headers even for empty results, quotes Unicode/commas/quotes/newlines
+and protects every cell against spreadsheet formulas. Dates remain explicit UTC
+ISO values. The original `id` column contains the scoped row token; related IDs
+are public identities. Physical storage names and unchecked File download targets
+retain empty legacy columns under the identity/disclosure policy. Downloads carry
+a UTF-8 marker, band-specific filenames and release their temporary browser
+links/object URLs.
+
+The full report restoration covers the original timeline controls, sixteen facet
+groups, filters/sorting/distributions, default ledger, fourteen lazy drill-downs,
+all thirteen authorized reference families, breadcrumbs/scalar hide controls,
+metadata, general details and CSV. The seven archived raw-relation projection/link
+filter cases are superseded by the active identity/request-boundary specifications
+and native ledger/general/CSV public-reference checks. Four obsolete report-guard
+tests are removed. All 27 activity source blocks/reference entries are removed and
+`activity-reports` is marked restored; its recovery flag is removed too. The six
+whole-file deferred specifications and all other feature obligations remain.
+This closes activity reports, with A1/B still open. Verification is recorded below.
+
+## Next slice: Remaining core workflow parity review
+
+Audit the remaining core obligations against `f027830a9790` and their existing
+callers, starting with member-profile activity/statistics and the preserved
+event/song facet/statistics helpers. Identify the exact remaining consumers before
+restoring their band/public-identity/localized contracts or recording superseded
+behavior. Retain the working domain-search owners, completed File/image creation
+parity and the A1 catalog-name search exception. Production inventory/rehearsal
+remains open before cutover; platform administration, account lifecycle and the
+rest of B remain separate open work.
 
 ## Localized catalog text search exception
 
@@ -1045,7 +1092,7 @@ when a concrete workflow dependency requires it.
 | --- | --- |
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
 | Events | Retain restored search/detail/creation/editing, setlists, invitation/attendance/default-instrument controls, date-picker highlights and import preview/save; finish full localized catalog-name matching separately. |
-| Songs and files | Retain restored Song search/detail/editing, credits/performance history/profile credit reads/statistics, tags, setlist picking, File search/detail/metadata/associations, associated and Markdown/branding uploads, image fork service and recording/file viewers; retain frontpage gallery editing/bake and public feed delivery; finish the preserved File/image creation parity audit. |
+| Songs and files | Retain restored Song search/detail/editing, credits/performance history/profile credit reads/statistics, tags, setlist picking, File search/detail/metadata/associations, associated and Markdown/branding uploads, image fork service and recording/file viewers, including verified original/resized-image creation; retain frontpage gallery editing/bake and public feed delivery. |
 | Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, global shell search, planner association selection/protected explorer, Markdown suggestions/attachments/localized editing/help, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links; finish exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
 After core restoration: platform role/matrix and catalog/settings administration;
@@ -1944,3 +1991,50 @@ development server is untouched. Evidence is in
 `temp/activity-references-ledger-nl.png`. Saved query/URL disclosure, the general
 detail reader and CSV remain pending; the two RPC guards and activity reports/A1/B
 remain open.
+
+The **activity-report metadata/CSV closure** passes normal typecheck, targeted
+lint across all 37 changed TypeScript files and a normal production build with
+isolated output. Its 288 focused cases across thirteen files cover strict
+general/CSV requests, saved-metadata disclosure, stable CSV headers and quoting,
+formula protection, download resource cleanup, confirmation/progress/error/retry,
+stale selection/band/refresh/unmounted replies and the retained timeline/facet/
+ledger/date-picker/page/authorization checks. Four obsolete remaining-RPC guard
+tests are removed. The seven archived raw-relation projection/link-filter cases
+are superseded by executable public-identity and request-boundary coverage.
+
+Native MariaDB passes 122 cases across eight suites, including eleven new export
+cases. Ledger/general/CSV share all thirteen authorized reference families,
+localized labels, tokens and selection filters. Tests cover the original
+200/1,000/20,000 limits against 20,003 rows, exact totals/stable ordering, private/
+deleted/foreign metadata, fresh independent reference/report revocation, inactive
+membership, two-band isolation, anonymous authors, self exclusion and both
+platform-administrator policies. The disposable native database is removed.
+
+Twenty-three built Chromium groups retain the prior report controls and add
+safe saved routes/search fragments, the general reader, localized confirmation/
+progress/count dialogs and four real CSV downloads. Downloaded bytes verify the
+UTF-8 marker, all 47 stable headers, Unicode/commas/quotes/newlines, public related
+identities, scoped row tokens, empty storage targets and formula protection.
+French River Fanfare uses Brussels report dates; Dutch Harbour Brass uses Tokyo
+dates from the same person's independent membership. Held old-band CSV replies
+cannot download, freshly revoked grants reject captured general/CSV requests and
+anonymous requests to all five active report RPCs fail. A 20,003-action fixture
+also verifies the 1,000/20,000 caps, exact totals and order through the built RPCs.
+No uncaught page or unexpected RPC errors occur.
+
+French/Dutch export-dialog screenshots and the French saved-metadata ledger are
+visually reviewed. Strings, settings and membership roles are restored; owned
+fixture grants/locales/roles, references, localized strings, Actions, audits and
+sessions are removed. The owned server is stopped and the user's development
+server is untouched. Evidence is in `temp/activity-export-browser-result.json`,
+with screenshots in `temp/activity-export-dialog-fr.png`,
+`temp/activity-export-dialog-nl.png` and `temp/activity-export-metadata-fr.png`.
+
+The complete suite retains 203 failed tests and ten suite-load failures, with
+2,100 passed and 817 skipped. All 163 normalized failure labels are unchanged
+from the auxiliary-reference checkpoint; later jsdom batches are covered by the
+focused run. Preservation verifies 195 references, six whole-file deferred
+specifications and fourteen pending features after all 27 activity source
+blocks/reference entries and the unused recovery flag are removed. Activity
+reports are restored; other feature parity, production inventory/rehearsal and
+A1/B remain open.

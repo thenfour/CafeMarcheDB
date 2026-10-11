@@ -17,6 +17,7 @@ const references: ActivityAuthorizedReferences = { songs: { identities: [], labe
     wikiPages: { identities: [], labels: [], items: [] }, menuLinks: { identities: [], labels: [], items: [] }, customLinks: { identities: [], labels: [], items: [] } };
 const auxiliary: ActivityAuthorizedDetailReferences = { files: new Map(), segments: new Map(), setlists: new Map(), galleryItems: new Map(),
     plans: new Map(), creditTypes: new Map(), attendance: new Map(), instruments: new Map() };
+const metadataPolicy = { applicationOrigin: "https://band.test" };
 const rawAction = { id: 1, userId: 42, createdAt: new Date("2026-01-02"), feature: "profile_view", context: "App/profile/PersonPublic001/Alice",
     isClient: true, pointerType: "mouse", screenWidth: 1920, screenHeight: 1080, deviceClass: "desktop", browserName: "chrome",
     operatingSystem: "windows", language: "fr", locale: "fr-be", timezone: "Europe/Brussels", songId: 21, eventId: 22,
@@ -28,31 +29,32 @@ const rawAction = { id: 1, userId: 42, createdAt: new Date("2026-01-02"), featur
 describe("activity report User identity boundary", () => {
     it("selects only server correlation identities and scalar activity fields, without a person or unchecked reference join", () => {
         expect(activityDetailSelection.select).not.toHaveProperty("user");
-        for (const field of ["uri", "queryText", "file", "song", "event", "wikiPage", "customLink", "menuLink", "band", "attendance"]) {
+        expect(activityDetailSelection.select).toMatchObject({ uri: true, queryText: true });
+        for (const field of ["file", "song", "event", "wikiPage", "customLink", "menuLink", "band", "attendance"]) {
             expect(activityDetailSelection.select).not.toHaveProperty(field);
         }
     });
 
     it("projects an explicit whitelist with scoped tokens and omits every unauthorized identity and saved URL/search", () => {
-        const row = projectActivityDetailRows([rawAction], references, auxiliary, input)[0]!;
+        const row = projectActivityDetailRows([rawAction], references, auxiliary, input, metadataPolicy)[0]!;
         expect(row.userHash).toBe(activityParticipantToken(rawAction.userId, input));
         expect(row.rowKey).toMatch(/^[a-f0-9]{64}$/);
         expect(row.rowKey).not.toBe(activityParticipantToken(rawAction.id, input));
         expect(row.context).toBe("App/profile/");
-        expect(row).toMatchObject({ song: null, event: null, wikiPage: null, menuLink: null, customLink: null });
-        expect(JSON.stringify(row)).not.toMatch(/Alice|\/user\/867|PersonPublic001|example.invalid|userId|bandId|fileId|attendanceId|songId|eventId|uri|queryText|email/);
+        expect(row).toMatchObject({ song: null, event: null, wikiPage: null, menuLink: null, customLink: null, uri: null, queryText: null });
+        expect(JSON.stringify(row)).not.toMatch(/Alice|\/user\/867|PersonPublic001|example.invalid|userId|bandId|fileId|attendanceId|songId|eventId|email/);
     });
 
     it("keeps anonymous authors distinct from anonymized people and uses authorized reference identities", () => {
         const song = { publicId: parsePublicId<"Song">("ActivitySong0001"), name: "Public song" };
         const allowed = { ...references, songs: { identities: [{ id: 21, publicId: song.publicId }], labels: [{ publicId: song.publicId, label: song.name }], items: [song] } };
-        expect(projectActivityDetailRows([{ ...rawAction, userId: null }], allowed, auxiliary, input)[0]).toMatchObject({ userHash: null, song });
+        expect(projectActivityDetailRows([{ ...rawAction, userId: null }], allowed, auxiliary, input, metadataPolicy)[0]).toMatchObject({ userHash: null, song });
     });
 
     it("exposes only authorized auxiliary references and never returns their server correlation IDs", () => {
         const file = { publicId: parsePublicId<"File">("ActivityFile0001"), fileLeafName: "Score.pdf" };
         const allowed = { ...auxiliary, files: new Map([[26, file]]) };
-        const row = projectActivityDetailRows([rawAction], references, allowed, input)[0]!;
+        const row = projectActivityDetailRows([rawAction], references, allowed, input, metadataPolicy)[0]!;
         expect(row.file).toEqual(file);
         expect(row).toMatchObject({ eventSegment: null, eventSongList: null, frontpageGalleryItem: null, setlistPlan: null, songCreditType: null, attendance: null, instrument: null });
         expect(JSON.stringify(row)).not.toMatch(/fileId|eventSegmentId|eventSongListId|frontpageGalleryItemId|setlistPlanId|songCreditTypeId|attendanceId|bandInstrumentId/);

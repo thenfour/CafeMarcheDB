@@ -14,6 +14,7 @@ import type { ActivityDetailInput, ActivityDetailResult, ActivityDetailRow, Face
 
 vi.mock("@blitzjs/rpc", () => ({ invoke: vi.fn() }));
 vi.mock("src/core/components/featureReports/queries/getDetail", () => ({ default: vi.fn() }));
+vi.mock("src/core/components/featureReports/queries/getDetailCsv", () => ({ default: vi.fn() }));
 vi.mock("src/core/components/featureReports/queries/getFacetedBreakdown", () => ({ default: vi.fn() }));
 vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({ formattingLocale: "fr-BE", getPlainString: (key: string) => key }) }));
 // Keep the real detail table, chips and buttons. Unrelated dashboard RPCs and chart rendering are outside this lifecycle.
@@ -34,7 +35,7 @@ const input: ActivityDetailInput = { bandPublicId: parsePublicId<"Band">("Activi
     facetFilters: { ...emptyActivityFacetFilters(), excludeBrowserNames: ["firefox"] }, detail: { facet: "total" } };
 const personToken = "a".repeat(64);
 function row(feature: string, userHash: string | null = personToken): ActivityDetailRow {
-    return { rowKey: feature, createdAt: new Date("2026-01-01T23:15:00Z"), userHash, feature, context: "App/profile/", isClient: true,
+    return { rowKey: feature, createdAt: new Date("2026-01-01T23:15:00Z"), userHash, feature, context: "App/profile/", isClient: true, uri: null, queryText: null,
         pointerType: "mouse", screenWidth: 1920, screenHeight: 1080, deviceClass: "desktop", browserName: "chrome", operatingSystem: "windows",
         language: "fr", locale: "fr-be", timezone: "Europe/Brussels", song: { publicId: parsePublicId<"Song">("ActivitySong0001"), name: "Visible song" },
         event: null, wikiPage: null, menuLink: { publicId: parsePublicId<"MenuLink">("ActivityMenu0001"), caption: "Navigation française" }, customLink: null,
@@ -78,6 +79,18 @@ afterEach(() => {
 });
 
 describe("mounted activity detail lifecycle", () => {
+    it("renders disclosed search text and page URLs with safe link attributes", async () => {
+        const value = result();
+        const entry = { ...value.rows[0]!, queryText: "été", uri: "/backstage/song/ActivitySong0001?bandPublicId=ActivityBand0001&routeLocale=fr-BE" };
+        vi.mocked(invoke).mockResolvedValue({ ...value, rows: [entry] });
+        await render();
+        expect(container.querySelector("q")?.textContent).toBe("été");
+        const link = container.querySelector<HTMLAnchorElement>("a[href]")!;
+        expect(link.getAttribute("href")).toBe(entry.uri);
+        expect(link.target).toBe("_blank");
+        expect(link.rel).toBe("noreferrer");
+    });
+
     it("shows all eight authorized reference families and localized catalog labels", async () => {
         const entry: ActivityDetailRow = { ...row("references"),
             file: { publicId: parsePublicId<"File">("ActivityFile0001"), fileLeafName: "Score.pdf" },

@@ -1,21 +1,19 @@
 import { Prisma } from "@prisma/client";
 import { executeDB3Read, type DB3ReadContext, type DB3ReadDatabase } from "src/core/db3/server/db3ReadExecution";
 import { loadBandTimeZone } from "src/server/bandTimeZone";
-import { ActivityDetailInputSchema, type ActivityDetailInput, type ActivityDetailResult, type ActivityDetailRow,
-    type ActivityDetailSelection, type FacetedBreakdownInput } from "../activityReportTypes";
+import { ActivityDetailInputSchema, FacetedBreakdownInputSchema, type ActivityDetailInput, type ActivityDetailResult, type ActivityDetailRow,
+    type ActivityDetailSelection, type FacetedBreakdownInput, type GeneralActivityDetailResult } from "../activityReportTypes";
 import { anonymousActivityContext } from "../activityContext";
 import { activityParticipantToken, activityRowToken } from "./activityAnonymization";
 import { authorizeActivityReport } from "./activityReportAuthorization";
 import { activityFacetBaseWhere, activityFacetReferenceWhere } from "./activityFacetSelection";
 import { activityReferencesById, authorizedActivityReferenceIds, readActivityFacetReferences, type ActivityAuthorizedReferences } from "./activityFacetReferences";
 import { readActivityDetailReferences, type ActivityAuthorizedDetailReferences } from "./activityDetailReferences";
+import { projectActivitySavedMetadata, type ActivityMetadataPolicy } from "./activitySavedMetadata";
 
-// Preserve the original 200-row detail limit, with an exact total and stable newest-first ordering.
-const activityDetailRowLimit = 200;
-
-/** Natural identities stay server-side. Saved URLs/searches and person relations are never selected. */
+/** Natural identities and unchecked saved metadata stay server-side; person relations are never selected. */
 export const activityDetailSelection = Prisma.validator<Prisma.ActionDefaultArgs>()({ select: {
-    id: true, createdAt: true, userId: true, feature: true, context: true, isClient: true,
+    id: true, createdAt: true, userId: true, feature: true, context: true, isClient: true, uri: true, queryText: true,
     pointerType: true, screenWidth: true, screenHeight: true, deviceClass: true, browserName: true,
     operatingSystem: true, language: true, locale: true, timezone: true,
     songId: true, eventId: true, wikiPageId: true, menuLinkId: true, customLinkId: true,
@@ -25,11 +23,12 @@ export const activityDetailSelection = Prisma.validator<Prisma.ActionDefaultArgs
 type ActivityDatabaseRow = Prisma.ActionGetPayload<typeof activityDetailSelection>;
 
 export function projectActivityDetailRows(rows: readonly ActivityDatabaseRow[], references: ActivityAuthorizedReferences,
-    auxiliary: ActivityAuthorizedDetailReferences, input: FacetedBreakdownInput): ActivityDetailRow[] {
+    auxiliary: ActivityAuthorizedDetailReferences, input: FacetedBreakdownInput, metadataPolicy: ActivityMetadataPolicy): ActivityDetailRow[] {
     const songs = activityReferencesById(references.songs), events = activityReferencesById(references.events);
     const wiki = activityReferencesById(references.wikiPages), menu = activityReferencesById(references.menuLinks);
     const custom = activityReferencesById(references.customLinks);
-    return rows.map(row => ({
+    return rows.map(row => {
+        const authorized = {
         rowKey: activityRowToken(row.id, input), createdAt: row.createdAt,
         userHash: row.userId === null ? null : activityParticipantToken(row.userId, input),
         feature: row.feature, context: anonymousActivityContext(row.context), isClient: row.isClient,
@@ -49,7 +48,9 @@ export function projectActivityDetailRows(rows: readonly ActivityDatabaseRow[], 
         songCreditType: row.songCreditTypeId === null ? null : auxiliary.creditTypes.get(row.songCreditTypeId) ?? null,
         attendance: row.attendanceId === null ? null : auxiliary.attendance.get(row.attendanceId) ?? null,
         instrument: row.bandInstrumentId === null ? null : auxiliary.instruments.get(row.bandInstrumentId) ?? null,
-    }));
+        };
+        return { ...authorized, ...projectActivitySavedMetadata(row, authorized, input, metadataPolicy) };
+    });
 }
 
 function detailWhere(base: Prisma.ActionWhereInput, detail: ActivityDetailSelection, references: ActivityAuthorizedReferences): Prisma.ActionWhereInput {
@@ -91,7 +92,7 @@ function drilldownCondition(detail: ActivityDetailSelection, references: Activit
     }
 }
 
-async function selectionReferences(context: DB3ReadContext, input: ActivityDetailInput, where: Prisma.ActionWhereInput) {
+async function selectionReferences(context: DB3ReadContext, input: FacetedBreakdownInput, where: Prisma.ActionWhereInput) {
     const groups = await context.database.action.groupBy({ by: ["songId", "eventId", "wikiPageId", "menuLinkId", "customLinkId"], where });
     return readActivityFacetReferences(context, input, {
         songIds: groups.flatMap(row => row.songId === null ? [] : [row.songId]),
@@ -104,6 +105,24 @@ async function selectionReferences(context: DB3ReadContext, input: ActivityDetai
 
 export function readActivityDetails(database: DB3ReadDatabase, authorization: DB3ReadContext["authorization"], input: ActivityDetailInput): Promise<ActivityDetailResult> {
     const args = ActivityDetailInputSchema.parse(input);
+    // Preserve the original ledger limit; clients cannot choose a larger cap.
+    return readActivityRows(database, authorization, args, args.detail, 200);
+}
+
+export async function readGeneralActivityDetails(database: DB3ReadDatabase, authorization: DB3ReadContext["authorization"], input: FacetedBreakdownInput): Promise<GeneralActivityDetailResult> {
+    const result = await readSelectedActivityRows(database, authorization, input, 1000);
+    return { data: result.rows, timeZone: result.timeZone, rowLimit: result.rowLimit, metrics: result.metrics };
+}
+
+/** General detail and CSV share the ledger's selection, snapshot, tokens and disclosure rules. */
+export function readSelectedActivityRows(database: DB3ReadDatabase, authorization: DB3ReadContext["authorization"], input: FacetedBreakdownInput,
+    rowLimit: 1000 | 20000): Promise<ActivityDetailResult> {
+    const args = FacetedBreakdownInputSchema.parse(input);
+    return readActivityRows(database, authorization, args, { facet: "total" }, rowLimit);
+}
+
+function readActivityRows(database: DB3ReadDatabase, authorization: DB3ReadContext["authorization"], args: FacetedBreakdownInput,
+    detail: ActivityDetailSelection, rowLimit: 200 | 1000 | 20000): Promise<ActivityDetailResult> {
     return executeDB3Read(database, authorization, async context => {
         const { band } = authorizeActivityReport(context.authorization, args.bandPublicId);
         const timeZone = await loadBandTimeZone(context.database, band.id);
@@ -111,12 +130,12 @@ export function readActivityDetails(database: DB3ReadDatabase, authorization: DB
         const base = await activityFacetBaseWhere(context, args, timeZone);
         const references = await selectionReferences(context, args, base);
         const filtered = activityFacetReferenceWhere(base, args, references);
-        const where = detailWhere(filtered, args.detail, references);
+        const where = detailWhere(filtered, detail, references);
         const totalRowCount = await context.database.action.count({ where });
         const rows = await context.database.action.findMany({ ...activityDetailSelection, where,
-            orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: activityDetailRowLimit });
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: rowLimit });
         const auxiliary = await readActivityDetailReferences(context, args, rows);
-        return { rows: projectActivityDetailRows(rows, references, auxiliary, args), timeZone, rowLimit: activityDetailRowLimit,
+        return { rows: projectActivityDetailRows(rows, references, auxiliary, args, { applicationOrigin: process.env.CMDB_BASE_URL ?? null }), timeZone, rowLimit,
             metrics: { totalRowCount, queryTimeMs: Math.round(performance.now() - start) } };
     });
 }

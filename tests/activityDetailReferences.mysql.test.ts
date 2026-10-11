@@ -40,7 +40,8 @@ describe.skipIf(!settingsMysqlTestUrl)("activity auxiliary references on MariaDB
             attendance: { publicId: refs.attendance.publicId, buttonCaption: "Présent", description: "", color: "light_green", iconName: null },
             instrument: { publicId: refs.instrument.publicId, name: "Trompette globale", color: "light_brown" },
         });
-        expect(JSON.stringify(result)).not.toMatch(/secret-storage|private-|private |storedLeafName|externalURI|uploadedBy|createdBy|userId|bandId|queryText|uri|StringPublicId|Resolution|globalPublicId/);
+        expect(result.rows[0]).toMatchObject({ uri: null, queryText: null });
+        expect(JSON.stringify(result)).not.toMatch(/secret-storage|private-|private |storedLeafName|externalURI|uploadedBy|createdBy|userId|bandId|StringPublicId|Resolution|globalPublicId/);
         expect((await read(refs, { routeLocale: "en-US" })).rows[0]).toMatchObject({ instrument: { name: "Global trumpet" }, attendance: { buttonCaption: "Going" }, songCreditType: { name: "Composer" } });
     }));
 

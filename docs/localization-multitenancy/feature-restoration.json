@@ -148,7 +148,7 @@
       "reason": "Legacy activity readers lack selected-band ownership and localized reference contracts, blocking application recovery.",
       "restore": "Restore activity timelines, facets, filters, drill-down details and CSV export with fresh authorization, explicit band ownership, localized references and public identities; preserve anonymization and redaction.",
       "verification": "Reactivate the preserved projection/filter specifications; test two bands, platform policy, grant revocation, anonymization, private references, CSV and browser report navigation/context switches.",
-      "status": "pending",
+      "status": "restored",
       "evidence": [
         "2026-10-11: The original report page, TopLevelDateSelection and getGeneralFeatureReport are active for the timeline slice. Refresh, self/platform-admin exclusions, feature All/None/dialog, literal context prefix/parent/clear, calendar dates, five presets, all six bucket sizes and bucket selection/clear are retained. Labels, counts and date formatting use the shared presentation machinery; Event highlights are an explicit caller choice requiring the Event search grant.",
         "The typed owner requires explicit band public identity and fresh report permission inside a repeatable authorization/data/timezone snapshot. It excludes foreign/unowned Actions, retains anonymous authors and recognizes both platform-admin policies through the shared predicate. Results project only bucket/count/timezone/metrics. Band-local half-open date ranges and real DST offset periods replace legacy browser/UTC grouping; unsupported deferred filters are rejected.",
@@ -164,7 +164,11 @@
         "At the ledger checkpoint, saved query/URL disclosure, File/segment/attendance/setlist/gallery/plan/credit-type/instrument references, remaining per-row context breadcrumbs/scalar hide controls, the general detail reader and CSV remained pending. Two RPC guards and 27 activity source references remained. The completed whole-file identity specification's reference was removed and two obsolete getDetail guard tests were removed. Activity reports and A1/B remained open.",
         "2026-10-11: The auxiliary-reference slice restores File, EventSegment, EventAttendance, EventSongList, FrontpageGalleryItem, SetlistPlan, SongCreditType and BandInstrument through narrow entity-owned views in the existing authorization/data/timezone snapshot. Explicit projections carry only public identities and authorized presentation fields. Parent visibility, independent grants, deletion/hidden policies, selected-band ownership and localized blanks are retained; denied instrument-group colors withhold the Instrument. File chips use the existing public landing route with the current band/route locale, replacing legacy storage/external links. SetlistPlan declares snapshot consistency for its existing DB3 read contract. Literal context breadcrumbs and all eight row scalar hide controls preserve the other active filters.",
         "203 focused cases across ten files, 111 native MariaDB cases across seven suites and seventeen built Chromium groups pass alongside normal typecheck/build, targeted lint and preservation checks. The active identity specification has 32 cases and mounted details have 22. Native checks cover all eight reference families, parent/field/grant denial, global catalogs, inherited names/colors, blank overrides, inactive attendance and two-band isolation. Built French/Dutch checks cover localized auxiliary chips, public File navigation, breadcrumbs, hide/clear, independent plan revocation/restore and the retained stale-response/report-denial/token/privacy checks. Final ledger screenshots are visually reviewed after repairing breadcrumb wrapping. All fixture data and owned processes are cleaned up. The full suite's 203 failed tests, ten suite-load failures and 163 normalized failure labels remain unchanged; an unrelated instrument-catalog Event-read assertion also reproduces in the prior ledger build. See 04-implementation-plan.md#verification-status and temp/activity-references-browser-result.json.",
-        "Still pending: saved query/URL disclosure and person redaction, the general detail reader and CSV. The two RPC guards, all 27 activity source references, 222 total preserved references, six whole-file deferred specifications and fifteen pending features remain. Activity reports and A1/B remain open."
+        "At the auxiliary-reference checkpoint, saved query/URL disclosure and person redaction, the general detail reader and CSV remained pending. Two RPC guards, all 27 activity source references, 222 total preserved references, six whole-file deferred specifications and fifteen pending features remained. Activity reports and A1/B remained open.",
+        "2026-10-11: The metadata/general-detail/CSV slice restores both remaining RPCs through the original selected-band detail owner. All three readers share strict filters, fresh repeatable authorization/data/timezone snapshots, authorized reference views, safe contexts and scoped tokens. The original 200/1000/20000 caps, exact totals, stable newest-first order and complete bucket/filter export selection remain. Safe saved routes are reconstructed from authorized public references or fixed app paths with current band/route locale; trusted origin checks, discarded slugs/query strings/fragments and withheld person/auth/API/download/external/unknown routes prevent identifying/private URL disclosure. Association query text is restricted to confirmed authorized Song/Event/Wiki label fragments outside identifying contexts; arbitrary searches remain redacted.",
+        "The retained export dialog provides localized confirmation/progress/count/truncation/error/retry feedback and real downloads through shared CMDialog/ResponsiveDialog/CMButton controls. Stable CSV headers retain original columns and add auxiliary labels, quote Unicode/commas/quotes/newlines, preserve explicit UTC dates/anonymous authors/zero dimensions and neutralize spreadsheet formulas. The id column uses the scoped row token, related IDs are public, and storage/download columns stay empty by disclosure policy. Downloads have UTF-8 markers and band-specific filenames; temporary links/object URLs are released. Old selection/band/refresh/unmounted replies cannot download. The obsolete page migration notice is removed.",
+        "The report's complete timeline/facet/ledger/drill-down/reference/metadata/general/CSV contracts now have executable regression and built-browser evidence. The seven archived raw-relation projection/link-filter cases are superseded by active identity/strict-request specifications and native public-reference checks; four obsolete RPC guard tests are removed. All 27 activity source blocks/reference entries and the unused recovery flag are removed. Activity reports are restored; A1/B remain open with 195 preserved references, six whole-file deferred specifications and fourteen pending features. See 04-implementation-plan.md#activity-report-metadata-and-csv-closure-2026-10-11 and its verification status.",
+        "Final closure verification passes normal typecheck/build, targeted lint across 37 changed TypeScript files, 288 focused cases across thirteen files, 122 native MariaDB cases across eight suites and twenty-three built Chromium groups. Four real UTF-8 CSV downloads verify all 47 headers, public identities, quoting and formula protection; native and built RPCs verify 20,003-action totals with the original 1,000/20,000 caps. Built checks also cover French/Dutch metadata and export dialogs, held band-switch replies, fresh grant denial and anonymous access without uncaught page/unexpected RPC errors. Screenshots are visually reviewed and all owned fixtures/settings/roles/processes are cleaned up. The full suite retains 203 failed tests and ten suite-load failures (2100 passed, 817 skipped), with all 163 normalized failure labels unchanged. Preservation verifies 195 references, six deferred specifications and fourteen pending features. See 04-implementation-plan.md#verification-status and temp/activity-export-browser-result.json."
       ]
     },
     {
@@ -1073,168 +1077,6 @@
       "featureId": "member-profile",
       "source": "15d112e042f38d63f5a18b105120cf1165df7845:tests/authorization/publicIdTransport.test.ts:469-486",
       "sha256": "013f9bc81869edb207ef61411bec78de64ccffa088b7c78427bd5cf2c186c68e"
-    },
-    {
-      "file": "src/core/components/featureReports/activityReportTypes.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:src/core/components/featureReports/activityReportTypes.ts:1-511",
-      "sha256": "48ac3ea597cc9753d791e0585bf6d91d5aae19561db63b181aeb90a95a723541"
-    },
-    {
-      "file": "src/core/components/featureReports/ClientFacetHandlers.tsx",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:src/core/components/featureReports/ClientFacetHandlers.tsx:1-811",
-      "sha256": "a7206bd7f0d0d792bfdb9ff5d42a5f2f6f42fc7a703dbab5f2334944dc36722b"
-    },
-    {
-      "file": "src/core/components/featureReports/ExportButton.tsx",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:src/core/components/featureReports/ExportButton.tsx:1-136",
-      "sha256": "2aaa052829d50338695930be14ca59aa53a41ce7e3cc1b671aa414de319b94db"
-    },
-    {
-      "file": "src/core/components/featureReports/FacetedBreakdown.tsx",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:src/core/components/featureReports/FacetedBreakdown.tsx:1-446",
-      "sha256": "b2e8b0e43c584ba57e8fe50b14a7bf5ee71e183f5503c8eefa352bd6058d0afd"
-    },
-    {
-      "file": "src/core/components/featureReports/FacetItemDetailTable.tsx",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:src/core/components/featureReports/FacetItemDetailTable.tsx:1-224",
-      "sha256": "f9582b138d143db47f8ae2e90e1c1681de5dfada3f6e6ab0e28582e3e4ce0f77"
-    },
-    {
-      "file": "src/core/components/featureReports/FeatureReportBasics.tsx",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:src/core/components/featureReports/FeatureReportBasics.tsx:1-569",
-      "sha256": "c7129f63f3d8a529e71e06d8b739003d4e6d88661122fbdebe9ddd8d749a34e3"
-    },
-    {
-      "file": "src/core/components/featureReports/TopLevelDateSelection.tsx",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:src/core/components/featureReports/TopLevelDateSelection.tsx:1-73",
-      "sha256": "126bc99f6a55a89f61ddca3de512040611253032b5bc0e244697cdd155a48091"
-    },
-    {
-      "file": "src/core/components/featureReports/server/facetProcessor.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:src/core/components/featureReports/server/facetProcessor.ts:1-614",
-      "sha256": "2f4903a583c4053814c9c7d90def2c25e43dbb512ff11736e42858982e76d731"
-    },
-    {
-      "file": "src/core/components/featureReports/queries/getDetail.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:src/core/components/featureReports/queries/getDetail.ts:1-68",
-      "sha256": "98273220a4b1aa60e8d54f3a9e2be0bbb2ea267330d1be4b6f03d3887f9a7353"
-    },
-    {
-      "file": "src/core/components/featureReports/queries/getDetailCsv.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:src/core/components/featureReports/queries/getDetailCsv.ts:1-205",
-      "sha256": "2e48e9f466e3b1c65e0b71ea255e001e549a0e5b36c6d55b5781d79ce31aa70c"
-    },
-    {
-      "file": "src/core/components/featureReports/queries/getFacetedBreakdown.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:src/core/components/featureReports/queries/getFacetedBreakdown.ts:1-64",
-      "sha256": "f05fbbe5d1b93b7f8e73accb80b89058ebb4bebccffd01abfb9188eed7d3830e"
-    },
-    {
-      "file": "src/core/components/featureReports/queries/getGeneralFeatureDetail.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:src/core/components/featureReports/queries/getGeneralFeatureDetail.ts:1-102",
-      "sha256": "92c6beff96cd61d1f491787c1aa381aba4ef4ec771b2bf7e36e919dea8c4aa3c"
-    },
-    {
-      "file": "src/core/components/featureReports/queries/getGeneralFeatureReport.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:src/core/components/featureReports/queries/getGeneralFeatureReport.ts:1-133",
-      "sha256": "de68e18b4a3bbd9bc1e4b2623fe76d258587e9293d520e561613fa4a041c5fbe"
-    },
-    {
-      "file": "src/pages/backstage/featureReports.tsx",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:src/pages/backstage/featureReports.tsx:1-323",
-      "sha256": "55abc65378e40b05c8cbf06aab47ca32f8f4c0f2d415d3cfc7eb34ca3cc67989"
-    },
-    {
-      "file": "tests/authorization/eventAttendancePublicIds.test.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/eventAttendancePublicIds.test.ts:21-21",
-      "sha256": "3198b67481a9542898cda7eef5a49fb70a0968f2b3d5b2497e41a8a11413ed69"
-    },
-    {
-      "file": "tests/authorization/eventAttendancePublicIds.test.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/eventAttendancePublicIds.test.ts:217-238",
-      "sha256": "38ac312d02813d7f94ecadde37f741631d552c4425ab2e0075a4ec8c29f8311b"
-    },
-    {
-      "file": "tests/authorization/eventSegmentPublicIds.test.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/eventSegmentPublicIds.test.ts:32-32",
-      "sha256": "3198b67481a9542898cda7eef5a49fb70a0968f2b3d5b2497e41a8a11413ed69"
-    },
-    {
-      "file": "tests/authorization/eventSegmentPublicIds.test.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/eventSegmentPublicIds.test.ts:198-219",
-      "sha256": "7c635457056850287f7d2e46b17c4745b09f9fc2051cf4059550ca6b23ce8037"
-    },
-    {
-      "file": "tests/authorization/eventSongListPublicIds.test.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/eventSongListPublicIds.test.ts:15-15",
-      "sha256": "3198b67481a9542898cda7eef5a49fb70a0968f2b3d5b2497e41a8a11413ed69"
-    },
-    {
-      "file": "tests/authorization/eventSongListPublicIds.test.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/eventSongListPublicIds.test.ts:202-224",
-      "sha256": "c5e19376ccb8227fbd20222637bc4009bc65fcc9cda96bfe12c3d701ca33892e"
-    },
-    {
-      "file": "tests/authorization/galleryPublicIds.test.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/galleryPublicIds.test.ts:12-12",
-      "sha256": "3198b67481a9542898cda7eef5a49fb70a0968f2b3d5b2497e41a8a11413ed69"
-    },
-    {
-      "file": "tests/authorization/galleryPublicIds.test.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/galleryPublicIds.test.ts:159-181",
-      "sha256": "2b7497a6f5ebeb961564cdd221d214533b4151a88a3665fe121bff78644ae301"
-    },
-    {
-      "file": "tests/authorization/remainingPublicIds.test.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/remainingPublicIds.test.ts:12-16",
-      "sha256": "2d922e8a7ac55520a637976bf7165668090a5f2f8d1d6610441428856db69412"
-    },
-    {
-      "file": "tests/authorization/remainingPublicIds.test.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/remainingPublicIds.test.ts:46-72",
-      "sha256": "aa6114d8b62bd6e7fdd6a8f9474a1103688242f09e9c61dbe820d27795f26ea1"
-    },
-    {
-      "file": "tests/authorization/remainingPublicIds.test.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/remainingPublicIds.test.ts:74-81",
-      "sha256": "c880624852d00b3b4b52bc1b881eef01c9d481eb520c150d9485b358a8e7aab9"
-    },
-    {
-      "file": "tests/authorization/setlistPlanPublicIds.test.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/setlistPlanPublicIds.test.ts:18-18",
-      "sha256": "3198b67481a9542898cda7eef5a49fb70a0968f2b3d5b2497e41a8a11413ed69"
-    },
-    {
-      "file": "tests/authorization/setlistPlanPublicIds.test.ts",
-      "featureId": "activity-reports",
-      "source": "9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/setlistPlanPublicIds.test.ts:140-164",
-      "sha256": "76d6a51ba5d4ed5d0b01d6026513b428eaa08da5d9d8fd71ec402b1744da5b17"
     },
     {
       "file": "src/core/db3/shared/schema/file.ts",

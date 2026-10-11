@@ -12,6 +12,7 @@ import type { FacetedBreakdownInput, FacetedBreakdownResult } from "src/core/com
 
 vi.mock("@blitzjs/rpc", () => ({ invoke: vi.fn() }));
 vi.mock("src/core/components/featureReports/queries/getFacetedBreakdown", () => ({ default: vi.fn() }));
+vi.mock("src/core/components/featureReports/queries/getDetailCsv", () => ({ default: vi.fn() }));
 // Ledger request/row lifecycle has its own mounted specification; this file exercises distributions.
 vi.mock("src/core/components/featureReports/FacetItemDetailTable", () => ({ FacetItemDetailTable: () => null }));
 vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({ formattingLocale: "fr-BE", getPlainString: (key: string) => key }) }));
