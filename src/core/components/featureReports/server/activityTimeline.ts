@@ -3,15 +3,14 @@
 
 import { Temporal } from "@js-temporal/polyfill";
 import { Prisma } from "@prisma/client";
-import { AuthorizationError } from "blitz";
 import { BandTimeZoneSchema } from "shared/dateTimePolicy";
 import { ActivityReportTimeBucketSize } from "shared/mysqlUtils";
-import { Permission } from "shared/permissions";
 import { platformSysadminWhere } from "src/auth/server/principalPredicates";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { executeDB3Read, type DB3ReadDatabase } from "src/core/db3/server/db3ReadExecution";
 import { loadBandTimeZone } from "src/server/bandTimeZone";
 import { GeneralFeatureReportInputSchema, type GeneralFeatureReportInput, type GeneralFeatureReportResult } from "../activityReportTypes";
+import { authorizeActivityReport } from "./activityReportAuthorization";
 
 export interface ActivityTimeZonePeriod {
     readonly start: Date;
@@ -80,12 +79,7 @@ export function readActivityTimeline(database: DB3ReadDatabase, authorization: C
     input: GeneralFeatureReportInput): Promise<GeneralFeatureReportResult> {
     const args = GeneralFeatureReportInputSchema.parse(input);
     return executeDB3Read(database, authorization, async context => {
-        const auth = context.authorization.requireUser();
-        const band = auth.requireBand();
-        if (band.publicId !== args.bandPublicId) {
-            throw new AuthorizationError("Activity reports require the selected band.");
-        }
-        auth.requirePermission(Permission.view_feature_reports);
+        const { auth, band } = authorizeActivityReport(context.authorization, args.bandPublicId);
         const timeZone = await loadBandTimeZone(context.database, band.id);
         const administrators = args.filterSpec.excludeSysadmins
             ? await context.database.user.findMany({ where: platformSysadminWhere, select: { id: true } }) : [];

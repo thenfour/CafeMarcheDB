@@ -9,6 +9,17 @@ import { WikiPageRevisionNaturalOrderBy, xWikiPage, xWikiPageRevision } from "..
 import { graft } from "../common/viewCommon";
 import type { PermissionPublicId } from "shared/publicId";
 
+const wikiPageReferenceContract = deriveViewContract(xWikiPage, Prisma.validator<Prisma.WikiPageDefaultArgs>()({
+    select: { publicId: true, slug: true },
+}));
+export const wikiPageReferenceView = defineView({
+    viewID: "WikiPage_Reference",
+    entity: xWikiPage,
+    selection: wikiPageReferenceContract.prismaSelection,
+    dtoSchema: wikiPageReferenceContract.dtoSchema,
+    hydrate: wikiPageReferenceContract.hydrate,
+});
+
 const wikiPageTagAssociationTransportSelection = {
     select: {
         publicId: true,

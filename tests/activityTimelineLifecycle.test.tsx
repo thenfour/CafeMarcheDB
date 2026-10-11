@@ -121,4 +121,14 @@ describe("mounted activity timeline lifecycle", () => {
         expect(container.querySelector("[data-activity-total]")!.getAttribute("data-activity-total")).toBe("0");
         expect(container.querySelector("[data-chart]")!.getAttribute("data-chart")).toBe("[]");
     });
+
+    it("hides loaded counts during a presentation refresh with unchanged serialized inputs", async () => {
+        const refreshed = pendingReport();
+        vi.mocked(invoke).mockResolvedValueOnce(result(4)).mockReturnValueOnce(refreshed.promise);
+        await render();
+        await render({ ...input });
+        expect(container.querySelector("[data-activity-total]")).toBeNull();
+        await act(async () => refreshed.reject(new Error("Fresh grants rejected")));
+        expect(container.querySelector("[role=alert]")).not.toBeNull();
+    });
 });

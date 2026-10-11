@@ -13,10 +13,16 @@ export interface PublicIdRepairDelegate {
 // TTable ensures public IDs are only usable within the context of the specified table key.
 export function generatePublicId<TTable extends string = string>(): PublicId<TTable> {
     const value = randomBytes(12).toString("base64url");
-    if (value.length !== PUBLIC_ID_LENGTH) {
-        throw new Error(`Generated public ID has unexpected length ${value.length}.`);
+
+    // the id is case-sensitive and uses a-z, A-Z, 0-9, -, and _
+    // they are all fine except the `-` means it doesn't select as a word, which is slightly annoying.
+    // replace `-` with `_` to make it easier to select as a word.
+    const sanitizedValue = value.replace(/-/g, "_");
+
+    if (sanitizedValue.length !== PUBLIC_ID_LENGTH) {
+        throw new Error(`Generated public ID has unexpected length ${sanitizedValue.length}.`);
     }
-    return value as PublicId<TTable>;
+    return sanitizedValue as PublicId<TTable>;
 }
 
 // pass in an exception thrown by prisma; this contains the logic that

@@ -10,7 +10,9 @@ import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
 import { CMDateRangePicker } from "src/core/components/DateTime/DateTimeRangeControl";
 import { AgeRelativeToNow } from "src/core/components/DateTime/RelativeTimeComponents";
 import { ActivityFeature } from "src/core/components/featureReports/activityTracking";
-import { type ActivityTimelineFilter, type GeneralFeatureReportInput } from "src/core/components/featureReports/activityReportTypes";
+import { type ActivityTimelineFilter, type GeneralFeatureReportInput, type FacetedBreakdownInput } from "src/core/components/featureReports/activityReportTypes";
+import { emptyActivityFacetFilters, type ActivityReportFilters } from "src/core/components/featureReports/ClientFacetHandlers";
+import { FacetedBreakdown } from "src/core/components/featureReports/FacetedBreakdown";
 import { activityReportDateRange, type ActivityReportPeriod } from "src/core/components/featureReports/activityReportTiming";
 import { FeatureReportTopLevelDateSelector } from "src/core/components/featureReports/TopLevelDateSelection";
 import { CMSelectDisplayStyle, CMMultiSelect, CMSingleSelect } from "src/core/components/select/CMSelect";
@@ -31,11 +33,18 @@ function GeneralFeatureStatsReport({ bandPublicId, timeZone }: { readonly bandPu
         contextBeginsWith: null, includeFeatures: [], excludeFeatures: [],
     });
     const [selectedBucket, setSelectedBucket] = React.useState<string | null>(null);
+    const [facetFilters, setFacetFilters] = React.useState(emptyActivityFacetFilters);
     const [refetchTrigger, setRefetchTrigger] = React.useState(0);
     const [dataUpdatedAt, setDataUpdatedAt] = React.useState<Date | null>(null);
     const input = React.useMemo<GeneralFeatureReportInput>(() => ({ ...presentation.data?.input, bandPublicId, ...range, filterSpec }),
         [presentation.data?.input, bandPublicId, range, filterSpec]);
     const validRange = range.startDate < range.endDateExclusive;
+    const facetInput = React.useMemo<FacetedBreakdownInput | null>(() => selectedBucket ? { ...input, selectedBucket, facetFilters } : null,
+        [input, selectedBucket, facetFilters]);
+    const changeFilters = (filters: ActivityReportFilters) => {
+        setFilterSpec(filters.timeline);
+        setFacetFilters(filters.facets);
+    };
     const setDateRange = (value: typeof range) => {
         setRange(value);
         setSelectedBucket(null);
@@ -105,6 +114,8 @@ function GeneralFeatureStatsReport({ bandPublicId, timeZone }: { readonly bandPu
             refetchTrigger={refetchTrigger}
             setDataUpdatedAt={setDataUpdatedAt}
         /> : <Alert severity="warning">{locale.getPlainString("activityReports.invalidRange")}</Alert>}
+        {validRange && facetInput ? <FacetedBreakdown input={facetInput} refetchTrigger={refetchTrigger} onChangeFilters={changeFilters} />
+            : validRange && <Alert severity="info">{locale.getPlainString("activityReports.selectBucket")}</Alert>}
         <Alert severity="info">{locale.getPlainString("activityReports.remaining")}</Alert>
     </div>;
 }

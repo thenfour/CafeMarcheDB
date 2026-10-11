@@ -5,6 +5,17 @@ import { deriveViewContract } from "../../core/db3ViewContract";
 import { dashboardReferenceContract } from "../../references/dashboardReferences";
 import { xMenuLink } from "../../schema/menuLink";
 
+const menuLinkReferenceContract = deriveViewContract(xMenuLink, Prisma.validator<Prisma.MenuLinkDefaultArgs>()({
+    select: { publicId: true, caption: true },
+}));
+export const menuLinkReferenceView = defineView({
+    viewID: "MenuLink_Reference",
+    entity: xMenuLink,
+    selection: menuLinkReferenceContract.prismaSelection,
+    dtoSchema: menuLinkReferenceContract.dtoSchema,
+    hydrate: menuLinkReferenceContract.hydrate,
+});
+
 const menuLinkEditorSelection = Prisma.validator<Prisma.MenuLinkDefaultArgs>()({
     select: {
         publicId: true,

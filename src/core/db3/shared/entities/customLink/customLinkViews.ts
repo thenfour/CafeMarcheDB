@@ -5,6 +5,17 @@ import { xCustomLink } from "../../schema/customLinks";
 import { xCustomLinkFile } from "./customLinkFile";
 import { deriveViewContract } from "../../core/db3ViewContract";
 
+const customLinkReferenceContract = deriveViewContract(xCustomLink, Prisma.validator<Prisma.CustomLinkDefaultArgs>()({
+    select: { publicId: true, name: true },
+}));
+export const customLinkReferenceView = defineView({
+    viewID: "CustomLink_Reference",
+    entity: xCustomLink,
+    selection: customLinkReferenceContract.prismaSelection,
+    dtoSchema: customLinkReferenceContract.dtoSchema,
+    hydrate: customLinkReferenceContract.hydrate,
+});
+
 //-----------------------------------------------------------------------
 
 const customLinkFileArgs = Prisma.validator<Prisma.FileDefaultArgs>()({

@@ -31,7 +31,6 @@ import searchUserMergeCandidates from "src/auth/queries/searchUserMergeCandidate
 import getUserMassAnalysis from "@db3/queries/getUserMassAnalysis";
 import getDetail from "src/core/components/featureReports/queries/getDetail";
 import getDetailCsv from "src/core/components/featureReports/queries/getDetailCsv";
-import getFacetedBreakdown from "src/core/components/featureReports/queries/getFacetedBreakdown";
 import getGeneralFeatureDetail from "src/core/components/featureReports/queries/getGeneralFeatureDetail";
 import { ApplicationFeatureUnavailableError } from "src/core/shared/applicationRecovery";
 import { Permission } from "shared/permissions";
@@ -62,7 +61,6 @@ const deferredEndpoints = [
 const deferredReportEndpoints = [
     { name: "activity details", resolve: getDetail },
     { name: "activity CSV export", resolve: getDetailCsv },
-    { name: "activity facets", resolve: getFacetedBreakdown },
     { name: "general activity details", resolve: getGeneralFeatureDetail },
 ];
 

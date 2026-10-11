@@ -23,6 +23,7 @@ export function FeatureReportTopLevelDateSelector(props: FeatureReportTopLevelDa
     React.useEffect(() => {
         let current = true;
         setFailedKey(null);
+        setLoaded(null);
         void invoke(getGeneralFeatureReport, input).then(result => {
             if (current) {
                 setLoaded({ key: requestKey, result });

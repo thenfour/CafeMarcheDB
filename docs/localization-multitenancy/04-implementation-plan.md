@@ -887,11 +887,55 @@ The native/built-browser evidence is recorded below. All 28 activity references,
 including the deferred detail-redaction specification, remain intact. The full
 `activity-reports` obligation and A1/B remain open.
 
-## Next slice: Activity-report facets and details
+## Activity-report aggregate facet checkpoint
+
+The original `FacetedBreakdown`, `ClientFacetHandlers`, `facetProcessor` and
+`getFacetedBreakdown` owners are active for the selected timeline bucket. All
+sixteen facet groups have distributions, counts, percentages, summary/individual
+tabs and count sorting. Include/isolate, exclude/hide and individual/whole-group
+filter removal are restored where the reference supports them. Context selects
+a literal prefix; person tokens and screen sizes remain descriptive groups.
+Feature/context filters also affect the timeline; additional facet filters refine
+the selected bucket, retaining the reference's top-level report behavior.
+
+Fresh report authorization, Action aggregates, trusted band timezone and reference
+reads share a repeatable snapshot. New aggregate/filter/reference queries use
+compiler-checked Prisma fields. Shared User identity owns self exclusion;
+membership authority owns the band grant. NULL authors remain in totals without
+inventing an anonymous person. Non-NULL authors receive selection- and band-scoped
+HMAC tokens using a private process key, never person identities or account data.
+Tokens are stable for the same selection in a running process and change after
+a server restart; they are not permanent tracking identifiers.
+
+Song/Event/Wiki/MenuLink/CustomLink facets consume entity-owned authorized views.
+Narrow reusable Wiki/MenuLink/CustomLink reference views project only public
+identity and label. Authored multilingual labels retain their existing meaning;
+MenuLink captions use shared locale availability, resolution and intentional blank
+rules. Private/deleted/foreign references do not appear. Hidden/foreign/missing
+inclusions match no authorized records, and exclusions cannot probe their counts.
+Actions without a dimension/reference remain in totals when excluding a visible
+value. Aggregate totals remain governed by the report grant independently of
+the entity read grant.
+
+Selected buckets match the timeline's band-local hour/day/ISO week/month/year
+grouping, clipped to the report's half-open dates. Repeated autumn hours select
+both UTC occurrences. A nonexistent spring hour matches no Actions; an explicit
+empty-ID predicate avoids Prisma omitting an empty nested OR. Presentation refreshes
+discard loaded counts/references even when their serialized inputs are unchanged.
+Late requests cannot replace the current selection, band, locale or filter.
+
+This is the aggregate facet slice. Domain chip presentation, Event reference
+metadata, drill-down/ledger rows and CSV remain part of the next detail/export
+work. All 28 activity source references and the deferred detail-redaction
+specification remain intact; `activity-reports` and A1/B remain open. Validation
+and browser cleanup evidence are recorded below.
+
+## Next slice: Activity-report details and CSV
 
 Continue the original report composition through its existing query/UI owners:
-restore band-owned facets, shared-person versus membership filters, localized
-authorized references and drill-down rows, then CSV. Reactivate the preserved
+restore domain reference chips/metadata and authorized drill-down/ledger rows,
+then CSV. Reuse the selected-band aggregate/filter/reference owners and keep
+person anonymization consistent across those projections. Reactivate the preserved
 detail/redaction/filter specifications for their actual contracts. Verify private,
 deleted and foreign-band references, anonymous authors, fresh grant revocation,
 two-band context switches and exports in native tests and the built browser.
@@ -1684,3 +1728,47 @@ focused run. Preservation remains at 223 references, seven deferred
 specifications and fifteen pending features. All 28 activity references remain;
 facets, detail rows/redaction and CSV are the next slice. Full report parity,
 production inventory/rehearsal, other obligations and A1/B stay open.
+
+The **activity-report aggregate facet checkpoint** passes normal typecheck,
+targeted lint and a normal production build with isolated output. Its 143 focused
+cases across seven files cover strict facet inputs, band-calendar bucket selection,
+ISO week-year and DST, token scope, immutable isolate/hide/clear controls, mounted
+sorting/filter actions, late replies, refresh/denial/retry and same-input presentation
+refreshes, alongside timeline/date-picker/page policy and the retained guards.
+Two obsolete facet-RPC guard cases are removed because that reader is active;
+three detail/export readers and the actual detail-redaction specification remain
+guarded/preserved.
+
+Native MariaDB passes 53 cases across the facet, timeline and membership-role
+suites, including 24 new facet cases. These verify all sixteen groups, all seven
+additional scalar filter families, all five public reference filters and precedence,
+literal context metacharacters, NULL dimensions/authors, both administrator policies,
+public projections and private/deleted/foreign references, intentional blanks,
+forged filters, independent entity/report grants, exact repeated/missing DST hours
+and timezone refresh. Fresh grant/permission/membership/role/account/merge/band
+revocations reject before aggregation. One shared person's two memberships have
+independent totals/token scopes; platform readers require explicit selected-band
+context. The private database is removed after the run.
+
+Nine built Chromium groups verify the preserved timeline controls plus facet
+sorting, Song isolation, browser hiding/removal, anonymized person groups,
+authorized/localized French/Dutch reference labels and two reporting timezones.
+Held old-band replies cannot replace either timeline or facets. Fresh report
+revocation removes both loaded results; restoration permits Refresh. The report-only
+calendar boundary, role-carried platform authority and anonymous page/RPC rejection
+remain covered. Successful facet payloads expose no person identifiers, private
+routes/query text or link targets. No uncaught page or unexpected RPC errors occur.
+French/Dutch distribution screenshots are visually inspected. Translations,
+timezone settings and membership role/timestamps are restored; fixture references,
+localized strings, grants/locales/roles, sessions, Actions and audits are removed,
+and the owned server is stopped. Evidence is in
+`temp/activity-facets-browser-result.json`.
+
+The complete suite retains 203 failed tests and ten suite-load failures, with
+1996 passed and 761 skipped. All 163 normalized failure labels are unchanged
+versus the timeline checkpoint; later jsdom batches still require the focused
+run. Preservation verifies 223 references, seven deferred specifications and
+fifteen pending features. All 28 activity references remain until domain chips,
+Event reference metadata, detail/ledger projections and CSV are restored and the
+actual deferred redaction specification is reactivated. Full activity report
+parity, production inventory/rehearsal, other obligations and A1/B remain open.
