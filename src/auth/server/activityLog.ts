@@ -48,37 +48,6 @@ export type RegisterChangeArgs = {
     db?: Pick<Prisma.TransactionClient, "change">,
 }
 
-export const AUDIT_REDACTED_VALUE = "[REDACTED]";
-
-const isSensitiveAuditField = (fieldName: string): boolean => {
-    const normalized = fieldName.replace(/[^a-z0-9]/gi, "").toLowerCase();
-    if (normalized.includes("password") && normalized !== "passwordreset") return true;
-    return normalized === "token"
-        || normalized.endsWith("token")
-        || normalized.endsWith("tokenhash")
-        || normalized === "secret"
-        || normalized.endsWith("secret")
-        || normalized.endsWith("secrethash")
-        || normalized === "credential"
-        || normalized.endsWith("credential")
-        || normalized.endsWith("credentialhash");
-};
-
-// Change records are retained and displayed through the administrative log.
-// Recursively redact credential-shaped fields immediately before persistence so
-// callers cannot accidentally serialize reusable credentials or their hashes.
-export const redactAuditValues = (value: unknown): unknown => {
-    if (Array.isArray(value)) return value.map(redactAuditValues);
-    if (value === null || typeof value !== "object") return value;
-    const prototype = Object.getPrototypeOf(value);
-    if (prototype !== Object.prototype && prototype !== null) return value;
-
-    return Object.fromEntries(Object.entries(value).map(([key, childValue]) => [
-        key,
-        isSensitiveAuditField(key) ? AUDIT_REDACTED_VALUE : redactAuditValues(childValue),
-    ]));
-};
-
 export async function RegisterChange(args: RegisterChangeArgs) {
     let oldValues: unknown = null;
     let newValues: unknown = null;
@@ -126,8 +95,8 @@ export async function RegisterChange(args: RegisterChangeArgs) {
                 userId: args.actorUserId === undefined
                     ? args.auth.userId ?? null
                     : args.actorUserId,
-                oldValues: JSON.stringify(redactAuditValues(oldValues)),
-                newValues: JSON.stringify(redactAuditValues(newValues)),
+                oldValues: JSON.stringify(oldValues),
+                newValues: JSON.stringify(newValues),
             }
 
         });

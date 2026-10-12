@@ -1,4 +1,3 @@
-import { authorizationBandId } from "./support/authorizationSeed";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { describe, expect, it, vi } from "vitest";
 
@@ -17,27 +16,14 @@ vi.mock("db", async () => {
 
 import * as db3 from "@db3/db3";
 import { getDB3CommandHandler } from "@db3/server/db3CommandRegistry";
-import { validateDB3MutationRequest, validateDB3PaginatedQueryRequest, validateDB3QueryRequest } from "@db3/server/db3RequestValidation";
-import getAdminLogItemInfo from "@db3/queries/getAdminLogItemInfo";
-import getDistinctChangeFilterValues from "@db3/queries/getDistinctChangeFilterValues";
+import { validateDB3MutationRequest } from "@db3/server/db3RequestValidation";
 import { insertImpl } from "@db3/server/db3mutationCore";
-import { ApplicationFeatureUnavailableError } from "src/core/shared/applicationRecovery";
 import { parsePublicId } from "shared/publicId";
 
 // These requests deliberately target the removed single-band Role contract.
 const roleId = parsePublicId<"Role">("DeferredRole0001");
-import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
-import { invokeResolver } from "./support/resolverHarness";
-import { forgeDb3Insert, forgeDb3PublicUpdate, forgeDb3PublicDelete, forgeDb3Query } from "./support/db3RequestBuilders";
-
-const member = createAuthorizationTestUser("normal", { id: 10 });
-const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 });
-const userId = member.publicId;
-
-const deferredAuditEndpoints = [
-    { name: "historical audit references", resolve: getAdminLogItemInfo },
-    { name: "audit filter references", resolve: getDistinctChangeFilterValues },
-];
+const userId = parsePublicId<"User">("DeferredUser0001");
+import { forgeDb3Insert, forgeDb3PublicUpdate, forgeDb3PublicDelete } from "./support/db3RequestBuilders";
 
 describe("service-owned File creation", () => {
     it("blocks generic File creation before its transaction or metadata hooks", async () => {
@@ -48,43 +34,6 @@ describe("service-owned File creation", () => {
             },
         });
         await expect(insertImpl(db3.xFile, {}, forbiddenAuthorization)).rejects.toThrow("creation");
-    });
-});
-
-describe("deferred audit log readers", () => {
-    it.each(deferredAuditEndpoints)("rejects $name without reading audit, account or reference data", async ({ resolve }) => {
-        const requests: unknown[] = [
-            { tableName: "File", pk: 1 },
-            { bandPublicId: parsePublicId<"Band">("AuditBand0000001"), routeLocale: "fr-BE" },
-            null,
-        ];
-        for (const actor of [member, sysadmin]) {
-            for (const input of requests) {
-                await expect(invokeResolver(resolve, input, createAuthorizationTestContext(actor)))
-                    .rejects.toThrow(ApplicationFeatureUnavailableError);
-            }
-        }
-    });
-
-    it.each(deferredAuditEndpoints)("requires login before reporting availability for $name", async ({ resolve }) => {
-        await expect(invokeResolver(resolve, {}, createAuthorizationTestContext(null)))
-            .rejects.toThrow("login");
-    });
-
-    it("rejects crafted generic audit reads and writes before database access", () => {
-        expect(() => db3.GetTableById("Change")).toThrow("was not found");
-        expect(() => validateDB3QueryRequest(forgeDb3Query("Change", authorizationBandId)))
-            .toThrow("unknown table ID 'Change'");
-        expect(() => validateDB3PaginatedQueryRequest({ ...forgeDb3Query("Change", authorizationBandId), skip: 0, take: 50 }))
-            .toThrow("unknown table ID 'Change'");
-        const requests = [
-            forgeDb3Insert("Change", null, { table: "User" }),
-            forgeDb3PublicUpdate("Change", null, userId, { table: "User" }),
-            forgeDb3PublicDelete("Change", null, userId),
-        ];
-        for (const request of requests) {
-            expect(() => validateDB3MutationRequest(request)).toThrow("unknown table ID 'Change'");
-        }
     });
 });
 

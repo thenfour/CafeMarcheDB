@@ -44,8 +44,6 @@ export const dashboardStrings = {
     "dashboard.account.limited": label("Your account has limited access; please contact an admin for access."),
     "recovery.activityReports.title": label("Activity reports"),
     "recovery.activityReports.description": label("Activity reports and their CSV exports are temporarily unavailable while band support is restored. Activity recording remains available."),
-    "recovery.auditLog.title": label("Audit log"),
-    "recovery.auditLog.description": label("Audit browsing and historical record details are temporarily unavailable while band support is restored. Audit recording remains available."),
     "eventImport.title": label("Import events"),
     "eventImport.bandRequired": label("Select a band to import events."),
     "eventImport.config": label("Import config"),

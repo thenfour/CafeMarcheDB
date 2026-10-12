@@ -25,11 +25,9 @@ import {
 } from "src/core/db3/shared/schema/prismArgs"
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads"
 import {
-  AUDIT_REDACTED_VALUE,
   ChangeAction,
   CreateChangeContext,
   RegisterChange,
-  redactAuditValues,
 } from "@/src/auth/server/activityLog"
 import {
   createAuthorizationPersona,
@@ -277,52 +275,25 @@ describe("BA-S001 credential containment", () => {
     }
   })
 
-  it("recursively redacts credentials and hashes while retaining non-secret audit markers", () => {
-    const nullPrototype = Object.assign(Object.create(null), {
-      apiToken: "nested-token",
-      harmless: true,
-    })
-    const result = redactAuditValues({
-      hashedPassword: "password-hash",
-      passwordReset: true,
-      calendarFeedToken: existingToken,
-      nested: [{ oauthSecretHash: "secret-hash" }, nullPrototype],
-      occurredAt: new Date("2026-01-01T00:00:00.000Z"),
-    })
-
-    expect(result).toEqual({
-      hashedPassword: AUDIT_REDACTED_VALUE,
-      passwordReset: true,
-      calendarFeedToken: AUDIT_REDACTED_VALUE,
-      nested: [
-        { oauthSecretHash: AUDIT_REDACTED_VALUE },
-        { apiToken: AUDIT_REDACTED_VALUE, harmless: true },
-      ],
-      occurredAt: new Date("2026-01-01T00:00:00.000Z"),
-    })
-  })
-
-  it("applies recursive redaction immediately before an audit record is persisted", async () => {
+  it("persists original audit values for Sysadmin-only inspection", async () => {
     const { ctx } = createAuthorizationPersona("sysadmin", { id: 1 })
 
     await RegisterChange({
       action: ChangeAction.update,
-      changeContext: CreateChangeContext("credentialRedactionTest"),
+      changeContext: CreateChangeContext("rawAuditValuesTest"),
       table: "User",
       pkid: 10,
       oldValues: { hashedPassword: "old-password-hash", calendarFeedToken: existingToken },
       newValues: { hashedPassword: "new-password-hash", calendarFeedToken: otherToken },
       auth: await loadAuthorization(ctx.session),
       options: { dontCalculateChanges: true },
+      // The in-memory delegate implements the Prisma operations needed by the audit writer.
       db: authorizationTestDb as never,
     })
 
-    const serializedAudit = JSON.stringify(authorizationTestDb.snapshot("change"))
-    expect(serializedAudit).not.toContain("old-password-hash")
-    expect(serializedAudit).not.toContain("new-password-hash")
-    expect(serializedAudit).not.toContain(existingToken)
-    expect(serializedAudit).not.toContain(otherToken)
-    expect(serializedAudit).toContain(AUDIT_REDACTED_VALUE)
+    const audit = authorizationTestDb.snapshot("change")[0]!
+    expect(audit.oldValues).toBe(JSON.stringify({ hashedPassword: "old-password-hash", calendarFeedToken: existingToken }))
+    expect(audit.newValues).toBe(JSON.stringify({ hashedPassword: "new-password-hash", calendarFeedToken: otherToken }))
   })
 
   it("redacts calendar bearer credentials from telemetry paths", () => {

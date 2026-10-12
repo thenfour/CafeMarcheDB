@@ -1,204 +1,71 @@
-import { DeferredAuditLogPage } from "src/core/components/DeferredFeaturePage";
+import React from "react";
+import { useQuery } from "@blitzjs/rpc";
+import { CMChip, CMChipContainer } from "src/core/components/CMChip";
+import { NameValuePair } from "src/core/components/CMCoreComponents2";
+import { CMTextInputBase } from "src/core/components/CMTextField";
+import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
+import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
+import { useLocale } from "src/locale/components/useLocale";
+import { getHashedColor } from "shared/utils";
+import * as DB3Client from "src/core/db3/DB3Client";
+import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
+import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
+import { auditLogView } from "src/core/db3/shared/audit/auditViews";
+import { DB3ReferenceStore } from "src/core/db3/shared/core/db3Hydration";
+import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
 
-export default DeferredAuditLogPage;
+function toggleChoice(values: readonly string[], value: string): string[] {
+    return values.includes(value) ? values.filter(entry => entry !== value) : [...values, value];
+}
 
-// MIGRATION_RESTORE: audit-log
-// Source: 6ee055895a049d6f105d775b4e2e563542f34d32:src/pages/backstage/adminLogs.tsx:1-192
-// Reason: Legacy audit readers and JSON rendering lack scoped ownership and target-schema references.
-// Restore: Restore protected audit browsing, filters, historical JSON/detail links and clipboard/Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction; retain immutable audit recording.
-// Verification: Reactivate preserved audit specifications; test sysadmin/member/anonymous access, two bands, deleted references, revoked grants, redaction, filters, JSON inspection and built-browser navigation.
-// SHA256: f7c49e3a3c48c676906dbdd3054154566c8354a6874c777ac275254853d3f382
-// MIGRATION_REFERENCE_BEGIN
-// import { StandardVariationSpec } from "@/src/core/components/color/palette";
-// import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-// import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
-// import { BlitzPage } from "@blitzjs/next";
-// import { useQuery } from "@blitzjs/rpc";
-// import { Prisma } from "db";
-// import * as React from 'react';
-// import { existsInArray, toggleValueInArray } from "shared/arrayUtils";
-// import { IsNullOrWhitespace, getHashedColor } from "shared/utils";
-// import { CMChip, CMChipContainer } from "src/core/components/CMChip";
-// import { NameValuePair } from "src/core/components/CMCoreComponents2";
-// import { CMTextInputBase } from "src/core/components/CMTextField";
-// import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
-// import * as DB3Client from "src/core/db3/DB3Client";
-// import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
-// import * as db3 from "src/core/db3/db3";
-// import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
-//
-// type AdHocUser = Prisma.UserGetPayload<{
-//     select: {
-//         name: true,
-//         publicId: true,
-//         email: true,
-//     }
-// }>;
-//
-// //type ActivityLogCacheData = ReturnType<typeof useQuery<typeof getDistinctChangeFilterValues>>;
-//
-// //type QueryResult<T> = { data: T, isLoading: boolean, error: Error | null };
-//
-// // Then use it like so
-// type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
-//
-// const AdHocUsersEqual = (a: AdHocUser, b: AdHocUser): boolean => {
-//     return a.publicId === b.publicId;
-// };
-//
-// const MainContent = () => {
-//     const [tableNameFilter, setTableNameFilter] = React.useState<string>("");
-//     const [userNameFilter, setUserNameFilter] = React.useState<string>("");
-//     const [tableNames, setTableNames] = React.useState<string[]>([]);
-//     const [users, setUsers] = React.useState<AdHocUser[]>([]);
-//     const dashboardContext = useDashboardContext();
-//
-//     const [filterSourceData, filterSourceDataOther] = useQuery(getDistinctChangeFilterValues, {});
-//
-//     const tableSpec = DB3Client.defineLegacyTableClientSpec({
-//         table: db3.xChange,
-//         columns: {
-//             id: columnName => new DB3Client.PKColumnClient({ columnName }),
-//             user: columnName => new DB3Client.ForeignSingleFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.member",
-//                 columnName,
-//                 cellWidth: 120,
-//                 size: "small",
-//                 renderAsChip: (args) => {
-//                     if (!args) return "--";
-//                     // This foreign-field renderer receives the Change.user relation.
-//                     const user = args.value as (db3.UserPayloadMinimum | null | undefined);
-//                     if (!user) return "--";
-//                     return <CMChip
-//                         size="small"
-//                         tooltip={`${user.name} ${user.publicId}`}
-//                     >
-//                         <a href={dashboardContext.routingApi.getURIForUser(user)} target="_blank" rel="noreferrer" style={{ color: getHashedColor(user.publicId) }}>
-//                             {user.name}
-//                         </a>
-//                     </CMChip>;
-//                 }
-//             }),
-//
-//             action: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.action", columnName, cellWidth: 80 }),
-//             //new DB3Client.GenericStringColumnClient({ columnName: "context", cellWidth: 150 }),
-//             //new DB3Client.GenericStringColumnClient({ columnName: "operationId", cellWidth: 150 }),
-//             table: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.table",
-//                 columnName,
-//                 cellWidth: 150,
-//                 renderCell: (params) => {
-//                     return <span style={{ color: getHashedColor(String(params.value || "")) }}>{params.value}</span>;
-//                 }
-//             }),
-//             recordId: columnName => new DB3Client.GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.recordId", columnName, cellWidth: 80, }),
-//             //new DB3Client.GenericStringColumnClient({ columnName: "sessionHandle", cellWidth: 150 }),
-//             oldValues: columnName => new DB3Client.JSONStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.oldValues", columnName, cacheData: filterSourceData }),
-//             newValues: columnName => new DB3Client.JSONStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.newValues", columnName, cacheData: filterSourceData }),
-//             changedAt: columnName => new DB3Client.DateTimeColumn({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.changedAt", columnName }),
-//         },
-//     });
-//
-//     const tableButton = (otherTableName: string) => {
-//         const selected = (tableNames.indexOf(otherTableName) !== -1);
-//         return <CMChip
-//             key={otherTableName}
-//             size="small"
-//             variation={{ ...StandardVariationSpec.Strong, selected }}
-//             onClick={() => {
-//                 setTableNames(toggleValueInArray(tableNames, otherTableName));
-//             }}
-//         >
-//             {otherTableName}
-//         </CMChip>;
-//     };
-//
-//     const userButton = (user: AdHocUser) => {
-//         const selected = existsInArray(users, user, AdHocUsersEqual);// (tableNames.indexOf(otherTableName) !== -1);
-//         return <CMChip
-//             key={user.publicId}
-//             variation={{ ...StandardVariationSpec.Strong, selected }}
-//             size="small"
-//             onClick={() => {
-//                 setUsers(toggleValueInArray(users, user, AdHocUsersEqual));
-//             }}
-//             tooltip={`publicId:${user.publicId} email:${user.email}`}
-//         >
-//             {user.name}
-//         </CMChip>;
-//     };
-//
-//     filterSourceData.tableNames.sort((a, b) => a.tableName.localeCompare(b.tableName));
-//     filterSourceData.users.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
-//
-//     // items that are filtered and selected need to still be shown despite filter
-//     // is filtered out
-//     // AND is in selection
-//     const tableNamePassesFilter = (n: { tableName: string }): boolean => IsNullOrWhitespace(tableNameFilter) ? true : n.tableName.toLowerCase().includes(tableNameFilter);
-//     const visibleFilteredTableNames = filterSourceData.tableNames.filter(n => !tableNamePassesFilter(n) && existsInArray(tableNames, n.tableName.toLowerCase()));
-//
-//     const userPassesFilter = (n: AdHocUser): boolean => IsNullOrWhitespace(userNameFilter) ? true : (n.name.toLowerCase().includes(userNameFilter) || n.email.toLowerCase().includes(userNameFilter));
-//     const visibleFilteredUsers = filterSourceData.users.filter(n => !userPassesFilter(n) && existsInArray(users, n, AdHocUsersEqual));
-//
-//     return <>
-//         <LocalizedMarkdown setting="AdminLogsPage_markdown"></LocalizedMarkdown>
-//         <NameValuePair
-//             isReadOnly={false}
-//             name={"Table"}
-//             value={
-//                 <div>
-//                     <CMTextInputBase onChange={(e, v) => setTableNameFilter(v.toLowerCase())} value={tableNameFilter} />
-//                     <CMChipContainer>
-//                         {filterSourceData.tableNames
-//                             .filter(n => tableNamePassesFilter(n))
-//                             .map(n => tableButton(n.tableName))
-//                         }
-//                     </CMChipContainer>
-//                     <CMChipContainer>
-//                         {visibleFilteredTableNames
-//                             .map(n => tableButton(n.tableName))
-//                         }
-//                     </CMChipContainer>
-//                 </div>
-//             }
-//         />
-//         <NameValuePair
-//             isReadOnly={false}
-//             name={"Users"}
-//             value={
-//                 <div>
-//                     <CMTextInputBase onChange={(e, v) => setUserNameFilter(v.toLowerCase())} value={userNameFilter} />
-//                     <CMChipContainer>
-//                         {filterSourceData.users
-//                             .filter(n => IsNullOrWhitespace(userNameFilter) ? true : (n.name.toLowerCase().includes(userNameFilter) || n.email.toLowerCase().includes(userNameFilter)))
-//                             .map(n => userButton(n))
-//                         }
-//                     </CMChipContainer>
-//                     <CMChipContainer>
-//                         {visibleFilteredUsers
-//                             .map(n => userButton(n))
-//                         }
-//                     </CMChipContainer>
-//                 </div>
-//             }
-//         />
-//         <DB3EditGrid
-//             readOnly={true}
-//             tableSpec={tableSpec}
-//             tableParams={{
-//                 tableNames,
-//                 userIds: users.map(u => u.publicId),
-//             }}
-//         />
-//     </>;
-// };
-//
-//
-// const AdminLogsPage: BlitzPage = () => {
-//     return (
-//         <DashboardLayout title="Admin Logs">
-//             <MainContent />
-//         </DashboardLayout>
-//     )
-// }
-//
-// export default AdminLogsPage;
-// MIGRATION_REFERENCE_END
+export function AuditLogContent() {
+    const locale = useLocale();
+    const context = useDB3QueryContext();
+    const [filters] = useQuery(getDistinctChangeFilterValues, context, { staleTime: 0, cacheTime: 0, keepPreviousData: false });
+    const [tableText, setTableText] = React.useState("");
+    const [userText, setUserText] = React.useState("");
+    const [tableNames, setTableNames] = React.useState<string[]>([]);
+    const [userIds, setUserIds] = React.useState<string[]>([]);
+    // The detail reader supplies current actor and record links; the grid keeps the stored IDs.
+    const references = React.useMemo(() => new DB3ReferenceStore(), []);
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: auditLogView,
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            userId: columnName => new DB3Client.AuditActorColumnClient(columnName),
+            action: columnName => new DB3Client.GenericStringColumnClient({ fieldCaptionKey: "db3.fields.action", fieldDescriptionKey: null, columnName, cellWidth: 85 }),
+            table: columnName => new DB3Client.GenericStringColumnClient({ fieldCaptionKey: "db3.fields.table", fieldDescriptionKey: null, columnName, cellWidth: 150,
+                renderCell: params => <span style={{ color: getHashedColor(String(params.value ?? "")) }}>{params.value}</span>,
+            }),
+            recordId: columnName => new DB3Client.AuditRecordColumnClient(columnName),
+            oldValues: () => new DB3Client.JSONStringColumnClient({ fieldCaptionKey: "db3.fields.oldValues", fieldDescriptionKey: null, columnName: "oldValues" }),
+            newValues: () => new DB3Client.JSONStringColumnClient({ fieldCaptionKey: "db3.fields.newValues", fieldDescriptionKey: null, columnName: "newValues" }),
+            changedAt: columnName => new DB3Client.DateTimeColumn({ fieldCaptionKey: "db3.fields.changedAt", fieldDescriptionKey: null, columnName }),
+        },
+    });
+    const tableOptions = filters.tableNames.filter(row => tableNames.includes(row.tableName) || row.tableName.toLocaleLowerCase().includes(tableText.toLocaleLowerCase()));
+    const users = [...filters.users].sort((left, right) => (left.name ?? "").localeCompare(right.name ?? ""));
+    const userOptions = users.filter(user => userIds.includes(user.publicId) || `${user.name ?? ""} ${user.email ?? ""} ${user.publicId}`.toLocaleLowerCase().includes(userText.toLocaleLowerCase()));
+    return <>
+        <BandLocalizedMarkdown id="AdminLogsPage_markdown" />
+        <NameValuePair name={locale.getPlainString("auditLog.tables")} value={<>
+            <CMTextInputBase aria-label={locale.getPlainString("auditLog.filterTables")} value={tableText} onChange={(_event, value) => setTableText(value)} />
+            <CMChipContainer>{tableOptions.map(({ tableName }) => <CMChip key={tableName} size="small"
+                color={getHashedColor(tableName)} variation={{ enabled: true, selected: tableNames.includes(tableName), fillOption: "filled", variation: "strong" }}
+                onClick={() => setTableNames(toggleChoice(tableNames, tableName))}>{tableName}</CMChip>)}</CMChipContainer>
+        </>} />
+        <NameValuePair name={locale.getPlainString("auditLog.users")} value={<>
+            <CMTextInputBase aria-label={locale.getPlainString("auditLog.filterUsers")} value={userText} onChange={(_event, value) => setUserText(value)} />
+            <CMChipContainer>{userOptions.map(user => <CMChip key={user.publicId} size="small" color={getHashedColor(user.publicId)}
+                tooltip={`${user.name ?? ""} ${user.email ?? ""} ${user.publicId}`}
+                variation={{ enabled: true, selected: userIds.includes(user.publicId), fillOption: "filled", variation: "strong" }}
+                onClick={() => setUserIds(toggleChoice(userIds, user.publicId))}>{user.name}</CMChip>)}</CMChipContainer>
+        </>} />
+        <DB3EditGrid view={auditLogView} tableSpec={tableSpec} referenceProvider={references} readOnly tableParams={{ tableNames, userIds }} />
+    </>;
+}
+
+export default function AdminLogsPage() {
+    const locale = useLocale();
+    return <DashboardLayout title={locale.getPlainString("auditLog.title")}><AuditLogContent /></DashboardLayout>;
+}

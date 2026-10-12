@@ -1094,26 +1094,6 @@ export interface ObjectWithVisiblePermission {
 
 
 
-// MIGRATION_RESTORE: audit-log
-// Source: 6ee055895a049d6f105d775b4e2e563542f34d32:src/core/db3/shared/schema/prismArgs.ts:1135-1146
-// Reason: Legacy audit readers and JSON rendering lack scoped ownership and target-schema references.
-// Restore: Restore protected audit browsing, filters, historical JSON/detail links and clipboard/Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction; retain immutable audit recording.
-// Verification: Reactivate preserved audit specifications; test sysadmin/member/anonymous access, two bands, deleted references, revoked grants, redaction, filters, JSON inspection and built-browser navigation.
-// SHA256: 4406beff321c7c32c061980f4f6bd116b64a603e0e428ffc3ac7f3732c131862
-// MIGRATION_REFERENCE_BEGIN
-// export const ChangeArgs = Prisma.validator<Prisma.ChangeDefaultArgs>()({
-//     include: {
-//         user: true,
-//     }
-// });
-//
-// export type ChangePayload = Prisma.ChangeGetPayload<typeof ChangeArgs>;
-//
-// export const ChangeNaturalOrderBy: Prisma.ChangeOrderByWithRelationInput[] = [
-//     { changedAt: 'desc' },
-// ];
-//
-// MIGRATION_REFERENCE_END
 
 // MIGRATION_RESTORE: file-search
 // Source: 3eef35e286d02c61aebd0bb000c433c34cfb15a6:src/core/db3/shared/schema/prismArgs.ts:963-966

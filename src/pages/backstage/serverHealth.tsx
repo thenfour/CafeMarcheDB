@@ -202,23 +202,3 @@ const ServerHealthPage: BlitzPage = () => {
 }
 
 export default ServerHealthPage;
-
-// MIGRATION_RESTORE: audit-log
-// Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/serverHealth.tsx:12-12
-// Reason: Legacy audit readers and JSON rendering lack scoped ownership and target-schema references.
-// Restore: Restore protected audit browsing, filters, historical JSON/detail links and clipboard/Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction; retain immutable audit recording.
-// Verification: Reactivate preserved audit specifications; test sysadmin/member/anonymous access, two bands, deleted references, revoked grants, redaction, filters, JSON inspection and built-browser navigation.
-// SHA256: deb3d444a430f6ea06c7007658983bab3046f21187cd0c917a9bf80fc29903c4
-// MIGRATION_REFERENCE_BEGIN
-// import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
-// MIGRATION_REFERENCE_END
-
-// MIGRATION_RESTORE: audit-log
-// Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/serverHealth.tsx:17-17
-// Reason: Legacy audit readers and JSON rendering lack scoped ownership and target-schema references.
-// Restore: Restore protected audit browsing, filters, historical JSON/detail links and clipboard/Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction; retain immutable audit recording.
-// Verification: Reactivate preserved audit specifications; test sysadmin/member/anonymous access, two bands, deleted references, revoked grants, redaction, filters, JSON inspection and built-browser navigation.
-// SHA256: bedf59dcb0916e9d4b9c3e3d5be159f2fb27c74fc599b18b1db6e530ae056e81
-// MIGRATION_REFERENCE_BEGIN
-//     const [filterSourceData, filterSourceDataOther] = useQuery(getDistinctChangeFilterValues, {});
-// MIGRATION_REFERENCE_END

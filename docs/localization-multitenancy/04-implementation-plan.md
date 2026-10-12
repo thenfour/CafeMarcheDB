@@ -1246,15 +1246,17 @@ executable, six obsolete availability-rejection cases and the unused recovery
 flag are removed, and all 29 completed source blocks/references are removed.
 The current contract is documented in [userMerge.md](../userMerge.md).
 
-## Next slice: Audit log
+## Next slice: Member profile closure
 
-Restore the preserved audit browser, filters, historical JSON inspection and
-detail/navigation/clipboard actions through their existing page and server
-owners. Retain immutable recording while distinguishing account-wide platform
-authority from band-owned rows and independently authorizing historical
-references. Reactivate the remaining deferred audit specification; verify
-redaction, deleted references, fresh revocation, two-band localization and the
-original built-browser workflow on disposable data. Keep broader profile parity,
+Compare the remaining member-profile preservation with `f027830a9790`, including
+the original reachable profile and lifecycle controls. Account for the completed
+analysis, role administration and merge obligations through their existing
+profile entries; finish any remaining interactions before closing profile
+archives or specifications. Retain selected-band membership management and
+independent platform account authority.
+
+Verify self/member/band-manager/platform access, inactive/deleted/merged people,
+fresh revocation, contextual tabs and band/locale changes in the built app. Keep
 localized-name matching, production inventory/rehearsal and A1/B open.
 
 ## Localized catalog text search exception
@@ -1326,48 +1328,71 @@ client together with writes stopped and matching upload backups.
 
 ## Verification status
 
-The **shared-account merge** checkpoint passes normal `yarn typecheck`,
-targeted ESLint across **42 changed TypeScript files** and a normal production
-build with isolated output. The complete repository
-runner selects **290 files: 2,994 passed and 903 skipped**, with no test or
-suite-load failures. Existing native gates remain; the 27 restored merge cases
-run separately on their own database rather than skipping an unrelated check.
-Focused policy/request/dialog/recovery/analysis checks pass **84 cases in six
-files**. Four deferred merge specifications are executable; six obsolete
-availability-rejection cases are removed, and the lifecycle navigation spec
-isolates the merge component behind its own mounted coverage.
+The **audit browser closure**, including the requested raw-data simplification,
+passes normal typecheck, targeted ESLint across **19 changed TypeScript files**,
+an isolated normal production build, **51 focused checks in eight files** and
+all **15 native MariaDB audit cases**. The native database is removed after the
+run. These checks use the repository test runner.
 
-All **65 existing native MySQL specifications** pass **846 cases with 24 existing
-fixture-gated skips**, plus **27 merge cases** on a separate disposable database.
-Coverage includes every User/BandUser foreign key, Main blanks/defaults and
-two-band response/segment revisions, imported inactive memberships/preferences,
-role clearing, exact credit deduplication, hidden/deleted current ownership,
-unchanged history, credentials/calendar/sessions/reset tokens and Wiki locks.
-Delegated authority, every membership ceiling, revoked/deleted/merged/anonymous/
-impersonated actors, no-band/numeric/decision rejection, localized global role
-blanks/preference order, global/band continuity, same-count hidden changes,
-audit rollback, concurrent commits and exact replay are exercised. Both private
-databases are dropped. The merge runner now uses the required repository wrapper.
+The audit feature was introduced after the `f027830a9790` functional baseline;
+its preserved `6ee055895a049d6f105d775b4e2e563542f34d32` implementation is the
+audit reference. The original page, filter RPCs, DB3 grid and JSON-column owner
+retain table/actor filters, selected-chip retention, paging/counts/sorting/
+refresh, Markdown help and inspection, JSON copy/console/expand, both historical
+song-list formats and record/File/parent links. Named read-only grids require an
+explicit reference provider and offer no Insert or seeding controls.
 
-**Seven built Chromium groups** verify lazy original profile and platform-grid
-entries, actual shared-picker word search/exclusion without a request loop,
-swap/blockers, French/Dutch global labels and explicit Tokyo dates, two-band
-aggregate privacy, forged public requests, same-count hidden-comment changes,
-captured commits denied after fresh revocation, cache hiding and explicit retry,
-held old-context replies and a real inactive-account merge. Main's exact account
-values remain, both bands' responses and sign-in methods transfer and one audit
-records retirement. Band-only managers and anonymous clients are denied. French
-profile/grid layouts are visually inspected; no uncaught page or unexpected RPC
-errors occur. The owned server/database/assets are removed.
+The current audit policy is platform Sysadmin-only access to original values.
+Fresh repeatable reads still reject revoked, deleted or merged principals.
+Sysadmin authority alone permits actor labels and current record/File/parent
+lookups; these no longer apply each target's normal feature, field or row
+permissions. Navigation retains the target band and route locale. Event dates
+use the target band's timezone and formatting locale. Deleted/missing targets
+retain captured history; deleted targets offer no navigation.
 
-Evidence is in `temp/user-merge-full-suite.log`, `temp/user-merge-all-native.log`,
-`temp/user-merge-native.log`, `temp/user-merge-focused.log` and
-`temp/user-merge-browser-result.json`. Final build/lint/compiler and source
-correspondence are recorded in `temp/user-merge-final-results.json`. Preservation
-verifies **93 source references, one whole-file deferred specification and ten
-pending features**. Account merge is restored; audit browsing is next. Broader
-profile parity, localized-name matching, production inventory/rehearsal and A1/B
-remain open.
+Stored snapshots, record IDs, actor IDs and session values are displayed without
+masking or identity conversion. Copy/console/expand use the same original
+values. Malformed historical JSON is displayed as its stored text. Recursive
+credential redaction, snapshot reference rewriting and its reference map,
+custom audit field subclasses and the generic read-value projection hook are
+removed. Recording also retains original values; previously persisted redaction
+cannot be undone by this change. Detail requests identify a Change row, and
+generic audit insert/update/delete remain forbidden.
+
+Native coverage includes raw named/legacy reads, filters/paging/counts/search,
+two-band links, Brussels/Tokyo Event dates, retired models and malformed text,
+response parents, both setlist formats, File tags regardless of normal target
+visibility, deleted/missing targets, Sysadmin-only grants, fresh authority
+revocation and band-only/roleless/outsider/anonymous denial. Focused DOM tests
+verify raw display/copy/console/expand, Markdown, setlist ordering and stored IDs.
+The obsolete recursive-redaction test is removed; the persistence regression
+now requires original credential values.
+
+**Eight built Chromium workflow groups** verify filters/sorting/counts,
+unredacted JSON display and clipboard, console/Markdown dialogs, both setlist
+formats, reachable Song/File links, captured IDs for missing targets,
+band/locale navigation changes, fresh grant revocation and anonymous denial.
+There are no uncaught page or unexpected RPC errors. JSON and File-grid
+screenshots are visually inspected, and the owned database/server/assets are
+removed.
+
+Current evidence is in `temp/audit-raw-focused.log`,
+`temp/audit-raw-native.log`, `temp/audit-raw-typecheck.log`,
+`temp/audit-lint.log`, `temp/audit-build.log` and
+`temp/audit-raw-preservation.log`; browser results and screenshots are in
+`temp/audit-raw-browser-result.json`, `temp/audit-raw-browser-json.png` and
+`temp/audit-raw-browser-files.png`. All sixteen completed audit source references
+remain removed. Preservation verifies **77 source references, one whole-file
+deferred specification and nine pending features**. Audit browsing is restored;
+member-profile closure is next. Localized-name matching, production inventory/
+rehearsal and A1/B remain open.
+
+The retained merge checkpoint passed 27 native cases on its separate disposable
+database and seven built Chromium groups for review/confirmation, fresh grants,
+two-band aggregate privacy, atomic retirement/auditing and original profile/grid
+entries. Its four preserved specifications are executable. Evidence remains in
+`temp/user-merge-native.log`, `temp/user-merge-browser-result.json` and
+`temp/user-merge-final-results.json`.
 
 The preceding **account dependency analysis** checkpoint passes normal `yarn typecheck`,
 targeted ESLint across twenty-one changed TypeScript files and a normal production

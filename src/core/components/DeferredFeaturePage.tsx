@@ -12,14 +12,6 @@ export function DeferredActivityReportsPage() {
     </DashboardLayout>;
 }
 
-/** Keep the audit URL explicit while its historical readers are being migrated. */
-export function DeferredAuditLogPage() {
-    const locale = useLocale();
-    return <DashboardLayout title={locale.getPlainString("recovery.auditLog.title")}>
-        <Alert severity="info">{locale.getPlainString("recovery.auditLog.description")}</Alert>
-    </DashboardLayout>;
-}
-
 /** Preserve the protected explorer URL without mounting a global search reader. */
 export function DeferredQuickSearchPage() {
     const locale = useLocale();

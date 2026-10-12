@@ -1,9 +1,7 @@
-export type DeferredApplicationFeature = "auditLog"
-    | "fileCreation" | "quickSearch"
+export type DeferredApplicationFeature = "fileCreation" | "quickSearch"
     | "eventWorkflows" | "songWorkflows" | "fileWorkflows" | "publicPublication" | "domainSearch" | "developerExamples";
 
 const featureNames: { readonly [Feature in DeferredApplicationFeature]: string } = {
-    auditLog: "Audit log",
     fileCreation: "File creation",
     quickSearch: "Quick search",
     eventWorkflows: "Event screens and editing",

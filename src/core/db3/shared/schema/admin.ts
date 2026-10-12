@@ -1,165 +1,63 @@
-export {};
+import { Prisma } from "db";
+import { Permission } from "shared/permissions";
+import { GenericStringField } from "../columnTypes/genericString";
+import { DateTimeField, GenericIntegerField, MakePKfield } from "../columnTypes/xTableColumnTypes";
+import { defineAuthMap, defineTable, makeColumnSet, prismaModel } from "../db3core";
 
-// MIGRATION_RESTORE: audit-log
-// Source: 6ee055895a049d6f105d775b4e2e563542f34d32:src/core/db3/shared/schema/admin.ts:1-155
-// Reason: Legacy audit readers and JSON rendering lack scoped ownership and target-schema references.
-// Restore: Restore protected audit browsing, filters, historical JSON/detail links and clipboard/Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction; retain immutable audit recording.
-// Verification: Reactivate preserved audit specifications; test sysadmin/member/anonymous access, two bands, deleted references, revoked grants, redaction, filters, JSON inspection and built-browser navigation.
-// SHA256: 0191c5c0ca3c13f9214ee340488756a9806067ee3249fb0bf5e9b704f431ff29
-// MIGRATION_REFERENCE_BEGIN
-// import { Prisma } from "db";
-// import { Permission } from "shared/permissions";
-// import { foreignRef, GenericIntegerField, GhostField, MakePKfield } from "../columnTypes/xTableColumnTypes";
-// import * as db3 from "../db3core";
-// import { ChangeNaturalOrderBy, type ChangePayload } from "./prismArgs";
-// import { GenericStringField } from "../columnTypes/genericString";
-// import { xUser } from "./user";
-//
-//
-// export const xSysadminTableAuthMap: db3.DB3AuthTablePermissionMap = {
-//     ViewOwn: Permission.sysadmin,
-//     View: Permission.sysadmin,
-//     EditOwn: Permission.sysadmin,
-//     Edit: Permission.sysadmin,
-//     Insert: Permission.sysadmin,
-// };
-//
-// export const xSysadminColumnAuthMap = db3.defineAuthMap({
-//     PostQueryAsOwner: Permission.sysadmin,
-//     PostQuery: Permission.sysadmin,
-//     PreMutateAsOwner: Permission.sysadmin,
-//     PreMutate: Permission.sysadmin,
-//     PreInsert: Permission.sysadmin,
-// });
-//
-//
-// export interface ChangeTableParams {
-//     tableNames?: string[] | null;
-//     userIds?: string[] | null;
-//     recordId?: number | null;
-// };
-//
-// export const xChange = db3.defineTable({
-//     prismaModel: db3.prismaModel<Prisma.ChangeDelegate>(),
-//     tableName: "Change",
-//     deletePolicy: "disabled",
-//     queryParameters: {
-//         tableNames: { kind: "stringArray", authorizeAs: "table", nullable: true },
-//         userIds: { kind: "stringArray", authorizeAs: "user", nullable: true },
-//     },
-//     getSelectionArgs: (): Prisma.ChangeDefaultArgs => {
-//         return {
-//             include: {
-//                 user: true,
-//             }
-//         };
-//     },
-//     getParameterizedWhereClause: (params: ChangeTableParams): Prisma.ChangeWhereInput[] => {
-//         /*
-//         [
-//             {OR: [{ table: a }, { table: b }]},
-//             {OR: [{ userId: a }, { userId: b }]},
-//         ]
-//         */
-//
-//         const ret: Prisma.ChangeWhereInput[] = [];
-//
-//         if (params.tableNames && params.tableNames.length > 0) {
-//             ret.push({
-//                 OR: params.tableNames.map(n => { return { table: n }; })
-//             });
-//         }
-//
-//         if (params.userIds && params.userIds.length > 0) {
-//             ret.push({
-//                 OR: params.userIds.map(n => { return { user: { publicId: n } }; })
-//             });
-//         }
-//
-//         if (!!params.recordId) {
-//             ret.push({
-//                 recordId: params.recordId
-//             });
-//         }
-//
-//         return ret;
-//     },
-//     tableAuthMap: xSysadminTableAuthMap,
-//     naturalOrderBy: ChangeNaturalOrderBy,
-//     getRowInfo: (row: ChangePayload) => ({
-//         pk: row.id,
-//         name: `${row.id}`,
-//         ownerUserId: null,
-//     }),
-//     fields: db3.makeColumnSet({
-//         id: () => MakePKfield(),
-//
-//         action: columnName => new GenericStringField({
-//             columnName,
-//             allowNull: false,
-//             format: "raw",
-//             authMap: xSysadminColumnAuthMap,
-//         }),
-//
-//         context: columnName => new GenericStringField({
-//             columnName,
-//             allowNull: false,
-//             format: "raw",
-//             authMap: xSysadminColumnAuthMap,
-//         }),
-//
-//         operationId: columnName => new GenericStringField({
-//             columnName,
-//             allowNull: false,
-//             format: "raw",
-//             authMap: xSysadminColumnAuthMap,
-//         }),
-//
-//         table: columnName => new GenericStringField({
-//             columnName,
-//             allowNull: false,
-//             format: "raw",
-//             authMap: xSysadminColumnAuthMap,
-//         }),
-//
-//         recordId: columnName => new GenericIntegerField({
-//             columnName,
-//             allowNull: false,
-//             authMap: xSysadminColumnAuthMap,
-//         }),
-//
-//
-//         sessionHandle: columnName => new GenericStringField({
-//             columnName,
-//             allowNull: true,
-//             format: "raw",
-//             authMap: xSysadminColumnAuthMap,
-//         }),
-//
-//         oldValues: columnName => new GenericStringField({
-//             columnName,
-//             allowNull: true,
-//             format: "raw",
-//             authMap: xSysadminColumnAuthMap,
-//         }),
-//
-//         newValues: columnName => new GenericStringField({
-//             columnName,
-//             allowNull: true,
-//             format: "raw",
-//             authMap: xSysadminColumnAuthMap,
-//         }),
-//
-//         user: foreignRef(() => xUser, {
-//             fkidMember: "userId",
-//             authMap: xSysadminColumnAuthMap,
-//         }),
-//
-//         changedAt: memberName => new GhostField({
-//             authMap: xSysadminColumnAuthMap,
-//             memberName,
-//         }),
-//
-//     })
-// });
-// MIGRATION_REFERENCE_END
+const auditFieldAuth = defineAuthMap({
+    PostQuery: Permission.sysadmin, PostQueryAsOwner: Permission.sysadmin,
+    PreMutate: Permission.never_grant, PreMutateAsOwner: Permission.never_grant, PreInsert: Permission.never_grant,
+});
+
+export interface ChangeTableParams {
+    tableNames?: string[] | null;
+    userIds?: string[] | null;
+}
+
+const changeSelection = Prisma.validator<Prisma.ChangeDefaultArgs>()({
+    select: {
+        id: true, action: true, context: true, operationId: true, table: true, recordId: true,
+        changedAt: true, sessionHandle: true, oldValues: true, newValues: true,
+        userId: true,
+    },
+});
+export const xChange = defineTable({
+    tableName: "Change", prismaModel: prismaModel<Prisma.ChangeDelegate>(),
+    // Audit rows have an operational identity; business references never use this natural key.
+    getIdentity: (row: { id: number }) => row.id,
+    deletePolicy: "disabled", readConsistency: "snapshot",
+    tableAuthMap: {
+        View: Permission.sysadmin, ViewOwn: Permission.sysadmin,
+        Edit: Permission.never_grant, EditOwn: Permission.never_grant, Insert: Permission.never_grant,
+    },
+    getSelectionArgs: () => changeSelection,
+    naturalOrderBy: [{ id: "desc" }],
+    queryParameters: {
+        tableNames: { kind: "stringArray", authorizeAs: "table", nullable: true },
+        userIds: { kind: "stringArray", authorizeAs: "userId", nullable: true },
+    },
+    getParameterizedWhereClause: (params: ChangeTableParams): Prisma.ChangeWhereInput[] => [
+        ...(params.tableNames?.length ? [{ table: { in: params.tableNames } }] : []),
+        ...(params.userIds?.length ? [{ user: { publicId: { in: params.userIds } } }] : []),
+    ],
+    getRowInfo: row => ({ pk: row.id, name: String(row.id), ownerUserId: null }),
+    fields: makeColumnSet({
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        action: columnName => new GenericStringField({ columnName, allowNull: false, format: "raw", authMap: auditFieldAuth }),
+        context: columnName => new GenericStringField({ columnName, allowNull: false, format: "raw", authMap: auditFieldAuth }),
+        operationId: columnName => new GenericStringField({ columnName, allowNull: false, format: "raw", authMap: auditFieldAuth }),
+        table: columnName => new GenericStringField({ columnName, allowNull: false, format: "raw", authMap: auditFieldAuth }),
+        recordId: columnName => new GenericIntegerField({ columnName, allowNull: false, authMap: auditFieldAuth }),
+        sessionHandle: columnName => new GenericStringField({ columnName, allowNull: true, format: "raw", allowQuickFilter: false, authMap: auditFieldAuth }),
+        oldValues: columnName => new GenericStringField({ columnName, allowNull: true, format: "raw", allowQuickFilter: false, authMap: auditFieldAuth }),
+        newValues: columnName => new GenericStringField({ columnName, allowNull: true, format: "raw", allowQuickFilter: false, authMap: auditFieldAuth }),
+        userId: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: auditFieldAuth }),
+        changedAt: columnName => new DateTimeField({ columnName, allowNull: false, authMap: auditFieldAuth }),
+    }),
+});
+
+declare module "../db3core" {
+    interface DB3TableTypeRegistry {
+        Change: typeof xChange;
+    }
+}

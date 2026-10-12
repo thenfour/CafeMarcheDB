@@ -16,6 +16,7 @@ import { activityReportStrings } from "./activityReportStrings";
 import { roleAdministrationStrings } from "./roleAdministrationStrings";
 import { accountAnalysisStrings } from "./accountAnalysisStrings";
 import { accountMergeStaticStrings } from "./accountMergeStrings";
+import { auditLogStrings } from "./auditLogStrings";
 
 function defaultMarkdownStaticString() {
     return markdownStaticString({
@@ -26,6 +27,7 @@ function defaultMarkdownStaticString() {
 }
 
 export const kStaticLocalizedStringRegistry = freezeRegistry({
+    ...auditLogStrings,
     ...instrumentStrings,
     ...catalogStrings,
     ...membershipStrings,

@@ -1,707 +1,136 @@
-export {};
+import React, { Suspense } from "react";
+import { useQuery } from "@blitzjs/rpc";
+import type { GridRenderCellParams } from "@mui/x-data-grid";
+import { ContentCopy, Launch, Terminal } from "@mui/icons-material";
+import { CMButton, NameValuePair } from "src/core/components/CMCoreComponents2";
+import { CMDialog } from "src/core/components/CMDialog";
+import { useSnackbar } from "src/core/components/SnackbarContext";
+import { useLocale } from "src/locale/components/useLocale";
+import { getHashedColor } from "shared/utils";
+import { CMChip } from "src/core/components/CMChip";
+import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
+import { parsePublicId } from "shared/publicId";
+import { z } from "zod";
+import getAdminLogItemInfo from "../queries/getAdminLogItemInfo";
+import { IColumnClient, type ColumnPresentationArgs, type RenderViewerArgs } from "./DB3ClientCore";
+import { useDB3QueryContext } from "./useDB3Context";
+import { AuditReferenceChip, AuditSnapshotViewer } from "./audit/AuditValueViewer";
+import type { AuditValue } from "../shared/audit/auditSnapshot";
 
-// MIGRATION_RESTORE: audit-log
-// Source: 6ee055895a049d6f105d775b4e2e563542f34d32:src/core/db3/components/DB3JSONStringColumnClient.tsx:1-697
-// Reason: Legacy audit readers and JSON rendering lack scoped ownership and target-schema references.
-// Restore: Restore protected audit browsing, filters, historical JSON/detail links and clipboard/Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction; retain immutable audit recording.
-// Verification: Reactivate preserved audit specifications; test sysadmin/member/anonymous access, two bands, deleted references, revoked grants, redaction, filters, JSON inspection and built-browser navigation.
-// SHA256: 746142771bf0c89eabc369e4a559857e752cfb36c407a8251667a5aa5babce5f
-// MIGRATION_REFERENCE_BEGIN
-// // specifically for the activity log viewer.
-// import { useQuery } from "@blitzjs/rpc";
-// import { DialogContent, Tooltip } from "@mui/material";
-// import type { GridRenderCellParams } from "@mui/x-data-grid";
-// import { assert } from "blitz";
-// import { Prisma } from "db";
-// import React, { Suspense } from "react";
-// import { formatFileSize } from "shared/rootroot";
-// import { CMChip, CMChipContainer } from "src/core/components/CMChip";
-// import { CMSmallButton, NameValuePair, SetlistBreakIcon } from "src/core/components/CMCoreComponents2";
-// import { Markdown } from "src/core/components/markdown/Markdown";
-// import { useSnackbar } from "src/core/components/SnackbarContext";
-// import * as db3 from "../db3";
-// import getAdminLogItemInfo from "../queries/getAdminLogItemInfo";
-// import getDistinctChangeFilterValues from "../queries/getDistinctChangeFilterValues";
-// import type { EventSongListMutationCommand } from "../shared/entities/eventSongList/eventSongListCommands";
-// import * as DB3ClientCore from "./DB3ClientCore";
-// import { gIconMap } from "./IconMap";
-//
-// import { Notes } from "@mui/icons-material";
-// import { isPublicId } from "shared/publicId";
-// import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
-// import { ColorSwatch } from "../../components/color/ColorSwatch";
-// import { type ColorPaletteEntry, gGeneralPaletteList, gStrong } from "../../components/color/palette";
-// import { useDashboardContext } from "../../components/dashboardContext/DashboardContext";
-// import { GenericStringField } from "../shared/columnTypes/genericString";
-//
-// type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
-// // Historical JSON spans many model schemas and two song-list formats. The
-// // legacy viewer dispatches by table and field before rendering each value.
-// type HistoricalAuditValue = any;
-// //type ActivityLogCacheData = ReturnType<typeof getDistinctChangeFilterValues>;
-// // type GetDistinctChangeFilterValuesResult = ReturnType<typeof getDistinctChangeFilterValues>;
-//
-// // type ActivityLogCacheData = GetDistinctChangeFilterValuesResult & {
-// //     renderUser: (userId: number) => React.ReactNode;
-// //     renderSong: (songId: number) => React.ReactNode;
-// //     renderEvent: (eventId: number) => React.ReactNode;
-// //     renderEventSegment: (eventSegment: number) => React.ReactNode;
-// // };
-//
-// interface ActivityLogValueViewerProps<T> {
-//     value: T;
-//     tableName: string;
-//     cacheData: ActivityLogCacheData;
-// };
-//
-//
-// /*
-//
-// {
-//   "eventSegmentId": 1146,
-//   "userId": 15,
-//   "attendanceId": 1
-// }
-//
-// */
-//
-// interface ActivityLogChipProps {
-//     maxWidthPx?: number;
-//     color?: string | ColorPaletteEntry | null;
-//     uri?: string | undefined;
-// };
-//
-// const ActivityLogChip = (props: React.PropsWithChildren<ActivityLogChipProps>) => {
-//     const inner = <div style={{ textOverflow: "ellipsis", maxWidth: `${props.maxWidthPx || 200}px`, overflow: "hidden", whiteSpace: "nowrap", display: "block" }}>
-//         {props.children}
-//     </div>;
-//     let linkOrNot: React.ReactNode;
-//     if (props.uri) {
-//         linkOrNot = <a href={props.uri} target="_blank" rel="noreferrer">{inner}</a>
-//     } else {
-//         linkOrNot = inner;
-//     }
-//     return <CMChip
-//         tooltip={props.children}
-//         size="small"
-//         color={props.color}
-//     >
-//         {linkOrNot}
-//     </CMChip>;
-// };
-//
-// const Id = ({ value }: { value: number | null | undefined | boolean | string }): React.ReactNode => {
-//     if (value === undefined) return "undefined";
-//     if (value === null) return "null";
-//     if (value === true) return "true";
-//     if (value === false) return "false";
-//     return <>{value}</>;
-// };
-//
-// export const ActivityLogUserChip = ({ userId, cacheData }: { userId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
-//     const dashboardContext = useDashboardContext();
-//     if (isPublicId(userId)) {
-//         const user = cacheData.users.find(entry => entry.publicId === userId);
-//         return <ActivityLogChip uri={dashboardContext.routingApi.getURIForUser({ publicId: db3.xUser.parseIdentity(userId) })}>{user?.name ?? "User"}</ActivityLogChip>;
-//     }
-//     // Legacy JSON contains natural user keys. Its raw values are redacted from
-//     // Change queries, so any remaining number must stay undisclosed here too.
-//     return <ActivityLogChip>{userId == null ? "Unknown user" : "User"}</ActivityLogChip>;
-// };
-//
-// const ActivityLogEventSegment = ({ eventSegmentId, cacheData }: { eventSegmentId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
-//     const dashboardContext = useDashboardContext();
-//     const foundSegment = cacheData.eventSegments.find(es => es.id === eventSegmentId);
-//     if (!foundSegment) {
-//         return <ActivityLogChip>eventSegmentId:<Id value={eventSegmentId} /></ActivityLogChip>;
-//     }
-//     const foundEvent = cacheData.events.find(e => e.id === foundSegment.eventId);
-//     if (!foundEvent) {
-//         return <ActivityLogChip><Id value={foundSegment.eventId} />, seg:{foundSegment.id}</ActivityLogChip>;
-//     }
-//     const eventLink = { ...foundEvent, publicId: db3.xEvent.parseIdentity(foundEvent.publicId) };
-//     return <ActivityLogChip uri={dashboardContext.routingApi.getURIForEvent(eventLink)}>{db3.EventAPI.getLabel(foundEvent)}#{foundEvent.id} seg:{foundSegment.name}#{foundSegment.id}</ActivityLogChip>;
-// };
-//
-// const ActivityLogEvent = ({ eventId, cacheData }: { eventId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
-//     const dashboardContext = useDashboardContext();
-//     const foundEvent = cacheData.events.find(e => e.id === eventId);
-//     if (!foundEvent) {
-//         return <ActivityLogChip><Id value={eventId} /></ActivityLogChip>;
-//     }
-//
-//     const eventLink = { ...foundEvent, publicId: db3.xEvent.parseIdentity(foundEvent.publicId) };
-//     return <ActivityLogChip uri={dashboardContext.routingApi.getURIForEvent(eventLink)}>{db3.EventAPI.getLabel(foundEvent)}#{foundEvent.id}</ActivityLogChip>;
-// };
-//
-// const ActivityLogEventTag = ({ eventTagId }: { eventTagId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
-//     const dashboardContext = useDashboardContext();
-//     const foundEventTag = isPublicId(eventTagId)
-//         ? dashboardContext.eventTag.getById(db3.xBandEventTag.parseIdentity(eventTagId))
-//         : undefined;
-//     if (!foundEventTag) {
-//         return <ActivityLogChip><Id value={eventTagId} /></ActivityLogChip>;
-//     }
-//     return <ActivityLogChip
-//         color={foundEventTag.color}
-//     >
-//         {foundEventTag.name}
-//     </ActivityLogChip>;
-// };
-//
-// const ActivityLogEventStatus = ({ eventStatusId }: { eventStatusId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
-//     const dashboardContext = useDashboardContext();
-//     const foundEventStatus = isPublicId(eventStatusId)
-//         ? dashboardContext.eventStatus.getById(db3.xEventStatus.parseIdentity(eventStatusId))
-//         : undefined;
-//     if (!foundEventStatus) {
-//         return <ActivityLogChip><Id value={eventStatusId} /></ActivityLogChip>;
-//     }
-//     return <ActivityLogChip
-//         color={foundEventStatus.color}
-//     >
-//         {foundEventStatus.name}
-//     </ActivityLogChip>;
-// };
-//
-// const ActivityLogEventType = ({ eventTypeId }: { eventTypeId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
-//     const dashboardContext = useDashboardContext();
-//     const found = isPublicId(eventTypeId)
-//         ? dashboardContext.eventType.getById(db3.xEventType.parseIdentity(eventTypeId))
-//         : undefined;
-//     if (!found) {
-//         return <ActivityLogChip><Id value={eventTypeId} /></ActivityLogChip>;
-//     }
-//     return <ActivityLogChip
-//         color={found.color}
-//     >
-//         {found.name}
-//     </ActivityLogChip>;
-// };
-//
-// const ActivityLogAttendance = ({ attendanceId, cacheData }: { attendanceId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
-//     const dashboardContext = useDashboardContext();
-//     // Old Change JSON uses natural IDs; captions come from the localized dashboard snapshot.
-//     const identity = cacheData.attendances.find(option => typeof attendanceId === "number"
-//         ? option.id === attendanceId : option.publicId === attendanceId)?.publicId;
-//     const found = identity ? dashboardContext.eventAttendance.getById(db3.xEventAttendance.parseIdentity(identity)) : undefined;
-//     if (!found) {
-//         return <ActivityLogChip><Id value={attendanceId} /></ActivityLogChip>;
-//     }
-//     return <ActivityLogChip
-//         color={found.color}
-//     >
-//         {found.buttonCaption}
-//     </ActivityLogChip>;
-// };
-//
-// const ActivityLogPermission = ({ permissionId, cacheData }: { permissionId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
-//     const dashboardContext = useDashboardContext();
-//     const found = db3.xPermission.isIdentity(permissionId)
-//         ? dashboardContext.permission.getById(db3.xPermission.parseIdentity(permissionId))
-//         : undefined;
-//     if (!found) {
-//         return <ActivityLogChip><Id value={permissionId} /></ActivityLogChip>;
-//     }
-//     return <ActivityLogChip
-//         color={found.color}
-//     >
-//         {found.name}
-//     </ActivityLogChip>;
-// };
-//
-// const ActivityLogUserTag = ({ userTagId, cacheData }: { userTagId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
-//     const dashboardContext = useDashboardContext();
-//     const found = db3.xBandUserTag.isIdentity(userTagId)
-//         ? dashboardContext.userTag.getById(userTagId)
-//         : undefined;
-//     if (!found) {
-//         return <ActivityLogChip><Id value={userTagId} /></ActivityLogChip>;
-//     }
-//     return <ActivityLogChip
-//         color={found.color}
-//     >
-//         {found.name}
-//     </ActivityLogChip>;
-// };
-//
-// const ActivityLogSong = ({ songId, cacheData }: { songId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
-//     const dashboardContext = useDashboardContext();
-//     const found = cacheData.songs.find(s => typeof songId === "number" ? s.id === songId : s.publicId === songId);
-//     if (!found) {
-//         return <ActivityLogChip><Id value={songId} /></ActivityLogChip>;
-//     }
-//     return <ActivityLogChip
-//     >
-//         {found.name}#{found.id}
-//     </ActivityLogChip>;
-// };
-//
-// const ActivityLogSongListEventChip = ({ songListId, cacheData }: { songListId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
-//     const dashboardContext = useDashboardContext();
-//     const found = cacheData.eventSonglists.find(s => s.id === songListId);
-//     if (!found) {
-//         return <ActivityLogChip><Id value={songListId} /></ActivityLogChip>;
-//     }
-//     return <ActivityLogEvent eventId={found.eventId} cacheData={cacheData} />
-// };
-//
-// const ActivityLogSongTag = ({ songTagId, cacheData }: { songTagId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
-//     const dashboardContext = useDashboardContext();
-//     const found = isPublicId(songTagId)
-//         ? dashboardContext.songTag.getById(db3.xBandSongTag.parseIdentity(songTagId))
-//         : undefined;
-//     if (!found) {
-//         // Historical log entries may contain a natural ID. Do not render it
-//         // when the corresponding public identity cannot be resolved.
-//         return <ActivityLogChip>Unknown song tag</ActivityLogChip>;
-//     }
-//     return <ActivityLogChip
-//     >
-//         {found.name}
-//     </ActivityLogChip>;
-// };
-//
-// const ActivityLogInstrument = ({ instrumentId, cacheData }: { instrumentId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
-//     const dashboardContext = useDashboardContext();
-//     const found = isPublicId(instrumentId)
-//         ? dashboardContext.instrument.getById(db3.xInstrument.parseIdentity(instrumentId))
-//         : undefined;
-//     if (!found) {
-//         return <ActivityLogChip>Unknown instrument</ActivityLogChip>;
-//     }
-//     return <ActivityLogChip
-//     >
-//         {found.name}
-//     </ActivityLogChip>;
-// };
-//
-// const ActivityLogFile = ({ file, cacheData }: { file: Pick<Prisma.FileGetPayload<{}>, "publicId" | "fileLeafName">, cacheData: ActivityLogCacheData }) => {
-//     const dashboardContext = useDashboardContext();
-//     return <ActivityLogChip
-//     >
-//         {file.fileLeafName}#{file.publicId}
-//     </ActivityLogChip>;
-// };
-//
-//
-// type ActivityLogSongListSongPayload = { id?: number | undefined, songId: number | string, sortOrder: number, subtitle: string, type: "song" };
-// type ActivityLogSongListDividerPayload = {
-//     id?: number | undefined,
-//     sortOrder: number,
-//     subtitle: string,
-//     color: string | null | undefined,
-//     isInterruption: boolean,
-//     subtitleIfSong: string | null | undefined,
-//     isSong: boolean | undefined,
-//     lengthSeconds: number | null | undefined,
-//     textStyle: null | string,
-//     type: "div",
-// };
-// type ActivityLogSongListV1 = { id: number, songId: number, sortOrder: number, subtitle: string }[];
-// type ActivityLogSongListV2 = Partial<EventSongListMutationCommand> & Pick<EventSongListMutationCommand, 'songs' | 'dividers'>;
-//
-// const ActivityLogSongListViewerV2 = ({ value, cacheData }: { value: ActivityLogSongListV2, cacheData: ActivityLogCacheData }) => {
-//     if (!value.songs) {
-//         return <ActivityLogKeyValueTable cacheData={cacheData} tableName={"<always treat as keyvalues>"} value={value} />;
-//     }
-//
-//     const items: (ActivityLogSongListSongPayload | ActivityLogSongListDividerPayload)[] = [];
-//     items.push(...value.songs.map(s => {
-//         const ret: ActivityLogSongListSongPayload = { ...s, type: "song" };
-//         return ret;
-//     }));
-//     items.push(...value.dividers.map(s => {
-//         const ret: ActivityLogSongListDividerPayload = { ...s, type: "div" };
-//         return ret;
-//     }));
-//     items.sort((a, b) => {
-//         return a.sortOrder - b.sortOrder;
-//     });
-//
-//     const { songs, dividers, ...otherFields } = value;
-//
-//     return <>
-//         <ActivityLogKeyValueTable cacheData={cacheData} tableName={"<always treat as keyvalues>"} value={otherFields} />
-//         <table>
-//             <thead>
-//                 <tr>
-//                     <th>
-//                         id
-//                     </th>
-//                     <th>
-//                         ord
-//                     </th>
-//                     <th>
-//                         song
-//                     </th>
-//                     <th>
-//                         comment
-//                     </th>
-//                 </tr>
-//             </thead>
-//             <tbody>
-//                 {items.map((s, i) => <tr key={i}>
-//                     <td>{s.id}</td>
-//                     <td>{s.sortOrder}</td>
-//                     <td >
-//                         {s.type === "song" && <ActivityLogSong songId={s.songId} cacheData={cacheData} />}
-//                         {s.type === "div" && (
-//                             <div style={{ display: "flex" }}>
-//                                 <div>-----</div>
-//                                 <ColorSwatch color={gGeneralPaletteList.findEntry(s.color || null)} size="small" variation={gStrong} />
-//                                 <div style={{ opacity: "50%" }}>{s.isInterruption ? (
-//                                     <SetlistBreakIcon />
-//                                 ) : (
-//                                     <Notes />
-//                                 )}</div>
-//                             </div>
-//                         )}
-//                     </td>
-//                     <td>{s.subtitle}</td>
-//                 </tr>)}
-//             </tbody>
-//         </table>
-//     </>;
-// }
-//
-//
-// const ActivityLogSongListViewerV1 = ({ value, cacheData }: { value: ActivityLogSongListV1, cacheData: ActivityLogCacheData }) => {
-//     return <table>
-//         <thead>
-//             <tr>
-//                 <th>
-//                     id
-//                 </th>
-//                 <th>
-//                     ord
-//                 </th>
-//                 <th>
-//                     song
-//                 </th>
-//                 <th>
-//                     comment
-//                 </th>
-//             </tr>
-//         </thead>
-//         <tbody>
-//             {value.map((s, i) => <tr key={i}>
-//                 <td>{s.id}</td>
-//                 <td>{s.sortOrder}</td>
-//                 <td><ActivityLogSong songId={s.songId} cacheData={cacheData} /></td>
-//                 <td>{s.subtitle}</td>
-//             </tr>)}
-//         </tbody>
-//     </table>
-// }
-//
-// const ActivityLogSongListViewer = ({ value, cacheData }: { value: ActivityLogSongListV1 | ActivityLogSongListV2, cacheData: ActivityLogCacheData }) => {
-//     //console.log(`rendering ??`);
-//     //console.log(value)
-//     if (Array.isArray(value)) return <ActivityLogSongListViewerV1 value={value} cacheData={cacheData} />;
-//     return <ActivityLogSongListViewerV2 value={value} cacheData={cacheData} />;
-// }
-//
-// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// const Toolbar = (props: { value: unknown, onExpand: () => void }) => {
-//     const snackbar = useSnackbar();
-//     const handleCopy = async () => {
-//         const str = JSON.stringify(props.value, null, 2);
-//         await navigator.clipboard.writeText(str);
-//         snackbar.showMessage({ severity: "success", children: `copied ${str.length} chars to the clipboard` });
-//     };
-//     const handleDump = () => {
-//         console.log(props.value);
-//         snackbar.showMessage({ severity: "success", children: `Done. See console` });
-//     };
-//     return <div className="toolbar" style={{ position: "absolute", right: 0, display: "flex" }}>
-//         <Tooltip title={"copy"}><div className="interactable" onClick={handleCopy}>{gIconMap.ContentCopy()}</div></Tooltip>
-//         <Tooltip title={"dump to console"}><div className="interactable" onClick={handleDump}>{gIconMap.Terminal()}</div></Tooltip>
-//         <Tooltip title={"expand"}><div className="interactable" onClick={() => props.onExpand()}>{gIconMap.Launch()}</div></Tooltip>
-//     </div>;
-// };
-//
-//
-// const AdminLogAsyncInfoChip = ({ pk, tableName, cacheData }: { pk: number, tableName: string, cacheData: ActivityLogCacheData }) => {
-//     const [result] = useQuery(getAdminLogItemInfo, { pk, tableName });
-//     const nodes: React.ReactNode[] = [];
-//
-//     if (result.file) {
-//         const tags: React.ReactNode[] = [];
-//         if (result.eventIds) {
-//             tags.push(...result.eventIds.map((eid, i) => <ActivityLogEvent key={i} cacheData={cacheData} eventId={eid} />));
-//         }
-//         if (result.userIds) {
-//             tags.push(...result.userIds.map((uid, i) => <ActivityLogUserChip key={i} cacheData={cacheData} userId={uid} />));
-//         }
-//         if (result.instrumentIds) {
-//             tags.push(...result.instrumentIds.map((iid, i) => <ActivityLogInstrument key={i} cacheData={cacheData} instrumentId={iid} />));
-//         }
-//         return <div style={{ border: "1px solid black" }}>
-//             <strong>file:</strong>
-//             <ActivityLogFile cacheData={cacheData} file={result.file} />
-//             <div>
-//                 <strong>tags:</strong>
-//                 {tags}
-//             </div>
-//         </div>;
-//     }
-//
-//     if (result.eventId) {
-//         nodes.push(<ActivityLogEvent key={"notanumber"} cacheData={cacheData} eventId={result.eventId} />);
-//     }
-//     return nodes;
-// };
-//
-//
-// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// const AdminLogPkValue = ({ tableName, pk, cacheData }: { tableName: string, pk: number, cacheData: ActivityLogCacheData }) => {
-//     switch (tableName.toLowerCase()) {
-//         case 'event':
-//             return <ActivityLogEvent cacheData={cacheData} eventId={pk} />;
-//         case 'song':
-//             return <ActivityLogSong cacheData={cacheData} songId={pk} />;
-//         case 'eventtype':
-//             return <ActivityLogEventType cacheData={cacheData} eventTypeId={pk} />;
-//         case 'eventtag':
-//             return <ActivityLogEventTag cacheData={cacheData} eventTagId={pk} />;
-//         case 'eventstatus':
-//             return <ActivityLogEventStatus cacheData={cacheData} eventStatusId={pk} />;
-//         case 'user':
-//             return <ActivityLogUserChip cacheData={cacheData} userId={pk} />;
-//         case 'eventsonglist:songs':
-//         case 'eventsonglist':
-//             return <ActivityLogSongListEventChip cacheData={cacheData} songListId={pk} />
-//         case 'eventsegment':
-//             return <ActivityLogEventSegment cacheData={cacheData} eventSegmentId={pk} />
-//         case 'eventsegmentuserresponse':
-//         case 'eventuserresponse':
-//         case 'file':
-//             return <Suspense fallback={<div className="lds-dual-ring"></div>}>
-//                 <AdminLogAsyncInfoChip pk={pk} tableName={tableName} cacheData={cacheData} />
-//             </Suspense>
-//         //return JSON.stringify <ActivityLogEventSegment cacheData={cacheData} userId={pk} />;
-//
-//     }
-//     return pk;
-// };
-//
-//
-// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// const ActivityLogMarkdownViewerDialog = ({ value, onClose }: { value: string, onClose: () => void }) => {
-//     return <ReactiveInputDialog onCancel={onClose}>
-//         <DialogContent>
-//             <Markdown markdown={value} />
-//         </DialogContent>
-//     </ReactiveInputDialog>;
-// };
-//
-// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// const ActivityLogMarkdownValue = ({ value }: { value: string }) => {
-//     const [open, setOpen] = React.useState<boolean>();
-//     return <div className="ActivityLogMarkdownValue">
-//         <Tooltip title={<Markdown markdown={value} />} followCursor>
-//             <div>
-//                 <CMSmallButton onClick={() => setOpen(true)}>{value}</CMSmallButton>
-//             </div>
-//         </Tooltip>
-//         {open && <ActivityLogMarkdownViewerDialog value={value} onClose={() => setOpen(false)} />}
-//     </div>;
-// }
-//
-// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// const ActivityLogKeyValueTable = ({ value, cacheData, tableName }: ActivityLogValueViewerProps<HistoricalAuditValue>) => {
-//     const IsMarkdownField = (key: string, value: unknown) => {
-//         return (typeof (value) === "string") && /comment|description|markdown/i.test(key);
-//     };
-//
-//     // Helper function to render value or component based on key
-//     const renderValue = (key: string, value: HistoricalAuditValue) => {
-//         switch (key.toLowerCase()) {
-//             case 'eventid':
-//                 return <ActivityLogEvent eventId={value} cacheData={cacheData} />;
-//             case 'eventtagid':
-//                 return <ActivityLogEventTag eventTagId={value} cacheData={cacheData} />;
-//             case 'eventstatusid':
-//                 return <ActivityLogEventStatus eventStatusId={value} cacheData={cacheData} />;
-//             case 'eventsegmentid':
-//                 return <ActivityLogEventSegment eventSegmentId={value} cacheData={cacheData} />;
-//             case 'createdbyuserid':
-//             case 'userid':
-//                 return <ActivityLogUserChip userId={value} cacheData={cacheData} />;
-//             case 'statusid':
-//                 return <ActivityLogEventStatus eventStatusId={value} cacheData={cacheData} />;
-//             case 'typeid':
-//                 return <ActivityLogEventType eventTypeId={value} cacheData={cacheData} />;
-//             case 'attendanceid':
-//                 return <ActivityLogAttendance attendanceId={value} cacheData={cacheData} />;
-//             case 'visiblepermissionid':
-//             case 'permissionid':
-//                 return <ActivityLogPermission permissionId={value} cacheData={cacheData} />;
-//             case 'roleid':
-//                 // Historical Role IDs remain readable after the old role editor is retired.
-//                 return <ActivityLogChip><Id value={value} /></ActivityLogChip>;
-//             case 'expectedattendanceusertagid':
-//             case 'usertagid':
-//                 return <ActivityLogUserTag userTagId={value} cacheData={cacheData} />;
-//             case 'songid':
-//                 return <ActivityLogSong songId={value} cacheData={cacheData} />;
-//             case 'instrumentid':
-//                 return <ActivityLogInstrument instrumentId={value} cacheData={cacheData} />;
-//             case 'tagid':
-//                 {
-//                     switch (tableName.toLowerCase()) {
-//                         case 'songtagassociation':
-//                             return <ActivityLogSongTag songTagId={value} cacheData={cacheData} />;
-//                         default:
-//                             return <span>{JSON.stringify(value, null, 2)}</span>;
-//                     }
-//                 }
-//         }
-//         if (IsMarkdownField(key, value)) {
-//             return <ActivityLogMarkdownValue value={value} />
-//         }
-//         return <span>{JSON.stringify(value, null, 2)}</span>;
-//     };
-//
-//     if (value === null) return <div className="ActivityLogKeyValueTable">null</div>;
-//     if (value === undefined) return <div className="ActivityLogKeyValueTable">undefined</div>;
-//
-//     // a simple scalar value?
-//     if (typeof value !== "object") {
-//         return <div className="ActivityLogKeyValueTable">
-//             {/* <Toolbar value={value} /> */}
-//             <pre>{JSON.stringify(value, null, 2)}</pre>
-//         </div>;
-//     }
-//
-//     return (
-//         <div className="ActivityLogKeyValueTable">
-//             {/* <Toolbar value={value} /> */}
-//             {Object.entries(value).map(([key, val], index) => (
-//                 // use chip container to make the chips inline
-//                 <CMChipContainer key={index} style={{ flexWrap: "nowrap" }}>
-//                     {key}: {renderValue(key, val)}
-//                 </CMChipContainer>
-//             ))}
-//         </div>
-//     );
-//
-//
-// };
-//
-//
-//
-// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// export const ActivityLogValueViewer = ({ value, cacheData, tableName, }: ActivityLogValueViewerProps<HistoricalAuditValue>) => {
-//     const [open, setOpen] = React.useState<boolean>();
-//
-//     if (value === null) return <div className="JSONStringColumnClient viewer">null</div>;
-//     if (value === undefined) return <div className="JSONStringColumnClient viewer">undefined</div>;
-//
-//     if (typeof value !== "object") {
-//         return <div className="JSONStringColumnClient viewer">
-//             <Toolbar value={value} onExpand={() => setOpen(true)} />
-//             <pre>{JSON.stringify(value, null, 2)}</pre>
-//             {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
-//                 <DialogContent>
-//                     <div className="pre">{JSON.stringify(value, null, 2)}</div>
-//                 </DialogContent>
-//             </ReactiveInputDialog>}
-//         </div>;
-//     }
-//
-//     if (tableName.toLowerCase() === "eventsonglist:songs" || tableName.toLowerCase() === "eventsonglist") {
-//         return <div className="JSONStringColumnClient viewer">
-//             <Toolbar value={value} onExpand={() => setOpen(true)} />
-//             <ActivityLogSongListViewer value={value} cacheData={cacheData} />
-//             {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
-//                 <DialogContent>
-//                     <ActivityLogSongListViewer value={value} cacheData={cacheData} />
-//                 </DialogContent>
-//             </ReactiveInputDialog>}
-//         </div>
-//     }
-//
-//     return <div className="JSONStringColumnClient viewer">
-//         <Toolbar value={value} onExpand={() => setOpen(true)} />
-//         <ActivityLogKeyValueTable cacheData={cacheData} tableName={tableName} value={value} />
-//         {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
-//             <DialogContent>
-//                 <ActivityLogKeyValueTable cacheData={cacheData} tableName={tableName} value={value} />
-//             </DialogContent>
-//         </ReactiveInputDialog>}
-//     </div>;
-// };
-//
-//
-//
-//
-// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// export interface JSONStringColumnClientArgs extends DB3ClientCore.ColumnPresentationArgs {
-//     columnName: string;
-//     cacheData: ActivityLogCacheData;
-// };
-//
-// type TRow = Prisma.ChangeGetPayload<{}>;
-//
-// export class JSONStringColumnClient extends DB3ClientCore.IColumnClient {
-//     typedSchemaColumn: GenericStringField;
-//     cacheData: ActivityLogCacheData;
-//
-//     constructor(args: JSONStringColumnClientArgs) {
-//         super({
-//             columnName: args.columnName,
-//             editable: true,
-//             headerNameKey: args.fieldCaptionKey,
-//             width: 400,
-//             visible: true,
-//             className: undefined,
-//             isAutoFocusable: true,
-//             fieldCaptionKey: args.fieldCaptionKey,
-//             fieldDescriptionKey: args.fieldDescriptionKey,
-//         });
-//         this.cacheData = args.cacheData;
-//     }
-//
-//     ApplyClientToPostClient = undefined;
-//
-//     // The legacy callback accepts table clients with different DTO shapes.
-//     onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient<any, any>) => {
-//         assert(this.schemaColumn instanceof GenericStringField, "Audit JSON requires a string column.");
-//         this.typedSchemaColumn = this.schemaColumn;
-//
-//         assert(this.typedSchemaColumn.format === "raw", `JSONStringColumnClient[${tableClient.tableSpec.args.table.tableID}.${this.schemaColumn.member}] has an unsupported type.`);
-//
-//         this.GridColProps = {
-//             type: "string",
-//             editable: false,
-//             renderCell: (params: GridRenderCellParams<TRow, string | null>) => {
-//                 let asObj: unknown = undefined;
-//                 const row = params.row;
-//                 const rawValue = params.value ?? "";
-//                 try {
-//                     asObj = JSON.parse(rawValue);
-//                 } catch (e) {
-//                     asObj = "<parse error>";
-//                 }
-//                 return <div className="adminLogJSONValue">
-//                     <div className="size">{formatFileSize(rawValue.length)}</div>
-//                     <AdminLogPkValue cacheData={this.cacheData} pk={row.recordId} tableName={row.table} />
-//                     <ActivityLogValueViewer tableName={row.table} value={asObj} cacheData={this.cacheData} />
-//                 </div>;
-//             },
-//         };
-//     };
-//
-//     renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => <NameValuePair
-//         className={params.className}
-//         name={this.columnName}
-//         value={params.value}
-//         fieldName={this.columnName}
-//         isReadOnly={false}
-//     />;
-//
-//     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => <div>(unsupported render style)</div>;
-// };
-// MIGRATION_REFERENCE_END
+export function AuditJSONToolbar({ value, onExpand }: { value: AuditValue; onExpand: () => void }) {
+    const snackbar = useSnackbar();
+    const locale = useLocale();
+    const copy = async () => {
+        try {
+            await navigator.clipboard.writeText(JSON.stringify(value, null, 2));
+            snackbar.showMessage({ severity: "success", children: locale.getPlainString("auditLog.copied") });
+        } catch {
+            snackbar.showMessage({ severity: "error", children: locale.getPlainString("auditLog.copyFailed") });
+        }
+    };
+    const dump = () => {
+        console.log(value);
+        snackbar.showMessage({ severity: "success", children: locale.getPlainString("auditLog.dumped") });
+    };
+    return <div style={{ display: "flex", gap: 4 }}>
+        <CMButton aria-label={locale.getPlainString("auditLog.copy")} tooltip={locale.getPlainString("auditLog.copy")} onClick={() => void copy()}><ContentCopy fontSize="small" /></CMButton>
+        <CMButton aria-label={locale.getPlainString("auditLog.dump")} tooltip={locale.getPlainString("auditLog.dump")} onClick={dump}><Terminal fontSize="small" /></CMButton>
+        <CMButton aria-label={locale.getPlainString("auditLog.expand")} tooltip={locale.getPlainString("auditLog.expand")} onClick={onExpand}><Launch fontSize="small" /></CMButton>
+    </div>;
+}
+
+export function AuditJSONCell({ changeId, tableName, member }: { changeId: number; tableName: string; member: "oldValues" | "newValues" }) {
+    const context = useDB3QueryContext();
+    const locale = useLocale();
+    const [expanded, setExpanded] = React.useState(false);
+    const [detail] = useQuery(getAdminLogItemInfo, { ...context, changeId }, { staleTime: 0, cacheTime: 0, keepPreviousData: false });
+    const value = detail[member];
+    return <div className="audit-json" style={{ width: "100%", minWidth: 0 }}>
+        <AuditJSONToolbar value={value} onExpand={() => setExpanded(true)} />
+        <small>{new Blob([JSON.stringify(value)]).size} bytes</small>
+        <AuditSnapshotViewer tableName={tableName} value={value} />
+        {expanded && <CMDialog open onClose={() => setExpanded(false)} title={`${tableName}: ${member}`}
+            actions={<CMButton onClick={() => setExpanded(false)}>{locale.getPlainString("auditLog.close")}</CMButton>}>
+            <AuditJSONToolbar value={value} onExpand={() => setExpanded(true)} />
+            <AuditSnapshotViewer tableName={tableName} value={value} />
+            <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{JSON.stringify(value, null, 2)}</pre>
+        </CMDialog>}
+    </div>;
+}
+
+export function AuditRecordCell({ changeId, recordId }: { changeId: number; recordId: number }) {
+    const context = useDB3QueryContext();
+    const [detail] = useQuery(getAdminLogItemInfo, { ...context, changeId }, { staleTime: 0, cacheTime: 0, keepPreviousData: false });
+    return <div><span>{recordId}</span>{detail.record && <AuditReferenceChip reference={detail.record} />}
+        {detail.related.map(reference => <AuditReferenceChip key={reference.publicId} reference={reference} />)}</div>;
+}
+
+export function ActivityLogUserChip({ user }: { user: { publicId: string; name?: string } | null | undefined }) {
+    const context = useDB3QueryContext();
+    const locale = useLocale();
+    if (!user) {
+        return <span>{locale.getPlainString("auditLog.unknownActor")}</span>;
+    }
+    return <CMChip size="small" tooltip={user.publicId}>
+        <a href={withMemberPresentation(`/backstage/user/${user.publicId}`, { ...context,
+            bandPublicId: context.bandPublicId ? parsePublicId<"Band">(context.bandPublicId) : null })}
+            target="_blank" rel="noreferrer" style={{ color: getHashedColor(user.publicId) }}>{user.name ?? ""}</a>
+    </CMChip>;
+}
+
+export class JSONStringColumnClient extends IColumnClient<string, string | null> {
+    constructor(args: ColumnPresentationArgs & { columnName: "oldValues" | "newValues" }) {
+        super({ ...args, editable: false, visible: true, width: 400, className: "audit-json-cell", isAutoFocusable: false,
+            headerNameKey: args.fieldCaptionKey, GridColProps: { sortable: false, filterable: false },
+        });
+    }
+    renderForNewDialog = undefined;
+    ApplyClientToPostClient = undefined;
+    private cell = (row: { id?: unknown; table?: unknown }) => {
+        if (typeof row.id !== "number" || typeof row.table !== "string" || (this.columnName !== "oldValues" && this.columnName !== "newValues")) {
+            throw new Error("Audit JSON columns require an audit row and snapshot member.");
+        }
+        return <Suspense><AuditJSONCell changeId={row.id} tableName={row.table} member={this.columnName} /></Suspense>;
+    };
+    onSchemaConnected = () => {
+        this.GridColProps = { ...this.GridColProps, renderCell: (params: GridRenderCellParams) => this.cell(params.row) };
+    };
+    renderViewer = (params: RenderViewerArgs<string | null>) => <NameValuePair name={this.fieldCaption} value={this.cell(params.row)} isReadOnly />;
+}
+
+export function AuditActorCell({ changeId, userId }: { changeId: number; userId: number | null }) {
+    const context = useDB3QueryContext();
+    const [detail] = useQuery(getAdminLogItemInfo, { ...context, changeId }, { staleTime: 0, cacheTime: 0, keepPreviousData: false });
+    return <div><span>{userId}</span><ActivityLogUserChip user={detail.user} /></div>;
+}
+
+export class AuditActorColumnClient extends IColumnClient<string, number | null> {
+    constructor(columnName: string) {
+        super({ columnName, editable: false, visible: true, width: 160, className: undefined, isAutoFocusable: false,
+            headerNameKey: "db3.fields.member", fieldCaptionKey: "db3.fields.member", fieldDescriptionKey: null,
+        });
+    }
+    renderForNewDialog = undefined;
+    ApplyClientToPostClient = undefined;
+    onSchemaConnected = () => {
+        this.GridColProps = { sortable: false, filterable: false, renderCell: (params: GridRenderCellParams) =>
+            <Suspense><AuditActorCell changeId={z.number().parse(params.id)} userId={z.number().nullable().parse(params.value)} /></Suspense> };
+    };
+    renderViewer = (params: RenderViewerArgs<number | null>) =>
+        <Suspense><AuditActorCell changeId={z.number().parse(params.row.id)} userId={params.value} /></Suspense>;
+}
+
+export class AuditRecordColumnClient extends IColumnClient<string, number> {
+    constructor(columnName: string) {
+        super({ columnName, editable: false, visible: true, width: 200, className: undefined, isAutoFocusable: false,
+            headerNameKey: "db3.fields.recordId", fieldCaptionKey: "db3.fields.recordId", fieldDescriptionKey: null,
+        });
+    }
+    renderForNewDialog = undefined;
+    ApplyClientToPostClient = undefined;
+    onSchemaConnected = () => {
+        this.GridColProps = { sortable: false, filterable: false, renderCell: (params: GridRenderCellParams) =>
+            <Suspense><AuditRecordCell changeId={z.number().parse(params.id)} recordId={z.number().parse(params.value)} /></Suspense> };
+    };
+    renderViewer = (params: RenderViewerArgs<number>) => <Suspense><AuditRecordCell changeId={z.number().parse(params.row.id)} recordId={params.value} /></Suspense>;
+}

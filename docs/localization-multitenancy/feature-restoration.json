@@ -207,11 +207,16 @@
     },
     {
       "id": "audit-log",
-      "reason": "Legacy audit readers and JSON rendering lack scoped ownership and target-schema references.",
-      "restore": "Restore protected audit browsing, filters, historical JSON/detail links and clipboard/Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction; retain immutable audit recording.",
-      "verification": "Reactivate preserved audit specifications; test sysadmin/member/anonymous access, two bands, deleted references, revoked grants, redaction, filters, JSON inspection and built-browser navigation.",
-      "status": "pending",
-      "evidence": []
+      "reason": "Legacy audit browsing needs the current platform Sysadmin authorization and localized UI contracts.",
+      "restore": "Restore Sysadmin-only audit browsing, filters, historical JSON/detail links and clipboard/Markdown inspection with fresh authorization and immutable recording. Display original stored values without redaction, identity conversion or target-specific permission checks.",
+      "verification": "Test Sysadmin-only access, fresh revocation, two-band navigation, deleted/missing targets, raw historical values, filters, JSON inspection and built-browser navigation.",
+      "status": "restored",
+      "evidence": [
+        "2026-10-12: Restored the preserved 6ee055895a049d6f105d775b4e2e563542f34d32 audit browser through its original page, DB3 grid, filter RPCs and JSON column owner. The audit feature was introduced after the f027830a9790 functional baseline. Actor/table text and multi-selection filters, selected-chip retention, newest-first paging/counts/sorting/refresh, registered Markdown help, JSON copy/console/expand, Markdown hover/dialog and both historical song-list formats remain available. The generic grid now has an explicit named read-only path and omits Insert and seeding controls when read-only.",
+        "2026-10-12 policy simplification: Platform Sysadmin authority alone permits the complete audit read. Fresh repeatable reads retain account/grant revocation checks; actor labels, File associations and record/parent links use direct typed lookups without extra feature/field/row permission checks. Event labels retain the target band's timezone and formatting locale. Missing/deleted targets retain captured history, with no deleted navigation.",
+        "Snapshots, record IDs, actor IDs and session handles are returned as stored. Recursive credential redaction, identity masking, historical foreign-key rewriting, reference-map projection, custom audit field classes and the generic read-value projection hook are removed. Recording also retains original values; entries already stored as redacted cannot be recovered. Malformed JSON is displayed as the original text. The detail RPC still identifies a Change row; generic audit insert/update/delete remain forbidden. Archived authorization cases have executable replacements, and obsolete recovery UI/assertions remain removed.",
+        "Current verification passes 51 focused checks in eight files, all 15 native MariaDB audit cases, eight built Chromium workflow groups, normal typecheck, targeted ESLint and an isolated normal production build. Tests cover named/legacy raw reads, Sysadmin-only grants, stale authority, filters, both setlist formats, malformed/retired history, cross-band record links and File tags regardless of normal target visibility. Browser checks cover raw clipboard/console/Markdown, both setlist formats, reachable Song/File links, band/locale navigation changes, fresh revocation and anonymous denial. There are no uncaught page or unexpected RPC errors; screenshots are visually inspected and owned databases/assets/server are removed. Evidence is recorded in 04-implementation-plan.md#verification-status. All sixteen completed audit source blocks/reference entries remain removed; the unrelated directory deferred specification and other parity/A1/B obligations remain open."
+      ]
     },
     {
       "id": "legacy-event-song-filters",
@@ -538,90 +543,6 @@
       "sha256": "53c67c38509c8af2b219262e0379ba637cdb443bcb04c00ecdeab26f0d2b2c0d"
     },
     {
-      "file": "src/core/db3/queries/getAdminLogItemInfo.ts",
-      "featureId": "audit-log",
-      "source": "6ee055895a049d6f105d775b4e2e563542f34d32:src/core/db3/queries/getAdminLogItemInfo.ts:1-76",
-      "sha256": "7d2966540233ca661bb0756c4977218db5a37eecf936f1f91f5507921582903f"
-    },
-    {
-      "file": "src/core/db3/queries/getDistinctChangeFilterValues.ts",
-      "featureId": "audit-log",
-      "source": "6ee055895a049d6f105d775b4e2e563542f34d32:src/core/db3/queries/getDistinctChangeFilterValues.ts:1-82",
-      "sha256": "70e8ffaa17ac39b7fde97cb0a35dd4ed91eaf7d07a675d1565aa8311f81462ea"
-    },
-    {
-      "file": "src/pages/backstage/adminLogs.tsx",
-      "featureId": "audit-log",
-      "source": "6ee055895a049d6f105d775b4e2e563542f34d32:src/pages/backstage/adminLogs.tsx:1-192",
-      "sha256": "f7c49e3a3c48c676906dbdd3054154566c8354a6874c777ac275254853d3f382"
-    },
-    {
-      "file": "src/core/db3/shared/schema/admin.ts",
-      "featureId": "audit-log",
-      "source": "6ee055895a049d6f105d775b4e2e563542f34d32:src/core/db3/shared/schema/admin.ts:1-155",
-      "sha256": "0191c5c0ca3c13f9214ee340488756a9806067ee3249fb0bf5e9b704f431ff29"
-    },
-    {
-      "file": "src/core/db3/components/DB3JSONStringColumnClient.tsx",
-      "featureId": "audit-log",
-      "source": "6ee055895a049d6f105d775b4e2e563542f34d32:src/core/db3/components/DB3JSONStringColumnClient.tsx:1-697",
-      "sha256": "746142771bf0c89eabc369e4a559857e752cfb36c407a8251667a5aa5babce5f"
-    },
-    {
-      "file": "src/core/db3/DB3Client.tsx",
-      "featureId": "audit-log",
-      "source": "6ee055895a049d6f105d775b4e2e563542f34d32:src/core/db3/DB3Client.tsx:6-6",
-      "sha256": "19f41a9cbe2acef9bfee25982b95b5307bbb84c7a20e948a5a99edd03c86853d"
-    },
-    {
-      "file": "src/core/db3/db3.ts",
-      "featureId": "audit-log",
-      "source": "6ee055895a049d6f105d775b4e2e563542f34d32:src/core/db3/db3.ts:24-24",
-      "sha256": "8e969d1b00946cab4dac0cee4e6ddbea30c41fd429548f27d41771afc4879242"
-    },
-    {
-      "file": "src/core/db3/shared/schema/prismArgs.ts",
-      "featureId": "audit-log",
-      "source": "6ee055895a049d6f105d775b4e2e563542f34d32:src/core/db3/shared/schema/prismArgs.ts:1135-1146",
-      "sha256": "4406beff321c7c32c061980f4f6bd116b64a603e0e428ffc3ac7f3732c131862"
-    },
-    {
-      "file": "tests/authorization/db3TableAuthorization.test.ts",
-      "featureId": "audit-log",
-      "source": "6ee055895a049d6f105d775b4e2e563542f34d32:tests/authorization/db3TableAuthorization.test.ts:72-90",
-      "sha256": "c75b659266117840a210e3d225b21aa73700d3cd75f4263de7f001b214cdbf1a"
-    },
-    {
-      "file": "tests/authorization/db3TableAuthorization.test.ts",
-      "featureId": "audit-log",
-      "source": "6ee055895a049d6f105d775b4e2e563542f34d32:tests/authorization/db3TableAuthorization.test.ts:92-100",
-      "sha256": "f845a3e4cec3110961251fbb435c2b7b7fe8382e012f674d03fe78d87290e473"
-    },
-    {
-      "file": "tests/authorization/authorizationTestHarness.test.ts",
-      "featureId": "audit-log",
-      "source": "6ee055895a049d6f105d775b4e2e563542f34d32:tests/authorization/authorizationTestHarness.test.ts:453-468",
-      "sha256": "af50346dd18745fc15e8081263db9def9f3ec585fa71deeb762b07d3da24a791"
-    },
-    {
-      "file": "tests/db3LegacyReadCompatibilityInventory.test.ts",
-      "featureId": "audit-log",
-      "source": "6ee055895a049d6f105d775b4e2e563542f34d32:tests/db3LegacyReadCompatibilityInventory.test.ts:55-57",
-      "sha256": "721d445d5a5ce99c9e4d920e4a760bb52f6976d7411eb5feb8f6e16a6176f6c6"
-    },
-    {
-      "file": "tests/authorization/authorizationTestHarness.test.ts",
-      "featureId": "audit-log",
-      "source": "6ee055895a049d6f105d775b4e2e563542f34d32:tests/authorization/authorizationTestHarness.test.ts:373-381",
-      "sha256": "f546ee9f049a5a71aa73bbffaa231949144bb85972fb694a82ae21e9fbda4d80"
-    },
-    {
-      "file": "tests/authorization/authorizationTestHarness.test.ts",
-      "featureId": "audit-log",
-      "source": "6ee055895a049d6f105d775b4e2e563542f34d32:tests/authorization/authorizationTestHarness.test.ts:383-398",
-      "sha256": "8a5afbe7a83bac3b13798a831a5b4dfb5744c961ee1ea32391efa9d1840a9cd6"
-    },
-    {
       "file": "src/core/db3/server/quickSearchServerCore.ts",
       "featureId": "quick-search",
       "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/db3/server/quickSearchServerCore.ts:1-449",
@@ -884,18 +805,6 @@
       "featureId": "domain-search",
       "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:tests/authorization/userSearchAuthorization.test.ts:1-119",
       "sha256": "9185182e8de228b1ef7bd20993677b7794d8fda7af26dbe0645c2a8934abf668"
-    },
-    {
-      "file": "src/pages/backstage/serverHealth.tsx",
-      "featureId": "audit-log",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/serverHealth.tsx:12-12",
-      "sha256": "deb3d444a430f6ea06c7007658983bab3046f21187cd0c917a9bf80fc29903c4"
-    },
-    {
-      "file": "src/pages/backstage/serverHealth.tsx",
-      "featureId": "audit-log",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/serverHealth.tsx:17-17",
-      "sha256": "bedf59dcb0916e9d4b9c3e3d5be159f2fb27c74fc599b18b1db6e530ae056e81"
     },
     {
       "file": "src/core/components/user/UserAnalyticTables.tsx",

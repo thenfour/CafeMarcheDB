@@ -22,7 +22,7 @@ function grant(...permissions: Permission[]) {
     return requirePermission;
 }
 
-describe("deferred audit page authorization", () => {
+describe("audit page authorization", () => {
     beforeEach(() => loadAuth.mockReset());
 
     it.each([undefined, bandId])("retains platform administration protection with band %s", async selectedBand => {

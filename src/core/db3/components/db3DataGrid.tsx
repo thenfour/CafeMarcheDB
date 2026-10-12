@@ -118,8 +118,17 @@ type DB3ReadOnlyGridProps = DB3EditGridBaseProps & {
     readOnly: true;
 };
 
-export type DB3EditGridProps<TView extends db3.AnyDB3CrudView = db3.AnyDB3CrudView> =
-    DB3CrudEditGridProps<TView> | DB3ReadOnlyGridProps;
+type DB3NamedReadOnlyGridProps<TView extends db3.AnyDB3View> =
+    DB3EditGridBaseProps<db3.ClientOf<TView>, DB3Client.xTableRenderClient<TView>> & {
+        view: TView;
+        tableSpec: DB3Client.xTableClientSpec<TView>;
+        referenceProvider: db3.DB3ReferenceProvider<db3.ReferenceContractOf<TView>>;
+        readOnly: true;
+    };
+
+export type DB3EditGridProps<TView extends db3.AnyDB3View = db3.AnyDB3CrudView> =
+    DB3NamedReadOnlyGridProps<TView> | DB3ReadOnlyGridProps
+    | (TView extends db3.AnyDB3CrudView ? DB3CrudEditGridProps<TView> : never);
 
 function useDB3EditGridQueryState(
     tableSpec: DB3Client.xTableClientSpec<any>,
@@ -163,10 +172,36 @@ type DB3EditGridQueryState = ReturnType<typeof useDB3EditGridQueryState>;
 export function DB3EditGrid<TView extends db3.AnyDB3CrudView>(
     props: DB3CrudEditGridProps<TView>,
 ): React.ReactElement;
+export function DB3EditGrid<TView extends db3.AnyDB3View>(props: DB3NamedReadOnlyGridProps<TView>): React.ReactElement;
 export function DB3EditGrid(props: DB3ReadOnlyGridProps): React.ReactElement;
-export function DB3EditGrid(props: DB3CrudEditGridProps<any> | DB3ReadOnlyGridProps) {
-    if ("view" in props) return <DB3CrudEditGrid {...props} view={props.view} />;
+export function DB3EditGrid(props: DB3CrudEditGridProps<any> | DB3NamedReadOnlyGridProps<db3.AnyDB3View> | DB3ReadOnlyGridProps) {
+    if ("view" in props) {
+        if (props.readOnly && props.referenceProvider) {
+            return <DB3NamedReadOnlyGrid {...props} readOnly referenceProvider={props.referenceProvider} />;
+        }
+        return <DB3CrudEditGrid {...props} view={props.view} />;
+    }
     return <DB3ReadOnlyGrid {...props} />;
+}
+
+function DB3NamedReadOnlyGrid<TView extends db3.AnyDB3View>({ tableSpec, referenceProvider, view, ...props }: DB3NamedReadOnlyGridProps<TView>) {
+    if (tableSpec.args.view !== view) {
+        throw new Error("A read-only grid and its table specification must use the same view.");
+    }
+    const queryState = useDB3EditGridQueryState(tableSpec, props);
+    const tableClient = DB3Client.useTableRenderContext({
+        requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,
+        tableSpec, referenceProvider,
+        filterModel: {
+            items: queryState.filterModel.items.filter(item => item.value !== undefined).map(item => ({ field: item.field, value: item.value, operator: "equals" })),
+            quickFilterValues: queryState.filterModel.quickFilterValues,
+            tableParams: props.tableParams ?? {},
+        },
+        sortModel: queryState.sortModel,
+        paginationModel: queryState.paginationModel,
+        includeDeleted: queryState.includeDeleted,
+    });
+    return <DB3EditGridImpl {...props} tableSpec={tableSpec} tableClient={tableClient} queryState={queryState} />;
 }
 
 function DB3ReadOnlyGrid({ tableSpec, ...props }: DB3ReadOnlyGridProps) {
@@ -536,7 +571,7 @@ function DB3EditGridImpl<
                     setIsWaitingForRefresh(true);
                     tableClient.refetch();
                 }}>Refresh</CMButton>
-                <ClipboardControls client={tableClient} />
+                {!readOnly && <ClipboardControls client={tableClient} />}
             </CMButtonGroup>,
         }} />
 
@@ -556,7 +591,7 @@ function DB3EditGridImpl<
                 toolbar: {
                     onNewClicked: () => { setShowingNewDialog(true); },
                     tableSpec: tableSpec,
-                    disableCreate: props.disableCreate,
+                    disableCreate: readOnly || props.disableCreate,
                 }
             }}
             getRowHeight={() => 'auto'}
