@@ -11,25 +11,27 @@ minimal UX changes. Temporary isolation and reduced screens do not establish par
 | Gate | Acceptance | Status |
 | --- | --- | --- |
 | A0: runnable development app | Normal typecheck/build, startup on disposable migrated data, login/dashboard/migrated page in the built browser, coherent boundaries for deferred surfaces. | Achieved 2026-10-08. |
-| A1: everyday workflow parity | Reference member, event/invitation/attendance, song and associated-file workflows, including their supporting endpoints and browser interactions; isolation and required checks pass. | Open. |
+| A1: everyday workflow parity | Reference member, event/invitation/attendance, song and associated-file workflows, including their supporting endpoints and browser interactions; isolation and required checks pass. | Achieved 2026-10-12, with the localized catalog text search and existing site chrome exceptions below. |
 | B: complete localization and multiband support | Routing, administration/lifecycle, translation tooling and agreed coverage; remaining obligations restored or explicitly retired; `yarn migration:check` passes. | Open. |
 
-A0 is a development gate, not production readiness. Production cutover also
-requires the supported production upgrade, required Café Marché workflows and
-explicit acceptance of any remaining limitation.
+A0 and A1 are development/restoration gates, not production readiness. Production
+cutover still requires the supported upgrade on a current production copy,
+preservation comparison, backup/upload restoration rehearsal and explicit
+acceptance of any remaining limitation.
 
 Authorization, localization/presentation, typed settings and shared DB3 support
 are available. Migrated catalogs, basic member/profile edits, membership status,
 wiki content, menus, attendance/calendar endpoints, plan persistence, Custom Links,
 telemetry and narrow downloads have implementation and verification evidence.
-Preserve them while restoring their wider workflows. Reference member-directory
-filters/presets/contact-search/export and core profile tabs/account controls/activity
-are restored below; full profile and localized-name-search obligations remain open.
+Preserve them while completing B. Reference member-directory
+filters/presets/contact-search/export and complete profile tabs/account controls/activity
+are restored below. Localized-name-search obligations remain open.
 
 Global shell search, planner association selection, the protected quick-search
-explorer, Markdown suggestions and Markdown attachments are restored below. Full localized-name matching
-and several reports/admin surfaces remain guarded
-or incomplete. Song credit editing and performance history, public
+explorer, Markdown suggestions and Markdown attachments are restored below.
+Activity/audit reports, platform roles/matrices and shared-account lifecycle,
+merge and dependency analysis are restored. Song credit editing and performance
+history, public
 homepage/feed delivery and frontpage gallery editing/bake are restored below.
 General File search/detail/metadata pages, associated uploads, the image fork
 service and band branding uploads are restored. The File-creation parity audit
@@ -40,8 +42,12 @@ catalog-help audit is complete, including independent band/language authoring
 alongside the existing catalog grid. The
 [restoration manifest](feature-restoration.json) records the individual obligations
 and verification criteria; use `yarn migration:status` rather than maintaining a
-second restriction table. Keep every deferred page, RPC/API, generic DB3 root,
-startup/job and indirect caller coherently unavailable until its owner is safe.
+second restriction table. A1 acceptance accounts for every core caller and
+supporting owner. Only localized catalog-name matching remains pending in the
+seven search/workflow obligations; the protected developer examples remain
+outside A1. Keep deferred owners coherently unavailable until their contracts
+are safe. Dated checkpoints retain their earlier verification results; the gate
+table and latest verification status describe the current position.
 
 ## Event search checkpoint
 
@@ -57,8 +63,9 @@ and clear their results; event links and exports retain band/route locale.
 Authored text matching remains active; localized catalog-name matching follows
 the A1 exception below. Detail links retain the reference URLs and open the
 restored detail page. Creation and pin/hide controls now use the restored write
-owners. Text-only search exposes Reset filter, which also clears the text. These
-checkpoints do not close event parity or A1; other domain-search roots remain guarded.
+owners. Text-only search exposes Reset filter, which also clears the text.
+The remaining Event search obligation is localized catalog-name matching for B;
+all five application domain-search roots are active.
 
 ## Event detail and editing checkpoint
 
@@ -84,9 +91,10 @@ Dialog help keys and draft tag associations were repaired so the original
 editors can open.
 
 The attendance/default-instrument matrix and date-picker highlights are restored
-in their checkpoint below. Remaining event parity includes imports. The public
-homepage/feed is restored in its own checkpoint below. Localized catalog-name matching remains covered by
-the A1 exception; these gaps keep `event-workflows` and A1 open.
+in their checkpoint below. Import preview/save and the public
+homepage/feed are restored in their own checkpoints below. Localized catalog-name
+matching is the sole remaining `event-workflows` obligation, covered by the A1
+exception and still pending for B.
 
 ## Songs and event setlist checkpoint
 
@@ -111,7 +119,8 @@ visible Song or exposing a numeric FK. File metadata/upload controls and general
 pages are restored in the checkpoints below. Song credit editing and performance
 history and Event statistics are restored in their checkpoints below. Profile
 credits and all five quick-search plugins are restored in later checkpoints;
-Markdown suggestions remain pending. Only
+Markdown suggestions are restored, including the parent-dialog correction in
+the A1 acceptance checkpoint below. Only
 localized catalog-name text predicates, including quick-search tag names, follow
 the A1 exception; authored text and identity-based filters remain active.
 
@@ -143,8 +152,8 @@ Soft deletion keeps storage for recovery while denying ordinary reads/downloads.
 
 General File pages/search, the image fork service and authenticated frontpage
 gallery controls/bake are restored in the checkpoints below. Uploads from
-Markdown/profile/brand and the separate general gallery browser remain pending
-with their guards and source archives intact.
+Markdown/profile/brand and the separate general gallery browser are restored
+in their own checkpoints below.
 
 ## General File pages and search checkpoint
 
@@ -172,8 +181,8 @@ independent visibility policy.
 
 The `file-workflows` page obligation is restored and its three source blocks and
 manifest references are removed. `file-search` remains pending only for full
-localized-name text matching. Remaining upload integrations have their own
-pending obligations. A1 and B remain open.
+localized-name text matching. Upload integrations are restored and verified in
+their own checkpoints. A1 is accepted; B remains open.
 
 ## File image fork checkpoint
 
@@ -402,8 +411,9 @@ timestamps use the viewer's timezone. Its File, Wiki, directory, planner,
 attendance-tooltip and dashboard callers supply the same explicit policy. A
 missing-to-present date no longer changes the hook order. Existing profile
 telemetry and the Sysadmin-only analytic tab gate are retained. Mass Analysis,
-global account administration and the full profile obligation remain separately
-open; this audit establishes the populated core analytic behavior only.
+global account administration and the full profile obligation are restored in
+their checkpoints below; this audit establishes the populated core analytic
+behavior.
 
 Shared row policy now declares non-null replacement identities unavailable, including
 minimal projections and write references. This fixes the previously reproduced
@@ -1151,8 +1161,9 @@ are removed, the reference-only RoleChip module is deleted, the designation
 specification is active and the obsolete role recovery UI/guards are removed.
 Applicable membership chips and current DTO behavior remain in their migrated
 owners. Native and built-browser evidence is recorded below. Account
-merge, full profile parity, production inventory/rehearsal, A1/B and localized
-catalog-name matching remain open. Dependency analysis is closed below.
+merge, dependency analysis and full profile parity are restored in the checkpoints
+below. Production inventory/rehearsal, A1/B and localized catalog-name matching
+remain open.
 
 ## Shared-account dependency analysis checkpoint
 
@@ -1189,8 +1200,9 @@ unknown activity stays null and comparison-only populated sections remain visibl
 The account-analysis obligation is closed: four source blocks/references and its
 unused recovery flag/string are removed. Two obsolete availability-guard cases
 are removed; the retained page guard now requires Sysadmin. Account merge is
-restored in the checkpoint below. Broader profile/lifecycle parity, production
-inventory/rehearsal, localized-name matching and A1/B remain open.
+restored in the checkpoint below. Profile/lifecycle parity closes in the member
+checkpoint below. Production inventory/rehearsal, localized-name matching and
+A1/B remain open.
 
 ## Shared-account merge checkpoint
 
@@ -1246,18 +1258,101 @@ executable, six obsolete availability-rejection cases and the unused recovery
 flag are removed, and all 29 completed source blocks/references are removed.
 The current contract is documented in [userMerge.md](../userMerge.md).
 
-## Next slice: Member profile closure
+## Member profile closure checkpoint
 
-Compare the remaining member-profile preservation with `f027830a9790`, including
-the original reachable profile and lifecycle controls. Account for the completed
-analysis, role administration and merge obligations through their existing
-profile entries; finish any remaining interactions before closing profile
-archives or specifications. Retain selected-band membership management and
-independent platform account authority.
+The original self-profile surface, Preferences and registered Markdown help are
+restored. Shared name/phone reads and edits use the existing User owner with
+explicit account context, including people without a selected band or with
+inactive memberships. Instruments and tags remain BandUser assignments within
+the selected band. The shared editor retains cancel, failed drafts, pending
+guards, committed refresh handling and profile-edit activity recording.
+Memberships, credentials, account settings and roles are preserved.
 
-Verify self/member/band-manager/platform access, inactive/deleted/merged people,
-fresh revocation, contextual tabs and band/locale changes in the built app. Keep
-localized-name matching, production inventory/rehearsal and A1/B open.
+The existing person URL without band context now opens platform account
+administration under fresh `manage_global_users` authority. Inactive, merged and
+membership-free targets remain inspectable. Account-list links and deactivation
+navigation retain route locale; reactivation stays reachable, while merged
+targets link to the remaining public account. Explicit band URLs retain their
+active-membership policy and never fall back to account access.
+
+The original contextual attendance, credits, Wiki Contributions and Mass Analysis
+tabs, their populated tables, public links, activity recording and Sysadmin gate
+remain active. GlobalRole, Sysadmin, reset/sign-in, merge and dependency-analysis
+controls retain their separately verified owners. Dedicated impersonation
+permission remains usable on active member profiles independently of global
+account management. Sysadmin and lifecycle buttons prevent overlapping actions
+and await refresh; authorized person metadata titles and compact action layout
+retain the reference presentation. Band/presentation changes discard drafts and
+old responses.
+
+The member-profile obligation is closed. Its sixteen source blocks/references
+are removed, and the unused UserInstruments wrapper is deleted. Current
+User/BandUser identity, association, command, authorization, instrument/tag and
+mounted-editor tests account for the archived specifications; no existing
+executable test is removed or newly skipped. Verification is recorded below.
+
+## A1 acceptance review checkpoint
+
+The `f027830a9790` caller audit accounts for the reference core pages, dialogs,
+DB3 roots, supporting RPC/HTTP owners, exports, telemetry, startup and indirect
+callers. All five domain searches and all five quick-search plugins use their
+existing selected-band owners. Their original controls, authored-text matching,
+catalog filters/operators, counts/facets, presets, URL state, sorting, paging,
+exports and contextual links remain active. Existing native, DOM and built-app
+evidence covers invitations/attendance, imports, credits/history, uploads,
+profiles, dashboard, planners, public feeds and the restored administration.
+
+The seven pending search/workflow obligations now have only the documented
+localized catalog-name text exception. Their source archives remain for B.
+`developer-examples` remains guarded at the protected sample pages; it has no
+core application callers and is outside A1. Four archived directory authorization
+cases already execute in the native member-search suite, including contact and
+sign-in field restrictions and denial before SQL for unreadable operational
+criteria. Their redundant reference-only deferred file is removed; no executable
+test is removed and no new skip is introduced.
+
+Built-app acceptance exposed the first setlist dialog closing immediately:
+Markdown suggestion initialization dispatched a synthetic Escape that bubbled
+into its parent dialog. The suggestion owner now keeps that event on its textarea;
+real keyboard Escape still works. Four mounted regressions fail before the fix
+and pass after it, covering initialization, snapshot/locale changes and enabling
+search while preserving the draft/caret. Actual Song picking and first-setlist
+save/render now pass. The Google sign-in caller selects document navigation in
+the shared link component, preventing Next from prefetching the OAuth endpoint
+as a page. Ordinary links retain client navigation and tracking. The bootstrap
+submit control now uses the existing CMButton wrapper, and stale recording-reader
+comments are corrected.
+
+Fresh full migrations, normal production startup, the actual production seed,
+signup, one-use administrator bootstrap and a real restart are verified on an
+owned disposable database. The designated Café Marché band is created by SQL;
+startup creates access-control foundations without sample people/memberships or
+content. Ordinary signup grants neither administrator authority nor membership.
+Seed/restart preserve accounts, sign-ins, localized definitions and independent
+role grants. Existing two-band data, overrides/settings and authored content
+also remain exactly unchanged on startup. The reference startup's legacy data
+repairs now belong to the SQL upgrade; no independent core background job is
+omitted or legacy backfill rerun at app startup.
+
+A1 is achieved with the stated text-search/chrome exceptions. B and production
+inventory/rehearsal remain open. Current verification is recorded below.
+
+## Next slice: B localized catalog-name search
+
+Restore the omitted name predicates in the existing domain and quick-search
+owners using shared catalog visibility, band scope and ordered locale resolution.
+Cover membership roles/tags/instruments, Event types/statuses/tags, Song tags,
+File tags/instruments and Wiki tags. Keep the already working resolved
+small-catalog searches, authored matching, grammar/ranking, filters/operators,
+counts/facets, stable sorting/paging, exports and contextual links intact.
+
+Verify band-first overrides, inherited labels, intentional blanks, ordered
+preferences, hidden/retired/foreign references and fresh permission changes
+through native owners and the built two-band app. Close each of the seven
+search/workflow obligations and remove only its completed archives once its full
+matching contract passes. Protected developer examples, full portal routing,
+translation inventory/tooling/coverage and the production-copy rehearsal retain
+their separate B obligations.
 
 ## Localized catalog text search exception
 
@@ -1284,12 +1379,12 @@ when a concrete workflow dependency requires it.
 
 | Work | Required parity |
 | --- | --- |
-| Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
+| Members | Retain restored directory filters/facets/presets/URL state/contact search/exports, self/member/account profiles, contextual tabs, account controls and activity with independent shared-account and membership policy; finish localized catalog-name matching separately. |
 | Events | Retain restored search/detail/creation/editing, setlists, invitation/attendance/default-instrument controls, date-picker highlights and import preview/save; finish full localized catalog-name matching separately. |
 | Songs and files | Retain restored Song search/detail/editing, credits/performance history/profile credit reads/statistics, tags, setlist picking, File search/detail/metadata/associations, associated and Markdown/branding uploads, image fork service and recording/file viewers, including verified original/resized-image creation; retain frontpage gallery editing/bake and public feed delivery. |
-| Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, global shell search, planner association selection/protected explorer, Markdown suggestions/attachments/localized editing/help, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links; finish exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
+| Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, global shell search, planner association selection/protected explorer, Markdown suggestions/attachments/localized editing/help, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links, including verified exports, scoped telemetry and startup initialization. Account explicitly for remaining B gaps. |
 
-After core restoration: retain restored platform role/matrix and catalog/settings administration;
+With A1 accepted: retain restored platform role/matrix and catalog/settings administration;
 band onboarding/lifecycle; shared-account lifecycle/merge/dependency reports;
 full portal routing; localized-name text matching; translation inventory/editing,
 import/export and French/Dutch coverage. Existing workflow parity is not a new
@@ -1327,6 +1422,98 @@ data, rehearse backup restoration and deploy the migrated database, app and
 client together with writes stopped and matching upload backups.
 
 ## Verification status
+
+The **2026-10-12 A1 acceptance review** passes normal typecheck, targeted ESLint
+across **six changed TypeScript files**, and a normal production build with
+isolated output. The complete repository runner passes **297 selected test
+files with no failures**. The Markdown dialog regressions pass **31 cases**;
+adjacent editing/history/undo/attachment/localized-editor coverage passes
+**61 cases in five files**, for **92 focused cases in six files**. The four new
+dialog regressions were observed failing before the correction.
+
+All **68 current native specification files** are selected on a private MariaDB
+database: **870 cases pass and 51 existing fixture-gated cases skip**. The skips
+are the 27 separately verified merge-fixture cases and 24 existing conditional
+performance/calendar/locale cases; this slice adds no skip. The native database
+is removed after the run. The four archived directory field-policy cases are
+accounted for by executable member-search native cases before removing their
+redundant reference-only file.
+
+**Twenty-two built Chromium groups** pass on the final normal production build:
+six cover fresh full migrations, production startup/seed idempotence, ordinary
+signup/no-band profile, original one-use bootstrap, rejected reuse and real
+restart preservation. Sixteen cover exact two-band startup preservation, all
+five original domain searches with authored text/URL reload/paging/TSV and
+noncached HTTP owners, French/Dutch band navigation, real Song basic/Markdown
+saves, actual WAV playback/download/pin/unpin, first Event setlist keyboard
+selection/Escape/save and refreshed rendering, attendance HTTP, active-member
+calendar subscription/rotation with old-token invalidation and redacted
+audits/activity, Wiki reading, File metadata save and scoped client telemetry.
+
+Foreign/anonymous checks retain the actual public File/Wiki grants while
+excluding every private fixture. Member-only searches, foreign attendance and
+downloads, anonymous attendance/downloads and protected Song UI retain their
+denials. A platform administrator without membership is correctly denied a
+personal band calendar; an active shared member owns the successful check.
+There are no uncaught page, unexpected RPC or browser console errors, and the
+sign-in screen sends no automatic Google/OAuth prefetch. French/Dutch directory,
+populated setlist and fresh platform-account layouts are visually inspected.
+Both owned servers, databases and asset directories are removed.
+
+Evidence is in `temp/a1-acceptance-full.log`, `temp/a1-acceptance-native.log`,
+`temp/a1-markdown-dialog-before.log`, `temp/a1-markdown-dialog-after.log`,
+`temp/a1-markdown-regression.log`, `temp/a1-acceptance-typecheck.log`,
+`temp/a1-acceptance-lint.log`, `temp/a1-acceptance-build.log` and
+`temp/a1-acceptance-preservation.log`. Final built-app results are in
+`temp/a1-fresh-install-result.json` and `temp/a1-core-workflows-result.json`,
+with screenshots `temp/a1-fresh-install-platform.png`,
+`temp/a1-core-directory-french.png`, `temp/a1-core-directory-dutch.png` and
+`temp/a1-core-setlist.png`. Preservation verifies **60 source references, zero
+whole-file deferred specifications and eight pending features**. A1 is achieved;
+localized catalog-name matching is the next B slice. Production inventory,
+backup/upload restoration rehearsal, full B coverage and cutover remain open.
+
+The **member-profile closure** passes normal typecheck, targeted ESLint across
+**24 changed TypeScript files**, a normal production build with isolated output
+and the complete repository runner:
+**297 selected test files, with no failures**. Focused self/member/account DOM,
+SSR and lifecycle checks cover explicit ownership, cancel/retry/pending behavior,
+telemetry, unavailable account states, contextual redirects and independent
+impersonation authority. The final regression passes **124 checks in eight files**,
+including current identity, command, view, public-transport and direct-write
+contracts. The metadata/layout changes also pass all fourteen SSR and
+mounted-profile checks.
+
+The focused native regression passes **118 cases with 27 unchanged merge-fixture
+skips across ten selected files**. All **nine new member-profile cases** execute
+on the private database, covering no-band/inactive-membership self reads/writes,
+exact membership/credential/settings preservation and User-owned audits,
+peer/private/security-field denial, fresh inactive/merged actors, inactive/merged/
+membership-free account profiles and band-only-management rejection. The merge
+suite retains its separately verified fixture; the private profile database is
+removed after the run.
+
+**Nine built Chromium workflow groups** verify the original self-profile and
+Preferences, Unicode/blank-phone save and cancel, real band changes and band-first
+French/Dutch labels, held old replies, inactive-membership self access, original
+tab routes and populated account analysis, real deactivation/reactivation with session
+revocation, merged recovery links and account-list navigation, fresh platform
+revocation and band-only/anonymous denial. French/Dutch self-profile and account
+layouts are visually inspected. There are no uncaught page or unexpected RPC
+errors; the owned server/database/assets are removed.
+
+Evidence is in `temp/profile-closure-full.log`,
+`temp/profile-closure-final-focused.log`, `temp/profile-closure-regression.log`,
+`temp/profile-closure-native.log`,
+`temp/profile-closure-typecheck.log`, `temp/profile-closure-lint.log`,
+`temp/profile-closure-build.log` and `temp/profile-closure-preservation.log`.
+Browser results/screenshots are in `temp/profile-closure-browser-result.json`,
+`temp/profile-closure-self-french.png`, `temp/profile-closure-self-dutch.png`,
+`temp/profile-closure-member.png` and `temp/profile-closure-account.png`.
+That checkpoint's preservation verified **61 source references, one whole-file
+deferred specification and eight pending features**. Member-profile restoration
+is complete; the accepted A1 review and current preservation totals appear above.
+Localized-name matching, production inventory/rehearsal and B remain open.
 
 The **audit browser closure**, including the requested raw-data simplification,
 passes normal typecheck, targeted ESLint across **19 changed TypeScript files**,
@@ -1382,10 +1569,8 @@ Current evidence is in `temp/audit-raw-focused.log`,
 `temp/audit-raw-preservation.log`; browser results and screenshots are in
 `temp/audit-raw-browser-result.json`, `temp/audit-raw-browser-json.png` and
 `temp/audit-raw-browser-files.png`. All sixteen completed audit source references
-remain removed. Preservation verifies **77 source references, one whole-file
-deferred specification and nine pending features**. Audit browsing is restored;
-member-profile closure is next. Localized-name matching, production inventory/
-rehearsal and A1/B remain open.
+remain removed. Audit browsing is restored. Localized-name matching, production
+inventory/rehearsal and A1/B remain open.
 
 The retained merge checkpoint passed 27 native cases on its separate disposable
 database and seven built Chromium groups for review/confirmation, fresh grants,

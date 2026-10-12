@@ -31,6 +31,7 @@ import { MarkdownEditor } from "src/core/components/markdown/RichTextEditor";
 import { MarkdownEditorMentionCommand } from "src/core/components/markdown/MarkdownEditorMentionCommand";
 import { WikiReferenceCommand } from "src/core/components/markdown/MarkdownEditorWikiReferenceCommand";
 import { useControlledTextArea, type ControlledTextAreaAPI } from "src/core/components/markdown/useControlledTextArea";
+import { ResponsiveDialog } from "src/core/components/ResponsiveDialog";
 
 const song: QuickSearchItemMatch<Type.song> = { itemType: Type.song, id: parsePublicId<"Song">("PickerSong000001"), name: "Found Song",
     absoluteUri: "/backstage/song/PickerSong000001?bandPublicId=PickerBand000001&routeLocale=fr-BE", matchStrength: 1, matchingField: "name" };
@@ -115,6 +116,45 @@ afterEach(async () => {
 });
 
 describe("inline Markdown references in the original textarea control", () => {
+    it("keeps an empty Markdown editor's enclosing dialog open on mount and retains real Escape dismissal", async () => {
+        const onClose = vi.fn();
+        await act(async () => root.render(<ResponsiveDialog open onClose={onClose}><InlineHarness seed="" /></ResponsiveDialog>));
+        expect(onClose).not.toHaveBeenCalled();
+        const input = dialog().querySelector("textarea")!;
+        expect(input.value).toBe("");
+        await key(input, "Escape", 27);
+        expect(onClose).toHaveBeenCalledTimes(1);
+        expect(onClose.mock.calls[0]![1]).toBe("escapeKeyDown");
+    });
+
+    it.each(["snapshot", "locale"])("keeps the enclosing dialog and draft when %s changes without a suggestion popup", async change => {
+        const onClose = vi.fn();
+        const render = () => root.render(<ResponsiveDialog open onClose={onClose}><InlineHarness /></ResponsiveDialog>);
+        await act(async () => render());
+        const input = dialog().querySelector("textarea")!;
+        await type(input, "Unsaved setlist description");
+        const caret = input.selectionEnd;
+        if (change === "snapshot") {
+            snapshot = {};
+        } else {
+            routeLocale = "nl-BE";
+        }
+        await act(async () => render());
+        expect(onClose).not.toHaveBeenCalled();
+        expect(dialog().querySelector("textarea")).toBe(input);
+        expect(input.value).toBe("Unsaved setlist description");
+        expect(input.selectionEnd).toBe(caret);
+    });
+
+    it("keeps the enclosing dialog open when reference search becomes available", async () => {
+        const onClose = vi.fn();
+        const render = (enabled: boolean) => root.render(<ResponsiveDialog open onClose={onClose}><InlineHarness enabled={enabled} /></ResponsiveDialog>);
+        await act(async () => render(false));
+        await act(async () => render(true));
+        expect(onClose).not.toHaveBeenCalled();
+        expect(dialog().querySelector("textarea")!.value).toBe("Draft ");
+    });
+
     it("keeps bracket grammar, ordered preferences, canonical Wiki output and undo", async () => {
         await act(async () => root.render(<InlineHarness />));
         await type(textarea(), "Draft [band");

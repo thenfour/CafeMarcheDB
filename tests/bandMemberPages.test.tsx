@@ -34,7 +34,7 @@ vi.mock("@blitzjs/rpc", async () => ({ ...await vi.importActual<typeof import("@
     return [{ items: args.table.viewID === bandUserProfileView.viewID ? [currentMember] : [], count: 25, hasMore: true },
         { refetch, isFetching: false, error: null }];
 } }));
-vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({
+vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useFeatureRecorder: () => recordFeature, useDashboardContext: () => ({
     refreshCachedData: refreshDashboard, userTag: { items: [], getById: () => undefined },
     instrument: { items: directoryInstruments, getById: (id: string) => directoryInstruments.find(item => item.publicId === id) },
     referenceStore: references, authorizationContext: { bandPublicId: bandId },
@@ -66,6 +66,7 @@ const invoke = vi.fn(async (_input: unknown): Promise<unknown> => ({ membershipI
 const refetch = vi.fn(async () => {});
 const refreshDashboard = vi.fn(async () => {});
 const invalidate = vi.fn(async () => {});
+const recordFeature = vi.fn(async () => {});
 const queries: ReadInput[] = [];
 const searchRequests: GetSearchResultsInput[] = [];
 const references = createDashboardReferenceStore();

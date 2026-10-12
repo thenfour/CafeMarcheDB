@@ -1,72 +1,36 @@
-// Profile parity references: MIGRATION_RESTORE: member-profile in the backstage profile and user detail pages.
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
-import { Alert, Breadcrumbs, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Breadcrumbs, Typography } from "@mui/material";
 import { Permission } from "shared/permissions";
 import type { UserPublicId } from "shared/publicId";
 import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
 import { useDB3Command } from "src/core/db3/components/useDB3Command";
 import db3queries from "src/core/db3/queries/db3queries";
-import { bandUserProfileCommand, bandUserProfileView, type BandUserProfileDto, type BandUserProfileEdit } from "src/core/db3/shared/entities/user/bandUserProfile";
+import { bandUserProfileCommand, bandUserProfileView, type BandUserProfileDto } from "src/core/db3/shared/entities/user/bandUserProfile";
 import { bandRoleChoicesView, bandRoleListView } from "src/core/db3/shared/entities/user/bandRoleViews";
-import { xUserMinimum } from "src/core/db3/shared/schema/user";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
 import { CMLink } from "../CMLink";
-import { AdminInspectObject, CMButton, CMButtonGroup, KeyValueTable } from "../CMCoreComponents2";
+import { AdminInspectObject, CMButtonGroup, KeyValueTable } from "../CMCoreComponents2";
 import { CMChip, CMChipContainer } from "../CMChip";
-import { ResponsiveDialog } from "../ResponsiveDialog";
 import { BandUserInstrumentsEditor } from "./BandUserInstruments";
 import { BandUserTagsEditor } from "./BandUserTags";
 import { BandUserRoleEditor } from "./BandUserRoles";
 import { BandUserLifecycleControl } from "./BandUserLifecycle";
 import { withMemberPresentation } from "./bandMemberLinks";
-import { useMemberAssignmentSave } from "./useMemberAssignmentSave";
+import { UserProfileFieldsEditor } from "./UserProfileFieldsEditor";
 import { UserDetail } from "./UserDetail";
 
 export function BandMemberProfileEditor({ member, refetch }: {
     readonly member: BandUserProfileDto; readonly refetch: () => Promise<unknown>;
 }) {
-    const locale = useLocale();
     const presentation = usePresentation();
     const command = useDB3Command(bandUserProfileCommand);
-    const [open, setOpen] = React.useState(false);
-    const [name, setName] = React.useState(member.user.name ?? "");
-    const [phone, setPhone] = React.useState(member.user.phone ?? "");
     const auth = presentation.data?.authorization;
-    const canEdit = auth?.userPublicId === member.user.publicId || auth?.effectivePermissionNames.includes(Permission.manage_global_users);
-    const { save, saving, error, isPending } = useMemberAssignmentSave<BandUserProfileEdit>({
-        execute: command.invoke, refetch, refreshRelatedData: presentation.invalidate, onCommitted: () => setOpen(false),
-        messages: { saved: "membership.profile.saved", failed: "membership.profile.failed", refreshFailed: "membership.profile.refreshFailed" },
-    });
-    return <Stack spacing={1} alignItems="flex-start">
-        {error && !open && <Alert severity="error">{error}</Alert>}
-        {canEdit && <CMButton disabled={saving} onClick={() => {
-            setName(member.user.name ?? "");
-            setPhone(member.user.phone ?? "");
-            setOpen(true);
-        }}>{locale.getPlainString("membership.profile.edit")}</CMButton>}
-        <ResponsiveDialog open={open} onClose={() => {
-            if (!isPending()) {
-                setOpen(false);
-            }
-        }} fullWidth maxWidth="sm">
-            <DialogTitle>{locale.getPlainString("membership.profile.edit")}</DialogTitle>
-            <DialogContent><Stack spacing={2} sx={{ pt: 1 }}>
-                <Typography>{locale.getPlainString("membership.profile.shared")}</Typography>
-                {error && <Alert severity="error">{error}</Alert>}
-                <TextField label={locale.getPlainString("membership.profile.name")} value={name} disabled={saving} inputProps={{ maxLength: xUserMinimum.fields.name.maxLength }} onChange={event => setName(event.target.value)} />
-                {member.user.phone !== undefined && <TextField label={locale.getPlainString("membership.profile.phone")} value={phone} disabled={saving} inputProps={{ maxLength: xUserMinimum.fields.phone.maxLength }} onChange={event => setPhone(event.target.value)} />}
-            </Stack></DialogContent>
-            <DialogActions>
-                <CMButton disabled={saving} onClick={() => setOpen(false)}>{locale.getPlainString("common.action.cancel")}</CMButton>
-                <CMButton disabled={saving || !name.trim()} onClick={() => { void save({
-                    membershipId: member.publicId, name,
-                    ...(member.user.phone !== undefined ? { phone } : {}),
-                }); }}>{locale.getPlainString("membership.profile.save")}</CMButton>
-            </DialogActions>
-        </ResponsiveDialog>
-    </Stack>;
+    const canEdit = auth?.userPublicId === member.user.publicId
+        || (auth?.effectivePermissionNames.includes(Permission.manage_global_users) ?? false);
+    return <UserProfileFieldsEditor person={member.user} canEdit={canEdit} refetch={refetch}
+        saveProfile={fields => command.invoke({ membershipId: member.publicId, ...fields })} />;
 }
 
 function MemberProfileRole({ member, refetch }: { readonly member: BandUserProfileDto; readonly refetch: () => Promise<unknown> }) {

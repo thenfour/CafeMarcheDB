@@ -4,7 +4,9 @@ import { getServerSideProps } from "src/pages/backstage/user/[...id_slug_tab]";
 import { invokeResolver } from "./authorization/support/resolverHarness";
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./authorization/support/authorizationFixtures";
 import { bandUserIdentityView, bandUserProfileView } from "src/core/db3/shared/entities/user/bandUserProfile";
+import { platformUserEditorView } from "src/core/db3/shared/entities/user/platformUser";
 import { parsePublicId } from "shared/publicId";
+import { Permission } from "shared/permissions";
 
 // Authorization is opaque here; the native tests exercise its actual membership and field policies.
 vi.mock("src/auth/server/serverAuthorization", () => ({ loadAuthorization: (...args: unknown[]) => {
@@ -13,23 +15,25 @@ vi.mock("src/auth/server/serverAuthorization", () => ({ loadAuthorization: (...a
 } }));
 vi.mock("src/core/db3/server/db3QueryCore", () => ({ queryView: (input: unknown, auth: unknown) => {
     reads.push({ input, auth });
-    return Promise.resolve({ items: available ? [identity] : [] });
+    return Promise.resolve({ items: available ? [{ ...identity, name: "Alice" }] : [] });
 } }));
 vi.mock("src/blitz-server", () => ({ gSSP: (callback: (args: PageInput) => Promise<unknown>) => callback }));
 vi.mock("src/core/components/dashboard/DashboardLayout", () => ({ default: () => null }));
 vi.mock("src/core/components/dashboard/StaticMenuItems", () => ({ NavRealm: { users: "users" } }));
 vi.mock("src/core/components/user/BandMemberProfile", () => ({ BandMemberProfile: () => null }));
+vi.mock("src/core/components/user/AccountProfile", () => ({ AccountProfilePageContent: () => null }));
 vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({ getPlainString: () => "Member profile" }) }));
 
 const personId = parsePublicId<"User">("User000000000001");
 const bandPublicId = parsePublicId<"Band">("Band000000000001");
 const identity = bandUserIdentityView.parseDto({ publicId: "Membership000001", user: { publicId: personId, name: "Alice" } });
-const authorizationMarker = Symbol("scoped authorization");
+const authorizationMarker = { hasPermission: (permission: Permission) => platformAccess && permission === Permission.manage_global_users };
 const actor = createAuthorizationTestUser("normal");
 const ctx = createAuthorizationTestContext(actor);
 const authorizations: unknown[][] = [];
 const reads: Array<{ input: unknown; auth: unknown }> = [];
 let available: boolean;
+let platformAccess: boolean;
 interface PageInput {
     readonly params: { readonly id_slug_tab: string[] };
     readonly query: { readonly bandPublicId?: string; readonly routeLocale?: string };
@@ -43,6 +47,7 @@ const pageInput: PageInput = { params: { id_slug_tab: [personId, "old-slug", "at
 
 beforeEach(() => {
     available = true;
+    platformAccess = false;
     reads.length = 0;
     authorizations.length = 0;
 });
@@ -63,7 +68,7 @@ describe("member page and lazy person lookup boundaries", () => {
         await expect(invokeResolver(getUser, { userId: personId, bandPublicId: "invalid" }, ctx)).rejects.toThrow();
     });
     it("keeps old person URL shapes while checking the selected membership before rendering", async () => {
-        expect(await page(pageInput)).toEqual({ props: { personId } });
+        expect(await page(pageInput)).toEqual({ props: { personId, profileScope: "band", title: "Alice" } });
         expect(authorizations[0]).toEqual([ctx.session, bandPublicId]);
         expect(reads[0]).toMatchObject({ auth: authorizationMarker, input: {
             view: bandUserProfileView, bandPublicId, routeLocale: "fr-BE", browserLanguages: ["nl-BE"],
@@ -74,10 +79,24 @@ describe("member page and lazy person lookup boundaries", () => {
         available = false;
         expect(await page(pageInput)).toEqual({ notFound: true });
     });
-    it("rejects invalid identities and missing band context without a shared-person lookup", async () => {
+    it("rejects invalid identities and unauthorized account context without a shared-person lookup", async () => {
         expect(await page({ ...pageInput, params: { id_slug_tab: ["123"] } })).toEqual({ notFound: true });
         expect(await page({ ...pageInput, query: {} })).toEqual({ notFound: true });
         expect(reads).toEqual([]);
-        expect(authorizations).toEqual([]);
+        expect(authorizations).toEqual([[ctx.session, null]]);
+    });
+    it("uses the platform account view for an explicit account URL, including inactive targets", async () => {
+        platformAccess = true;
+        expect(await page({ ...pageInput, query: { routeLocale: "fr-BE" } })).toEqual({ props: { personId, profileScope: "account", title: "Alice" } });
+        expect(authorizations).toEqual([[ctx.session, null]]);
+        expect(reads[0]).toMatchObject({ input: { view: platformUserEditorView, includeDeleted: true,
+            filter: { publicIds: [personId] }, bandPublicId: null, routeLocale: "fr-BE" } });
+    });
+    it("does not replace an unavailable band member with an account profile even for platform actors", async () => {
+        platformAccess = true;
+        available = false;
+        expect(await page(pageInput)).toEqual({ notFound: true });
+        expect(reads[0]).toMatchObject({ input: { view: bandUserProfileView } });
+        expect(await page({ ...pageInput, query: {} })).toEqual({ notFound: true });
     });
 });

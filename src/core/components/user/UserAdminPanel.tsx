@@ -32,14 +32,15 @@ type UserMgmtCaps = {
 
 interface UserAdminPanelProps {
     user: UserClientPayload;
-    refetch?: () => void;
+    refetch?: () => Promise<unknown> | void;
     capabilities: UserMgmtCaps;
+    onDeactivated?: () => Promise<unknown> | void;
 }
 
 export type DeactivateUserButtonProps = {
     capabilities: UserMgmtCaps;
     user: UserClientPayload;
-    onOK?: () => void;
+    onOK?: () => Promise<unknown> | void;
 };
 
 export const DeactivateUserButton = ({ capabilities, user, onOK }: DeactivateUserButtonProps) => {
@@ -48,16 +49,23 @@ export const DeactivateUserButton = ({ capabilities, user, onOK }: DeactivateUse
     const dashboardContext = useDashboardContext();
     const router = useRouter();
     const [pending, setPending] = React.useState(false);
+    const inFlight = React.useRef(false);
 
     return <>
         {capabilities.canDeactivate && <Tooltip title="Deactivate this account and revoke its sessions.">
             <CMUserMgmtButton
                 enabled={!pending}
                 onClick={async () => {
+                    if (inFlight.current) {
+                        return;
+                    }
+                    inFlight.current = true;
                     setPending(true);
                     try {
                         const changed = await lifecycle.deactivate(user, capabilities.deactivationContinuityWarnings);
-                        if (!changed) return;
+                        if (!changed) {
+                            return;
+                        }
                         snackbar.showSuccess("User deactivated");
                         if (dashboardContext.currentUser?.publicId === user.publicId) {
                             window.location.assign("/backstage");
@@ -71,6 +79,7 @@ export const DeactivateUserButton = ({ capabilities, user, onOK }: DeactivateUse
                         console.error(error);
                         snackbar.showError("Unable to deactivate user; see console");
                     } finally {
+                        inFlight.current = false;
                         setPending(false);
                     }
                 }}
@@ -85,16 +94,24 @@ export const ReactivateUserButton = ({ capabilities, user, onOK }: DeactivateUse
     const lifecycle = useUserLifecycleActions();
     const snackbar = useSnackbar();
     const [pending, setPending] = React.useState(false);
+    const inFlight = React.useRef(false);
     return capabilities.canReactivate ? <CMButton disabled={pending} onClick={async () => {
+        if (inFlight.current) {
+            return;
+        }
+        inFlight.current = true;
         setPending(true);
         try {
-            if (!await lifecycle.reactivate(user)) return;
+            if (!await lifecycle.reactivate(user)) {
+                return;
+            }
             await onOK?.();
             snackbar.showSuccess("User reactivated");
         } catch (error) {
             console.error(error);
             snackbar.showError("Unable to reactivate user; see console");
         } finally {
+            inFlight.current = false;
             setPending(false);
         }
     }}>Reactivate</CMButton> : null;
@@ -103,26 +120,41 @@ export const ReactivateUserButton = ({ capabilities, user, onOK }: DeactivateUse
 type SetUserSysadminButtonProps = {
     capabilities: UserMgmtCaps;
     user: UserClientPayload;
-    onOK?: () => void;
+    onOK?: () => Promise<unknown> | void;
 };
 
 export const SetUserSysadminButton = ({ capabilities, user, onOK }: SetUserSysadminButtonProps) => {
     const [setUserSysAdminMutation] = useMutation(setUserSysAdmin);
     const snackbar = useSnackbar();
     const confirm = useConfirm();
+    const [pending, setPending] = React.useState(false);
+    const inFlight = React.useRef(false);
     return <>
         {capabilities.canSetSysAdmin && (
             <CMUserMgmtButton
+                enabled={!pending}
                 onClick={async () => {
-                    const isSysAdmin = !user.isSysAdmin;
-                    if (!await confirm({
-                        title: isSysAdmin ? "Grant Sysadmin" : "Revoke Sysadmin",
-                        description: `${isSysAdmin ? "Grant" : "Revoke"} Sysadmin status for ${user.name}?`,
-                    })) return;
-                    await snackbar.invokeAsync(async () => {
-                        await setUserSysAdminMutation({ userId: user.publicId, isSysAdmin });
-                        void onOK?.();
-                    }, "Sysadmin status updated");
+                    if (inFlight.current) {
+                        return;
+                    }
+                    inFlight.current = true;
+                    setPending(true);
+                    try {
+                        const isSysAdmin = !user.isSysAdmin;
+                        if (!await confirm({
+                            title: isSysAdmin ? "Grant Sysadmin" : "Revoke Sysadmin",
+                            description: `${isSysAdmin ? "Grant" : "Revoke"} Sysadmin status for ${user.name}?`,
+                        })) {
+                            return;
+                        }
+                        await snackbar.invokeAsync(async () => {
+                            await setUserSysAdminMutation({ userId: user.publicId, isSysAdmin });
+                            await onOK?.();
+                        }, "Sysadmin status updated");
+                    } finally {
+                        inFlight.current = false;
+                        setPending(false);
+                    }
                 }}
             >
                 {user.isSysAdmin ? "Revoke Sysadmin" : "Grant Sysadmin"}
@@ -135,7 +167,9 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
     const { capabilities } = props;
     const hasAnyControl = Object.entries(capabilities)
         .some(([key, value]) => key.startsWith("can") && value === true);
-    if (!hasAnyControl) return null;
+    if (!hasAnyControl) {
+        return null;
+    }
 
     return <>
 
@@ -143,7 +177,7 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
             capabilities={capabilities}
             user={props.user}
             onOK={() => {
-                return props.refetch?.();
+                return props.onDeactivated ? props.onDeactivated() : props.refetch?.();
             }}
         />
 
@@ -153,7 +187,7 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
             capabilities={capabilities}
             user={props.user}
             onOK={() => {
-                props.refetch?.();
+                return props.refetch?.();
             }}
         />
 

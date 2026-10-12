@@ -14,7 +14,7 @@ vi.mock("@mui/material", async () => {
         Tooltip: wrapper, Dialog: wrapper, DialogContent: wrapper, DialogTitle: wrapper, TextField: wrapper,
     };
 });
-vi.mock("@blitzjs/rpc", () => ({ useMutation: () => [vi.fn()] }));
+vi.mock("@blitzjs/rpc", () => ({ useMutation: () => [setSysadmin] }));
 vi.mock("src/core/components/user/UserSignInMethodsButton", () => ({ UserSignInMethodsButton: () => null }));
 // Merge dialog behavior is covered by its mounted picker tests.
 vi.mock("src/core/components/user/MergeUsersButton", () => ({ MergeUsersButton: () => null }));
@@ -23,7 +23,9 @@ vi.mock("@blitzjs/next", () => ({ Routes: { UserSearchPage: () => "/backstage/us
 vi.mock("next/router", () => ({ useRouter: vi.fn() }));
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: vi.fn() }));
 vi.mock("src/core/components/user/useUserLifecycleActions", () => ({ useUserLifecycleActions: vi.fn() }));
-vi.mock("src/core/components/SnackbarContext", () => ({ useSnackbar: () => ({ showSuccess: vi.fn(), showError: vi.fn() }) }));
+vi.mock("src/core/components/SnackbarContext", () => ({ useSnackbar: () => ({ showSuccess: vi.fn(), showError: vi.fn(),
+    invokeAsync: async (work: () => Promise<unknown>) => work(),
+}) }));
 vi.mock("src/core/components/EditFieldsDialog", () => ({ EditFieldsDialogButton: () => null }));
 vi.mock("src/core/components/CMCoreComponents2", () =>
 ({
@@ -33,7 +35,7 @@ vi.mock("src/core/components/CMCoreComponents2", () =>
     CMUserMgmtButton: ({ children, onClick, enabled = true }: any) =>
         React.createElement("button", { onClick, disabled: !enabled }, children),
 }));
-vi.mock("src/core/components/ConfirmationDialog", () => ({ useConfirm: () => vi.fn() }));
+vi.mock("src/core/components/ConfirmationDialog", () => ({ useConfirm: () => confirm }));
 vi.mock("src/core/components/user/AdminResetPasswordButton", () => ({ AdminResetPasswordButton: () => null }));
 vi.mock("src/core/components/user/ImpersonateUserButton", () => ({ ImpersonateUserButton: () => null }));
 
@@ -41,15 +43,19 @@ import { Permission } from "shared/permissions";
 import { useRouter } from "next/router";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
 import { useUserLifecycleActions } from "src/core/components/user/useUserLifecycleActions";
-import { DeactivateUserButton, ReactivateUserButton } from "src/core/components/user/UserAdminPanel";
+import { DeactivateUserButton, ReactivateUserButton, SetUserSysadminButton } from "src/core/components/user/UserAdminPanel";
 
 let root: Root;
 let container: HTMLDivElement;
 const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_REACT_ACT_ENVIRONMENT");
 const user = { publicId: userPublicId(2), name: "Member" } as any;
 const capabilities = { canDeactivate: true, canReactivate: false, deactivationContinuityWarnings: [] } as any;
+const confirm = vi.fn(async () => true);
+const setSysadmin = vi.fn(async () => {});
 
 beforeEach(() => {
+    confirm.mockResolvedValue(true);
+    setSysadmin.mockClear();
     window.history.replaceState({}, "", `/backstage/user/${user.publicId}`);
     document.body.innerHTML = "<div id='root'></div>";
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
@@ -116,5 +122,30 @@ describe("user profile lifecycle navigation", () => {
         await act(async () => container.querySelector("button")!.click());
         expect(reactivate).toHaveBeenCalledWith(user);
         expect(refresh).toHaveBeenCalledTimes(1);
+    });
+
+    it("awaits the Sysadmin change and refresh while preventing repeated confirmations", async () => {
+        let finish: () => void = () => {};
+        setSysadmin.mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
+        const refresh = vi.fn(async () => {});
+        await act(async () => root.render(React.createElement(SetUserSysadminButton, { user, capabilities: { ...capabilities, canSetSysAdmin: true }, onOK: refresh })));
+        const button = container.querySelector("button")!;
+        await act(async () => { button.click(); button.click(); });
+        expect(setSysadmin).toHaveBeenCalledOnce();
+        expect(button.disabled).toBe(true);
+        expect(refresh).not.toHaveBeenCalled();
+        await act(async () => finish());
+        expect(refresh).toHaveBeenCalledOnce();
+        expect(button.disabled).toBe(false);
+    });
+
+    it("cancels the Sysadmin confirmation without changing or refreshing the account", async () => {
+        confirm.mockResolvedValueOnce(false);
+        const refresh = vi.fn(async () => {});
+        await act(async () => root.render(React.createElement(SetUserSysadminButton, { user, capabilities: { ...capabilities, canSetSysAdmin: true }, onOK: refresh })));
+        await act(async () => container.querySelector("button")!.click());
+        expect(setSysadmin).not.toHaveBeenCalled();
+        expect(refresh).not.toHaveBeenCalled();
+        expect(container.querySelector("button")!.disabled).toBe(false);
     });
 });
