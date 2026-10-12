@@ -1,12 +1,11 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import { Button } from "@mui/material";
 import Head from "next/head";
 import React, { Suspense } from "react";
 import claimAdminBootstrap from "src/auth/mutations/claimAdminBootstrap";
 import getAdminBootstrapStatus, { type AdminBootstrapStatus } from "src/auth/queries/getAdminBootstrapStatus";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { NameValuePair } from "src/core/components/CMCoreComponents2";
+import { CMButton, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
 
@@ -65,9 +64,9 @@ const RecoveryContent = ({ status }: { status: AdminBootstrapStatus }) => {
                     onChange={(_, value) => setSecret(value)}
                 />}
             />
-            <Button type="submit" disabled={mutationState.isLoading || secret.length === 0}>
+            <CMButton type="submit" disabled={mutationState.isLoading || secret.length === 0}>
                 Restore Sysadmin access
-            </Button>
+            </CMButton>
             {claimFailed && <div className="error">
                 Administrator recovery is unavailable or the supplied credential is invalid.
             </div>}

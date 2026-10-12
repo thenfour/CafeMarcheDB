@@ -40,6 +40,7 @@ const EventDetailContent = ({ eventId }: Pick<PageProps, "eventId">) => {
     const path = router.query.id_slug_tab;
     const tab = Array.isArray(path) ? path[2] : undefined;
     useRecordFeatureUse({ feature: ActivityFeature.event_view, eventId });
+
     const tableClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
         tableSpec: DB3Client.defineTableClientSpec({
@@ -64,8 +65,13 @@ const EventDetailContent = ({ eventId }: Pick<PageProps, "eventId">) => {
         <NewEventButton />
         {event ? <>
             <EventBreadcrumbs event={event} />
-            <EventDetailFull event={event} tableClient={tableClient} readonly={false}
-                initialTabIndex={tab} refetch={tableClient.refetch} />
+            <EventDetailFull
+                event={event}
+                tableClient={tableClient}
+                readonly={false}
+                initialTabIndex={tab}
+                refetch={tableClient.refetch}
+            />
         </> : <p>{locale.getPlainString("events.detailUnavailable")}</p>}
     </div>;
 };

@@ -6,13 +6,6 @@ import * as db3 from "../db3";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
 import { db3Server } from "./db3Server";
 
-export class DB3PublicIdError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = "DB3PublicIdError";
-    }
-}
-
 // Resolve public IDs through the target table's ordinary row-visibility policy.
 // Missing and inaccessible rows intentionally have the same error so this
 // boundary cannot be used as an existence oracle.
@@ -33,8 +26,11 @@ export async function resolvePublicIds(
         readonly where?: Readonly<object>
     } = {},
 ): Promise<number[]> {
-    if (!table.publicIdMember || publicIds.some(publicId => !isPublicId(publicId))) {
-        throw new DB3PublicIdError(`Invalid public ID for ${table.tableID}.`);
+    if (!table.publicIdMember) {
+        throw new Error(`Table "${table.tableID}" does not have a public ID member.`);
+    }
+    if (publicIds.some(publicId => !isPublicId(publicId))) {
+        throw new Error(`One or more public IDs are invalid on "${table.tableID}"."${table.publicIdMember}"`);
     }
 
     // make distinct set. do this before table-level auth, because an empty set
@@ -44,7 +40,7 @@ export async function resolvePublicIds(
         return [];
     }
     if (!table.authorizeTableForView(auth)) {
-        throw new DB3PublicIdError(`${table.tableID} was not found.`);
+        throw new Error(`${table.tableID} was not found.`);
     }
 
     const where = table.CalculateWhereClause({
@@ -68,7 +64,7 @@ export async function resolvePublicIds(
         }
     });
     if (idsByPublicId.size !== uniquePublicIds.length) {
-        throw new DB3PublicIdError(`${table.tableID} was not found.`);
+        throw new Error(`${table.tableID} was not found.`);
     }
     return uniquePublicIds.map(publicId => idsByPublicId.get(publicId)!);
 }
@@ -119,7 +115,7 @@ export async function resolvePublicQueryParameters(
             continue;
         }
         if (!Array.isArray(value)) {
-            throw new DB3PublicIdError(
+            throw new Error(
                 `Expected public-ID array for ${table.tableID}.${parameterName}.`,
             );
         }
@@ -153,7 +149,7 @@ export async function resolvePublicForeignIds(
 
             const identities = ret[field.member];
             if (!Array.isArray(identities)) {
-                throw new DB3PublicIdError(
+                throw new Error(
                     `Expected public-ID array for ${table.tableID}.${field.member}.`,
                 );
             }
@@ -398,7 +394,7 @@ export function sanitizeDB3ModelForTransport(
     contextDesc: string,
 ): TAnyModel {
     if (!model) {
-        throw new DB3PublicIdError(`${table.tableID} was not found after mutation.`);
+        throw new Error(`${table.tableID} was not found after mutation.`);
     }
 
     const result = table.authorizeAndSanitize({
@@ -409,7 +405,7 @@ export function sanitizeDB3ModelForTransport(
         fallbackOwnerId: null,
     });
     if (!result.rowIsAuthorized) {
-        throw new DB3PublicIdError(`Not authorized to view ${table.tableID}.`);
+        throw new Error(`Not authorized to view ${table.tableID}.`);
     }
     return projectDB3ModelPublicIds(table, result.authorizedModel, auth);
 }

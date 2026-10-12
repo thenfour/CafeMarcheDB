@@ -10,7 +10,7 @@ export const LoginSignup = () => {
     return (
         <div className="signInPageMain">
             <AppContextMarker name="LoginSignup">
-                <CMLink trackingFeature={ActivityFeature.login_google} href="/api/auth/google" className="signInBlock google link googleSignInLink">
+                <CMLink trackingFeature={ActivityFeature.login_google} navigation="document" href="/api/auth/google" className="signInBlock google link googleSignInLink">
                     <div className="title">
                         <img src="/web_light_rd_na.svg" />
                         Click here to sign in via Google

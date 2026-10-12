@@ -17,8 +17,9 @@ export function useMarkdownReferenceSuggestions(enabled: boolean, textarea: Reac
 
     const invalidate = () => provider.invalidate();
     React.useEffect(() => {
-        // Dismiss the library's popup without remounting the textarea or losing its caret/history.
-        textarea.current?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", keyCode: 27, bubbles: true }));
+        // The library listens on the textarea. Keep this synthetic Escape local
+        // so dismissing suggestions cannot close an enclosing dialog.
+        textarea.current?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", keyCode: 27, bubbles: false }));
     }, [provider.scopeKey, provider.snapshot, enabled]);
 
     async function provide(token: string, wikiOnly: boolean): Promise<MarkdownReferenceSuggestion[]> {

@@ -5,6 +5,7 @@ import { useClientTelemetryEvent } from "./dashboardContext/DashboardContext";
 
 type CMLinkProps = React.PropsWithChildren<{
     trackingFeature?: ActivityFeature | undefined;
+    navigation?: "client" | "document";
     onClick?: (e: React.MouseEvent) => void;
     href: string;
     className?: string;
@@ -15,9 +16,10 @@ type CMLinkProps = React.PropsWithChildren<{
 }>;
 
 // use this for tracking purposes
-export function CMLink({ trackingFeature = ActivityFeature.link_follow_internal, onClick, ...rest }: CMLinkProps) {
+// lsmb todo: use router.
+export function CMLink({ trackingFeature = ActivityFeature.link_follow_internal, navigation = "client", onClick, ...rest }: CMLinkProps) {
     const recordFeature = useClientTelemetryEvent();
-    const appContext = useAppContext();
+    //const appContext = useAppContext();
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         //if (trackingFeature) {
@@ -28,8 +30,12 @@ export function CMLink({ trackingFeature = ActivityFeature.link_follow_internal,
         });
         //}
         if (onClick) {
-            onClick(e)
+            onClick(e);
         }
     }
-    return <Link onClick={handleClick} {...rest} />
+    if (navigation === "document") {
+        // Server endpoints and external handoffs must use a normal document request.
+        return <a onClick={handleClick} {...rest} />;
+    }
+    return <Link onClick={handleClick} {...rest} />;
 }

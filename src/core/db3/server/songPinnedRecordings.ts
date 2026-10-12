@@ -17,7 +17,7 @@ export const SongPinnedRecordingsSchema = z.object({
 // Setlist players address this sparse result by the requested public song identity.
 export type SongPinnedRecordings = Partial<Record<SongPublicId, TSongPinnedRecording>>;
 
-/** Narrow setlist reader; Song/File page and CRUD roots remain guarded. */
+/** Narrow setlist reader with independent Song and File authorization. */
 export function readSongPinnedRecordings(database: DB3ReadDatabase, authorization: CMServerAuthorization,
     input: z.infer<typeof SongPinnedRecordingsSchema>,
 ): Promise<SongPinnedRecordings> {
@@ -33,7 +33,6 @@ export function readSongPinnedRecordings(database: DB3ReadDatabase, authorizatio
             return {};
         }
 
-        // Song/File CRUD is still deferred; their legacy tables do not declare band ownership yet.
         const bandId = auth.requireBand().id;
         const fileWhere = await GetAuthorizedTableReadWhere({
             table: xFile,

@@ -1,11 +1,12 @@
+import type { Ctx } from "@blitzjs/next";
 import { AuthenticationError, AuthorizationError } from "blitz";
 import type { NextApiRequest, NextApiResponse } from "next";
-import type { Ctx } from "@blitzjs/next";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parsePublicId } from "shared/publicId";
+import { CMDBUploadFile } from "src/core/components/file/CMDBUploadFile";
 import type { UploadResponsePayload } from "src/core/db3/shared/fileTypes";
 import { FileUploadArgsSchema } from "src/core/db3/shared/fileUpload";
-import { DB3PublicIdError } from "src/core/db3/server/db3PublicIds";
+import { config, uploadFileRoute } from "src/pages/api/files/upload";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
     authorize: vi.fn(), loadAuthorization: vi.fn(), parse: vi.fn(), upload: vi.fn(),
@@ -25,14 +26,14 @@ vi.mock("src/core/db3/server/fileUpload", async () => ({
 vi.mock("@blitzjs/auth", async () => ({
     ...await vi.importActual<object>("@blitzjs/auth"), getAntiCSRFToken: () => "test-csrf",
 }));
-import { config, uploadFileRoute } from "src/pages/api/files/upload";
-import { CMDBUploadFile } from "src/core/components/file/CMDBUploadFile";
 
 const bandPublicId = parsePublicId<"Band">("UploadBand000001");
 function responseSpies() {
     const status = vi.fn(); const json = vi.fn(); const end = vi.fn(); const setHeader = vi.fn();
-    const response = { status: (code: number) => { status(code); return response; },
-        json: (payload: UploadResponsePayload) => { json(payload); return response; }, end, setHeader };
+    const response = {
+        status: (code: number) => { status(code); return response; },
+        json: (payload: UploadResponsePayload) => { json(payload); return response; }, end, setHeader
+    };
     // Only these response methods are exercised by the upload handler.
     return { response: response as unknown as NextApiResponse<UploadResponsePayload>, status, json, end, setHeader };
 }
@@ -105,7 +106,7 @@ describe("band-owned upload HTTP boundary", () => {
         expect(mocks.rm).toHaveBeenCalledOnce();
     });
     it("returns the same 404 for absent and inaccessible public references", async () => {
-        mocks.upload.mockRejectedValue(new DB3PublicIdError("Song was not found."));
+        mocks.upload.mockRejectedValue(new Error(`Invalid public ID`));
         expect((await invoke()).status).toHaveBeenCalledWith(404);
         expect(mocks.rm).toHaveBeenCalledOnce();
     });
@@ -126,8 +127,10 @@ describe("upload public contract and client transport", () => {
         if (when === "before send") {
             controller.abort();
         }
-        const request = CMDBUploadFile({ bandPublicId, files: null, fields: { externalURI: "https://example.com/score.pdf" },
-            onProgress: vi.fn(), signal: controller.signal });
+        const request = CMDBUploadFile({
+            bandPublicId, files: null, fields: { externalURI: "https://example.com/score.pdf" },
+            onProgress: vi.fn(), signal: controller.signal
+        });
         if (when === "after completion") {
             listeners.get("load")?.(); await expect(request).resolves.toMatchObject({ isSuccess: true }); controller.abort();
             expect(abort).not.toHaveBeenCalled(); expect(removeListener).toHaveBeenCalledOnce();
@@ -139,7 +142,7 @@ describe("upload public contract and client transport", () => {
     });
     it("requires a band and rejects natural references and server fields", () => {
         for (const input of [{}, { bandPublicId, taggedBandUserId: 1 }, { bandPublicId, sizeBytes: 1 },
-            { bandPublicId, visiblePermission: "public", visiblePermissionId: "Permission000001" }]) {
+        { bandPublicId, visiblePermission: "public", visiblePermissionId: "Permission000001" }]) {
             expect(FileUploadArgsSchema.safeParse(input).success).toBe(false);
         }
     });
@@ -153,8 +156,10 @@ describe("upload public contract and client transport", () => {
             addEventListener(name: string, listener: () => void) { listeners.set(name, listener); }
             send() { listeners.get("load")?.(); }
         });
-        const request = CMDBUploadFile({ bandPublicId, files: null,
-            fields: { externalURI: "https://example.com/score.pdf", visiblePermissionId: undefined }, onProgress: progress });
+        const request = CMDBUploadFile({
+            bandPublicId, files: null,
+            fields: { externalURI: "https://example.com/score.pdf", visiblePermissionId: undefined }, onProgress: progress
+        });
         if (status === 200) { await expect(request).resolves.toMatchObject({ isSuccess: true }); }
         else { await expect(request).rejects.toThrow("Denied"); }
         expect(open).toHaveBeenCalledWith("POST", "/api/files/upload?bandPublicId=" + bandPublicId, true);
