@@ -42,8 +42,9 @@ specifications are outstanding executable-test obligations, not passing tests.
 Restore the reference workflow through its existing UI/query path. Record
 reference behavior retained, schema-driven differences or approved exceptions,
 executable regression coverage and built-browser evidence. Partial checkpoints
-keep the obligation pending. The [A1 search exception](04-implementation-plan.md#localized-catalog-text-search-exception)
-changes timing only; full localized-name matching stays pending after A1.
+keep the obligation pending. The [earlier A1 search exception](04-implementation-plan.md#localized-catalog-text-search-exception)
+changed timing only; it is now closed with the full catalog-name matching
+checkpoint and all seven owning search/workflow obligations.
 
 Once complete, remove its source blocks and reference entries, set status to
 `restored`, and record concrete evidence. Delete reference-only modules and remove

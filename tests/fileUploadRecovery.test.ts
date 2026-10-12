@@ -1,5 +1,5 @@
 import type { Ctx } from "@blitzjs/next";
-import { AuthenticationError, AuthorizationError } from "blitz";
+import { AuthenticationError, AuthorizationError, NotFoundError } from "blitz";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { parsePublicId } from "shared/publicId";
 import { CMDBUploadFile } from "src/core/components/file/CMDBUploadFile";
@@ -106,7 +106,7 @@ describe("band-owned upload HTTP boundary", () => {
         expect(mocks.rm).toHaveBeenCalledOnce();
     });
     it("returns the same 404 for absent and inaccessible public references", async () => {
-        mocks.upload.mockRejectedValue(new Error(`Invalid public ID`));
+        mocks.upload.mockRejectedValue(new NotFoundError());
         expect((await invoke()).status).toHaveBeenCalledWith(404);
         expect(mocks.rm).toHaveBeenCalledOnce();
     });

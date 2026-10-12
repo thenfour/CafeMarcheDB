@@ -963,30 +963,3 @@ export type DashboardDynMenuLink = Prisma.MenuLinkGetPayload<{ include: { create
 export interface ObjectWithVisiblePermission {
     visiblePermissionId: PermissionPublicId | null;
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// MIGRATION_RESTORE: file-search
-// Source: 3eef35e286d02c61aebd0bb000c433c34cfb15a6:src/core/db3/shared/schema/prismArgs.ts:963-966
-// Reason: Raw File tag and instrument name matching cannot query the new localized catalogs safely.
-// Restore: Restore File quick filtering and association name ordering against resolved band tag and instrument labels, preserving blanks, hidden assignments, visibility and pagination.
-// Verification: Test localized names, intentional blanks, hidden assigned tags, cross-band visibility, pagination and the built File search.
-// SHA256: b998a780e5c6f49ff142aba85fdf3aa5ac5805fc37d469039e27a52e79f2e71c
-// MIGRATION_REFERENCE_BEGIN
-// export const FileInstrumentTagNaturalOrderBy: Prisma.FileInstrumentTagOrderByWithRelationInput[] = [
-//     { instrument: { name: 'asc' } },
-//     { instrument: { id: 'asc' } },
-// ];
-// MIGRATION_REFERENCE_END

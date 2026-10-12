@@ -1,3 +1,4 @@
+import { NotFoundError } from "blitz";
 import { Permission } from "shared/permissions";
 import type { FilePublicId } from "shared/publicId";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
@@ -5,7 +6,6 @@ import type { PresentationInput } from "src/locale/shared/presentationInput";
 import { fileDetailView } from "../db3";
 import { executeDB3Read, type DB3ReadDatabase } from "./db3ReadExecution";
 import { queryView } from "./db3QueryCore";
-import { DB3PublicIdError } from "./db3PublicIds";
 
 
 export function readFileDetailPage(database: DB3ReadDatabase, authorization: CMServerAuthorization,
@@ -23,7 +23,7 @@ export function readFileDetailPage(database: DB3ReadDatabase, authorization: CMS
             view: fileDetailView, ...input,
             filter: { tableParams: { fileId } }, take: 1, cmdbQueryContext: "file detail page",
         }, auth, context).catch(error => {
-            if (error instanceof DB3PublicIdError) {
+            if (error instanceof NotFoundError) {
                 return null;
             }
             throw error;

@@ -1,3 +1,4 @@
+import { NotFoundError } from "blitz";
 import { Permission } from "shared/permissions";
 import type { SongPublicId } from "shared/publicId";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
@@ -5,7 +6,6 @@ import type { PresentationInput } from "src/locale/shared/presentationInput";
 import { songDetailView } from "../db3";
 import { executeDB3Read, type DB3ReadDatabase } from "./db3ReadExecution";
 import { queryView } from "./db3QueryCore";
-import { DB3PublicIdError } from "./db3PublicIds";
 
 export function readSongDetailPage(database: DB3ReadDatabase, authorization: CMServerAuthorization,
     input: PresentationInput, songId: SongPublicId,
@@ -19,7 +19,7 @@ export function readSongDetailPage(database: DB3ReadDatabase, authorization: CMS
         const result = await queryView({ view: songDetailView, ...input,
             filter: { tableParams: { songId } }, take: 1, cmdbQueryContext: "song detail page",
         }, auth, context).catch(error => {
-            if (error instanceof DB3PublicIdError) {
+            if (error instanceof NotFoundError) {
                 return null;
             }
             throw error;

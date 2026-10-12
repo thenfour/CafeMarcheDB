@@ -1020,6 +1020,7 @@ which brings multiple band contexts to the single page. HOWEVER if you're in onl
 
 # TECH DEBT accumulating / things to make sure we do
 
+-  `error instanceof` tend to be very shaky and spaghetti
 -  cleanup lsmb todo
 -  roles need to render as chips
 -  on role/perm mgmt pages, highlight global vs. band scoped roles & permissions.

@@ -70,6 +70,47 @@ describe.skipIf(!settingsMysqlTestUrl)("restored membership directory search on 
     afterAll(() => database.$disconnect());
     const run = (work: (tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture) => Promise<void>) => withSettingsMysqlFixture(database, work);
 
+    it.each(["tag", "instrument", "role"] as const)("matches resolved %s names with scope, locale and blank precedence", kind => run(async (tx, fixture) => {
+        const c = await prepare(tx, fixture);
+        const name = await c.text("Inheritedneedle", "Sérénade");
+        await tx.dynamicLocalizedStringValue.create({ data: { publicId: generatePublicId(), stringId: name.id,
+            localeId: fixture.dutchId, indexedValue: "Repetitienaam" } });
+        if (kind === "tag") {
+            await tx.globalUserTag.update({ where: { id: c.tag1.globalUserTagId! }, data: { nameId: name.id } });
+        } else if (kind === "instrument") {
+            await tx.bandInstrument.update({ where: { id: c.instrument1.id }, data: { nameId: name.id } });
+        } else {
+            await tx.bandRole.update({ where: { id: c.role.id }, data: { nameId: name.id } });
+        }
+        const expected = kind === "role" ? ["Alpha", "Shared settings person"] : ["Alpha", "Charlie"];
+        expect(await c.names({ quickFilter: "serenade", routeLocale: "fr-BE" })).toEqual(expected);
+        expect(await c.names({ quickFilter: "Inheritedneedle", routeLocale: "fr-BE" })).toEqual([]);
+        const french = { browserLanguages: ["de-DE", "fr-FR", "nl-NL"] };
+        const dutch = { browserLanguages: ["de-DE", "nl-NL", "fr-FR"] };
+        expect(await c.names({ quickFilter: "serenade", ...french })).toEqual(expected);
+        expect(await c.names({ quickFilter: "serenade", ...dutch })).toEqual([]);
+        expect(await c.names({ quickFilter: "Repetitienaam", ...dutch })).toEqual(expected);
+        expect(await c.names({ quickFilter: "Alpha serenade", ...french })).toEqual(["Alpha"]);
+        const override = await tx.bandDynamicLocalizedStringValue.create({ data: { publicId: generatePublicId(),
+            bandId: c.band.id, stringId: name.id, localeId: fixture.englishId, indexedValue: "Bandfirstneedle" } });
+        expect(await c.names({ quickFilter: "Bandfirstneedle", ...french })).toEqual(expected);
+        expect(await c.names({ quickFilter: "serenade", ...french })).toEqual([]);
+        await tx.bandDynamicLocalizedStringValue.update({ where: { id: override.id }, data: { indexedValue: "" } });
+        expect(await c.names({ quickFilter: "Bandfirstneedle", ...french })).toEqual([]);
+        expect(await c.names({ quickFilter: "Inheritedneedle", ...french })).toEqual([]);
+        await tx.bandDynamicLocalizedStringValue.delete({ where: { id: override.id } });
+        if (kind === "tag") {
+            await tx.bandUserTag.update({ where: { id: c.tag1.id }, data: { isHidden: true } });
+        } else if (kind === "instrument") {
+            await tx.bandInstrumentFunctionalGroup.update({ where: { id: c.group.id }, data: { isHidden: true } });
+        } else {
+            const grant = await tx.permission.findUniqueOrThrow({ where: { name: Permission.manage_users } });
+            await tx.bandRolePermission.deleteMany({ where: { bandRoleId: c.role.id, permissionId: grant.id } });
+        }
+        expect(await c.names({ quickFilter: "serenade", ...french })).toEqual([]);
+        expect(await c.names({ quickFilter: "Alpha", ...french })).toEqual(["Alpha"]);
+    }));
+
     it.each(["bandUserTagAssignments", "bandUserInstruments"])("preserves all seven operators and visible-empty semantics for %s", column => run(async (tx, fixture) => {
         const c = await prepare(tx, fixture);
         const targets = column === "bandUserTagAssignments" ? [c.tag1, c.tag2] : [c.instrument1, c.instrument2];

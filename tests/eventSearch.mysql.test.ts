@@ -68,6 +68,43 @@ describe.skipIf(!settingsMysqlTestUrl)("existing event search on migrated MariaD
     beforeAll(() => initializeAccessControl(database), 30_000);
     afterAll(() => database.$disconnect());
 
+    it.each(["type", "status", "tag"] as const)("matches effective Event %s names before counting and paging", kind => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const c = await seedSearch(tx, fixture);
+        const name = await c.text("Globalneedle", "Sérénade");
+        if (kind === "type") {
+            await tx.eventType.update({ where: { id: c.type.id }, data: { nameId: name.id } });
+        } else if (kind === "status") {
+            await tx.eventStatus.update({ where: { id: c.status.id }, data: { nameId: name.id } });
+        } else {
+            await tx.globalEventTag.update({ where: { id: c.globalTag.id }, data: { nameId: name.id } });
+        }
+        const expected = kind === "tag" ? ["Alpha", "Charlie"] : ["Alpha", "Bravo", "Charlie"];
+        const input = { quickFilter: "serenade", browserLanguages: ["de-DE", "fr-FR"] };
+        const first = await c.read({ ...input, take: 1 });
+        const second = await c.read({ ...input, offset: 1, take: 1 });
+        expect(first.rowCount).toBe(expected.length);
+        expect(first.facets.find(facet => facet.db3Column === "tags")!.items.find(item => item.id === null)?.rowCount).toBe(0);
+        expect([first.results[0]!.name, second.results[0]!.name]).toEqual(expected.slice(0, 2));
+        expect((await c.read({ ...input, quickFilter: "Alpha serenade" })).results.map(row => row.name)).toEqual(["Alpha"]);
+        expect((await c.read({ ...input, quickFilter: "Globalneedle" })).rowCount).toBe(0);
+        const override = await tx.bandDynamicLocalizedStringValue.create({ data: { publicId: generatePublicId(),
+            bandId: fixture.bands[0]!.id, stringId: name.id, localeId: fixture.englishId, indexedValue: "Bandfirstneedle" } });
+        expect((await c.read({ ...input, quickFilter: "Bandfirstneedle" })).rowCount).toBe(expected.length);
+        expect((await c.read(input)).rowCount).toBe(0);
+        await tx.bandDynamicLocalizedStringValue.update({ where: { id: override.id }, data: { indexedValue: "" } });
+        expect((await c.read({ ...input, quickFilter: "Bandfirstneedle" })).rowCount).toBe(0);
+        await tx.bandDynamicLocalizedStringValue.delete({ where: { id: override.id } });
+        if (kind === "type") {
+            await tx.eventType.update({ where: { id: c.type.id }, data: { isDeleted: true } });
+        } else if (kind === "status") {
+            await tx.eventStatus.update({ where: { id: c.status.id }, data: { isDeleted: true } });
+        } else {
+            await tx.bandEventTag.update({ where: { id: c.firstTag.id }, data: { isHidden: true } });
+        }
+        expect((await c.read(input)).rowCount).toBe(0);
+        expect((await c.read({ quickFilter: "Alpha" })).rowCount).toBe(1);
+    }));
+
     it("keeps rows, counts, catalog facets and date years in the authorized band", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
         const seed = await seedSearch(tx, fixture);
         const result = await seed.read();

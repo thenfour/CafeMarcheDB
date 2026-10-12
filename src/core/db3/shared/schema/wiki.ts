@@ -346,31 +346,3 @@ declare module "../db3core" {
         WikiPageCurrentRevision: typeof xWikiPageCurrentRevision;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-// MIGRATION_RESTORE: wiki-search
-// Source: f9adfcffdcc67ed2abfc96bc151c7ab70139db53:src/core/db3/shared/schema/wiki.ts:133-141
-// Reason: Wiki tag quick filtering still targets the removed raw text member.
-// Restore: Restore wiki quick filtering by resolved band tag names with per-string localization, intentional blanks, hidden assignments, visibility, consistent counts and pagination.
-// Verification: Test two-band isolation, locale changes, hidden assigned tags, permission revocation, matching/counts/pagination and the built wiki search.
-// SHA256: 7245d61a00f57e501c065e5cdb9c782ac6fc52cceea3d869f6a6e553effdd095
-// MIGRATION_REFERENCE_BEGIN
-//             getQuickFilterWhereClause: (query: string): Prisma.WikiPageWhereInput => ({
-//                 tags: {
-//                     some: {
-//                         tag: {
-//                             text: { contains: query }
-//                         }
-//                     }
-//                 }
-//             }),
-// MIGRATION_REFERENCE_END

@@ -138,19 +138,3 @@ describe("legacy DB3 read compatibility inventory", () => {
         expect(collectCompatibilityUsage().retiredDefinitionSites).toEqual([]);
     });
 });
-
-
-
-
-// MIGRATION_RESTORE: wiki-search
-// Source: 976ab6f7a3781848ffc23a2a1cac87e96ff286b9:tests/db3LegacyReadCompatibilityInventory.test.ts:32-35
-// Reason: The menu wiki suggestion query is preserved while wiki ownership and search are restored.
-// Restore: Restore menu wiki suggestions through the selected-band wiki search owner without legacy dynamic query hooks.
-// Verification: Keep the active compatibility inventory accurate and test menu suggestions across bands and visibility boundaries.
-// SHA256: 001ddfa0bc3a17b36304d67b9f93afaaadd0d35ba1208d524011048b76a1724b
-// MIGRATION_REFERENCE_BEGIN
-//     "src/core/components/dashboard/MenuLinkComponents.tsx": [
-//         { api: "defineLegacyDynamicTableClientSpec", category: "runtime-dynamic-query", count: 1 },
-//         { api: "useLegacyTableRenderContext", category: "runtime-dynamic-query", count: 1 },
-//     ],
-// MIGRATION_REFERENCE_END

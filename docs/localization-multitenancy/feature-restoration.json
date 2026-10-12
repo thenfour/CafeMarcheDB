@@ -6,16 +6,18 @@
     {
       "id": "directory-search",
       "reason": "The membership directory replaces the old user search with a smaller feature set.",
-      "restore": "Retain the restored f027830a9790 directory UX, multi-value filters/facets, presets, URL state, authorized contact/sign-in search, paging and CSV export through BandUser contracts. Only localized catalog-name free-text matching remains pending under the A1 exception; verify full matching before closing this obligation.",
+      "restore": "Retain the reference directory controls, filters/facets/presets/URL state, field-authorized contact/sign-in search, paging and exports; match resolved role/tag/instrument names through BandUser ownership.",
       "verification": "Compare the reference directory interactions and defaults; test filter combinations, permission restrictions, pagination, URL round trips and exported rows in the built CafeMarche app, plus two-band isolation.",
-      "status": "pending",
+      "status": "restored",
       "evidence": [
         "2026-10-10: The original domain-search owner and SearchPageContent/UserListItem composition now read BandUser_Search. All/New presets, tag/instrument/permitted-role filters and every operator, facets/counts, URL state, public contextual links, sorting, load-more and TSV export are active. Join date and New use membership creation; shared person identity/contact fields remain separate from membership assignments.",
         "Shared field policy controls contact and sysadmin sign-in email matching. Fresh search/basic/management/contact/recovery grants are rechecked before queries. Recovery includes inactive memberships only with recover_users and never deleted/merged shared people. Localized/inherited catalogs and intentional blanks use the shared reader; hidden/foreign catalogs and hidden instrument groups are excluded.",
         "Validation passes normal typecheck/build, isolated demo build, targeted lint, 192 focused checks in ten files, 78 date probes, 223 native checks in 18 files including 14 directory cases, and six production-browser groups. Directory checks cover counts/load-more/TSV, All/New, French facets and URL reload, inactive recovery, contact revocation, profile links, band switching and management restrictions. No page/unexpected RPC errors; disposable changes cleaned up. Full-suite and A1/B limitations are recorded in the canonical plan.",
         "Still pending: localized catalog-name free-text matching under the documented A1 exception. Retained source archives/deferred specifications remain until the full obligation is closed. Verification is recorded in 04-implementation-plan.md#verification-status.",
         "2026-10-11 full-suite readiness: Member DOM cases now exercise the restored domain-search composition, contextual links, load-more offsets, search resets, server-authorized facets, hidden instrument-group card redaction and band/permission changes. Localized catalog-name matching remains pending under the A1 exception; the obligation remains open.",
-        "2026-10-12 A1 acceptance: Normal typecheck, targeted lint, normal production build, complete repository runner (297 selected files), 68 selected native files (870 passed, 51 unchanged fixture-gated skips) and 22 built Chromium groups pass. Core workflows retain the reference owners and UX; only localized catalog-name text matching keeps this obligation pending for B, with its source archives intact. Current verification and production limitations are recorded in 04-implementation-plan.md#verification-status. The final built directory retains authored search/URL reload, paging, TSV and contextual public links; a real band chooser and member link resolve independent French/Dutch assignments and scoped activity. Native member-search cases enforce contact/sign-in field policy and reject unreadable sorts/facets before SQL. The redundant reference-only authorization specification is removed because all four cases already execute in that suite."
+        "2026-10-12 A1 acceptance: Normal typecheck, targeted lint, normal production build, complete repository runner (297 selected files), 68 selected native files (870 passed, 51 unchanged fixture-gated skips) and 22 built Chromium groups pass. Core workflows retain the reference owners and UX; only localized catalog-name text matching keeps this obligation pending for B, with its source archives intact. Current verification and production limitations are recorded in 04-implementation-plan.md#verification-status. The final built directory retains authored search/URL reload, paging, TSV and contextual public links; a real band chooser and member link resolve independent French/Dutch assignments and scoped activity. Native member-search cases enforce contact/sign-in field policy and reject unreadable sorts/facets before SQL. The redundant reference-only authorization specification is removed because all four cases already execute in that suite.",
+        "2026-10-12: Full localized catalog-name matching is restored through shared authorized catalog views and the existing SQL/quick-search owners. Band-first values, inheritance, intentional blanks, ordered preferences, hidden/deleted references and field permissions determine eligible identities before filtering/counts/facets/paging. No raw translation joins or domain fallback rules are introduced. Song/Event #tag grammar requires every requested tag before the 100-candidate limit and preserves reference weights and 15-result ranking.",
+        "The focused native regression passes 165 cases in seven files, including thirteen new matching/grammar cases. All 68 current native files pass 883 cases with 51 unchanged fixture-gated skips. Twenty built Chromium groups verify all nine catalog families in French/Dutch and two bands, original search controls/URL reload/TSV exports, same-formatting-locale preference orders, overrides/blanks/hidden and retired catalogs, band switching, pagination, grant revocation/retry and anonymous denials. Page/RPC/console error lists are empty; the owned server/database/assets are removed. See 04-implementation-plan.md#verification-status and temp/b-catalog-search-browser-result.json."
       ]
     },
     {
@@ -197,14 +199,16 @@
     {
       "id": "file-search",
       "reason": "Raw File tag and instrument name matching cannot query the new localized catalogs safely.",
-      "restore": "Restore the f027830a9790 File search workflow through its existing pipeline with band-owned references, localized display labels and preserved visibility/pagination. A1 may defer only free-text matching against localized catalog names; retain filters/facets and account separately for localized-name ordering. Full localized-name matching remains pending after A1.",
+      "restore": "Retain the reference File search pipeline, operators/facets/counts/sorting/paging, URL state and exports; match resolved File tag/instrument names while preserving File privacy and band ownership.",
       "verification": "Compare reference controls/results, filters, counts, ordering and paging; test blanks, hidden assignments and cross-band visibility in the built File search. Record the exact A1 text-search exception and verify localized-name matching before closing the full obligation.",
-      "status": "pending",
+      "status": "restored",
       "evidence": [
         "2026-10-09: File_Search now uses the existing selected-band domain-search pipeline and reference page. Authored filename/description text, all tag/instrument operators, localized facets/counts, file-name/upload-date/size/MIME sorts, stable paging, URL state, refresh and CSV/TSV export are retained. Labels and catalog order come from shared authorized localized views; no removed raw-name columns or domain-specific label fallback is queried.",
         "25 native File search/detail cases and nine built-browser groups pass alongside the retained File/Event/Song/setlist suites. Checks include hidden assignments, blank/inherited labels, ordered presentation preferences, revoked grants, contextual links, two-band isolation, metadata saves and reference page permissions. See the File checkpoint in 04-implementation-plan.md#verification-status.",
         "Only free-text matching against localized FileTag and instrument names remains deferred under the A1 exception. File sorts use authored filename, upload timestamp, size or MIME, so no localized-name result sort is deferred; facets retain resolved catalog ordering. The raw-name predicate archives remain intact and this full search obligation stays pending until localized-name matching is verified.",
-        "2026-10-12 A1 acceptance: Normal typecheck, targeted lint, normal production build, complete repository runner (297 selected files), 68 selected native files (870 passed, 51 unchanged fixture-gated skips) and 22 built Chromium groups pass. Core workflows retain the reference owners and UX; only localized catalog-name text matching keeps this obligation pending for B, with its source archives intact. Current verification and production limitations are recorded in 04-implementation-plan.md#verification-status. The final built File search retains original controls, contextual links, paging, TSV, authored text/URL reload and the noncached HTTP owner. Real metadata save, protected audio bytes and independent public/private visibility pass; anonymous/foreign public grants remain usable without returning private fixtures. Only resolved FileTag/instrument-name text predicates remain pending."
+        "2026-10-12 A1 acceptance: Normal typecheck, targeted lint, normal production build, complete repository runner (297 selected files), 68 selected native files (870 passed, 51 unchanged fixture-gated skips) and 22 built Chromium groups pass. Core workflows retain the reference owners and UX; only localized catalog-name text matching keeps this obligation pending for B, with its source archives intact. Current verification and production limitations are recorded in 04-implementation-plan.md#verification-status. The final built File search retains original controls, contextual links, paging, TSV, authored text/URL reload and the noncached HTTP owner. Real metadata save, protected audio bytes and independent public/private visibility pass; anonymous/foreign public grants remain usable without returning private fixtures. Only resolved FileTag/instrument-name text predicates remain pending.",
+        "2026-10-12: Full localized catalog-name matching is restored through shared authorized catalog views and the existing SQL/quick-search owners. Band-first values, inheritance, intentional blanks, ordered preferences, hidden/deleted references and field permissions determine eligible identities before filtering/counts/facets/paging. No raw translation joins or domain fallback rules are introduced. Song/Event #tag grammar requires every requested tag before the 100-candidate limit and preserves reference weights and 15-result ranking.",
+        "The focused native regression passes 165 cases in seven files, including thirteen new matching/grammar cases. All 68 current native files pass 883 cases with 51 unchanged fixture-gated skips. Twenty built Chromium groups verify all nine catalog families in French/Dutch and two bands, original search controls/URL reload/TSV exports, same-formatting-locale preference orders, overrides/blanks/hidden and retired catalogs, band switching, pagination, grant revocation/retry and anonymous denials. Page/RPC/console error lists are empty; the owned server/database/assets are removed. See 04-implementation-plan.md#verification-status and temp/b-catalog-search-browser-result.json."
       ]
     },
     {
@@ -288,9 +292,9 @@
     {
       "id": "quick-search",
       "reason": "Quick search uses unscoped global account/content readers, removed Instrument/tag relations and untranslated catalogs; association and Markdown suggestion callers do not supply a band.",
-      "restore": "Restore authorized band-scoped HTTP search, domain plugins and query grammar/relevance, public identities and context-preserving links, association/song pickers, Markdown wiki/mention suggestions and the protected explorer; retain existing values, manual text/link editing and separate domain search. The A1 caller audit is complete; only localized catalog-name text matching remains pending for B. Keep already working resolved small-catalog search active.",
+      "restore": "Retain all five authorized domain plugins, grammar/ranking/limits, public contextual links, shell/association/Song/Markdown suggestions and protected explorer; restore localized Song/Event #tag constraints and ranking with shared catalog resolution.",
       "verification": "Test public/member/administrator privacy, two bands and locales, hidden/deleted/merged accounts and resources, localized/inherited catalogs, all-tag and type filters, ranking/limits, stale query/band responses, selection/clearing/keyboard behavior, song detail loading and Markdown suggestions in the built browser.",
-      "status": "pending",
+      "status": "restored",
       "evidence": [
         "2026-10-09: Reopened only the existing Song quick-search plugin and original Song autocomplete for setlist editing. HTTP/direct requests require explicit band/public identities, fresh view_songs authorization and ordered presentation preferences; results retain authored-text/type grammar, relevance weights, the 100-candidate/15-result limits and contextual links. Other plugins and mixed/global requests remain guarded before content reads.",
         "Native Song tests cover ranking/limits/type grammar, two-band privacy and fresh revoked/inactive/deleted/merged/platform authorization. jsdom tests cover aborting/discarding stale query/band suggestions, ordered language preferences, selection/clearing and Escape. Built-browser setlist picking loads the authorized full Song and persists it. Localized tag-name predicates are the exact A1 text-search exception; tag-only queries return no suggestions until that matching is restored.",
@@ -302,29 +306,33 @@
         "Dialog invocation uses the live selection, including existing-reference expansion from the Wiki toolbar. Reselecting a mention retains its custom caption; query/context changes invalidate a picked mention before OK without discarding caption/editor drafts, and cancel/reopen cannot retain an older pick. Callback-based requests abort and guard delivered choices against changed text/caret/band/ordered languages/authority/presentation. Abandoned callbacks cannot erase newer token popups; stable library choice keys permit stale outputs to reject safely. Presentation refresh dismisses suggestions without remounting the textarea. Necessary labels use the registry and dialog actions use existing wrappers.",
         "Normal typecheck, targeted lint, normal isolated-output production build, 175 focused checks across sixteen files and 103 native MariaDB checks across five files pass. Eight built-browser groups verify original French/Dutch Song and locked Wiki editors, actual description/revision persistence, captions/manual links/undo/clear/keyboard/mouse, contextual preview links, inactive-person exclusion, older-token and pending-band responses, actual search-grant revocation/draft preservation/recovery and uncached anonymous rejection. French/Dutch layouts were inspected, no uncaught page/unexpected RPC/search errors occurred, and disposable content/localized strings/grants/actions/audits were cleaned up with the owned server stopped. Complete-suite failure titles are unchanged from the preceding association baseline; details and evidence are in 04-implementation-plan.md#verification-status.",
         "Still pending: full localized tag-name matching after A1. All quick-search source archives/references remain preserved; restoring its five plugins and all shell/picker/association/explorer/Markdown consumers does not close that final obligation. Markdown attachments, localized Markdown editing/help and account administration retain separate obligations.",
-        "2026-10-12 A1 acceptance: Normal typecheck, targeted lint, normal production build, complete repository runner (297 selected files), 68 selected native files (870 passed, 51 unchanged fixture-gated skips) and 22 built Chromium groups pass. Core workflows retain the reference owners and UX; only localized catalog-name text matching keeps this obligation pending for B, with its source archives intact. Current verification and production limitations are recorded in 04-implementation-plan.md#verification-status. All five plugins, shell/explorer, planner/association callers and Markdown references are active. The final first-setlist dialog verifies actual scoped Song keyboard selection, clearing/Escape, persistence and rendered refresh. Markdown suggestion initialization now keeps its synthetic Escape on the textarea so it cannot close a parent dialog; all four reproduced dialog cases and the retained editing/suggestion regressions pass. Only remaining localized catalog-name predicates are pending; resolved Instrument search stays active."
+        "2026-10-12 A1 acceptance: Normal typecheck, targeted lint, normal production build, complete repository runner (297 selected files), 68 selected native files (870 passed, 51 unchanged fixture-gated skips) and 22 built Chromium groups pass. Core workflows retain the reference owners and UX; only localized catalog-name text matching keeps this obligation pending for B, with its source archives intact. Current verification and production limitations are recorded in 04-implementation-plan.md#verification-status. All five plugins, shell/explorer, planner/association callers and Markdown references are active. The final first-setlist dialog verifies actual scoped Song keyboard selection, clearing/Escape, persistence and rendered refresh. Markdown suggestion initialization now keeps its synthetic Escape on the textarea so it cannot close a parent dialog; all four reproduced dialog cases and the retained editing/suggestion regressions pass. Only remaining localized catalog-name predicates are pending; resolved Instrument search stays active.",
+        "2026-10-12: Full localized catalog-name matching is restored through shared authorized catalog views and the existing SQL/quick-search owners. Band-first values, inheritance, intentional blanks, ordered preferences, hidden/deleted references and field permissions determine eligible identities before filtering/counts/facets/paging. No raw translation joins or domain fallback rules are introduced. Song/Event #tag grammar requires every requested tag before the 100-candidate limit and preserves reference weights and 15-result ranking.",
+        "The focused native regression passes 165 cases in seven files, including thirteen new matching/grammar cases. All 68 current native files pass 883 cases with 51 unchanged fixture-gated skips. Twenty built Chromium groups verify all nine catalog families in French/Dutch and two bands, original search controls/URL reload/TSV exports, same-formatting-locale preference orders, overrides/blanks/hidden and retired catalogs, band switching, pagination, grant revocation/retry and anonymous denials. Page/RPC/console error lists are empty; the owned server/database/assets are removed. See 04-implementation-plan.md#verification-status and temp/b-catalog-search-browser-result.json."
       ]
     },
     {
       "id": "wiki-search",
       "reason": "Wiki tag quick filtering still targets the removed raw text member.",
-      "restore": "Restore the f027830a9790 wiki search and menu wiki-slug suggestions through the existing search owner with selected-band visibility, localized display labels and consistent counts/pagination. A1 may defer only free-text matching against localized catalog names, retaining authored wiki text/slug search and catalog filters. Full localized-name matching remains pending after A1.",
+      "restore": "Retain authored Wiki slug/current-content search, namespace/tag filters, counts/paging and navigation suggestions; match authorized resolved Wiki tag names through the existing search owner.",
       "verification": "Compare the reference wiki search and menu suggestions; test two-band isolation, locale changes, hidden assignments, permission revocation, counts/pagination and contextual links. Record the exact A1 text-search exception and verify localized-name matching before closing the full obligation.",
-      "status": "pending",
+      "status": "restored",
       "evidence": [
         "2026-10-10: WikiPage_Search reuses the existing authorized domain-search owner and reference Wiki page/result composition. Authored slug/current-content search, all tag operators, namespace exclusion including unset namespaces, facets/counts, sorting/stable paging, URL state, load-more and TSV export are active. Result/export links preserve band and locale; inherited/blank tag labels use the shared catalog reader and hidden assignments are excluded.",
         "The existing menu editor previews exact/best Wiki-slug matches through that named view, retaining manual authored slugs and saved contextual links. Explicit band/full ordered preferences, cancellation and response scope guards prevent stale confirmations. Failed or denied requests clear matches. This original DB3 consumer does not reopen other quick-search plugins or Markdown suggestions.",
         "The public Wiki-view grant and separate page search gate are retained. Current-content predicates require revision ownership by the visible parent. Natural tag ordering, blank facet captions and one-based TSV positions are corrected. Validation passes 55 focused checks in eight files, 268 native cases in seventeen files including 29 Wiki-search cases, typecheck, targeted lint, production builds and preservation verification. Seven production-browser groups verify French defaults/blanks/paging, export/sorts, content/filter/URL state, Wiki reader navigation, actual menu edits, independent Dutch context, fresh revocation and anonymous sign-in gating. No page/unexpected RPC errors; disposable changes cleaned up.",
         "Still pending: localized tag-name free-text matching under the exact documented A1 exception. All four wiki-search source references and remaining deferred specifications stay preserved. Other quick-search/dashboard/account obligations and full-suite failures remain separate; verification and next scope are recorded in 04-implementation-plan.md.",
-        "2026-10-12 A1 acceptance: Normal typecheck, targeted lint, normal production build, complete repository runner (297 selected files), 68 selected native files (870 passed, 51 unchanged fixture-gated skips) and 22 built Chromium groups pass. Core workflows retain the reference owners and UX; only localized catalog-name text matching keeps this obligation pending for B, with its source archives intact. Current verification and production limitations are recorded in 04-implementation-plan.md#verification-status. The final built Wiki search retains original controls, contextual links, paging, TSV, authored slug/content text and URL reload through the noncached owner; linked authored content opens in the existing reader. Anonymous/foreign search retains public Wiki grants and excludes private fixtures. Menu and Markdown callers remain restored. Only localized WikiTag-name text predicates remain pending."
+        "2026-10-12 A1 acceptance: Normal typecheck, targeted lint, normal production build, complete repository runner (297 selected files), 68 selected native files (870 passed, 51 unchanged fixture-gated skips) and 22 built Chromium groups pass. Core workflows retain the reference owners and UX; only localized catalog-name text matching keeps this obligation pending for B, with its source archives intact. Current verification and production limitations are recorded in 04-implementation-plan.md#verification-status. The final built Wiki search retains original controls, contextual links, paging, TSV, authored slug/content text and URL reload through the noncached owner; linked authored content opens in the existing reader. Anonymous/foreign search retains public Wiki grants and excludes private fixtures. Menu and Markdown callers remain restored. Only localized WikiTag-name text predicates remain pending.",
+        "2026-10-12: Full localized catalog-name matching is restored through shared authorized catalog views and the existing SQL/quick-search owners. Band-first values, inheritance, intentional blanks, ordered preferences, hidden/deleted references and field permissions determine eligible identities before filtering/counts/facets/paging. No raw translation joins or domain fallback rules are introduced. Song/Event #tag grammar requires every requested tag before the 100-candidate limit and preserves reference weights and 15-result ranking.",
+        "The focused native regression passes 165 cases in seven files, including thirteen new matching/grammar cases. All 68 current native files pass 883 cases with 51 unchanged fixture-gated skips. Twenty built Chromium groups verify all nine catalog families in French/Dutch and two bands, original search controls/URL reload/TSV exports, same-formatting-locale preference orders, overrides/blanks/hidden and retired catalogs, band switching, pagination, grant revocation/retry and anonymous denials. Page/RPC/console error lists are empty; the owned server/database/assets are removed. See 04-implementation-plan.md#verification-status and temp/b-catalog-search-browser-result.json."
       ]
     },
     {
       "id": "event-workflows",
       "reason": "Event screens still mount incomplete search, editing and invitation contracts.",
-      "restore": "Restore f027830a9790 event search/detail/creation/editing through the existing search pipeline, result components, detail tabs and dialogs. Preserve presets, filter operators, facets, URL state, sorting, load-more, CSV, segments, invitations and CafeMarche frontpage behavior on band snapshots/public references with localized catalog labels; retain migrated attendance/calendar services and restore date-picker highlights. Only localized-catalog-name text matching follows the documented A1 exception.",
+      "restore": "Retain the reference Event search, detail/editing, invitation/attendance, segment and frontpage workflows; match resolved Event type/status/tag names in the existing selected-band search owner.",
       "verification": "Compare the reference CafeMarche UI, defaults and interactions rather than a reduced replacement. Reactivate search/calendar specifications; verify presets, operators, counts/facets, URL state, ordering, load-more/export, detail/tab URLs, edits, invitations and highlights in the built app, plus two-band isolation and grant revocation. Keep each unverified dependency recorded as a gap.",
-      "status": "pending",
+      "status": "restored",
       "evidence": [
         "2026-10-08: Restored the existing Events/SearchPageContent/eventSearchConfig composition and Event_Search HTTP/direct owner. Reference presets, date/type/status/tag operators, facets/counts, URL state, sorting, cards, load-more, refresh callbacks and CSV/TSV export use fresh band snapshots/public references and shared localized catalog views. Event links retain band/route locale. Text-only Reset filter was repaired.",
         "123 focused checks and 30 native MariaDB checks pass; native eventSearch cases cover isolation, all tag operators, combined criteria, localized/blank/inherited facets, stable paging and revoked/member/platform/inactive/deleted/merged authorization. Normal typecheck/build, focused lint and seven built-browser assertion groups pass; see 04-implementation-plan.md#verification-status.",
@@ -336,15 +344,17 @@
         "2026-10-10: Restored the original attendance/default-instrument interaction matrix and date-picker highlights through the existing membership, attendance and Event_Search owners. Effective primary selection remains live until explicitly pinned and clearing restores the current band default. Blank instrument labels remain selectable; new hidden instrument/group choices use shared DB3 reference visibility. Failed/busy comment saves retain drafts, the Markdown shortcut retains the open editor, and response-table saves send changed fields only so retired historical references survive unrelated edits.",
         "The bounded 100-result picker search carries explicit calendar bounds and shared band/locale cancellation. Individual noncancelled segments and point events highlight dates; aggregate gaps/TBD/private/deleted/foreign Events remain excluded. All-day dates stay in the band, timed dates use the picker timezone, and DST/exclusive boundaries are retained. Shared negative-reference filtering now includes NULL references; empty cancellation catalogs use alwaysMatch. Calendar source/deferred-test archives and the obsolete recovery notice/test are replaced by active coverage.",
         "123 focused checks across 12 files, 217 native MariaDB cases across 13 files plus six native calendar-window cases, normal typecheck/build, isolated demo build, targeted lint and preservation verification pass. Eight built-browser groups cover French attendance/default/draft/date-picker/response-table behavior, fresh grant denial/retry, independent Dutch membership defaults and foreign/anonymous denial, without uncaught page/unexpected RPC errors. The full suite still reports 206 failed tests and ten suite-load failures (1801 passed, 567 skipped); A1/B remain open. See 04-implementation-plan.md#verification-status.",
-        "2026-10-12 A1 acceptance: Normal typecheck, targeted lint, normal production build, complete repository runner (297 selected files), 68 selected native files (870 passed, 51 unchanged fixture-gated skips) and 22 built Chromium groups pass. Core workflows retain the reference owners and UX; only localized catalog-name text matching keeps this obligation pending for B, with its source archives intact. Current verification and production limitations are recorded in 04-implementation-plan.md#verification-status. The caller audit confirms search/detail/creation/editing, imports, invitation/attendance controls, setlists, associated Files and public feed delivery are restored. The final built Event search retains controls/authored text/URL/export behavior; the first setlist opens, selects its Song by keyboard, saves and renders. Attendance HTTP preserves authorized public response identities. Active-member calendar subscription/rotation invalidates old tokens and redacts credentials in ICS, audits and activity; a membership-free platform account is correctly denied a personal band feed."
+        "2026-10-12 A1 acceptance: Normal typecheck, targeted lint, normal production build, complete repository runner (297 selected files), 68 selected native files (870 passed, 51 unchanged fixture-gated skips) and 22 built Chromium groups pass. Core workflows retain the reference owners and UX; only localized catalog-name text matching keeps this obligation pending for B, with its source archives intact. Current verification and production limitations are recorded in 04-implementation-plan.md#verification-status. The caller audit confirms search/detail/creation/editing, imports, invitation/attendance controls, setlists, associated Files and public feed delivery are restored. The final built Event search retains controls/authored text/URL/export behavior; the first setlist opens, selects its Song by keyboard, saves and renders. Attendance HTTP preserves authorized public response identities. Active-member calendar subscription/rotation invalidates old tokens and redacts credentials in ICS, audits and activity; a membership-free platform account is correctly denied a personal band feed.",
+        "2026-10-12: Full localized catalog-name matching is restored through shared authorized catalog views and the existing SQL/quick-search owners. Band-first values, inheritance, intentional blanks, ordered preferences, hidden/deleted references and field permissions determine eligible identities before filtering/counts/facets/paging. No raw translation joins or domain fallback rules are introduced. Song/Event #tag grammar requires every requested tag before the 100-candidate limit and preserves reference weights and 15-result ranking.",
+        "The focused native regression passes 165 cases in seven files, including thirteen new matching/grammar cases. All 68 current native files pass 883 cases with 51 unchanged fixture-gated skips. Twenty built Chromium groups verify all nine catalog families in French/Dutch and two bands, original search controls/URL reload/TSV exports, same-formatting-locale preference orders, overrides/blanks/hidden and retired catalogs, band switching, pagination, grant revocation/retry and anonymous denials. Page/RPC/console error lists are empty; the owned server/database/assets are removed. See 04-implementation-plan.md#verification-status and temp/b-catalog-search-browser-result.json."
       ]
     },
     {
       "id": "song-workflows",
       "reason": "Song and credit screens still depend on undeclared ownership and obsolete dedicated endpoints.",
-      "restore": "Restore song search/detail/editing, credits and pinned recording with fresh selected-band authorization, visible files and public localized references; retain the recovered narrow song lookup and setlist persistence. The A1 caller audit is complete; only localized SongTag-name text matching remains pending for B.",
+      "restore": "Retain the reference Song search, detail/editing, credits/history, setlists and independently authorized recording/File workflows; match resolved Song tag names in domain search and #tag quick search.",
       "verification": "Verify two bands, visibility, deleted records, revoked grants, credits, pinned recording and complete built-browser song workflows.",
-      "status": "pending",
+      "status": "restored",
       "evidence": [
         "2026-10-09: Restored the original Song search/detail/create/basic-edit/visibility/tag/Markdown workflows through shared Song/association ownership and field authorization. Song_Search retains its existing SQL/filter/facet/preset/URL/sort/paging/export composition, localized tag references, public targets, contextual links and fresh band snapshots. Dedicated description and pin/unpin writes use the generated editor contract and existing audited row service.",
         "238 focused checks across 17 executable files, 197 native MariaDB checks across ten files, normal typecheck/build, isolated demo build, focused lint and eight built-browser assertion groups pass. Song/File visibility is independent: unavailable pinned files project null without hiding the Song or leaking numeric foreign IDs. Browser checks persist creation/basic/Markdown edits and actual WAV playback/pin/unpin; native tests cover all tag operators, hidden/foreign/deleted references and fresh revoked/inactive/deleted/merged/platform boundaries. See 04-implementation-plan.md#verification-status.",
@@ -353,7 +363,9 @@
         "2026-10-09: Restored original Song credit create/edit/confirmed deletion controls and the delegated credit grid through generated commands, Song ownership, field authorization and audits. Person choices contain public identity/name only for active, unmerged people in the selected band; the same declaration constrains references on reads and writes. Credit authorship grants no Song ownership. Localized credit types reuse the shared catalog and settings; nullable people, year/comment blanks, Markdown and failed-save draft retry remain supported. The generic SongCredit recovery gate is removed, while the profile credit reader and source archives remain preserved.",
         "Normal typecheck/build, isolated demo build, targeted lint, 85 focused checks in six files and 333 native checks in 19 files pass. Seven built-browser groups verify French/Dutch authoring, edit/delete persistence, actual localized pickers, delegated grid sorting, revoked edit-grant draft retry, performance-history controls and private/foreign Song denial. No page or unexpected RPC errors occurred. Updated obsolete deferred assertions retain the remaining unavailable contracts. See 04-implementation-plan.md#verification-status for full-suite limits.",
         "2026-10-10: Profile credit reads now use the migrated SongCredit_MemberProfile view and current selected-band snapshot. Shared unavailable-identity policy fixes the reproduced deleted/merged-person credit-write failure across minimal references, SQL/Prisma predicates and row projection. Twenty native credit workflow checks pass, including profile private/deleted/foreign Songs, inactive/deleted/merged target people and fresh authority revocation. Two obsolete assertions requiring person-credit reads to remain disabled were removed; the behavioral archives remain preserved.",
-        "2026-10-12 A1 acceptance: Normal typecheck, targeted lint, normal production build, complete repository runner (297 selected files), 68 selected native files (870 passed, 51 unchanged fixture-gated skips) and 22 built Chromium groups pass. Core workflows retain the reference owners and UX; only localized catalog-name text matching keeps this obligation pending for B, with its source archives intact. Current verification and production limitations are recorded in 04-implementation-plan.md#verification-status. The caller audit confirms credits, performance history/profile credit reads and associated File editing/uploads are restored. The final built Song search retains controls/authored text/URL/export behavior; original basic/Markdown dialogs save, the actual two-second WAV plays/downloads, pin/unpin persists and first-setlist selection renders the saved Song. Independent File visibility and scoped Song/Event activity remain intact. Only localized SongTag-name text matching remains pending."
+        "2026-10-12 A1 acceptance: Normal typecheck, targeted lint, normal production build, complete repository runner (297 selected files), 68 selected native files (870 passed, 51 unchanged fixture-gated skips) and 22 built Chromium groups pass. Core workflows retain the reference owners and UX; only localized catalog-name text matching keeps this obligation pending for B, with its source archives intact. Current verification and production limitations are recorded in 04-implementation-plan.md#verification-status. The caller audit confirms credits, performance history/profile credit reads and associated File editing/uploads are restored. The final built Song search retains controls/authored text/URL/export behavior; original basic/Markdown dialogs save, the actual two-second WAV plays/downloads, pin/unpin persists and first-setlist selection renders the saved Song. Independent File visibility and scoped Song/Event activity remain intact. Only localized SongTag-name text matching remains pending.",
+        "2026-10-12: Full localized catalog-name matching is restored through shared authorized catalog views and the existing SQL/quick-search owners. Band-first values, inheritance, intentional blanks, ordered preferences, hidden/deleted references and field permissions determine eligible identities before filtering/counts/facets/paging. No raw translation joins or domain fallback rules are introduced. Song/Event #tag grammar requires every requested tag before the 100-candidate limit and preserves reference weights and 15-result ranking.",
+        "The focused native regression passes 165 cases in seven files, including thirteen new matching/grammar cases. All 68 current native files pass 883 cases with 51 unchanged fixture-gated skips. Twenty built Chromium groups verify all nine catalog families in French/Dutch and two bands, original search controls/URL reload/TSV exports, same-formatting-locale preference orders, overrides/blanks/hidden and retired catalogs, band switching, pagination, grant revocation/retry and anonymous denials. Page/RPC/console error lists are empty; the owned server/database/assets are removed. See 04-implementation-plan.md#verification-status and temp/b-catalog-search-browser-result.json."
       ]
     },
     {
@@ -389,9 +401,9 @@
     {
       "id": "domain-search",
       "reason": "The raw domain search owner does not establish a selected-band authorization snapshot for its SQL.",
-      "restore": "Adapt the f027830a9790 domain search HTTP/direct owner and existing query pipeline to explicit band snapshots, authorized band-catalog joins, public identities and contextual links. Retain nonlocalized text search, filter operators, facets/counts, sorting/paging and existing consumers. A1 may omit only localized-catalog-name text predicates; full localized-name matching remains pending after A1. Do not introduce a parallel simplified search.",
+      "restore": "Retain the reference HTTP/direct SQL search owners, authorized public references, filters/facets/counts/sorting/paging, exports and contextual links; feed resolved catalog-name identities into the existing predicates.",
       "verification": "Reactivate reference search authorization/recovery specifications and compare existing consumers in the built CafeMarche app. Verify anonymous/member/admin visibility, two bands/locales, hidden assignments, all operators, revocation and consistent rows/counts/facets/order/paging. Record the A1 text-search exception and verify localized-name matching before closing the full obligation.",
-      "status": "pending",
+      "status": "restored",
       "evidence": [
         "2026-10-08: Event_Search reuses the existing SQL/filter/facet/query owner inside executeDB3Read, including fresh grants, explicit band, authorized public filter references, stable public-ID sort ties, same-snapshot counts/rows/facets and localized catalog-view labels/order. Client requests retain ordered presentation preferences and discard old-band/language results. Event/Song/File now use this owner; member/wiki domains remain guarded.",
         "tests/eventSearch.mysql.test.ts, tests/eventSearchEndpoint.test.ts and reactivated search recovery/client contracts pass alongside existing view/calendar/sort contracts. Built-browser presets, filtering, URL reload, paging, export and two-band/localized presentation pass. Authored text predicates remain active; localized catalog-name text predicates are deliberately deferred until after A1 and must be restored before closing this obligation.",
@@ -399,7 +411,9 @@
         "2026-10-09: File_Search uses the same authorized owner, retained reference tag/instrument filters/facets, authored text, four sorts, stable paging, URL state and exports. Native snapshot/privacy/revocation tests and nine built-browser groups pass. Localized FileTag/instrument-name text matching follows the A1 exception; member/wiki search and remaining indirect consumers keep domain-search pending.",
         "2026-10-10: Member search and now WikiPage_Search use this same selected-band snapshot owner. Wiki retains authored slug/current content, identity tag and namespace criteria, localized facets/order, counts/paging and original page/menu consumers. Native and built-browser checks cover band isolation and fresh visibility. Only localized catalog-name text predicates follow the A1 exception; full matching and remaining indirect consumers keep this obligation pending.",
         "2026-10-12 A1 caller audit: All five domain searches, their HTTP owner and indirect calendar/menu/directory callers use the existing authorized selected-band snapshot pipeline. The four archived userSearchAuthorization cases are already executable in tests/memberSearch.mysql.test.ts: basic viewers cannot probe contact/sign-in fields; contact grants reveal only authorized contact matches; only Sysadmin can search email sign-ins and sign-in rows are never transported; unreadable operational sorts/facets reject before directory SQL. Always-match role criteria expose no role facets without management authority. The redundant reference-only deferred file and its reference entry are removed. Full localized catalog-name matching remains pending under the A1 exception.",
-        "2026-10-12 A1 acceptance: Normal typecheck, targeted lint, normal production build, complete repository runner (297 selected files), 68 selected native files (870 passed, 51 unchanged fixture-gated skips) and 22 built Chromium groups pass. Core workflows retain the reference owners and UX; only localized catalog-name text matching keeps this obligation pending for B, with its source archives intact. Current verification and production limitations are recorded in 04-implementation-plan.md#verification-status. All five final built domain-search pages retain original controls, public band/locale links, authored text and URL reload, paging where available, TSV and their noncached HTTP owners. Public File/Wiki grants are preserved while private fixtures and member-only requests retain denial. Indirect consumers and fresh field/row/catalog authorization execute on existing snapshots; full localized-name text matching is the sole remaining search obligation."
+        "2026-10-12 A1 acceptance: Normal typecheck, targeted lint, normal production build, complete repository runner (297 selected files), 68 selected native files (870 passed, 51 unchanged fixture-gated skips) and 22 built Chromium groups pass. Core workflows retain the reference owners and UX; only localized catalog-name text matching keeps this obligation pending for B, with its source archives intact. Current verification and production limitations are recorded in 04-implementation-plan.md#verification-status. All five final built domain-search pages retain original controls, public band/locale links, authored text and URL reload, paging where available, TSV and their noncached HTTP owners. Public File/Wiki grants are preserved while private fixtures and member-only requests retain denial. Indirect consumers and fresh field/row/catalog authorization execute on existing snapshots; full localized-name text matching is the sole remaining search obligation.",
+        "2026-10-12: Full localized catalog-name matching is restored through shared authorized catalog views and the existing SQL/quick-search owners. Band-first values, inheritance, intentional blanks, ordered preferences, hidden/deleted references and field permissions determine eligible identities before filtering/counts/facets/paging. No raw translation joins or domain fallback rules are introduced. Song/Event #tag grammar requires every requested tag before the 100-candidate limit and preserves reference weights and 15-result ranking.",
+        "The focused native regression passes 165 cases in seven files, including thirteen new matching/grammar cases. All 68 current native files pass 883 cases with 51 unchanged fixture-gated skips. Twenty built Chromium groups verify all nine catalog families in French/Dutch and two bands, original search controls/URL reload/TSV exports, same-formatting-locale preference orders, overrides/blanks/hidden and retired catalogs, band switching, pagination, grant revocation/retry and anonymous denials. Page/RPC/console error lists are empty; the owned server/database/assets are removed. See 04-implementation-plan.md#verification-status and temp/b-catalog-search-browser-result.json."
       ]
     },
     {
@@ -415,240 +429,6 @@
   ],
   "references": [
     {
-      "file": "src/pages/backstage/users.tsx",
-      "featureId": "directory-search",
-      "source": "1768352278c2ac37768c8bd2c2cc0ad5ffd4324a:src/pages/backstage/users.tsx:1-278",
-      "sha256": "ceefce4b4dc79a3b769c6c5e1d8a2677e5a258bd17256da3d5f5172ba4bd5e29"
-    },
-    {
-      "file": "src/core/hooks/searchConfigs.ts",
-      "featureId": "directory-search",
-      "source": "1768352278c2ac37768c8bd2c2cc0ad5ffd4324a:src/core/hooks/searchConfigs.ts:1-126",
-      "sha256": "2e40068af3837799c635f3cbaf34aaf4a03cbdb2bd282f2bdc0e7072cb76a76a"
-    },
-    {
-      "file": "src/core/db3/queries/getUser.ts",
-      "featureId": "directory-search",
-      "source": "1768352278c2ac37768c8bd2c2cc0ad5ffd4324a:src/core/db3/queries/getUser.ts:1-35",
-      "sha256": "1575fc4a34af503db0daac3ae2f2202cc7283765c55e489194fce9f9cae806f1"
-    },
-    {
-      "file": "src/core/components/user/userChip.tsx",
-      "featureId": "directory-search",
-      "source": "1768352278c2ac37768c8bd2c2cc0ad5ffd4324a:src/core/components/user/userChip.tsx:1-115",
-      "sha256": "214e6121bce6d350aa9ac360c3f6e47e480bf12c131b5bb90a3cef282f77138d"
-    },
-    {
-      "file": "src/core/components/user/UserListItem.tsx",
-      "featureId": "directory-search",
-      "source": "15d112e042f38d63f5a18b105120cf1165df7845:src/core/components/user/UserListItem.tsx:1-75",
-      "sha256": "bf39f72e5fd602995aa25981a4395e5964e6a84b1c7b4f8252e0b3fb9d0ef93c"
-    },
-    {
-      "file": "src/core/db3/shared/schema/enrichedUserTypes.ts",
-      "featureId": "directory-search",
-      "source": "15d112e042f38d63f5a18b105120cf1165df7845:src/core/db3/shared/schema/enrichedUserTypes.ts:1-60",
-      "sha256": "54d66c9de406c1e473089ce529a970f5ef1669567f5efa2817b71736b74c4072"
-    },
-    {
-      "file": "src/core/db3/shared/schema/file.ts",
-      "featureId": "file-search",
-      "source": "16e1df9a3676926a787728cb1ef970f9d99cf70e:src/core/db3/shared/schema/file.ts:514-533",
-      "sha256": "53c67c38509c8af2b219262e0379ba637cdb443bcb04c00ecdeab26f0d2b2c0d"
-    },
-    {
-      "file": "src/core/db3/server/quickSearchServerCore.ts",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/db3/server/quickSearchServerCore.ts:1-449",
-      "sha256": "139be87e031133fb6b7cc86253f7782207c4299d58bda20b22fbdcb00593d5f7"
-    },
-    {
-      "file": "src/pages/api/wiki/quickSearch.ts",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/pages/api/wiki/quickSearch.ts:1-37",
-      "sha256": "fa93c8e9a8b17bfe8145e17b10fc55a15bebf39d451ee82d1ef801b7ece43b27"
-    },
-    {
-      "file": "src/pages/backstage/test/quickSearchTest.tsx",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/pages/backstage/test/quickSearchTest.tsx:1-91",
-      "sha256": "8f9f39b15daabbfbb51f32c9bdae0a0acb78427cba7ae152ee840f9fc07b3d2b"
-    },
-    {
-      "file": "src/core/components/SongAutocomplete.tsx",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/SongAutocomplete.tsx:1-67",
-      "sha256": "b1d26e1abc5935afd754490e9bb65f3eeebaaab51733d3107e17638facc46548"
-    },
-    {
-      "file": "src/core/components/ItemAssociation.tsx",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/ItemAssociation.tsx:1-2",
-      "sha256": "b012ec5f8cd8495798016c523e966aeec26404dc69ff36a7290ca80f57398de4"
-    },
-    {
-      "file": "src/core/components/ItemAssociation.tsx",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/ItemAssociation.tsx:4-4",
-      "sha256": "408cb8eebba74743a643cdaeaa3f0592a5c64bb4f3b386a9555c8ad31cec3c10"
-    },
-    {
-      "file": "src/core/components/ItemAssociation.tsx",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/ItemAssociation.tsx:6-9",
-      "sha256": "e60cd2f4bc6eeec2a4357cd233eb424146176c43297092df6539ee9fa08f68f3"
-    },
-    {
-      "file": "src/core/components/ItemAssociation.tsx",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/ItemAssociation.tsx:14-33",
-      "sha256": "c3054afe40262c960227d4652e78f2d1ddcd07bc01df1209e814a480d0f18af9"
-    },
-    {
-      "file": "src/core/components/ItemAssociation.tsx",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/ItemAssociation.tsx:94-143",
-      "sha256": "dec50fc5857cd5540a622261a16a71292946c6be7a92b4a3fb9245bfd7f17ba8"
-    },
-    {
-      "file": "src/core/components/ItemAssociation.tsx",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/ItemAssociation.tsx:188-320",
-      "sha256": "d013eb45ced29f37ae13ac189ec0a6cc15dab433f565e2523dbde3a07bc16f32"
-    },
-    {
-      "file": "src/core/components/markdown/RichTextEditor.tsx",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:1-3",
-      "sha256": "7540d3e4ba883b7783873eb473cbcfb9f33d852f73fa02564128a5b29344b3bc"
-    },
-    {
-      "file": "src/core/components/markdown/RichTextEditor.tsx",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:6-6",
-      "sha256": "9abf3e6700d98954fe8bbe11cbda048f525400b21632402972b47c423c1be127"
-    },
-    {
-      "file": "src/core/components/markdown/RichTextEditor.tsx",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:9-9",
-      "sha256": "8fa305dc55b1abc3f6954c239a0c3fbed929164b5635ed2a3560e0e69857ed5f"
-    },
-    {
-      "file": "src/core/components/markdown/RichTextEditor.tsx",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:11-11",
-      "sha256": "89a5cb25f28085d9b3f2fbe3ccf3583c4ad1b4cd70f15681a0e8740e7ddd5775"
-    },
-    {
-      "file": "src/core/components/markdown/RichTextEditor.tsx",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:18-39",
-      "sha256": "3849e97684ccf4814ebe09c479c4b6469d9ea4402d9319dcc54406e36f11839e"
-    },
-    {
-      "file": "src/core/components/markdown/RichTextEditor.tsx",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:88-88",
-      "sha256": "4c4b27b562166d3cbac183d4ddebf6ed695579c7eef27ff0670d89c94259abdc"
-    },
-    {
-      "file": "src/core/components/markdown/RichTextEditor.tsx",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:128-133",
-      "sha256": "8f537aff7a7e09809953ee1e50fd2d2ec243ac6e09d05f5d3df428ad5ce45c02"
-    },
-    {
-      "file": "src/core/components/markdown/RichTextEditor.tsx",
-      "featureId": "quick-search",
-      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:139-149",
-      "sha256": "454e38972139177d9385537ff1b83146c8a9a0d0d5cfc4c621a443c45f609a5d"
-    },
-    {
-      "file": "src/core/db3/shared/schema/file.ts",
-      "featureId": "file-search",
-      "source": "3eef35e286d02c61aebd0bb000c433c34cfb15a6:src/core/db3/shared/schema/file.ts:517-533",
-      "sha256": "dc73e42b7b289110a48094338e4cb658ec4b371bd36aca432a76f3473b0e02c8"
-    },
-    {
-      "file": "src/core/db3/shared/schema/prismArgs.ts",
-      "featureId": "file-search",
-      "source": "3eef35e286d02c61aebd0bb000c433c34cfb15a6:src/core/db3/shared/schema/prismArgs.ts:963-966",
-      "sha256": "b998a780e5c6f49ff142aba85fdf3aa5ac5805fc37d469039e27a52e79f2e71c"
-    },
-    {
-      "file": "src/core/db3/shared/schema/wiki.ts",
-      "featureId": "wiki-search",
-      "source": "f9adfcffdcc67ed2abfc96bc151c7ab70139db53:src/core/db3/shared/schema/wiki.ts:133-141",
-      "sha256": "7245d61a00f57e501c065e5cdb9c782ac6fc52cceea3d869f6a6e553effdd095"
-    },
-    {
-      "file": "src/core/components/dashboard/MenuLinkComponents.tsx",
-      "featureId": "wiki-search",
-      "source": "976ab6f7a3781848ffc23a2a1cac87e96ff286b9:src/core/components/dashboard/MenuLinkComponents.tsx:134-176",
-      "sha256": "0f4cc09a66f08dea38fe4ebe20fc9bd59dcb23ed141846569f93c0c666a1705a"
-    },
-    {
-      "file": "tests/db3LegacyReadCompatibilityInventory.test.ts",
-      "featureId": "wiki-search",
-      "source": "976ab6f7a3781848ffc23a2a1cac87e96ff286b9:tests/db3LegacyReadCompatibilityInventory.test.ts:32-35",
-      "sha256": "001ddfa0bc3a17b36304d67b9f93afaaadd0d35ba1208d524011048b76a1724b"
-    },
-    {
-      "file": "src/pages/backstage/events.tsx",
-      "featureId": "event-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/events.tsx:1-357",
-      "sha256": "238fec838f7a0586d0bb37c1bacd6cfe92232eda078a93bca5e93c85a2038410"
-    },
-    {
-      "file": "src/pages/backstage/event/[...id_slug_tab].tsx",
-      "featureId": "event-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/event/[...id_slug_tab].tsx:1-162",
-      "sha256": "3dff6df0238a63e02ae201a4ddb2ba62cfda6c5b8645baefde4f5fa5146782a8"
-    },
-    {
-      "file": "src/pages/backstage/editEvents.tsx",
-      "featureId": "event-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/editEvents.tsx:1-79",
-      "sha256": "f24e66eda9b80f3116544c625df0ca6b850d7fcc97f91fb58ec54f667aaf7aba"
-    },
-    {
-      "file": "src/pages/backstage/editEventSegments.tsx",
-      "featureId": "event-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/editEventSegments.tsx:1-59",
-      "sha256": "803a9808c76fe2059ee29f58cc222b49c796a29a14ae12f2a195b97410712674"
-    },
-    {
-      "file": "src/pages/backstage/frontpageEvents.tsx",
-      "featureId": "event-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/frontpageEvents.tsx:1-130",
-      "sha256": "b1be8be44f78adc2f0a81b0006995896c7f679c3cee92dd822bed33eedcf4678"
-    },
-    {
-      "file": "src/pages/backstage/songs.tsx",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/songs.tsx:1-180",
-      "sha256": "beb40c394094e758bd89beffa7beb29d8a164fbb5ba227b76034c8955b0db779"
-    },
-    {
-      "file": "src/pages/backstage/song/[...id_slug_tab].tsx",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/song/[...id_slug_tab].tsx:1-123",
-      "sha256": "6df33f4a9b5a9195bcce5ae50e19b0adf5b266f8c443e9ac8421b3e08f0c4458"
-    },
-    {
-      "file": "src/pages/backstage/editSongs.tsx",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/editSongs.tsx:1-67",
-      "sha256": "c86ba606e736d8c1c27898898c676e6c3027c5960e36c0145f8acd9329c17696"
-    },
-    {
-      "file": "src/pages/backstage/editSongCredits.tsx",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/editSongCredits.tsx:1-45",
-      "sha256": "0eb20434a59da009e3e2774b97a9db4f759c2ed06d44c53cb9725ed5aea6ab8c"
-    },
-    {
       "file": "src/pages/backstage/gallery.tsx",
       "featureId": "developer-examples",
       "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/gallery.tsx:1-474",
@@ -659,120 +439,6 @@
       "featureId": "developer-examples",
       "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/test.tsx:1-272",
       "sha256": "a8f67e7a82c9bcc421082d853c3cb4aa86105b3083bda6ed6290128bd8b4bec6"
-    },
-    {
-      "file": "src/core/db3/mutations/updateEventBasicFields.ts",
-      "featureId": "event-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/db3/mutations/updateEventBasicFields.ts:1-74",
-      "sha256": "6a6ddf1046fe20f804450e1c6615e8b21a4509db65373fb53b6b69d1acbddaa4"
-    },
-    {
-      "file": "src/core/db3/mutations/setEventRelevanceClassOverride.ts",
-      "featureId": "event-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/db3/mutations/setEventRelevanceClassOverride.ts:1-31",
-      "sha256": "b9341cad42af3009a1fb0f65ce77288a038d2ad172f868961227fe1950620670"
-    },
-    {
-      "file": "src/core/db3/mutations/updateSongBasicFields.ts",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/db3/mutations/updateSongBasicFields.ts:1-34",
-      "sha256": "de16a39c6553218dd05382a347392601ce67d7906d3fec820d35e81fabfd9979"
-    },
-    {
-      "file": "src/core/db3/mutations/updateSongPinnedRecording.ts",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/db3/mutations/updateSongPinnedRecording.ts:1-36",
-      "sha256": "206763d4df89719ae259b66746c7b5aff232be7d9b27814ed69ace1242a52ef1"
-    },
-    {
-      "file": "src/core/db3/queries/getSongPinnedRecording.ts",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/db3/queries/getSongPinnedRecording.ts:1-73",
-      "sha256": "2adc48fd49e23e2da9fc40bf345f4f05bff9d312286fbceb5b587db6fae09139"
-    },
-    {
-      "file": "src/core/db3/queries/getUserCredits.ts",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/db3/queries/getUserCredits.ts:1-36",
-      "sha256": "d27a3a3a8c7cc1f6031188fe2b568b452752652638b406610b82121c1ae0260c"
-    },
-    {
-      "file": "src/pages/api/search/getSearchResultsApi.ts",
-      "featureId": "domain-search",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/api/search/getSearchResultsApi.ts:1-42",
-      "sha256": "7c21c8ca701df07ac8723bf87e5737eb6c631e6c338b7eecdaf4c3f5d7ae5640"
-    },
-    {
-      "file": "src/core/db3/server/searchServerCore.ts",
-      "featureId": "domain-search",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/db3/server/searchServerCore.ts:196-420",
-      "sha256": "77b8e2cfdffe5578e9e66b6afd00879c808748dddc734b82740dec493e49ee49"
-    },
-    {
-      "file": "tests/authorization/searchRecovery.test.ts",
-      "featureId": "domain-search",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:tests/authorization/searchRecovery.test.ts:1-162",
-      "sha256": "90b2226a5d7860ff65e344a3dd3f37b5968aac4e57a0d1870370ebd557f1aaa8"
-    },
-    {
-      "file": "src/core/components/user/UserAnalyticTables.tsx",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/components/user/UserAnalyticTables.tsx:177-239",
-      "sha256": "525673f177f9e4133e21cd28bfbfb49ec54cfac981d540dd1468c615bb0ca649"
-    },
-    {
-      "file": "src/core/components/user/UserAnalyticTables.tsx",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/components/user/UserAnalyticTables.tsx:2-2",
-      "sha256": "269e81ebe03e21e42274b4adf0e89e86a941a7c19759271fed1a5aa693177784"
-    },
-    {
-      "file": "src/core/components/user/UserAnalyticTables.tsx",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/components/user/UserAnalyticTables.tsx:8-8",
-      "sha256": "acccf1d0bfeb0d188bf4d9425a54ae29a65df0c15eece428f63943ec048f519a"
-    },
-    {
-      "file": "src/core/components/user/UserAnalyticTables.tsx",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/components/user/UserAnalyticTables.tsx:22-22",
-      "sha256": "ffcb654be7c2f1645a03b12a0a86406f52f08ed551fdf862ecd15ab6daf835ad"
-    },
-    {
-      "file": "src/core/components/user/UserAnalyticTables.tsx",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/components/user/UserAnalyticTables.tsx:23-23",
-      "sha256": "0fb3d9b0c177b4f92a362ed16bcd8e42af14202688ded4db338feed03e0a1b47"
-    },
-    {
-      "file": "tests/authorization/directReadPolicyHardening.test.ts",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:tests/authorization/directReadPolicyHardening.test.ts:203-273",
-      "sha256": "c2fcc86bc3df8408e4077ea48ffe69a3ab9b0a4d69e089e3def120b6f2a75450"
-    },
-    {
-      "file": "tests/authorization/directReadPolicyHardening.test.ts",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:tests/authorization/directReadPolicyHardening.test.ts:16-16",
-      "sha256": "56e58d48dc77451ec52caf2a79900b04efa998f61d0fe630c65b2b96d8ab2810"
-    },
-    {
-      "file": "src/pages/backstage/wikiPages.tsx",
-      "featureId": "wiki-search",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/wikiPages.tsx:1-194",
-      "sha256": "1a8d818b94d00b525bf90daf5b3a549a17570e1464391de8bfcbf2205864c936"
-    },
-    {
-      "file": "tests/authorization/db3Authorization.test.ts",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:tests/authorization/db3Authorization.test.ts:289-295",
-      "sha256": "34c0d6198c58cfe415b9bb65a73039c5ef207bdf521fb90644eb740b3f3dc490"
-    },
-    {
-      "file": "tests/authorization/db3Authorization.test.ts",
-      "featureId": "song-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:tests/authorization/db3Authorization.test.ts:158-164",
-      "sha256": "657017b9a343e905411dd111b38bf06231366f6a01b0658e416ac106a9e6d4a6"
     }
   ]
 }

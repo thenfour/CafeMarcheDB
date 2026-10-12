@@ -11,7 +11,7 @@ minimal UX changes. Temporary isolation and reduced screens do not establish par
 | Gate | Acceptance | Status |
 | --- | --- | --- |
 | A0: runnable development app | Normal typecheck/build, startup on disposable migrated data, login/dashboard/migrated page in the built browser, coherent boundaries for deferred surfaces. | Achieved 2026-10-08. |
-| A1: everyday workflow parity | Reference member, event/invitation/attendance, song and associated-file workflows, including their supporting endpoints and browser interactions; isolation and required checks pass. | Achieved 2026-10-12, with the localized catalog text search and existing site chrome exceptions below. |
+| A1: everyday workflow parity | Reference member, event/invitation/attendance, song and associated-file workflows, including their supporting endpoints and browser interactions; isolation and required checks pass. | Achieved 2026-10-12. The localized catalog text search exception is now closed; existing site chrome coverage remains for B. |
 | B: complete localization and multiband support | Routing, administration/lifecycle, translation tooling and agreed coverage; remaining obligations restored or explicitly retired; `yarn migration:check` passes. | Open. |
 
 A0 and A1 are development/restoration gates, not production readiness. Production
@@ -25,7 +25,7 @@ wiki content, menus, attendance/calendar endpoints, plan persistence, Custom Lin
 telemetry and narrow downloads have implementation and verification evidence.
 Preserve them while completing B. Reference member-directory
 filters/presets/contact-search/export and complete profile tabs/account controls/activity
-are restored below. Localized-name-search obligations remain open.
+are restored below. Localized catalog-name search is also restored below.
 
 Global shell search, planner association selection, the protected quick-search
 explorer, Markdown suggestions and Markdown attachments are restored below.
@@ -43,9 +43,9 @@ alongside the existing catalog grid. The
 [restoration manifest](feature-restoration.json) records the individual obligations
 and verification criteria; use `yarn migration:status` rather than maintaining a
 second restriction table. A1 acceptance accounts for every core caller and
-supporting owner. Only localized catalog-name matching remains pending in the
-seven search/workflow obligations; the protected developer examples remain
-outside A1. Keep deferred owners coherently unavailable until their contracts
+supporting owner. All seven search/workflow obligations are now closed, including
+localized catalog-name matching; the protected developer examples remain
+pending outside A1. Keep deferred owners coherently unavailable until their contracts
 are safe. Dated checkpoints retain their earlier verification results; the gate
 table and latest verification status describe the current position.
 
@@ -60,12 +60,12 @@ freshly authorized band snapshot. Shared catalog views resolve localized labels,
 inheritance and effective label ordering. Band/language changes abort old requests
 and clear their results; event links and exports retain band/route locale.
 
-Authored text matching remains active; localized catalog-name matching follows
-the A1 exception below. Detail links retain the reference URLs and open the
+Authored text and resolved type/status/tag names match through the same search
+owner. Detail links retain the reference URLs and open the
 restored detail page. Creation and pin/hide controls now use the restored write
 owners. Text-only search exposes Reset filter, which also clears the text.
-The remaining Event search obligation is localized catalog-name matching for B;
-all five application domain-search roots are active.
+All five application domain-search roots are active; the Event search obligation
+is closed with the catalog-name checkpoint below.
 
 ## Event detail and editing checkpoint
 
@@ -92,9 +92,8 @@ editors can open.
 
 The attendance/default-instrument matrix and date-picker highlights are restored
 in their checkpoint below. Import preview/save and the public
-homepage/feed are restored in their own checkpoints below. Localized catalog-name
-matching is the sole remaining `event-workflows` obligation, covered by the A1
-exception and still pending for B.
+homepage/feed are restored in their own checkpoints below. The `event-workflows`
+obligation is closed, including localized catalog-name matching.
 
 ## Songs and event setlist checkpoint
 
@@ -120,9 +119,8 @@ pages are restored in the checkpoints below. Song credit editing and performance
 history and Event statistics are restored in their checkpoints below. Profile
 credits and all five quick-search plugins are restored in later checkpoints;
 Markdown suggestions are restored, including the parent-dialog correction in
-the A1 acceptance checkpoint below. Only
-localized catalog-name text predicates, including quick-search tag names, follow
-the A1 exception; authored text and identity-based filters remain active.
+the A1 acceptance checkpoint below. Localized catalog-name predicates and
+quick-search tag names are restored alongside authored text and identity filters.
 
 ## Associated File metadata and uploads checkpoint
 
@@ -356,7 +354,7 @@ instrument and permitted role filters/operators/facets, URL state, sorting,
 load-more and TSV export. Rows and links distinguish the shared person's identity
 from membership assignments. Join-date sorting and the New preset use membership
 creation rather than account creation. Catalog presentation uses shared localized
-and inherited reads; catalog-name free-text matching remains under the A1 exception.
+and inherited reads; catalog-name free-text matching now uses those same views.
 Name search remains available; contact and sign-in search follow their respective
 field permissions. Recovery search requires `recover_users` and includes inactive
 memberships while excluding deleted or merged people.
@@ -489,9 +487,9 @@ Fresh row visibility and the existing public Wiki-view permission are preserved;
 the page retains its separate `search_wiki_pages` route gate. Content matching
 requires the current revision to belong to the visible parent, including malformed
 revision pointers. Obvious tag natural-order, blank filter-caption and TSV
-one-based-position bugs are fixed. Only localized tag-name text matching follows
-the A1 exception: `wiki-search` and its four preserved source references stay
-pending. Other source archives/deferred specifications remain intact.
+one-based-position bugs are fixed. Localized tag-name text matching is also
+restored; `wiki-search` is closed and its four completed source references are
+removed with the catalog-name checkpoint below.
 
 ## Dashboard Wiki content and custom navigation checkpoint
 
@@ -550,7 +548,7 @@ reference stores, required-reference/partial-DTO rejection and fresh hidden-row
 revocation remain covered. Active BandUser tag/instrument catalogs and assignment/
 invitation contracts account for the superseded UserTag/UserInstrument blocks.
 All six completed dashboard source references are removed, and `dashboard-content`
-is restored. A1/B and full localized-name matching remain open.
+is restored. A1 and full localized-name matching are now achieved; B remains open.
 
 ## Dashboard Event search follow-up
 
@@ -605,10 +603,11 @@ though their Wiki plugin is now active.
 
 The two completed `global-search` source references are removed and that obligation
 is restored. The following checkpoint restores person suggestions, association
-selects and the protected explorer. Markdown suggestions retain the `quick-search`
-obligation and its archives. Tag/
-localized-catalog-name predicates follow the A1 exception; resolved small-catalog
-instrument matching remains active. A1/B stay open.
+selects and the protected explorer. Markdown suggestions retain the same
+`quick-search` owner. Localized tag-name predicates are restored in the
+catalog-name checkpoint below, which closes that obligation and removes its
+archives. Resolved small-catalog instrument matching remains active. A1 is
+achieved; B remains open.
 
 ## Association selection and quick-search explorer checkpoint
 
@@ -692,9 +691,10 @@ labels use the localized registry and the actions use `CMButton`/`CMDialog`.
 
 Built Song and locked Wiki editors verify real saves, existing authored links,
 custom captions, undo/redo, fresh grant revocation and independent French/Dutch
-band contexts. All quick-search source archives/references remain preserved while
-full localized tag-name matching is pending under the exact A1 exception. This
-checkpoint does not close `markdown-editing`, account administration or A1/B.
+band contexts. At this checkpoint, quick-search archives remained preserved
+under the A1 text-search exception. The later catalog-name checkpoint restores
+full tag-name matching and removes those completed archives. Later checkpoints
+also close Markdown editing, account administration and A1.
 
 ## Markdown file attachments checkpoint
 
@@ -1095,8 +1095,8 @@ references and fresh selected-band snapshots. The unused RPCs, payload archives
 and four guard tests are removed; `legacy-event-song-filters` is closed with its
 six preservation references removed. The unused legacy relevant-Song mode has no
 reference page, picker or profile caller; it does not require a second search
-implementation. Full localized-name matching remains separately pending under
-the owning search features and the A1 exception.
+implementation. Full localized-name matching is now restored through the owning
+search features, closing the earlier A1 exception.
 
 The populated member analytics above, retained Event statistics/popular Songs
 and Song performance history account for the identified core statistics callers.
@@ -1302,8 +1302,9 @@ exports and contextual links remain active. Existing native, DOM and built-app
 evidence covers invitations/attendance, imports, credits/history, uploads,
 profiles, dashboard, planners, public feeds and the restored administration.
 
-The seven pending search/workflow obligations now have only the documented
-localized catalog-name text exception. Their source archives remain for B.
+At A1 acceptance, the seven search/workflow obligations retained only the
+documented localized catalog-name text exception. The B checkpoint below closes
+that exception and removes their completed source archives.
 `developer-examples` remains guarded at the protected sample pages; it has no
 core application callers and is outside A1. Four archived directory authorization
 cases already execute in the native member-search suite, including contact and
@@ -1334,27 +1335,64 @@ also remain exactly unchanged on startup. The reference startup's legacy data
 repairs now belong to the SQL upgrade; no independent core background job is
 omitted or legacy backfill rerun at app startup.
 
-A1 is achieved with the stated text-search/chrome exceptions. B and production
-inventory/rehearsal remain open. Current verification is recorded below.
+A1 is achieved; its text-search exception is closed below. B, existing site chrome
+coverage and production inventory/rehearsal remain open. Current verification is
+recorded below.
 
-## Next slice: B localized catalog-name search
+## Localized catalog-name search checkpoint
 
-Restore the omitted name predicates in the existing domain and quick-search
-owners using shared catalog visibility, band scope and ordered locale resolution.
-Cover membership roles/tags/instruments, Event types/statuses/tags, Song tags,
-File tags/instruments and Wiki tags. Keep the already working resolved
-small-catalog searches, authored matching, grammar/ranking, filters/operators,
-counts/facets, stable sorting/paging, exports and contextual links intact.
+The existing domain-search owner matches membership roles/tags/instruments,
+Event types/statuses/tags, Song tags, File tags/instruments and Wiki tags through
+the same authorized catalog views used for presentation. One request shares its
+resolved labels between name predicates and facets in the authorized snapshot.
+Band-first overrides, inherited translations, intentional blanks and ordered
+route/browser preferences therefore select the names that can match. Hidden or
+retired catalogs, hidden instrument groups and foreign-band labels cannot match.
 
-Verify band-first overrides, inherited labels, intentional blanks, ordered
-preferences, hidden/retired/foreign references and fresh permission changes
-through native owners and the built two-band app. Close each of the seven
-search/workflow obligations and remove only its completed archives once its full
-matching contract passes. Protected developer examples, full portal routing,
-translation inventory/tooling/coverage and the production-copy rehearsal retain
-their separate B obligations.
+The search domain declares each relation and its required field permission;
+membership role names require `manage_users`. Eligible public references resolve
+to trusted internal identities before the existing relation predicates enter SQL.
+Tokens retain AND across tokens and OR across authored and eligible catalog
+fields. The same predicates constrain rows, total counts and facet queries before
+stable SQL paging. Existing controls, filters/operators, presets, URL state,
+sorting, exports and contextual links remain active. No domain-specific
+translation fallback or raw-name join is introduced.
+
+Song/Event quick search restores literal `#tag` name matching through those same
+catalog views. Every requested tag constrains candidates before the existing
+100-row limit; authored words retain their original ranking behavior, tag weights
+and the 15-result limit. Tag-only queries work again; a bare `#` after authored
+words retains the reference requirement for a readable tag. All five quick-search plugins
+and the existing resolved small-catalog searches remain active.
+
+All seven search/workflow obligations are `restored`. Their 58 completed source
+blocks/reference entries and the unused reference-only `enrichedUserTypes` module
+are removed; no executable specification is removed or newly skipped. The
+protected developer examples retain their two source references and separate B
+obligation. Native and built two-band verification is recorded below.
+
+## Next slice: B portal routing
+
+Implement the [routing contract](00-design%20notes.md#routing-and-later-scope)
+through rewrites to the existing pages. Standalone hosting retains familiar root
+or `/backstage` URLs and validated host-owned band context. Platform portals use
+`/[locale]/b/<publicBandId>/...`, with locale optional; locale-free links use browser
+preferences and language switching retains the equivalent page. Validate host,
+band and locale at the server before supplying explicit authorization context.
+
+Carry that context through SSR, RPC, files, feeds, notifications, exports and
+Custom Links rooted at the band portal. Verify both hosting modes, two bands,
+ordered browser preferences, public/private routes, grant revocation and context
+changes in the built app. Preserve existing page owners and public identities.
+Band onboarding/lifecycle, translation inventory/editing/import/export and
+French/Dutch coverage, protected developer examples and the production-copy
+rehearsal retain their separate obligations.
 
 ## Localized catalog text search exception
+
+**Closed 2026-10-12:** the catalog-name checkpoint above restores the omitted
+predicates and closes all seven owning obligations. The following exception
+describes the earlier A1 acceptance boundary, not a current search limitation.
 
 A1 may defer free-text matching against newly localized catalog names such as
 tags, statuses, types and instruments. Omit only those predicates. Keep authored
@@ -1379,14 +1417,14 @@ when a concrete workflow dependency requires it.
 
 | Work | Required parity |
 | --- | --- |
-| Members | Retain restored directory filters/facets/presets/URL state/contact search/exports, self/member/account profiles, contextual tabs, account controls and activity with independent shared-account and membership policy; finish localized catalog-name matching separately. |
-| Events | Retain restored search/detail/creation/editing, setlists, invitation/attendance/default-instrument controls, date-picker highlights and import preview/save; finish full localized catalog-name matching separately. |
+| Members | Retain restored directory filters/facets/presets/URL state/contact and localized catalog-name search/exports, self/member/account profiles, contextual tabs, account controls and activity with independent shared-account and membership policy. |
+| Events | Retain restored search/detail/creation/editing, localized catalog-name matching, setlists, invitation/attendance/default-instrument controls, date-picker highlights and import preview/save. |
 | Songs and files | Retain restored Song search/detail/editing, credits/performance history/profile credit reads/statistics, tags, setlist picking, File search/detail/metadata/associations, associated and Markdown/branding uploads, image fork service and recording/file viewers, including verified original/resized-image creation; retain frontpage gallery editing/bake and public feed delivery. |
 | Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, global shell search, planner association selection/protected explorer, Markdown suggestions/attachments/localized editing/help, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links, including verified exports, scoped telemetry and startup initialization. Account explicitly for remaining B gaps. |
 
 With A1 accepted: retain restored platform role/matrix and catalog/settings administration;
 band onboarding/lifecycle; shared-account lifecycle/merge/dependency reports;
-full portal routing; localized-name text matching; translation inventory/editing,
+full portal routing; translation inventory/editing,
 import/export and French/Dutch coverage. Existing workflow parity is not a new
 enhancement. Optional product additions and optimizations remain separate.
 
@@ -1422,6 +1460,59 @@ data, rehearse backup restoration and deploy the migrated database, app and
 client together with writes stopped and matching upload backups.
 
 ## Verification status
+
+The **2026-10-12 B catalog-name search closure** passes normal typecheck, targeted
+ESLint across **56 changed TypeScript files** and a normal production build with
+isolated output. The complete repository runner passes **297 selected test files
+with no failures**. Public-identity/upload/search-boundary regressions pass
+**56 cases in three files**, and preservation regressions pass **23 cases**.
+
+All **68 current native specification files** are selected on a private MariaDB
+database: **883 cases pass and 51 existing fixture-gated cases skip**. Thirteen
+new cases cover reference names, locale preference order, overrides/blanks,
+hidden/retired references, field grants, literal escaping, counts/facets/paging,
+Song/Event all-tag grammar and eligibility before the candidate limit. After the
+final bare-`#` compatibility check, all **165 focused native cases in seven files**
+pass again, including authored words plus a bare tag constraint and tag-only
+ranking. Final typecheck, applicable lint and the normal build also pass again.
+Both private native databases are removed; this slice adds no skip.
+
+**Twenty built Chromium groups** pass on the refreshed production build. They
+cover all nine catalog families through the original five search pages and HTTP
+owners in two bands/French/Dutch; URL reload, TSV exports and public contextual
+links; ordered browser preferences sharing a formatting locale; Song/Event
+localized `#tag`, all-tag and bare-`#` grammar; band-first overrides and intentional
+blanks; hidden tags/instrument groups and retired role/type/status definitions;
+the actual band chooser; exact counts/stable paging; fresh band-specific grant
+revocation/retry and anonymous denial. Page, RPC and console error lists are empty.
+French/Dutch directory and French Event/Song layouts are visually inspected.
+The owned browser server, database and asset directory are removed.
+
+All seven search/workflow obligations are closed and their **58 source blocks
+and reference entries** are removed. Archive cleanup preserves live TypeScript
+statements, including comparison with HEAD for the 35 files changed only by that
+cleanup. The unused reference-only `enrichedUserTypes` module is deleted; no
+executable specification is removed. Preservation now verifies **two source
+references, zero whole-file deferred specifications and one pending feature**:
+the protected developer examples. `yarn migration:check` still rejects that
+pending feature; portal routing, translation coverage/tooling, band lifecycle
+and production inventory/rehearsal also keep B open.
+
+Trivial baseline repairs remove stale imports of the already deleted public-ID
+error class, use the existing Blitz `NotFoundError` for absent/inaccessible
+references and remove an unused CMLink import. Stale public-ID/upload assertions
+now follow those current contracts. Restored tag grammar updates the old ignored
+tag expectations without deleting their specifications.
+
+Evidence is in `temp/b-catalog-search-full.log`,
+`temp/b-catalog-search-all-native.log`, `temp/b-catalog-search-native-final.log`,
+`temp/b-catalog-search-boundaries.log`, `temp/b-catalog-search-preservation-tests.log`,
+`temp/b-catalog-search-typecheck-final.log`, `temp/b-catalog-search-lint-final.log`,
+`temp/b-catalog-search-lint-boundary.log`, `temp/b-catalog-search-build-final.log`
+and `temp/b-catalog-search-browser-final.log`. Built results are in
+`temp/b-catalog-search-browser-result.json`; screenshots include
+`temp/b-catalog-search-banduser-fr.png`, `temp/b-catalog-search-members-nl.png`,
+`temp/b-catalog-search-event-fr.png` and `temp/b-catalog-search-song-fr.png`.
 
 The **2026-10-12 A1 acceptance review** passes normal typecheck, targeted ESLint
 across **six changed TypeScript files**, and a normal production build with
@@ -1468,9 +1559,10 @@ Evidence is in `temp/a1-acceptance-full.log`, `temp/a1-acceptance-native.log`,
 `temp/a1-fresh-install-result.json` and `temp/a1-core-workflows-result.json`,
 with screenshots `temp/a1-fresh-install-platform.png`,
 `temp/a1-core-directory-french.png`, `temp/a1-core-directory-dutch.png` and
-`temp/a1-core-setlist.png`. Preservation verifies **60 source references, zero
-whole-file deferred specifications and eight pending features**. A1 is achieved;
-localized catalog-name matching is the next B slice. Production inventory,
+`temp/a1-core-setlist.png`. At A1 acceptance, preservation verified **60 source
+references, zero whole-file deferred specifications and eight pending features**.
+The catalog-name checkpoint subsequently closes seven of those features.
+Production inventory,
 backup/upload restoration rehearsal, full B coverage and cutover remain open.
 
 The **member-profile closure** passes normal typecheck, targeted ESLint across

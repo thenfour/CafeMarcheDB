@@ -88,6 +88,37 @@ describe.skipIf(!settingsMysqlTestUrl)("restored File search and detail on Maria
         return withSettingsMysqlFixture(database, work);
     };
 
+    it.each(["tag", "instrument"] as const)("matches authorized File %s names and preserves literal SQL metacharacters", kind => run(async (tx, fixture) => {
+        const c = await prepareFiles(tx, fixture);
+        const name = await c.text("Globalneedle", "Sérénade100%_quote'\\end");
+        if (kind === "tag") {
+            await tx.globalFileTag.update({ where: { id: c.firstTag.globalFileTagId! }, data: { nameId: name.id } });
+        } else {
+            await tx.bandInstrument.update({ where: { id: c.firstInstrument.id }, data: { nameId: name.id } });
+        }
+        const names = async (quickFilter: string) => (await c.search({ quickFilter, routeLocale: "fr-BE" })).results.map(row => row.fileLeafName);
+        expect(await names("serenade")).toEqual(["Alpha.pdf", "Charlie.pdf"]);
+        expect(await names("100%")).toEqual(["Alpha.pdf", "Charlie.pdf"]);
+        expect(await names("quote'\\end")).toEqual(["Alpha.pdf", "Charlie.pdf"]);
+        expect(await names("1000%")).toEqual([]);
+        expect(await names("Globalneedle")).toEqual([]);
+        expect(await names("Alpha serenade")).toEqual(["Alpha.pdf"]);
+        const override = await tx.bandDynamicLocalizedStringValue.create({ data: { publicId: generatePublicId(),
+            bandId: c.band.id, stringId: name.id, localeId: fixture.englishId, indexedValue: "Bandfirstneedle" } });
+        expect(await names("Bandfirstneedle")).toEqual(["Alpha.pdf", "Charlie.pdf"]);
+        expect(await names("serenade")).toEqual([]);
+        await tx.bandDynamicLocalizedStringValue.update({ where: { id: override.id }, data: { indexedValue: "" } });
+        expect(await names("Bandfirstneedle")).toEqual([]);
+        await tx.bandDynamicLocalizedStringValue.delete({ where: { id: override.id } });
+        if (kind === "tag") {
+            await tx.bandFileTag.update({ where: { id: c.firstTag.id }, data: { isHidden: true } });
+        } else {
+            await tx.bandInstrumentFunctionalGroup.update({ where: { id: c.firstInstrument.functionalGroupId }, data: { isHidden: true } });
+        }
+        expect(await names("serenade")).toEqual([]);
+        expect(await names("Alpha")).toEqual(["Alpha.pdf"]);
+    }));
+
     it("keeps results, counts, localized facets and public references in each band's snapshot", () => run(async (tx, fixture) => {
         const c = await prepareFiles(tx, fixture);
         const result = await c.search();

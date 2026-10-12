@@ -1,6 +1,5 @@
 import { ActivityFeature } from "./featureReports/activityTracking";
 import Link from "next/link";
-import { useAppContext } from "./AppContext";
 import { useClientTelemetryEvent } from "./dashboardContext/DashboardContext";
 
 type CMLinkProps = React.PropsWithChildren<{
@@ -19,7 +18,6 @@ type CMLinkProps = React.PropsWithChildren<{
 // lsmb todo: use router.
 export function CMLink({ trackingFeature = ActivityFeature.link_follow_internal, navigation = "client", onClick, ...rest }: CMLinkProps) {
     const recordFeature = useClientTelemetryEvent();
-    //const appContext = useAppContext();
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         //if (trackingFeature) {

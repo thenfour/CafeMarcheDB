@@ -98,6 +98,58 @@ describe.skipIf(!settingsMysqlTestUrl)("restored global shell search on MariaDB"
         return withSettingsMysqlFixture(database, work);
     }
 
+    it.each([Type.song, Type.event])("restores localized all-tag grammar and ranking for %s", type => run(async (tx, fixture) => {
+        const c = await prepare(tx, fixture);
+        const secondName = await c.strings("Route", "Routefr", "Routenl");
+        const first = type === Type.song
+            ? await tx.bandSongTag.create({ data: { publicId: generatePublicId(), bandId: c.band.id, nameId: c.name.id } })
+            : await tx.bandEventTag.create({ data: { publicId: generatePublicId(), bandId: c.band.id, nameId: c.name.id } });
+        const second = type === Type.song
+            ? await tx.bandSongTag.create({ data: { publicId: generatePublicId(), bandId: c.band.id, nameId: secondName.id } })
+            : await tx.bandEventTag.create({ data: { publicId: generatePublicId(), bandId: c.band.id, nameId: secondName.id } });
+        const visible = type === Type.song ? c.visibleSong : c.visibleEvent;
+        const privateRow = type === Type.song ? c.privateSong : c.privateEvent;
+        const deleted = type === Type.song ? c.deletedSong : c.deletedEvent;
+        const tagOnly = type === Type.song ? await c.song("Unrelated authored words") : await c.event("Unrelated authored words");
+        if (type === Type.song) {
+            await tx.bandSongTagAssociation.createMany({ data: [visible, privateRow, deleted, tagOnly].map(row => ({
+                publicId: generatePublicId(), songId: row.id, bandSongTagId: first.id,
+            })) });
+            await tx.bandSongTagAssociation.create({ data: { publicId: generatePublicId(), songId: visible.id, bandSongTagId: second.id } });
+        } else {
+            await tx.eventTagAssignment.createMany({ data: [visible, privateRow, deleted, tagOnly].map(row => ({
+                publicId: generatePublicId(), eventId: row.id, bandEventTagId: first.id,
+            })) });
+            await tx.eventTagAssignment.create({ data: { publicId: generatePublicId(), eventId: visible.id, bandEventTagId: second.id } });
+        }
+        const search = (keyword: string, routeLocale = "fr-BE") => c.search(keyword, { allowedItemTypes: [type], routeLocale });
+        expect((await search(`${type}:Compass #`)).map(row => row.id)).toEqual([visible.publicId]);
+        expect(await search(`${type}:#`)).toEqual([]);
+        expect((await search(`${type}:#Boussole`)).map(row => row.id).sort()).toEqual([visible.publicId, tagOnly.publicId].sort());
+        expect((await search(`${type}:#Boussole #`)).map(row => row.id).sort()).toEqual([visible.publicId, tagOnly.publicId].sort());
+        expect((await search(`${type}:#Boussole #Routefr`)).map(row => row.id)).toEqual([visible.publicId]);
+        expect((await search(`${type}:#Kompas #Routenl`, "nl-BE")).map(row => row.id)).toEqual([visible.publicId]);
+        expect(await search(`${type}:#Kompas`, "fr-BE")).toEqual([]);
+        expect(await search(`${type}:Compass #missing`)).toEqual([]);
+        const ranked = await search(`${type}:Compass #bous`);
+        expect(ranked[0]!.id).toBe(visible.publicId);
+        expect(ranked[0]!.matchStrength).toBeGreaterThan(ranked[1]!.matchStrength);
+        const override = await tx.bandDynamicLocalizedStringValue.create({ data: { publicId: generatePublicId(),
+            bandId: c.band.id, stringId: c.name.id, localeId: fixture.englishId, indexedValue: "Bandfirstneedle" } });
+        expect((await search(`${type}:#Bandfirstneedle`)).map(row => row.id).sort()).toEqual([visible.publicId, tagOnly.publicId].sort());
+        expect(await search(`${type}:#Boussole`)).toEqual([]);
+        await tx.bandDynamicLocalizedStringValue.update({ where: { id: override.id }, data: { indexedValue: "" } });
+        expect(await search(`${type}:#Bandfirstneedle`)).toEqual([]);
+        await tx.bandDynamicLocalizedStringValue.delete({ where: { id: override.id } });
+        if (type === Type.song) {
+            await tx.bandSongTag.update({ where: { id: first.id }, data: { isHidden: true } });
+        } else {
+            await tx.bandEventTag.update({ where: { id: first.id }, data: { isHidden: true } });
+        }
+        expect(await search(`${type}:#Boussole`)).toEqual([]);
+        expect((await search(`${type}:Compass`)).map(row => row.id)).toEqual([visible.publicId]);
+    }));
+
     it("combines four domains with reference strengths, public links and selected-band privacy", () => run(async (tx, fixture) => {
         const c = await prepare(tx, fixture);
         const results = await c.search("Compass");
@@ -122,17 +174,31 @@ describe.skipIf(!settingsMysqlTestUrl)("restored global shell search on MariaDB"
         }),
     );
 
-    it("retains authored aliases, locations, current content, empty queries and the A1 tag exception", () => run(async (tx, fixture) => {
+    it("retains authored aliases, locations, current content and empty queries, and enforces requested tags", () => run(async (tx, fixture) => {
         const c = await prepare(tx, fixture);
         expect((await c.search("navigation")).map(result => result.itemType).sort()).toEqual([...shellSearchItemTypes].sort());
         expect((await c.search("harbour")).map(result => result.itemType)).toEqual([Type.event]);
         expect((await c.search("current navigation")).map(result => result.itemType).sort()).toEqual([Type.event, Type.wikiPage]);
         expect(await c.search("#Compass")).toEqual([]);
-        expect((await c.search("song:Compass #ignored")).map(result => result.id)).toEqual([c.visibleSong.publicId]);
+        expect(await c.search("song:Compass #ignored")).toEqual([]);
         expect(await c.search("unknown:Compass")).toEqual([]);
         expect(await c.search("   ")).toEqual([]);
         expect((await c.search(c.visibleSong.publicId)).map(result => result.id)).toEqual([c.visibleSong.publicId]);
         expect(await c.search("Compass", { allowedItemTypes: [Type.event, Type.song] })).toHaveLength(2);
+    }));
+
+    it("applies all-tag eligibility before the candidate limit", () => run(async (tx, fixture) => {
+        const c = await prepare(tx, fixture);
+        const tag = await tx.bandSongTag.create({ data: { publicId: generatePublicId(), bandId: c.band.id, nameId: c.name.id } });
+        await tx.song.createMany({ data: Array.from({ length: 101 }, (_, index) => ({
+            publicId: "aa" + String(index).padStart(14, "0"), bandId: c.band.id, name: "Candidate", aliases: "", description: "",
+            visiblePermissionId: c.visibility.id, createdByUserId: fixture.user.id,
+        })) });
+        const target = await tx.song.create({ data: { publicId: "zzTagCandidate01", bandId: c.band.id,
+            name: "Candidate", aliases: "", description: "", visiblePermissionId: c.visibility.id,
+            tags: { create: { publicId: generatePublicId(), bandSongTagId: tag.id } },
+        } });
+        expect((await c.search("song:Candidate #Boussole", { allowedItemTypes: [Type.song], routeLocale: "fr-BE" })).map(row => row.id)).toEqual([target.publicId]);
     }));
 
     it("keeps the 100 candidates per plugin and 15 results with deterministic cross-domain ties", () => run(async (tx, fixture) => {

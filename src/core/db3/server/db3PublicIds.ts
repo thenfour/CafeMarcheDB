@@ -1,6 +1,7 @@
 // server
 import type { TAnyModel } from "@/shared/rootroot";
 import { CMServerAuthorization } from "@/src/auth/server/serverAuthorization";
+import { NotFoundError } from "blitz";
 import { isPublicId } from "shared/publicId";
 import * as db3 from "../db3";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
@@ -40,7 +41,7 @@ export async function resolvePublicIds(
         return [];
     }
     if (!table.authorizeTableForView(auth)) {
-        throw new Error(`${table.tableID} was not found.`);
+        throw new NotFoundError(`${table.tableID} was not found.`);
     }
 
     const where = table.CalculateWhereClause({
@@ -64,7 +65,7 @@ export async function resolvePublicIds(
         }
     });
     if (idsByPublicId.size !== uniquePublicIds.length) {
-        throw new Error(`${table.tableID} was not found.`);
+        throw new NotFoundError(`${table.tableID} was not found.`);
     }
     return uniquePublicIds.map(publicId => idsByPublicId.get(publicId)!);
 }

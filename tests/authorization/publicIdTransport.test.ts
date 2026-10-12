@@ -604,6 +604,6 @@ describe("instrument catalog public-ID transport", () => {
             ["not-a-public-id"],
             readable,
             database,
-        )).rejects.toThrow("Invalid public ID for BandSongTag.");
+        )).rejects.toThrow('One or more public IDs are invalid on "BandSongTag"."publicId"');
     });
 });

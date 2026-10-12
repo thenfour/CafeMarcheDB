@@ -15,7 +15,6 @@ import { FileUploadArgsSchema } from "src/core/db3/shared/fileUpload";
 import type { UploadResponsePayload } from "src/core/db3/shared/fileTypes";
 import { FileUploadInputError, uploadFiles } from "src/core/db3/server/fileUpload";
 import { GetFileServerStoragePath } from "src/core/db3/server/db3mutationCore";
-import { DB3PublicIdError } from "src/core/db3/server/db3PublicIds";
 
 export const config = { api: { bodyParser: false } };
 
@@ -59,8 +58,6 @@ export async function uploadFileRoute(req: NextApiRequest, res: NextApiResponse<
         let status = 500;
         if (error instanceof AuthenticationError || error instanceof AuthorizationError || error instanceof NotFoundError) {
             status = error.statusCode;
-        } else if (error instanceof DB3PublicIdError) {
-            status = 404;
         } else if (error instanceof z.ZodError || error instanceof FileUploadInputError) {
             status = 400;
         } else if (error instanceof Error && "httpCode" in error && typeof error.httpCode === "number") {

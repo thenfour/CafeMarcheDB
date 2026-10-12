@@ -25,6 +25,31 @@ describe.skipIf(!settingsMysqlTestUrl)("restored song workflows on MariaDB", () 
     afterAll(async () => { vi.unstubAllEnvs(); await database.$disconnect(); });
     const run = (work: (tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture) => Promise<void>) => withSettingsMysqlFixture(database, work);
 
+    it("matches inherited Song tag names with domain tokens and restored all-tag quick-search grammar", () => run(async (tx, fixture) => {
+        const c = await prepareSongs(tx, fixture);
+        const tagged = await c.search({ quickFilter: "Concert", routeLocale: "fr-BE" });
+        expect(tagged.results.map(row => row.name)).toEqual(["Alpha", "Charlie"]);
+        expect(tagged.rowCount).toBe(2);
+        expect(tagged.facets[0]!.items.find(item => item.id === c.firstTag.publicId)?.rowCount).toBe(2);
+        expect(tagged.facets[0]!.items.find(item => item.id === c.secondTag.publicId)?.rowCount).toBe(1);
+        expect(tagged.facets[0]!.items.find(item => item.id === null)?.rowCount).toBe(0);
+        expect((await c.search({ quickFilter: "Alpha Concert", routeLocale: "fr-BE" })).results.map(row => row.name)).toEqual(["Alpha"]);
+        expect((await c.quick("s:#Concert #Marche")).map(row => row.id)).toEqual([c.songs[2]!.publicId]);
+        expect(await c.quick("song:Alpha #missing")).toEqual([]);
+        const override = await tx.bandDynamicLocalizedStringValue.create({ data: { publicId: generatePublicId(),
+            bandId: c.band.id, stringId: c.globalTag.nameId, localeId: fixture.englishId, indexedValue: "Bandfirstneedle" } });
+        expect((await c.quick("s:#Bandfirstneedle")).map(row => row.id).sort()).toEqual([c.songs[0]!.publicId, c.songs[2]!.publicId].sort());
+        expect(await c.quick("s:#Concert")).toEqual([]);
+        await tx.bandDynamicLocalizedStringValue.update({ where: { id: override.id }, data: { indexedValue: "" } });
+        expect(await c.quick("s:#Bandfirstneedle")).toEqual([]);
+        expect((await c.search({ quickFilter: "Bandfirstneedle", routeLocale: "fr-BE" })).rowCount).toBe(0);
+        await tx.bandDynamicLocalizedStringValue.delete({ where: { id: override.id } });
+        await tx.bandSongTag.update({ where: { id: c.firstTag.id }, data: { isHidden: true } });
+        expect(await c.quick("s:#Concert")).toEqual([]);
+        expect((await c.search({ quickFilter: "Concert", routeLocale: "fr-BE" })).rowCount).toBe(0);
+        expect((await c.search({ quickFilter: "Alpha" })).rowCount).toBe(1);
+    }));
+
     it("preserves visible rows, counts, inherited facets and public transport in each band", () => run(async (tx, fixture) => {
         const c = await prepareSongs(tx, fixture);
         const result = await c.search();
@@ -85,8 +110,8 @@ describe.skipIf(!settingsMysqlTestUrl)("restored song workflows on MariaDB", () 
         expect(results[0]!.absoluteUri).toContain("routeLocale=fr-BE");
         expect(results[0]!.name).toContain("(2026)");
         expect(await c.quick("event:Alpha")).toEqual([]);
-        expect(await c.quick("#Concert")).toEqual([]);
-        expect((await c.quick("song:Alpha #Concert")).map(result => result.id)).toEqual([c.songs[0]!.publicId]);
+        expect((await c.quick("#Concert")).map(result => result.id).sort()).toEqual([c.songs[0]!.publicId, c.songs[2]!.publicId].sort());
+        expect((await c.quick("song:Alpha #Concert")).map(result => result.id).sort()).toEqual([c.songs[0]!.publicId, c.songs[2]!.publicId].sort());
         expect((await c.quick(c.songs[0]!.publicId)).map(result => result.id)).toEqual([c.songs[0]!.publicId]);
         expect(await c.quick("secret")).toEqual([]);
         await tx.song.createMany({ data: Array.from({ length: 20 }, (_, index) => ({ publicId: generatePublicId(), bandId: c.band.id, name: `Repeated ${index}`, aliases: "", description: "", visiblePermissionId: c.visibility.id })) });

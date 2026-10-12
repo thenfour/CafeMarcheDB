@@ -314,35 +314,3 @@ describe("explicit DB3 authorization", () => {
     expect(authorizationTestDb.snapshot("song")[0]).toMatchObject({ createdByUserId: user!.id })
   })
 })
-
-// MIGRATION_RESTORE: song-workflows
-// Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:tests/authorization/db3Authorization.test.ts:289-295
-// Reason: Song and credit screens still depend on undeclared ownership and obsolete dedicated endpoints.
-// Restore: Restore song search/detail/editing, credits and pinned recording with fresh selected-band authorization, visible files and public localized references; retain the recovered narrow song lookup and setlist persistence.
-// Verification: Verify two bands, visibility, deleted records, revoked grants, credits, pinned recording and complete built-browser song workflows.
-// SHA256: 34c0d6198c58cfe415b9bb65a73039c5ef207bdf521fb90644eb740b3f3dc490
-// MIGRATION_REFERENCE_BEGIN
-//   it("denies both mutation entry points when the operation grant is absent", async () => {
-//     const { user, ctx } = createAuthorizationPersona("normal", { id: 501 })
-//     authorizationTestDb.reset({ user: [user!], song: [makeSong(1)], change: [] })
-//     await expect(invokeResolver(db3Mutation, forgeDb3PublicUpdate("Song", songPublicId(1), { description: "generic" }), ctx)).rejects.toThrow("Not authorized")
-//     await expect(invokeResolver(updateSongBasicFields, { songId: songPublicId(1), description: "dedicated" }, ctx)).rejects.toThrow("Not authorized")
-//     expect(authorizationTestDb.snapshot("song")[0]!.description).toBe("before")
-//   })
-// MIGRATION_REFERENCE_END
-
-// MIGRATION_RESTORE: song-workflows
-// Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:tests/authorization/db3Authorization.test.ts:158-164
-// Reason: Song and credit screens still depend on undeclared ownership and obsolete dedicated endpoints.
-// Restore: Restore song search/detail/editing, credits and pinned recording with fresh selected-band authorization, visible files and public localized references; retain the recovered narrow song lookup and setlist persistence.
-// Verification: Verify two bands, visibility, deleted records, revoked grants, credits, pinned recording and complete built-browser song workflows.
-// SHA256: 657017b9a343e905411dd111b38bf06231366f6a01b0658e416ac106a9e6d4a6
-// MIGRATION_REFERENCE_BEGIN
-//   it("requires the schema recovery grant even when the actor holds sysadmin", async () => {
-//     const { user, ctx } = createAuthorizationPersona("normal", {
-//       id: 501, permissions: [Permission.login, Permission.view_songs, Permission.sysadmin],
-//     })
-//     authorizationTestDb.reset({ user: [user!], song: [makeSong(1, { isDeleted: true })] })
-//     await expect(invokeResolver(db3Query, forgeDb3Query("Song", { includeDeleted: true }), ctx)).rejects.toThrow("Not authorized")
-//   })
-// MIGRATION_REFERENCE_END

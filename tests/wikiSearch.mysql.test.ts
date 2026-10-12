@@ -71,6 +71,28 @@ describe.skipIf(!settingsMysqlTestUrl)("restored Wiki search on MariaDB", () => 
     afterAll(() => database.$disconnect());
     const run = (work: (tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture) => Promise<void>) => withSettingsMysqlFixture(database, work);
 
+    it("matches inherited Wiki tags using ordered preferences and suppresses overridden or hidden text", () => run(async (tx, fixture) => {
+        const c = await prepare(tx, fixture);
+        const names = async (quickFilter: string, browserLanguages = ["de-DE", "fr-FR", "nl-NL"]) =>
+            (await c.search({ quickFilter, browserLanguages })).results.map(row => row.slug);
+        expect(await names("Documentation")).toEqual(["alpha-handbook", "music/repertoire"]);
+        expect(await names("Guide")).toEqual([]);
+        expect(await names("Handleiding", ["de-DE", "nl-NL", "fr-FR"])).toEqual(["alpha-handbook", "music/repertoire"]);
+        expect(await names("Documentation", ["de-DE", "nl-NL", "fr-FR"])).toEqual([]);
+        expect(await names("music Documentation")).toEqual(["music/repertoire"]);
+        const override = await tx.bandDynamicLocalizedStringValue.create({ data: { publicId: generatePublicId(),
+            bandId: c.band.id, stringId: c.name.id, localeId: fixture.englishId, indexedValue: "Bandfirstneedle" } });
+        expect(await names("Bandfirstneedle")).toEqual(["alpha-handbook", "music/repertoire"]);
+        expect(await names("Documentation")).toEqual([]);
+        await tx.bandDynamicLocalizedStringValue.update({ where: { id: override.id }, data: { indexedValue: "" } });
+        expect(await names("Bandfirstneedle")).toEqual([]);
+        expect(await names("Guide")).toEqual([]);
+        await tx.bandDynamicLocalizedStringValue.delete({ where: { id: override.id } });
+        await tx.bandWikiPageTag.update({ where: { id: c.firstTag.id }, data: { isHidden: true } });
+        expect(await names("Documentation")).toEqual([]);
+        expect(await names("alpha-handbook")).toEqual(["alpha-handbook"]);
+    }));
+
     it("keeps public rows/counts and localized inherited facets in one band snapshot", () => run(async (tx, fixture) => {
         const c = await prepare(tx, fixture);
         const result = await c.search({ routeLocale: "fr-BE" });
@@ -116,13 +138,13 @@ describe.skipIf(!settingsMysqlTestUrl)("restored Wiki search on MariaDB", () => 
         }
     }));
 
-    it("searches authored slug/current content without history authority; localized tag-name text is the exact A1 exception", () => run(async (tx, fixture) => {
+    it("searches authored slug/current content and localized tags without history authority", () => run(async (tx, fixture) => {
         const c = await prepare(tx, fixture);
         const history = await tx.permission.findUniqueOrThrow({ where: { name: Permission.view_wiki_page_revisions } });
         await tx.bandRolePermission.deleteMany({ where: { bandRoleId: c.membership.bandRoleId!, permissionId: history.id } });
         expect((await c.search({ quickFilter: "ensemble safety" })).rowCount).toBe(4);
         expect((await c.search({ quickFilter: "repertoire" })).results.map(row => row.publicId)).toEqual([c.pages[1]!.publicId]);
-        expect((await c.search({ quickFilter: "Documentation", routeLocale: "fr-BE" })).rowCount).toBe(0);
+        expect((await c.search({ quickFilter: "Documentation", routeLocale: "fr-BE" })).rowCount).toBe(2);
         expect((await c.search({ quickFilter: "secret" })).rowCount).toBe(0);
         expect((await c.search({ quickFilter: "x' OR true --" })).rowCount).toBe(0);
     }));

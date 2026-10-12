@@ -30,11 +30,17 @@ eligible fields; unsupported operators fail. The matcher implements a tested SQL
 predicate subset, not every database collation rule. Resolved ordering uses
 formatting locale, numeric ordering and stable public-ID ties.
 
-Existing large SQL/search pipelines remain their owners. Adapt band catalog joins,
-authorization and public references there; the
-[A1 exception](04-implementation-plan.md#localized-catalog-text-search-exception)
-permits deferring localized-name free-text predicates only. It does not replace
-rich search with generic CRUD or waive filters/facets/counts/order/paging.
+Existing large SQL/search pipelines remain their owners. Authorized catalog views
+resolve eligible names in the search snapshot, including band scope, ordered
+preferences, blanks and availability. Each search domain declares its reference
+fields and required permissions. Matching public references become trusted
+relation identities before existing SQL predicates constrain rows, counts,
+facets and paging; labels share a per-request cache with facet presentation.
+Song/Event quick search uses the same catalog resolution for every requested
+`#tag` before candidate limits, preserving its literal grammar and ranking.
+The [earlier A1 exception](04-implementation-plan.md#localized-catalog-text-search-exception)
+is closed. Rich search retains its existing filters/operators, sorting, paging,
+exports and contextual public links.
 
 [Read execution](../../src/core/db3/server/db3ReadExecution.ts) owns RepeatableRead
 and authorization refresh. Rows, translations, availability and grants share the
