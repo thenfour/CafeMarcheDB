@@ -17,7 +17,7 @@ const references: ActivityAuthorizedReferences = { songs: { identities: [], labe
     wikiPages: { identities: [], labels: [], items: [] }, menuLinks: { identities: [], labels: [], items: [] }, customLinks: { identities: [], labels: [], items: [] } };
 const auxiliary: ActivityAuthorizedDetailReferences = { files: new Map(), segments: new Map(), setlists: new Map(), galleryItems: new Map(),
     plans: new Map(), creditTypes: new Map(), attendance: new Map(), instruments: new Map() };
-const metadataPolicy = { applicationOrigin: "https://band.test" };
+const metadataPolicy = { applicationOrigin: "https://band.test", hosting: { kind: "platform" as const } };
 const rawAction = { id: 1, userId: 42, createdAt: new Date("2026-01-02"), feature: "profile_view", context: "App/profile/PersonPublic001/Alice",
     isClient: true, pointerType: "mouse", screenWidth: 1920, screenHeight: 1080, deviceClass: "desktop", browserName: "chrome",
     operatingSystem: "windows", language: "fr", locale: "fr-be", timezone: "Europe/Brussels", songId: 21, eventId: 22,

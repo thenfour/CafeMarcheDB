@@ -1,3 +1,4 @@
+import { portalHref, retainPortalPageState } from "src/route/portalRouting";
 import type { EventPublicId, EventSegmentPublicId } from "shared/publicId";
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
@@ -99,7 +100,7 @@ export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
             //underline="hover"
             //color="inherit"
             //sx={{ display: 'flex', alignItems: 'center' }}
-            href="/backstage"
+            href={portalHref("/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage
@@ -107,7 +108,7 @@ export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
         <CMLink
             //underline="hover"
             //color="inherit"
-            href="/backstage/events"
+            href={portalHref("/backstage/events", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
         //sx={{ display: 'flex', alignItems: 'center' }}
         >
             Events
@@ -1192,7 +1193,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
 
 
     React.useEffect(() => {
-        void router.replace(eventData.eventURI, undefined, { shallow: true });// unfortunately this causes annoyances with scrolling.
+        void router.replace(retainPortalPageState(eventData.eventURI, router.asPath), undefined, { shallow: true });
     }, [eventData.eventURI]);
 
     //const refetch = tableClient.refetch;

@@ -1,3 +1,4 @@
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { type PromiseReturnType } from "blitz"
 import Link from "next/link"
 import { CMButton, CMButtonGroup } from "src/core/components/CMCoreComponents2"
@@ -15,6 +16,7 @@ type LoginFormProps = {
 }
 
 export const LoginForm = (props: LoginFormProps) => {
+  const router = useCmdbRouter();
   const [loginMutation] = useMutation(login);
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -65,8 +67,10 @@ export const LoginForm = (props: LoginFormProps) => {
         validationError={validationErrors.password}
         value={<input type="password" placeholder="password" value={password} aria-invalid={!!validationErrors.password} onChange={e => setPassword(e.target.value)} />}
       />
-      <CMButtonGroup><CMButton type="submit" value="Login">Login</CMButton></CMButtonGroup>
-      <Link href={"/auth/forgot-password"}>Forgot your password?</Link>
+      <CMButtonGroup>
+        <CMButton type="submit" value="Login">Login</CMButton>
+      </CMButtonGroup>
+      <Link href={router.href("/auth/forgot-password")}>Forgot your password?</Link>
     </form>
 
   </div>);

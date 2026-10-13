@@ -6,6 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { getCmdbWindow } from "src/core/components/dashboardContext/DashboardContext";
 import { parsePublicId } from "shared/publicId";
+import { usePresentation } from "src/locale/components/PresentationProvider";
+import type { PresentationData } from "src/locale/shared/presentationContext";
+vi.mock("src/route/PortalRoutingProvider", () => ({ usePortalHosting: () => ({ kind: "platform" }) }));
+vi.mock("src/locale/components/PresentationProvider", () => ({ usePresentation: vi.fn() }));
 
 let root: Root;
 
@@ -14,6 +18,7 @@ beforeEach(() => {
     delete getCmdbWindow().cmdbDashboardContext;
     document.body.innerHTML = "<div id='root'></div>";
     root = createRoot(document.getElementById("root")!);
+    vi.mocked(usePresentation).mockReturnValue({ bandPublicId: null, data: null, invalidate: async () => {} });
 });
 
 afterEach(async () => {
@@ -24,6 +29,15 @@ afterEach(async () => {
 });
 
 describe("Markdown on a public custom-link page", () => {
+    it("retains the app's portal selection when the public page has no dashboard provider", async () => {
+        const bandPublicId = parsePublicId<"Band">("PublicationBand1");
+        // This renderer only consumes the validated input from the app's presentation snapshot.
+        const data = { input: { bandPublicId, routeLocale: "fr-BE" } } as PresentationData;
+        vi.mocked(usePresentation).mockReturnValue({ bandPublicId, data, invalidate: async () => {} });
+        await act(async () => root.render(React.createElement(Markdown, { markdown: "[Wiki](/backstage/wiki/welcome)" })));
+        expect(document.querySelector(".renderedContent a")?.getAttribute("href"))
+            .toBe("/fr-BE/b/PublicationBand1/backstage/wiki/welcome");
+    });
     it("keeps explicit publication band/locale on internal links, mentions and dimensioned File images", async () => {
         const bandPublicId = parsePublicId<"Band">("PublicationBand1");
         const markdown = "[document](/api/files/download/photo.png) [page](/backstage/wiki/welcome) [[welcome|Wiki]] [[event:Event00000000001|Concert]] ![photo](/api/files/download/photo.png?240)";
@@ -31,12 +45,12 @@ describe("Markdown on a public custom-link page", () => {
             markdown, presentation: { bandPublicId, routeLocale: "nl-NL" },
         })));
         for (const anchor of document.querySelectorAll<HTMLAnchorElement>(".renderedContent a")) {
-            expect(new URL(anchor.href).searchParams.get("bandPublicId")).toBe(bandPublicId);
-            expect(new URL(anchor.href).searchParams.get("routeLocale")).toBe("nl-NL");
+            expect(new URL(anchor.href).pathname).toContain(`/nl-NL/b/${bandPublicId}/`);
+            expect(new URL(anchor.href).searchParams.has("bandPublicId")).toBe(false);
         }
         expect(document.querySelectorAll(".renderedContent a")).toHaveLength(4);
         const image = document.querySelector<HTMLImageElement>(".renderedContent img");
-        expect(image?.src).toContain("bandPublicId=PublicationBand1&routeLocale=nl-NL");
+        expect(image?.src).toContain("/nl-NL/b/PublicationBand1/api/files/download/");
         expect(image?.style.maxWidth).toBe("240px");
     });
     it("renders formatted text and inline components without dashboard data", async () => {

@@ -37,7 +37,7 @@ function pendingPresentation(input: PresentationInput) {
     if (!read.resolved) {
         throw read.promise;
     }
-    return [{ input }];
+    return [{ input, localization: { formattingLocale: input.routeLocale ?? "en-US" } }];
 }
 
 function SelectedBand() {

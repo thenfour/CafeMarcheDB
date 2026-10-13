@@ -22,6 +22,8 @@ import { isAttendanceGoing } from 'shared/eventAttendance';
 import { partition } from "@/shared/arrayUtils";
 import { EventStatusPublicId, PermissionPublicId } from "@/shared/publicId";
 import { usePresentation } from "src/locale/components/PresentationProvider";
+import { usePortalHosting } from "src/route/PortalRoutingProvider";
+import type { BandHostingConfig } from "src/route/portalRouting";
 import { collectLocalePreferences, type LocalePreferences } from "src/locale/shared/localePreferences";
 
 type CmdbWindow = Window & {
@@ -55,8 +57,8 @@ export class DashboardContextData extends DashboardContextDataBase {
         return bandPublicId;
     }
 
-    constructor() {
-        super();
+    constructor(hosting: BandHostingConfig) {
+        super(hosting);
         this.metronomeSilencers = [];
     }
 
@@ -194,13 +196,16 @@ export class DashboardContextData extends DashboardContextDataBase {
 
 // Keep the runtime object stable (for example metronome registrations), while
 // a new provider envelope notifies React consumers when query data changes.
-export const DashboardContext = React.createContext({ data: new DashboardContextData() });
+// Outside the dashboard provider this object represents an unscoped platform shell.
+export const DashboardContext = React.createContext({ data: new DashboardContextData({ kind: "platform" }) });
 
 export const useDashboardContext = () => React.useContext(DashboardContext).data;
 
 
 export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{}>) => {
-    const valueRef = React.useRef(new DashboardContextData());
+    const hosting = usePortalHosting();
+    const valueRef = React.useRef(new DashboardContextData(hosting));
+    valueRef.current.portalHosting = hosting;
     const presentation = usePresentation();
     const brand = useBrand();
 
@@ -239,7 +244,6 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     const authorizationContext = presentation.data?.authorization ?? dashboardData.authorization;
     valueRef.current.authorizationContext = authorizationContext;
 
-    // todo: move to a proper routing mechanism
     valueRef.current.memberPresentation = presentation.data?.input ?? {};
     valueRef.current.effectivePermissions = new PermissionSet(authorizationContext.effectivePermissionNames);
 

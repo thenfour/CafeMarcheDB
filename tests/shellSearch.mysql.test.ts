@@ -160,8 +160,8 @@ describe.skipIf(!settingsMysqlTestUrl)("restored global shell search on MariaDB"
         expect(JSON.stringify(results)).not.toMatch(/"(?:bandId|createdByUserId|currentRevisionId|descriptionWikiPageId)":/);
         for (const result of results) {
             const url = new URL(result.absoluteUri!);
-            expect(url.searchParams.get("bandPublicId")).toBe(c.bandPublicId);
-            expect(url.searchParams.get("routeLocale")).toBe("en-US");
+            expect(url.pathname).toContain(`/en-US/b/${c.bandPublicId}/`);
+            expect(url.searchParams.has("routeLocale")).toBe(false);
         }
         expect(results.find(result => result.itemType === Type.event)!.name).toContain("10/25/2026");
     }));

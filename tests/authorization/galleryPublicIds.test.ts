@@ -84,6 +84,8 @@ describe("FrontpageGalleryItem public identity", () => {
                 publicId: galleryPublicId(20),
                 sortOrder: 2,
                 caption: "Concert",
+                caption_fr: null,
+                caption_nl: null,
                 displayParams: "{}",
                 file: {
                     publicId: "File000000000020",
@@ -93,6 +95,8 @@ describe("FrontpageGalleryItem public identity", () => {
                 },
             });
             expect(dto).not.toHaveProperty("id");
+            expect(dto.caption_fr).toBeNull();
+            expect(dto.caption_nl).toBeNull();
             expectTypeOf(dto.publicId).toEqualTypeOf<FrontpageGalleryItemPublicId>();
             const feed = MakePublicFeedResponseSpec([], [{
                 publicId: galleryPublicId(20),
@@ -102,7 +106,7 @@ describe("FrontpageGalleryItem public identity", () => {
                 caption_fr: "Concert",
                 displayParams: "{}",
                 file: { publicId: filePublicId(21), storedLeafName: "concert.jpg", customData: null, mimeType: "image/jpeg" },
-            }], { translations: authoredTranslationContext({ routeLocale: "en" }, ["en-US"]), bandPublicId, baseURL: "https://test" });
+            }], { translations: authoredTranslationContext({ routeLocale: "en" }, ["en-US"]), bandPublicId, hosting: { kind: "platform" }, baseURL: "https://test" });
             expect(feed.gallery[0]?.galleryItemId).toBe(galleryPublicId(20));
         } finally {
             if (previous === undefined) delete process.env.CMDB_BASE_URL;

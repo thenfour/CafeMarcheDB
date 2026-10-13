@@ -46,6 +46,6 @@ describe("member profile and directory contracts", () => {
         expect(xBandUser.getPrismaOrderBy({ bandRoleId: "desc" })).toEqual([{ bandRoleId: "desc" }, { publicId: "asc" }]);
     });
     it("keeps person identity, band and route locale in profile links", () => {
-        expect(bandMemberHref(parsePublicId<"User">("User000000000001"), context)).toBe("/backstage/user/User000000000001?bandPublicId=Band000000000001&routeLocale=fr-BE");
+        expect(bandMemberHref(parsePublicId<"User">("User000000000001"), context, { kind: "platform" })).toBe("/fr-BE/b/Band000000000001/backstage/user/User000000000001");
     });
 });

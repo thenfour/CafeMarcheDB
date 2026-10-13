@@ -139,7 +139,7 @@ const RelevantEventsWithDashboardContext = ({
     return <div className="RelevantEvents">
         <AppContextMarker name="relevant events">
             {/* <div className="RelevantEventsHeader">
-            <a href="/backstage/events" rel="noreferrer">
+            <a href={portalHref("/backstage/events", dashboardContext.memberPresentation, dashboardContext.portalHosting)} rel="noreferrer">
                 Current Events
             </a>
         </div> */}

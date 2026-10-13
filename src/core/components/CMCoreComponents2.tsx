@@ -537,7 +537,7 @@ export function useURLState<T extends Serializable>(
             } else {
                 params.set(key, JSON.stringify(state));
             }
-            const href = `${window.location.pathname}?${params}`;
+            const href = `${window.location.pathname}${params.size ? `?${params}` : ""}${window.location.hash}`;
             if (href !== router.asPath) {
                 void router.replace(href, undefined, { shallow: true });
             }

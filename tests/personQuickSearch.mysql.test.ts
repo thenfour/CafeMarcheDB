@@ -64,9 +64,9 @@ describe.skipIf(!settingsMysqlTestUrl)("selected-band person quick search on Mar
         expect(results[0]).toMatchObject({ id: c.shared.publicId, name: "Quick compass", itemType: Type.user, matchingField: "name" });
         expect(QuickSearchResultsSchema.parse(results)).toEqual(results);
         const uri = new URL(results[0]!.absoluteUri!);
-        expect(uri.pathname).toBe(`/backstage/user/${c.shared.publicId}`);
-        expect(uri.searchParams.get("bandPublicId")).toBe(c.args.bandPublicId);
-        expect(uri.searchParams.get("routeLocale")).toBe("fr-BE");
+        expect(uri.pathname).toBe(`/fr-BE/b/${c.args.bandPublicId}/backstage/user/${c.shared.publicId}`);
+        expect(uri.pathname).toContain(`/fr-BE/b/${c.args.bandPublicId}/`);
+        expect(uri.searchParams.has("routeLocale")).toBe(false);
         expect(JSON.stringify(results)).not.toMatch(/"(?:email|phone|userId|bandId|bandRoleId|isDeleted)":/);
     }));
 

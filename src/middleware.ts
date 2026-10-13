@@ -1,51 +1,63 @@
 // src/middleware.ts
-//import db from "@/db";
-import { NextResponse, type NextRequest } from "next/server"
 
-// this should be a simple URL rewriter, based on metadata in
-// backstageRoutes registry.
-// note that you cannot run Prisma here;
+import { NextResponse, type NextRequest } from "next/server";
+import { parsePublicId } from "shared/publicId";
+import { parsePortalPath, getServerBandHostingConfig, PORTAL_PATH_HEADER, selectPortalContext } from "src/route/portalRouting";
+
+// must be a simple URL rewriter, based on metadata in backstageRoutes registry.
+// this is the 1st stage in cmdb url processing
+// can not perform any db queries and therefore auth / locale selection etc can't be done here.
+
+// you cannot run Prisma here;
 // Error: PrismaClient is not configured to run in Vercel Edge Functions or Edge Middleware. In order to run Prisma Client on edge runtime, either:
 // - Use Prisma Accelerate: https://pris.ly/d/accelerate
 // - Use Driver Adapters: https://pris.ly/d/driver-adapters
 
-// so the concept of a default locale should be set in env, not the database.
-
 export function middleware(request: NextRequest) {
-    const path = request.nextUrl.pathname;
+    try {
+        const originalPath = request.nextUrl.pathname;
+        const path = parsePortalPath(originalPath);
+        const hosting = getServerBandHostingConfig(process.env.CMDB_HOSTING_MODE, process.env.CMDB_PUBLIC_BAND_PUBLIC_ID);
 
-    //console.log(`MW path: ${path}`);
+        // parse band & locale from query params.
+        // todo: should not be hard-coded query parameters!
+        const query = request.nextUrl.searchParams;
+        if (query.getAll("bandPublicId").length > 1 || query.getAll("routeLocale").length > 1) {
+            return new NextResponse(null, { status: 404 });
+        }
+        const requestedBand = query.get("bandPublicId");
+        const selection = selectPortalContext(path, {
+            bandPublicId: requestedBand === null ? null : parsePublicId<"Band">(requestedBand),
+            routeLocale: query.get("routeLocale"),
+        }, hosting);
 
-    // if (path === "/settings") {
-    //     const destination = request.nextUrl.clone();
-    //     // the destination must also be a page (/pages/...) -- cannot just be embedded somewhere in the repo.
-    //     destination.pathname = `/backstage/events`;
+        const headers = new Headers(request.headers);
+        headers.delete(PORTAL_PATH_HEADER);
+        headers.set(PORTAL_PATH_HEADER, originalPath);
 
-    //     // Remove any value supplied by the browser.
-    //     const headers = new Headers(request.headers);
-    //     //headers.delete("x-cmdb-portal-path");
+        // now construct the internal dest route, with params as query string params.
+        const destination = request.nextUrl.clone();
+        destination.pathname = path.pathname;
+        if (selection.bandPublicId) {
+            destination.searchParams.set("bandPublicId", selection.bandPublicId);
+        }
+        if (selection.routeLocale) {
+            destination.searchParams.set("routeLocale", selection.routeLocale);
+        }
 
-    //     headers.set("x-cmdb-portal-path", path);
-
-    //     return NextResponse.rewrite(destination, { request: { headers } });
-
-    // }
-
-
-    return NextResponse.next();
-
-    //   const match = /^\/(fr-BE|nl-BE|en-GB)\/b\/([A-Za-z0-9_-]+)(\/.*)?$/.exec(path)
-
-    //   if (!match) {
-    //     return NextResponse.next({ request: { headers } })
-    //   }
-
-    //   const routeUnderBand = match[3] || ""
-    //   const destination = request.nextUrl.clone()
-    //   destination.pathname = `/backstage${routeUnderBand}`
-
-    //   // Give server-side page code the original path to resolve and verify.
-    //   headers.set("x-cmdb-portal-path", path) // this lets the target page know the lang & band / original request info
-
-    //return NextResponse.rewrite(destination, { request: { headers } })
+        if (destination.href === request.nextUrl.href) {
+            return NextResponse.next({ request: { headers } });
+        }
+        return NextResponse.rewrite(destination, { request: { headers } });
+    } catch {
+        return new NextResponse(null, { status: 404 });
+    }
 }
+
+// https://nextjs.org/docs/14/app/building-your-application/routing/middleware
+export const config = {
+    // it may not be totally necessary but this confines middleware handling to paths we actually treat.
+    // though i'm not sure this is entirely accurate or necessary.
+    // for example what if favicon.ico is a png?  i feel like it's better to use a blanket handler.
+    matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"]
+};

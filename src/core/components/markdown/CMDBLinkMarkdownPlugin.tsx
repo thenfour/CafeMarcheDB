@@ -1,5 +1,5 @@
 import type MarkdownIt from "markdown-it";
-import { withMemberPresentation } from "../user/bandMemberLinks";
+import { portalHref, type BandHostingConfig } from "src/route/portalRouting";
 import type { DB3QueryContextInput } from "src/core/db3/components/useDB3Context";
 
 
@@ -48,7 +48,7 @@ export const MarkdownWikiLinkRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 export const MarkdownWikiLinkRegexWithSurroundingWhitespace = /\s*\[\[([^\]|]+)(?:\|([^\]]+))?\]\]\s*/g;
 
 // Standalone renderers have no presentation context; application callers supply their selected band.
-export function CMDBLinkMarkdownPlugin(md: MarkdownIt, context: DB3QueryContextInput = {}) {
+export function CMDBLinkMarkdownPlugin(md: MarkdownIt, context: DB3QueryContextInput, hosting: BandHostingConfig) {
     // Save the current text renderer (which might be the default, or from another plugin)
     const originalTextRule = md.renderer.rules.text ||
         function (tokens, idx, options, env, self) {
@@ -63,13 +63,13 @@ export function CMDBLinkMarkdownPlugin(md: MarkdownIt, context: DB3QueryContextI
         output = output.replace(MarkdownMentionRegex, (match, type, id, caption) => {
             if (type === 'event') {
                 caption = caption || `Event ${id}`;
-                return `<a href="${withMemberPresentation(`/backstage/event/${id}`, context)}" class="wikiCMLink wikiEventLink">📅 ${caption}</a>`;
+                return `<a href="${portalHref(`/backstage/event/${id}`, context, hosting)}" class="wikiCMLink wikiEventLink">📅 ${caption}</a>`;
             } else if (type === 'song') {
                 caption = caption || `Song ${id}`;
-                return `<a href="${withMemberPresentation(`/backstage/song/${id}`, context)}" class="wikiCMLink wikiSongLink">🎵 ${caption}</a>`;
+                return `<a href="${portalHref(`/backstage/song/${id}`, context, hosting)}" class="wikiCMLink wikiSongLink">🎵 ${caption}</a>`;
             } else if (type === 'user') {
                 caption = caption || `Person ${id}`;
-                return `<a href="${withMemberPresentation(`/backstage/user/${id}`, context)}" class="wikiCMLink wikiUserLink">${caption}</a>`;
+                return `<a href="${portalHref(`/backstage/user/${id}`, context, hosting)}" class="wikiCMLink wikiUserLink">${caption}</a>`;
             }
             return match;
         });
@@ -78,7 +78,7 @@ export function CMDBLinkMarkdownPlugin(md: MarkdownIt, context: DB3QueryContextI
         output = output.replace(MarkdownWikiLinkRegex, (match, slug, caption) => {
             if (slug) {
                 caption = caption || slug;
-                return `<a href="${withMemberPresentation(`/backstage/wiki/${slug}`, context)}" class="wikiCMLink wikiWikiLink">${caption}</a>`;
+                return `<a href="${portalHref(`/backstage/wiki/${slug}`, context, hosting)}" class="wikiCMLink wikiWikiLink">${caption}</a>`;
             }
             return match;
         });

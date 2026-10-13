@@ -8,6 +8,7 @@ import { MetronomePanel } from "@/src/core/components/Metronome";
 import { BlitzPage } from "@blitzjs/next";
 import HomeIcon from '@mui/icons-material/Home';
 import { Breadcrumbs } from "@mui/material";
+import { portalHref } from "src/route/portalRouting";
 
 
 ////////////////////////////////////////////////////////////////
@@ -15,13 +16,13 @@ export const PracticeToolsBreadcrumbs = () => {
     const dashboardContext = useDashboardContext();
     return <Breadcrumbs aria-label="breadcrumb">
         <CMLink
-            href="/backstage"
+            href={portalHref("/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage
         </CMLink>
         <CMLink
-            href="/backstage/practice-tools"
+            href={portalHref("/backstage/practice-tools", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
         >
             Practice Tools
         </CMLink>

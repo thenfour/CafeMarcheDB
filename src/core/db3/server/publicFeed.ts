@@ -1,3 +1,4 @@
+import type { BandHostingConfig } from "src/route/portalRouting";
 import { AuthorizationError } from "blitz";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { loadLocaleAvailability } from "src/locale/server/localization";
@@ -10,7 +11,7 @@ import { executeDB3Read, type DB3ReadDatabase } from "./db3ReadExecution";
 
 /** Events, Gallery source visibility, locales and current grants share one snapshot. */
 export async function readPublicFeed(database: DB3ReadDatabase, authorization: CMServerAuthorization,
-    input: PublicFeedInput, options: { readonly baseURL: string },
+    input: PublicFeedInput, options: { readonly baseURL: string; readonly hosting: BandHostingConfig },
 ) {
     const selection = PublicFeedInputSchema.parse(input);
     return executeDB3Read(database, authorization, async context => {
@@ -42,6 +43,7 @@ export async function readPublicFeed(database: DB3ReadDatabase, authorization: C
             translations: authoredTranslationContext(selection, availability.band),
             bandPublicId: selection.bandPublicId,
             baseURL: options.baseURL,
+            hosting: options.hosting,
         });
     });
 }

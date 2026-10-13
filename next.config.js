@@ -28,10 +28,7 @@ const config = {
   distDir: process.env.CMDB_DEMO === "1" ? ".next-demo" : ".next",
   swcMinify: true,
   experimental: { instrumentationHook: true },
-  i18n: {
-    locales: ['en', 'nl', 'fr'],
-    defaultLocale: 'en',
-  },
+  // middleware owns language prefixes and support
   modularizeImports: {
     "@mui/material": {
       transform: "@mui/material/{{member}}",

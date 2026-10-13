@@ -8,6 +8,8 @@ import { getSessionForRequest } from "src/blitz-server";
 import { readPublicFeed } from "src/core/db3/server/publicFeed";
 import { PublicFeedInputSchema } from "src/core/db3/shared/publicFeedInput";
 import { collectLocalePreferences, parseAcceptLanguage } from "src/locale/shared/localePreferences";
+import { serverPortalHosting } from "src/route/server/portalConfig";
+import { withPortalRequest } from "src/route/server/portalRequest";
 
 export const config = { api: { bodyParser: false } };
 const PublicFeedQuerySchema = PublicFeedInputSchema.omit({ browserLanguages: true })
@@ -44,7 +46,7 @@ export async function publicFeedHandler(req: NextApiRequest, res: NextApiRespons
         const auth = isCrossOrigin(req, baseURL)
             ? await loadAuthorizationForUser(null, undefined, input.bandPublicId)
             : await loadAuthorization(ctx?.session ?? await getSessionForRequest(req, res), input.bandPublicId);
-        const payload = await readPublicFeed(db, auth, input, { baseURL });
+        const payload = await readPublicFeed(db, auth, input, { baseURL, hosting: serverPortalHosting() });
         if (req.method === "HEAD") {
             res.status(200).end();
             return;
@@ -68,4 +70,18 @@ export async function publicFeedHandler(req: NextApiRequest, res: NextApiRespons
 }
 
 // A read-only Next route rejects methods before session/CSRF middleware; accepted GETs use the shared session owner.
-export default publicFeedHandler;
+export default async function portalPublicFeedHandler(req: NextApiRequest, res: NextApiResponse) {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+        return publicFeedHandler(req, res);
+    }
+    try {
+        await withPortalRequest(req, () => publicFeedHandler(req, res));
+    } catch (error) {
+        if (error instanceof NotFoundError) {
+            res.setHeader("Cache-Control", "no-store");
+            res.status(404).end();
+            return;
+        }
+        throw error;
+    }
+}

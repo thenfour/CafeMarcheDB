@@ -75,6 +75,7 @@ beforeEach(() => {
     document.body.innerHTML = "<div id='root'></div>";
     root = createRoot(document.getElementById("root")!);
     vi.mocked(useDashboardContext).mockReturnValue({
+        portalHosting: { kind: "platform" },
         permission: { items: permissions, getById: (id: string) => permissions.find(p => p.publicId === id) },
         userTag: { items: tags, getById: (id: string) => tags.find(tag => tag.publicId === id) }, isAuthorized: (name: string) => name !== "Hidden",
         routingApi: { getURIForUser: () => "/user" },

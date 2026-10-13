@@ -3,9 +3,7 @@ import { findBackstageRouteByPattern, pageRoutePermission } from "../shared/back
 import { loadAuthorization } from "./serverAuthorization";
 import type { BandPublicId } from "shared/publicId";
 
-// todo: more advanced routing logic needs to be  used to parse out
-// - requested locale by route
-// - requested band by route
+// Routing supplies explicit validated context; this owner enforces registered page permissions.
 export async function authorizePageRequest(
     pathname: string,
     session: SessionContext,

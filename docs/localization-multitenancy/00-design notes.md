@@ -104,7 +104,8 @@ deployment configuration. Exact resolution and settings rules live in the
 Backend authorization uses explicit, server-validated band context in all hosting
 modes, without an implicit default band. Café Marché must retain familiar URLs
 and single-band navigation without a mandatory picker; hosting/routing supplies
-validated context. The development selector is temporary scaffolding.
+validated context. Platform hosting offers an explicit band picker; standalone
+hosting binds its configured band without a picker.
 
 Standalone hosting keeps the intended root or `/backstage` shape. Platform
 portals use `/[locale]/b/<publicBandId>/...`, with locale optional. URLs without
@@ -114,6 +115,22 @@ host/band/locale on the server; middleware hints do not authorize. Carry context
 through SSR, RPC, files, feeds, notifications and exports. Custom Links use the
 band portal root without locale-dependent redirects. Mutable band names are not
 routing identity.
+
+`CMDB_BASE_URL` identifies the allowed public host, including its port.
+`CMDB_HOSTING_MODE=Platform` is the default and generates, for example,
+`/fr-BE/b/<publicBandId>/backstage/events` or the shareable
+`/b/<publicBandId>/backstage/events`. Existing page paths remain beneath the
+portal prefix. `CafeMarche` and `GenericSingleTenant` require
+`CMDB_PUBLIC_BAND_PUBLIC_ID=<publicBandId>` and retain `/backstage/events` or
+`/fr-BE/backstage/events`. Café Marché also retains its public homepage at `/`.
+
+Explicit account/platform destinations on standalone hosts use `/platform/...`,
+optionally after the locale, so a shared account operation does not implicitly
+select a membership. The transport still rejects foreign-band payloads on that
+host. Existing explicit band/locale query bookmarks remain readable; conflicting
+selections fail. Routing context never supplies a missing domain request input.
+Unknown/deleted bands, foreign hosts and unavailable explicit languages return
+404 before page/API data; current membership and grants are checked separately.
 
 Full portal routing, band lifecycle/onboarding, platform administration, cross-band
 account merge and translation tools follow core restoration. New product features

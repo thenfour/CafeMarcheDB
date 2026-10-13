@@ -1020,6 +1020,25 @@ which brings multiple band contexts to the single page. HOWEVER if you're in onl
 
 # TECH DEBT accumulating / things to make sure we do
 
+-  ❌Unable to save
+   http://localhost:10455/backstage/event/Zqx_kLufC_3QMdyJ/rehearsal/setlists?bandPublicId=LRnHh3DGxoKiKKI7
+   DB3PublicIdError: EventSongListSong was not found.
+-  ❌unable to edit an event
+-  ❌router API needs to be made correct, backstage route catalog, ...
+   -  it should also be usable for the menu to understand which route we're on, which group we're in
+   -  and breadcrumbs
+-  ❌locale selector
+-  ❌band selector
+-  ❌remove `/backstage` / startsWith(...backstage / api / etc...)
+-  ❌understand DefaultRolePermissionAssignments
+-  ❌ migrate `<Link` + cleanup `<CMLinkButton`, `<CMLink`, `<a`, and manual navigation / `window.location.href` / ... `router.push`, `window.location.assign`...
+   -  we should really have components that don't accept strings as URLs, but route registry-defined params. so route registry
+      defines its params too
+-  ❌ migrate `<Select`
+-  clean up / collapse localized strings
+-  begin a localized string editor
+-  also eval `" in ` instances -- also very shady
+-  `Loading language and settings…` is likely covering much more than just language & settings.
 -  `error instanceof` tend to be very shaky and spaghetti
 -  cleanup lsmb todo
 -  roles need to render as chips

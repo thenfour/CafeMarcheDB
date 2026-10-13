@@ -13,7 +13,8 @@ import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { SearchPageContent, type SearchPageContentConfig, type FilterGroupDefinition } from "../search/SearchPageContent";
 import { UserListItem } from "./UserListItem";
 import { UserOrderByColumnNames, UserOrderByColumnOptions, type UserOrderByColumnOption, type UsersFilterSpec } from "./UserClientBaseTypes";
-import { bandMemberHref, withMemberPresentation } from "./bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
+import { bandMemberHref } from "./bandMemberLinks";
 
 interface MemberPreset {
     label: string;
@@ -133,7 +134,7 @@ function LoadedMemberDirectory() {
         csvExporter: {
             filename: "users", itemToCSVRow: (member, index) => ({
                 Order: index, "Public ID": member.user.publicId, Name: member.user.name ?? "",
-                URL: bandMemberHref(member.user.publicId, context),
+                URL: bandMemberHref(member.user.publicId, context, dashboard.portalHosting),
             })
         },
         showAdminControls: canManage, className: "usersListContainer",
@@ -149,7 +150,7 @@ function LoadedMemberDirectory() {
         { key: "instruments", label: "Instruments", type: "tags", column: "bandUserInstruments" },
     ];
     return <div className="eventsMainContent searchPage">
-        {dashboard.isAuthorized(Permission.recover_users) && <CMLink href={withMemberPresentation("/backstage/recoverMembers", context)}>{locale.getPlainString("membership.lifecycle.recoveryTitle")}</CMLink>}
+        {dashboard.isAuthorized(Permission.recover_users) && <CMLink href={portalHref("/backstage/recoverMembers", context, dashboard.portalHosting)}>{locale.getPlainString("membership.lifecycle.recoveryTitle")}</CMLink>}
         <SearchPageContent config={config} filterHooks={{ tags: tagFilter, role: roleFilter, instruments: instrumentFilter }}
             filterGroupDefinitions={groups} searchPageHook={searchPage} />
     </div>;

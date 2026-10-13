@@ -3,7 +3,6 @@ import { ServerStartInfo } from "@/shared/serverStateBase";
 import { IsNullOrWhitespace } from "@/shared/utils";
 import { findBackstageRouteByPattern, pageRoutePermission } from "@/src/auth/shared/backstageRoutes";
 import { useSession } from "@blitzjs/auth";
-import { Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import { QrCode } from "@mui/icons-material";
 import MenuIcon from '@mui/icons-material/Menu';
@@ -35,7 +34,8 @@ import { MediaPlayerProvider, useMediaPlayer } from "../mediaPlayer/MediaPlayerC
 import { MessageBoxProvider } from "../MessageBoxContext";
 import { QrCodeDialog } from "../QrCode";
 import { useDialogViewportRect } from "../ResponsiveDialog";
-import { withMemberPresentation } from "../user/bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
+import { PortalLanguageSelection } from "src/route/PortalLanguageSelection";
 import { ApplicationFrameProvider, useApplicationFrame, useApplicationFrameBackgroundRef } from "./ApplicationFrameContext";
 import { BandSelection } from "./BandSelection";
 import { MainSiteSearch } from "../search/MainSiteSearch";
@@ -88,7 +88,10 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
         {dashboardContext.isAuthorized(Permission.sysadmin) && <>
 
             {versionLabel && (
-                <MenuItem component={Link} href='/backstage/serverHealth' onClick={closeMenu}>
+                <MenuItem
+                    component={Link}
+                    href={portalHref('/backstage/serverHealth', dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+                    onClick={closeMenu}>
                     <ListItemIcon>{gIconMap.Info()}</ListItemIcon>
                     Version: {versionLabel}
                 </MenuItem>
@@ -119,7 +122,11 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
 
         {currentUser &&
             <>
-                {dashboardContext.isAuthorized(Permission.view_events_nonpublic) && <MenuItem component={Link} href="/backstage/calendar" onClick={closeMenu}>
+                {dashboardContext.isAuthorized(Permission.view_events_nonpublic) && <MenuItem
+                    component={Link}
+                    href={portalHref("/backstage/calendar", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+                    onClick={closeMenu}
+                >
                     <ListItemIcon>{gIconMap.CalendarMonth()}</ListItemIcon>
                     Calendar subscription
                 </MenuItem>
@@ -140,7 +147,13 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
             </>
         }
 
-        <MenuItem component={Link} href={withMemberPresentation('/backstage/profile', dashboardContext.memberPresentation)} onClick={closeMenu}>Your profile</MenuItem>
+        <MenuItem
+            component={Link}
+            href={portalHref('/backstage/profile', dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+            onClick={closeMenu}
+        >
+            Your profile
+        </MenuItem>
         <Divider />
 
         <MenuItem onClick={async () => {
@@ -150,7 +163,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
                 context: "AppBarAvatarMenu",
             });
             closeMenu();
-            void router.push(Routes.LogoutPage());
+            void router.push(portalHref("/auth/logout", dashboardContext.memberPresentation, dashboardContext.portalHosting));
         }}>
             Log out
         </MenuItem>
@@ -305,7 +318,11 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                 </IconButton>
                 <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
                     {brand.siteLogoUrl && (
-                        <Link href={withMemberPresentation("/backstage", dashboardContext.memberPresentation)} aria-label="Home" style={{ display: 'inline-flex' }}>
+                        <Link
+                            href={portalHref("/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+                            aria-label="Home"
+                            style={{ display: 'inline-flex' }}
+                        >
                             <img src={brand.siteLogoUrl} alt="logo" style={{ display: 'block' }} />
                         </Link>
                     )}
@@ -314,12 +331,21 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                         noWrap
                         component="div"
                     >
-                        {!IsNullOrWhitespace(brand.siteTitle) && <Link href={withMemberPresentation("/backstage", dashboardContext.memberPresentation)} className={`logo`}>{brand.siteTitle}</Link>}
+                        {!IsNullOrWhitespace(brand.siteTitle) && <Link
+                            href={portalHref("/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+                            className={`logo`}
+                        >
+                            {brand.siteTitle}
+                        </Link>}
                     </Typography>
                 </Box>
 
                 <Tooltip title="Practice tools">
-                    <Link href={withMemberPresentation("/backstage/practice-tools", dashboardContext.memberPresentation)} aria-label="Practice tools" className="freeButton globalMetronomeButton">
+                    <Link
+                        href={portalHref("/backstage/practice-tools", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+                        aria-label="Practice tools"
+                        className="freeButton globalMetronomeButton"
+                    >
                         {gIconMap.VolumeDown()}
                     </Link>
                 </Tooltip>
@@ -346,7 +372,10 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
 
                     </>}>
                         <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', sm: 'inline-flex' }, alignItems: 'center', cursor: 'pointer' }}>
-                            <a href="/backstage/serverHealth" style={{ color: 'inherit', textDecoration: 'none' }}>
+                            <a
+                                href={portalHref("/backstage/serverHealth", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+                                style={{ color: 'inherit', textDecoration: 'none' }}
+                            >
                                 {versionLabel}
                             </a>
                         </Typography>
@@ -496,6 +525,7 @@ const Dashboard3 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
                             <React.Suspense>
                                 {forceLogin ? <LoginSignup /> : <>
                                     {dashboardContext.currentUser && <BandSelection />}
+                                    <PortalLanguageSelection />
                                     {children}
                                 </>}
                             </React.Suspense>

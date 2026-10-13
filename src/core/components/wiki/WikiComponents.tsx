@@ -1,5 +1,5 @@
 
-import { withMemberPresentation } from "../user/bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
 import { Alert } from "@mui/material";
 import { useLocale } from "src/locale/components/useLocale";
 import { useMutation } from "@blitzjs/rpc";
@@ -46,7 +46,7 @@ interface WikiTitleControlProps {
 const WikiTitleViewer = (props: WikiTitleControlProps) => {
     const dashboardContext = useDashboardContext();
     return <a
-        href={dashboardContext.getAbsoluteUri(withMemberPresentation(props.wikiPageApi.wikiPath.uriRelativeToHost, dashboardContext.memberPresentation))}
+        href={dashboardContext.getAbsoluteUri(portalHref(props.wikiPageApi.wikiPath.uriRelativeToHost, dashboardContext.memberPresentation, dashboardContext.portalHosting))}
         rel="noreferrer">
         <span className="WikiTitleView">
             {props.potentiallyEditedTitle}
@@ -372,7 +372,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
         </MenuItem>,
         pageExists && dashboardContext.isAuthorized(Permission.view_wiki_page_revisions) &&
         <MenuItem key={"copylink"} onClick={async () => {
-            await snackbar.invokeAsync(async () => navigator.clipboard.writeText(dashboardContext.getAbsoluteUri(withMemberPresentation(props.wikiPageApi.wikiPath.uriRelativeToHost, dashboardContext.memberPresentation))), "Copied link to clipboard");
+            await snackbar.invokeAsync(async () => navigator.clipboard.writeText(dashboardContext.getAbsoluteUri(portalHref(props.wikiPageApi.wikiPath.uriRelativeToHost, dashboardContext.memberPresentation, dashboardContext.portalHosting))), "Copied link to clipboard");
             endMenuItemRef.current();
         }}>
             <ListItemIcon>
@@ -382,7 +382,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
         </MenuItem>,
         pageExists && dashboardContext.isAuthorized(Permission.view_wiki_page_revisions) &&
         <MenuItem key={"viewhistory"} onClick={async () => {
-            void router.push(withMemberPresentation(`/backstage/wikiPageHistory?path=${encodeURIComponent(props.wikiPageApi.wikiPath.canonicalWikiPath)}`, dashboardContext.memberPresentation));
+            void router.push(portalHref(`/backstage/wikiPageHistory?path=${encodeURIComponent(props.wikiPageApi.wikiPath.canonicalWikiPath)}`, dashboardContext.memberPresentation, dashboardContext.portalHosting));
             endMenuItemRef.current();
         }}>
             <ListItemIcon>

@@ -45,7 +45,8 @@ async function main() {
         throw new Error("DEMO_PORT must be an integer from 1 to 65535.");
     }
     const env = { ...process.env, DATABASE_URL: target.toString(), FILE_UPLOAD_PATH: assetDirectory,
-        CMDB_DEMO: "1", CMDB_BASE_URL: `http://localhost:${port}` };
+        // This fixture deliberately hosts two bands on one development origin.
+        CMDB_DEMO: "1", CMDB_HOSTING_MODE: "Platform", CMDB_BASE_URL: `http://localhost:${port}` };
     console.log(`Demo database: ${target.hostname}:${target.port || "3306"}${target.pathname}`);
     if (operation === "reset") {
         if (process.env.NODE_ENV === "production") {

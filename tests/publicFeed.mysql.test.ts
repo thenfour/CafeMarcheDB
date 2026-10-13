@@ -47,7 +47,7 @@ async function prepare(tx: Prisma.TransactionClient, fixture: SettingsMysqlFixtu
     const input: PublicFeedInput = { bandPublicId: c.args.bandPublicId, routeLocale: "fr-BE", browserLanguages: ["nl-NL"] };
     const anonymous = await loadAuthorizationForUser(null, tx, input.bandPublicId);
     const read = async (patch: Partial<PublicFeedInput> = {}, auth = anonymous) => readPublicFeed(
-        await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" }), auth, { ...input, ...patch }, { baseURL: "https://publication.invalid" });
+        await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" }), auth, { ...input, ...patch }, { hosting: { kind: "platform" }, baseURL: "https://publication.invalid" });
     return { ...c, input, anonymous, published, memberEvent, other, source, gallery, earlier, memberGallery, otherGallery, read };
 }
 
@@ -73,7 +73,7 @@ describe.skipIf(!settingsMysqlTestUrl)("public publication on MariaDB", () => {
         expect(feed.gallery.map(item => item.galleryItemId)).toEqual([c.earlier.publicId, c.gallery.publicId]);
         expect(feed.gallery.map(item => item.fileId)).toEqual([c.source.publicId, c.source.publicId]);
         expect(JSON.stringify(feed)).not.toMatch(/Unpublished|"(?:bandId|uploadedByUserId|createdByUserId|visiblePermissionId)":/);
-        expect(feed.gallery[0]?.imageFileUri).toBe(`https://publication.invalid/api/files/download/${c.source.storedLeafName}?bandPublicId=${c.input.bandPublicId}&routeLocale=fr-BE`);
+        expect(feed.gallery[0]?.imageFileUri).toBe(`https://publication.invalid/fr-BE/b/${c.input.bandPublicId}/api/files/download/${c.source.storedLeafName}`);
     }));
     it("resolves each field independently and keeps intentional French and Dutch blanks", () => run(async (tx, fixture) => {
         const c = await prepare(tx, fixture);
@@ -90,6 +90,13 @@ describe.skipIf(!settingsMysqlTestUrl)("public publication on MariaDB", () => {
         expect((await c.read()).agenda[0]?.title).toBe("Nederlands Published");
         await tx.locale.update({ where: { id: fixture.dutchId }, data: { isDeleted: true } });
         expect((await c.read()).agenda[0]?.title).toBe("Published");
+    }));
+    it("reads nullable gallery translations and retains intentional blank captions", () => run(async (tx, fixture) => {
+        const c = await prepare(tx, fixture);
+        await tx.frontpageGalleryItem.update({ where: { id: c.earlier.id }, data: { caption_fr: null, caption_nl: null } });
+        expect((await c.read()).gallery[0]?.caption).toBe("English caption");
+        await tx.frontpageGalleryItem.update({ where: { id: c.earlier.id }, data: { caption_nl: "" } });
+        expect((await c.read()).gallery[0]?.caption).toBe("");
     }));
     it("gives members their readable preview while anonymous content stays public", () => run(async (tx, fixture) => {
         const c = await prepare(tx, fixture);
@@ -145,7 +152,7 @@ describe.skipIf(!settingsMysqlTestUrl)("public publication on MariaDB", () => {
             policies.push(options.isolationLevel);
             return work(tx);
         } };
-        await readPublicFeed(root, c.anonymous, c.input, { baseURL: "https://publication.invalid" });
+        await readPublicFeed(root, c.anonymous, c.input, { hosting: { kind: "platform" }, baseURL: "https://publication.invalid" });
         expect(policies).toEqual(["RepeatableRead"]);
     }));
 });

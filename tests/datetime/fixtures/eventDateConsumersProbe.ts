@@ -9,7 +9,7 @@ import {
   DashboardContextData,
 } from "../../../src/core/components/dashboardContext/DashboardContext"
 
-const dashboardContext = new DashboardContextData()
+const dashboardContext = new DashboardContextData({ kind: "platform" })
 dashboardContext.bandTimeZone = "Europe/Brussels"
 dashboardContext.localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
 dashboardContext.formattingLocale = "en-US"

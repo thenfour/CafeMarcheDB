@@ -10,7 +10,7 @@ import { CMTab, CMTabPanel } from "../TabPanel";
 import { useDashboardContext, useRecordFeatureUse } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabContent, UserWikiContributionsTabContent } from "./UserAnalyticTables";
-import { withMemberPresentation } from "./bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
 import { AccountProfile } from "./AccountProfile";
 import { ImpersonateUserButton } from "./ImpersonateUserButton";
 
@@ -39,7 +39,7 @@ export function UserDetail({ person }: { readonly person: ProfilePerson }) {
                 return;
             }
             const uri = `/backstage/user/${person.publicId}/${slugify(person.name || "member")}/${value}`;
-            void router.push(withMemberPresentation(uri, context), undefined, { shallow: true });
+            void router.push(portalHref(uri, context, dashboard.portalHosting), undefined, { shallow: true });
         }}>
             <CMTab thisTabId="attendance" summaryTitle="Attendance" summaryIcon={gIconMap.Check()}><UserAttendanceTabContent user={person} /></CMTab>
             <CMTab thisTabId="credits" summaryTitle="Credits" summaryIcon={gIconMap.Comment()}><UserCreditsTabContent user={person} /></CMTab>

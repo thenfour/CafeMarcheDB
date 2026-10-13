@@ -19,7 +19,7 @@ import { ActivityFeature } from "../featureReports/activityTracking";
 import { WikiSlugInputWithSearch } from "../wiki/WikiSlugInputWithSearch";
 import { LocalizedStringColumnClient } from "src/core/db3/components/DB3CatalogFields";
 import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
-import { withMemberPresentation } from "../user/bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
 import { wikiMakeRelativeURI } from "src/core/wiki/shared/wikiUtils";
 
 
@@ -116,7 +116,7 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
 
             {
                 ((props.item.linkType as keyof typeof DynamicMenuLinkType) === "Wiki") &&
-                <CMLink href={withMemberPresentation(wikiMakeRelativeURI(props.item.wikiSlug || ""), dashboardContext.memberPresentation)} target="_blank" rel="noreferrer" className="menuLinkTestLink wikiCMLink">
+                <CMLink href={portalHref(wikiMakeRelativeURI(props.item.wikiSlug || ""), dashboardContext.memberPresentation, dashboardContext.portalHosting)} target="_blank" rel="noreferrer" className="menuLinkTestLink wikiCMLink">
                     <div>Test wiki link</div>
                     {gIconMap.Launch()}
                 </CMLink>

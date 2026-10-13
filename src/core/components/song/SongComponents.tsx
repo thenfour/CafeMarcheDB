@@ -1,3 +1,4 @@
+import { portalHref, retainPortalPageState } from "src/route/portalRouting";
 import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 
 import { TAnyModel } from '@/shared/rootroot';
@@ -79,7 +80,7 @@ export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
             // underline="hover"
             // color="inherit"
             // sx={{ display: 'flex', alignItems: 'center' }}
-            href="/backstage"
+            href={portalHref("/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage
@@ -87,7 +88,7 @@ export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
         <CMLink
             // underline="hover"
             // color="inherit"
-            href="/backstage/songs"
+            href={portalHref("/backstage/songs", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
         //sx={{ display: 'flex', alignItems: 'center' }}
         >
             Songs
@@ -583,7 +584,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
     const songData = CalculateSongMetadata(song, selectedTab, dashboardContext);
 
     React.useEffect(() => {
-        void router.replace(songData.songURI, undefined, { shallow: true }); // shallow prevents annoying re-scroll behavior
+        void router.replace(retainPortalPageState(songData.songURI, router.asPath), undefined, { shallow: true });
     }, [songData.songURI]);
 
     const handleTabChange = (newId: string) => {
@@ -703,4 +704,3 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
     </SongDetailContainer>;
 
 };
-

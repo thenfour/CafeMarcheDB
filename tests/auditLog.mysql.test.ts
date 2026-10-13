@@ -84,8 +84,8 @@ describe.skipIf(!settingsMysqlTestUrl)("audit browsing on MariaDB", () => {
             const change = await record(tx, fixture, "Event", event.id, { id: event.id, bandId: event.bandId, statusId: status.id });
             const detail = await readAuditDetail(await snapshot(tx, auth), auth, { ...presentation, bandPublicId: parsePublicId<"Band">(fixture.bands[0]!.publicId), changeId: change.id });
             expect(detail.record?.bandPublicId).toBe(fixture.bands[index]!.publicId);
-            expect(detail.record?.href).toContain(`bandPublicId=${fixture.bands[index]!.publicId}`);
-            expect(detail.record?.href).toContain("routeLocale=fr-BE");
+            expect(detail.record?.href).toContain(`/b/${fixture.bands[index]!.publicId}/`);
+            expect(detail.record?.href).toContain("/fr-BE/");
             expect(detail.newValues).toEqual({ id: event.id, statusId: status.id, bandId: event.bandId });
         }
     }));

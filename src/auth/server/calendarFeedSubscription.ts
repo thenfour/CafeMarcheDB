@@ -10,6 +10,8 @@ import { UserForCalBackendArgs } from "src/core/db3/shared/schema/prismArgs";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "./activityLog";
 import { loadAuthorizationForUser } from "./serverAuthorization";
 import { requireAttendanceRead } from "src/core/db3/server/eventAttendancePolicy";
+import { portalHref } from "src/route/portalRouting";
+import { serverPortalHosting } from "src/route/server/portalConfig";
 
 export class CalendarFeedAuthorizationError extends Error {
     name = "CalendarFeedAuthorizationError";
@@ -48,7 +50,7 @@ export const getCalendarFeedSubscriptionInfo = (
     bandPublicId: BandPublicId,
 ): CalendarFeedSubscriptionInfo => {
     const subscriptionUrl = ServerApi.getAbsoluteUri(
-        GetICalRelativeURIForUserUpcomingEvents({ calendarFeedToken, bandPublicId }),
+        portalHref(GetICalRelativeURIForUserUpcomingEvents({ calendarFeedToken, bandPublicId }), { bandPublicId }, serverPortalHosting()),
     );
     return {
         subscriptionUrl,

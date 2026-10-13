@@ -1,3 +1,4 @@
+import { usePortalHosting } from "src/route/PortalRoutingProvider";
 import React, { Suspense } from "react";
 import { useQuery } from "@blitzjs/rpc";
 import type { GridRenderCellParams } from "@mui/x-data-grid";
@@ -8,7 +9,7 @@ import { useSnackbar } from "src/core/components/SnackbarContext";
 import { useLocale } from "src/locale/components/useLocale";
 import { getHashedColor } from "shared/utils";
 import { CMChip } from "src/core/components/CMChip";
-import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
 import { parsePublicId } from "shared/publicId";
 import { z } from "zod";
 import getAdminLogItemInfo from "../queries/getAdminLogItemInfo";
@@ -66,14 +67,15 @@ export function AuditRecordCell({ changeId, recordId }: { changeId: number; reco
 }
 
 export function ActivityLogUserChip({ user }: { user: { publicId: string; name?: string } | null | undefined }) {
+    const hosting = usePortalHosting();
     const context = useDB3QueryContext();
     const locale = useLocale();
     if (!user) {
         return <span>{locale.getPlainString("auditLog.unknownActor")}</span>;
     }
     return <CMChip size="small" tooltip={user.publicId}>
-        <a href={withMemberPresentation(`/backstage/user/${user.publicId}`, { ...context,
-            bandPublicId: context.bandPublicId ? parsePublicId<"Band">(context.bandPublicId) : null })}
+        <a href={portalHref(`/backstage/user/${user.publicId}`, { ...context,
+            bandPublicId: context.bandPublicId ? parsePublicId<"Band">(context.bandPublicId) : null }, hosting)}
             target="_blank" rel="noreferrer" style={{ color: getHashedColor(user.publicId) }}>{user.name ?? ""}</a>
     </CMChip>;
 }

@@ -1,3 +1,5 @@
+// Lsmb todo: most of this should be done via the cmdb router api.
+
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert, FormControl, InputLabel, Select, Stack } from "@mui/material";
@@ -6,9 +8,22 @@ import { parsePublicId } from "shared/publicId";
 import getAvailableBands from "src/auth/queries/getAvailableBands";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
-import { withMemberPresentation } from "../user/bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
+import { usePortalHosting } from "src/route/PortalRoutingProvider";
+import { AvailableBand } from "@/src/auth/server/availableBands";
 
-export function BandSelection() {
+function selectLocaleForBand(destinationBand: AvailableBand | undefined, routeLocale: string | null | undefined) {
+    if (!destinationBand || !routeLocale) {
+        return routeLocale;
+    }
+    // Another band might not allow the current locale.
+    // in which case fall back to "no locale"
+    return destinationBand.supportedLocales.some(tag =>
+        new Intl.Locale(tag).language === new Intl.Locale(routeLocale).language) ? routeLocale : null;
+}
+
+function PlatformBandSelection() {
+    const hosting = usePortalHosting();
     const router = useRouter();
     const presentation = usePresentation();
     const locale = useLocale();
@@ -23,10 +38,16 @@ export function BandSelection() {
         setSwitching(true);
         setFailed(false);
         try {
-            const changed = await router.push(withMemberPresentation("/backstage", {
+            const destinationBand = choices.find(choice => choice.publicId === value);
+            const routeLocale = input.routeLocale;
+            const destinationLocale = selectLocaleForBand(destinationBand, routeLocale);
+
+            // lsmb todo: use a strong routing strategy.
+            // lsmb todo: preserve current domain (if you're viewing songs in band A, when switching to band B you should see songs as well.)
+            const changed = await router.push(portalHref("/backstage", {
                 bandPublicId: value ? parsePublicId<"Band">(value) : null,
-                routeLocale: input.routeLocale,
-            }));
+                routeLocale: destinationLocale,
+            }, hosting));
             if (!changed) {
                 setFailed(true);
             }
@@ -40,8 +61,13 @@ export function BandSelection() {
     return <Stack spacing={1} sx={{ mb: 2 }}>
         <FormControl size="small" sx={{ maxWidth: 480 }}>
             <InputLabel shrink htmlFor="dashboard-band">{locale.getPlainString("dashboard.band.select")}</InputLabel>
-            <Select native inputProps={{ id: "dashboard-band" }} value={selected}
-                label={locale.getPlainString("dashboard.band.select")} notched disabled={switching}
+            <Select
+                native
+                inputProps={{ id: "dashboard-band" }}
+                value={selected}
+                label={locale.getPlainString("dashboard.band.select")}
+                notched
+                disabled={switching}
                 onChange={event => { void selectBand(event.target.value); }}>
                 <option value="">{locale.getPlainString("dashboard.band.platform")}</option>
                 {selected && !selectedChoice && <option value={selected} disabled>{locale.getPlainString("dashboard.band.unavailable")}</option>}
@@ -53,4 +79,9 @@ export function BandSelection() {
         {choices.length === 0 && <Alert severity="info">{locale.getPlainString("dashboard.band.empty")}</Alert>}
         {failed && <Alert severity="error">{locale.getPlainString("dashboard.band.switchFailed")}</Alert>}
     </Stack>;
+}
+
+export function BandSelection() {
+    const hosting = usePortalHosting();
+    return hosting.kind === "platform" ? <PlatformBandSelection /> : null;
 }

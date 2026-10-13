@@ -102,6 +102,9 @@ vi.mock("src/locale/components/PresentationProvider", async () => {
   const ReactModule = await vi.importActual<typeof import("react")>("react");
   return { PresentationProvider: ({ children }: React.PropsWithChildren) => ReactModule.createElement(ReactModule.Fragment, null, children) };
 })
+vi.mock("src/core/components/CMCoreComponents2", () => ({
+  CMButton: ({ children, onClick }: React.PropsWithChildren<{ onClick: () => void }>) => React.createElement("button", { onClick }, children),
+}))
 vi.mock("src/core/components/SnackbarContext", async () => {
   const ReactModule = await vi.importActual<typeof import("react")>("react")
   return {

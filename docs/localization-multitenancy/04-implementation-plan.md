@@ -1371,22 +1371,54 @@ are removed; no executable specification is removed or newly skipped. The
 protected developer examples retain their two source references and separate B
 obligation. Native and built two-band verification is recorded below.
 
-## Next slice: B portal routing
+## Portal routing checkpoint
 
-Implement the [routing contract](00-design%20notes.md#routing-and-later-scope)
-through rewrites to the existing pages. Standalone hosting retains familiar root
-or `/backstage` URLs and validated host-owned band context. Platform portals use
-`/[locale]/b/<publicBandId>/...`, with locale optional; locale-free links use browser
-preferences and language switching retains the equivalent page. Validate host,
-band and locale at the server before supplying explicit authorization context.
+The [routing contract](00-design%20notes.md#routing-and-later-scope) reuses existing
+page/API owners through middleware rewrites. Platform hosting generates
+`/[locale]/b/<publicBandId>/backstage/...`, with locale optional, and offers an
+explicit band picker. Standalone hosting binds `CMDB_PUBLIC_BAND_PUBLIC_ID` on
+the `CMDB_BASE_URL` host and retains familiar root or `/backstage` URLs without
+a picker. Explicit account/platform links use `/platform/...` on standalone
+hosts; shared account operations remain independent of membership selection.
 
-Carry that context through SSR, RPC, files, feeds, notifications, exports and
-Custom Links rooted at the band portal. Verify both hosting modes, two bands,
-ordered browser preferences, public/private routes, grant revocation and context
-changes in the built app. Preserve existing page owners and public identities.
-Band onboarding/lifecycle, translation inventory/editing/import/export and
-French/Dutch coverage, protected developer examples and the production-copy
-rehearsal retain their separate obligations.
+Server owners validate the configured host, active band and enabled explicit
+language before page/API data. A request scope fences foreign-band payloads,
+including nested bootstrap/account operations, without filling missing domain
+inputs. Fresh membership and permission checks still own authorization. Legacy
+explicit query bookmarks remain readable; contradictory selections fail.
+Middleware replaces routing hints, and forwarded host hints supply no authority.
+
+Locale-free URLs retain ordered browser preferences. Language switching preserves
+the page, public identity, tab, filters/query and fragment. The band picker retains
+an explicit language only when the destination supports it; otherwise it returns
+to browser preferences. SSR/client document language, presentation, branding and
+generated navigation agree. Hosting policy is a required routing input and stays
+separate from strict domain/presentation payloads.
+
+Dashboard/member/account navigation, Wiki/Markdown references and images, File
+links, search results, calendar subscriptions/event links, reports/export links
+and password-reset destinations use the routing owner. Calendar and reset links
+remain locale-free. Custom Links use the band's portal root, and identical slugs
+in different bands retain independent destinations. Public Custom Link Markdown
+uses the app's presentation even without a dashboard provider. Filter URL updates
+and detail canonicalization retain fragments. Gallery caption schemas now accept
+the database's nullable French/Dutch translations while preserving authored blanks.
+
+## Next slice: B band onboarding and lifecycle
+
+Implement platform-owned band creation, editing, soft retirement and reactivation
+through explicit public identities and fresh authority. Onboarding selects its
+initial manager/membership, enabled locales and required band configuration.
+Keep shared account authority independent of band administration; signup must
+still grant neither membership nor platform elevation. Retain content and public
+identities through retirement/reactivation, and keep hard deletion restricted
+until owned content is explicitly removed.
+
+Verify two-band isolation, manager continuity, fresh grant checks and the effects
+on portal availability, presentation and selection through native and built-app
+checks. Translation inventory/editing/import/export, French/Dutch site-chrome
+coverage, protected developer examples and the production-copy rehearsal remain
+separate B obligations.
 
 ## Localized catalog text search exception
 
@@ -1460,6 +1492,42 @@ data, rehearse backup restoration and deploy the migrated database, app and
 client together with writes stopped and matching upload backups.
 
 ## Verification status
+
+The **2026-10-12 B portal-routing checkpoint** passes normal typecheck,
+whole-repository ESLint and a normal production build with isolated output. The
+complete repository runner passes **302 selected test files with no failures**;
+final public Markdown/catalog/member-profile regressions pass **20 cases in
+three files** after the public-page context correction. Routing, language/band
+selection, URL-state and bootstrap regressions remain active.
+
+All **69 current native specification files** are selected on private MariaDB:
+**888 cases pass and 51 existing fixture-gated cases skip**. The final public-feed
+run passes **11 cases**, including nullable translated captions and intentional
+blanks. Native portal checks cover two-band payload isolation, standalone binding,
+disabled locales/deleted bands and fresh membership revocation. Both native
+databases are removed; this slice introduces no skip.
+
+**Fifteen built Chromium groups** pass against the normal production build.
+They cover both portals and localized SSR/client navigation, ordered browser
+preferences sharing a formatting locale, real band/language changes, query/hash
+reload and Song detail identity/tab canonicalization. Contextual public photos,
+anonymous private-file denial, private calendar feeds and independent Custom
+Link slugs work. Unknown identities, unavailable languages, conflicting selection,
+forged hosts and foreign-band RPC/bootstrap payloads fail. A previously signed-in
+member immediately loses protected-page access after revocation. Generic
+standalone paths have no band picker, preserve language/page state and retain
+explicit shared-account profile access; Café Marché retains its public homepage.
+No uncaught page errors occur. Dashboard and standalone Custom Link screenshots
+are visually inspected. The owned browser server, database and assets are removed.
+
+Preservation still verifies **two source references, zero deferred specifications
+and one pending feature**, the protected developer examples.
+`yarn migration:check` continues to reject that pending feature. Band lifecycle,
+translation tooling/coverage and production inventory/rehearsal keep B open.
+Evidence is in `temp/portal-full-confirmed.log`, `temp/portal-native-confirmed.log`,
+`temp/portal-native-gallery.log`, `temp/portal-markdown-current.log`,
+`temp/portal-typecheck-final.log`, `temp/portal-lint-delivery.log`,
+`temp/portal-build-markdown.log` and `temp/portal-browser-result.json`.
 
 The **2026-10-12 B catalog-name search closure** passes normal typecheck, targeted
 ESLint across **56 changed TypeScript files** and a normal production build with

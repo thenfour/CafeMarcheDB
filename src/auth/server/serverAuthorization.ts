@@ -8,6 +8,7 @@ import type { IAuthorization, ScopedAuthorizationData } from "../shared/cmAuthor
 import { PermissionSet } from "../shared/PermissionSet";
 import { loadEffectivePermissionContext, type EffectivePermissionContext } from "./effectivePermissions";
 import { ServerPermissionSet } from "./ServerPermissionSet";
+import { assertAuthorizationBandScope } from "./requestAuthorizationScope";
 import {
     authorizationDatabase, resolveAuthorizationContext,
     type AuthorizationBand, type AuthorizationDatabase,
@@ -173,6 +174,7 @@ export async function loadAuthorization(
     session: SessionContext,
     bandPublicId?: BandPublicId | null,
 ): Promise<CMServerAuthorization> {
+    assertAuthorizationBandScope(bandPublicId);
     const key = bandPublicId == null ? null : parsePublicId<"Band">(bandPublicId);
     const entries = serverAuthorizations.get(session) ?? new Map<BandPublicId | null, SessionAuthorizationEntry>();
     serverAuthorizations.set(session, entries);
@@ -201,5 +203,6 @@ export async function loadAuthorizationForUser(
     database: AuthorizationDatabase = authorizationDatabase,
     bandPublicId?: BandPublicId | null,
 ): Promise<CMServerAuthorization> {
+    assertAuthorizationBandScope(bandPublicId);
     return loadSnapshot(database, user?.id ?? null, null, bandPublicId);
 }

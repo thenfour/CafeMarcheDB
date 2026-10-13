@@ -10,6 +10,7 @@ import { activityFacetBaseWhere, activityFacetReferenceWhere } from "./activityF
 import { activityReferencesById, authorizedActivityReferenceIds, readActivityFacetReferences, type ActivityAuthorizedReferences } from "./activityFacetReferences";
 import { readActivityDetailReferences, type ActivityAuthorizedDetailReferences } from "./activityDetailReferences";
 import { projectActivitySavedMetadata, type ActivityMetadataPolicy } from "./activitySavedMetadata";
+import { serverPortalHosting } from "src/route/server/portalConfig";
 
 /** Natural identities and unchecked saved metadata stay server-side; person relations are never selected. */
 export const activityDetailSelection = Prisma.validator<Prisma.ActionDefaultArgs>()({ select: {
@@ -135,7 +136,9 @@ function readActivityRows(database: DB3ReadDatabase, authorization: DB3ReadConte
         const rows = await context.database.action.findMany({ ...activityDetailSelection, where,
             orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: rowLimit });
         const auxiliary = await readActivityDetailReferences(context, args, rows);
-        return { rows: projectActivityDetailRows(rows, references, auxiliary, args, { applicationOrigin: process.env.CMDB_BASE_URL ?? null }), timeZone, rowLimit,
+        return { rows: projectActivityDetailRows(rows, references, auxiliary, args, {
+            applicationOrigin: process.env.CMDB_BASE_URL ?? null, hosting: serverPortalHosting(),
+        }), timeZone, rowLimit,
             metrics: { totalRowCount, queryTimeMs: Math.round(performance.now() - start) } };
     });
 }

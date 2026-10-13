@@ -26,6 +26,7 @@ async function request(method: string, query: NextApiRequest["query"] = { bandPu
 
 beforeEach(() => {
     vi.stubEnv("CMDB_BASE_URL", "https://publication.invalid");
+    vi.stubEnv("CMDB_HOSTING_MODE", "Platform");
     mocked.feed.mockReset().mockResolvedValue({ agenda: [], gallery: [] });
     mocked.sessionAuth.mockReset().mockResolvedValue("member authorization");
     mocked.publicAuth.mockReset().mockResolvedValue("anonymous authorization");
@@ -57,7 +58,7 @@ describe("public publication HTTP boundary", () => {
         expect(mocked.publicAuth).not.toHaveBeenCalled();
         expect(mocked.feed).toHaveBeenCalledWith({}, "member authorization", {
             bandPublicId, routeLocale: "de-DE", browserLanguages: ["fr-CA", "nl-NL"],
-        }, { baseURL: "https://publication.invalid" });
+        }, { baseURL: "https://publication.invalid/", hosting: { kind: "platform" } });
         expect(response.status).toHaveBeenCalledWith(200);
         expect(response.json).toHaveBeenCalledWith({ agenda: [], gallery: [] });
     });

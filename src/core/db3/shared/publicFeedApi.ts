@@ -1,5 +1,5 @@
 import type { BandPublicId } from "shared/publicId";
-import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
+import { portalHref, type BandHostingConfig } from "src/route/portalRouting";
 import { resolveAuthoredTranslations, type AuthoredTranslationContext } from "src/locale/shared/authoredTranslations";
 import * as db3 from "../db3";
 import { sortEventsRaw } from "./apiTypes";
@@ -50,6 +50,7 @@ export function getAgendaItem(event: AgendaItem, context: AuthoredTranslationCon
 }
 
 export interface PublicFeedConversionContext {
+    readonly hosting: BandHostingConfig;
     readonly translations: AuthoredTranslationContext;
     readonly bandPublicId: BandPublicId;
     readonly baseURL: string;
@@ -62,10 +63,10 @@ function convertGalleryItem(item: db3.FrontpageGalleryFeedDto, context: PublicFe
         || item.sortOrder === undefined || item.displayParams === undefined) {
         return null;
     }
-    const fileUrl = new URL(withMemberPresentation(SharedAPI.files.getURIForFile({ storedLeafName: file.storedLeafName }), {
+    const fileUrl = new URL(portalHref(SharedAPI.files.getURIForFile({ storedLeafName: file.storedLeafName }), {
         bandPublicId: context.bandPublicId,
         routeLocale: context.translations.preferences.routeLocale,
-    }), context.baseURL).href;
+    }, context.hosting), context.baseURL).href;
     return {
         galleryItemId: db3.xFrontpageGalleryItem.parseIdentity(item.publicId),
         fileId: db3.xFile.parseIdentity(file.publicId),

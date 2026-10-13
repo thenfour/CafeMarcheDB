@@ -22,7 +22,7 @@ import { customLinkHref } from "src/core/db3/shared/entities/customLink/customLi
 function CustomLinkUrlPreview({ slug }: { readonly slug: string }) {
     const dashboard = useDashboardContext();
     const bandPublicId = dashboard.memberPresentation.bandPublicId;
-    return bandPublicId ? <>{dashboard.getAbsoluteUri(customLinkHref(slug.trim(), bandPublicId))}</> : null;
+    return bandPublicId ? <>{dashboard.getAbsoluteUri(customLinkHref(slug.trim(), bandPublicId, dashboard.portalHosting))}</> : null;
 }
 
 
@@ -157,7 +157,7 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
     const bandPublicId = dashboardContext.memberPresentation.bandPublicId;
     const absoluteLocalURL = props.item.slug === undefined || !bandPublicId
         ? undefined
-        : dashboardContext.getAbsoluteUri(customLinkHref(props.item.slug, bandPublicId));
+        : dashboardContext.getAbsoluteUri(customLinkHref(props.item.slug, bandPublicId, dashboardContext.portalHosting));
     const destinationURL = props.item.destinationURL;
 
     const clipboardCopy = async (text: string) => {

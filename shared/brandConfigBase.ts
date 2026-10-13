@@ -1,5 +1,7 @@
 
+// todo: better to just make this a zod schema, for parsing/normalization
 export enum HostingMode {
+    Platform = "Platform",
     CafeMarche = "CafeMarche",
     GenericSingleTenant = "GenericSingleTenant",
 }
@@ -27,7 +29,7 @@ export const DefaultDbBrandConfig: DbBrandConfig = {
     siteTitlePrefix: "BS: ",
     siteFaviconUrl: "/favicon.png",
     siteLogoUrl: undefined,
-    hostingMode: HostingMode.GenericSingleTenant,
+    hostingMode: HostingMode.Platform,
     theme: {
         primaryMain: "#344873", // matches themeOptions
         secondaryMain: "#831012",

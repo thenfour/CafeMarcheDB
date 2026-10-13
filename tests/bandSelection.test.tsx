@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+vi.mock("src/route/PortalRoutingProvider", () => ({ usePortalHosting: () => ({ kind: "platform" }) }));
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { act } from "react-dom/test-utils";
@@ -16,7 +17,7 @@ vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({ getPlain
 
 const push = vi.fn(async (_href: string) => true);
 const queries: unknown[] = [];
-let choices: Array<{ publicId: string; name: string | null }>;
+let choices: Array<{ publicId: string; name: string | null; supportedLocales: string[] }>;
 let bandPublicId: string | null;
 let root: Root;
 let container: HTMLDivElement;
@@ -24,7 +25,8 @@ let container: HTMLDivElement;
 beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     push.mockReset().mockResolvedValue(true);
-    choices = [{ publicId: "Band000000000001", name: "First band" }, { publicId: "Band000000000002", name: "Second band" }];
+    choices = [{ publicId: "Band000000000001", name: "First band", supportedLocales: ["fr-BE", "nl-BE"] },
+        { publicId: "Band000000000002", name: "Second band", supportedLocales: ["fr-BE", "nl-BE"] }];
     bandPublicId = null;
     queries.length = 0;
     container = document.createElement("div");
@@ -45,20 +47,26 @@ async function select(value: string) {
 }
 
 describe("explicit dashboard band selection", () => {
+    it("returns to browser preference order when the destination band does not enable the chosen language", async () => {
+        choices[1]!.supportedLocales = ["en-US", "nl-BE"];
+        await act(async () => root.render(<BandSelection />));
+        await select(choices[1]!.publicId);
+        expect(push).toHaveBeenCalledWith("/b/Band000000000002/backstage");
+    });
     it("never automatically selects a band and carries full language preferences to its account query", async () => {
         await act(async () => root.render(<BandSelection />));
         expect(container.querySelector("select")?.value).toBe("");
         expect(push).not.toHaveBeenCalled();
         expect(queries[0]).toEqual({ routeLocale: "fr-BE", browserLanguages: ["nl-BE", "en-US"], clientRequestId: "snapshot" });
         await select(choices[1]!.publicId);
-        expect(push).toHaveBeenCalledWith("/backstage?bandPublicId=Band000000000002&routeLocale=fr-BE");
+        expect(push).toHaveBeenCalledWith("/fr-BE/b/Band000000000002/backstage");
     });
     it("supports returning to platform context and retains the selected band on navigation failure", async () => {
         bandPublicId = choices[0]!.publicId;
         push.mockRejectedValueOnce(new Error("Navigation failed"));
         await act(async () => root.render(<BandSelection />));
         await select("");
-        expect(push).toHaveBeenCalledWith("/backstage?routeLocale=fr-BE");
+        expect(push).toHaveBeenCalledWith("/fr-BE/backstage");
         expect(container.textContent).toContain("Could not change bands");
         expect(container.querySelector("select")?.value).toBe(bandPublicId);
     });

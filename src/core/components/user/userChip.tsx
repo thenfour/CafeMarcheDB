@@ -42,7 +42,7 @@ const ValuedUserChip = (props: ValuedUserChipProps) => {
     const userId = props.value?.publicId || null;
     const canViewProfile = dashboardContext.isAuthorized(Permission.view_users_basic_info) || dashboardContext.currentUser?.publicId === userId;
     const userURI = userId && context.bandPublicId && canViewProfile
-        ? bandMemberHref(userId, context) : undefined;
+        ? bandMemberHref(userId, context, dashboardContext.portalHosting) : undefined;
 
     const clickHandler = props.onClick;
 

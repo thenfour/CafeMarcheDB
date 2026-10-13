@@ -1,3 +1,4 @@
+import { portalHref } from "src/route/portalRouting";
 import HomeIcon from '@mui/icons-material/Home';
 import { Breadcrumbs } from "@mui/material";
 import type { UserPublicId } from "shared/publicId";
@@ -65,13 +66,13 @@ export const UserBreadcrumbs = (props: UserBreadcrumbProps) => {
     const dashboardContext = useDashboardContext();
     return <Breadcrumbs aria-label="breadcrumb">
         <CMLink
-            href="/backstage"
+            href={portalHref("/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage
         </CMLink>
         <CMLink
-            href="/backstage/users"
+            href={portalHref("/backstage/users", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
         >
             Users
         </CMLink>

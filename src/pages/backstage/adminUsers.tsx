@@ -15,7 +15,7 @@ import React, { Suspense } from "react";
 import { AccountRoleAction } from "src/core/components/user/AccountRoleControl";
 import { AccountAnalysisAction } from "src/core/components/user/UserMassAnalysisTab";
 import { MergeUsersButton } from "src/core/components/user/MergeUsersButton";
-import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
 
 const makeDisplayOnlyColumn = <T extends DB3Client.IColumnClient>(column: T): T => {
     // This grid may inspect security state, but generic DB3 mutation must not
@@ -28,6 +28,7 @@ const makeDisplayOnlyColumn = <T extends DB3Client.IColumnClient>(column: T): T 
 
 const UserListContent: React.FC<{}> = () => {
     const dashboardContext = useDashboardContext();
+    const hosting = dashboardContext.portalHosting;
     const auth = useClientAuth();
     const locale = useLocale();
 
@@ -56,9 +57,9 @@ const UserListContent: React.FC<{}> = () => {
                 && auth.userPublicId !== userPayload.publicId && <MergeUsersButton user={userPayload} />}
             <ImpersonateUserButton userId={userPayload.publicId} />
             <AdminResetPasswordButton user={userPayload} />
-            <CMLinkButton href={withMemberPresentation(`/backstage/user/${userPayload.publicId}`, {
+            <CMLinkButton href={portalHref(`/backstage/user/${userPayload.publicId}`, {
                 ...dashboardContext.memberPresentation, bandPublicId: null,
-            })}>{locale.getPlainString("membership.profile.accountTitle")}</CMLinkButton>
+            }, hosting)}>{locale.getPlainString("membership.profile.accountTitle")}</CMLinkButton>
             {dashboardContext.memberPresentation.bandPublicId
                 && (auth.userPublicId === userPayload.publicId || auth.hasPermission(Permission.view_users_basic_info))
                 && <CMLinkButton href={profileUrl}>{locale.getPlainString("platformUser.visitProfile")}</CMLinkButton>}

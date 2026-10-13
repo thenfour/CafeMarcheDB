@@ -69,8 +69,8 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
     const result = await invokeResolver(getMyCalendarSubscription, context, ctx)
 
     expect(result).toEqual({
-      subscriptionUrl: `https://band.test/api/ical/user/${existingToken}/upcoming?bandPublicId=${calendarBandPublicId}`,
-      webcalUrl: `webcal://band.test/api/ical/user/${existingToken}/upcoming?bandPublicId=${calendarBandPublicId}`,
+      subscriptionUrl: `https://band.test/b/${calendarBandPublicId}/api/ical/user/${existingToken}/upcoming`,
+      webcalUrl: `webcal://band.test/b/${calendarBandPublicId}/api/ical/user/${existingToken}/upcoming`,
     })
     expect(authorizationTestDb.snapshot("user")).toEqual(before)
     expect(authorizationTestDb.snapshot("change")).toEqual([])

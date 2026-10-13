@@ -24,7 +24,7 @@ export function UserListItem({ user, index, refetch, filterSpec }: {
     const canManage = dashboard.isAuthorized(Permission.manage_users);
     const joinedAt = user.createdAt;
     return <GenericSearchListItem index={index} item={user} refetch={refetch} icon={gIconMap.Person()}
-        href={bandMemberHref(user.user.publicId, context)} title={user.user.name ?? ""}
+        href={bandMemberHref(user.user.publicId, context, dashboard.portalHosting)} title={user.user.name ?? ""}
         titleExtra={canManage && user.isDeleted && <CMChip color="warning" size="small">Deactivated</CMChip>}
         credits={dashboard.isAuthorized(Permission.view_user_contact_info) ? [user.user.email, user.user.phone] : []}
         bodyContent={<>

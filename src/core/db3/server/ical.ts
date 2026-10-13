@@ -12,6 +12,8 @@ import { shouldIncludeEventInCalendarFeed } from "../shared/calendarAttendance";
 import type { DB3ReadRootDatabase } from "./db3ReadExecution";
 import { readCalendarFeedInTransaction } from "./calendarFeedRead";
 import { GetEventCalendarInput, type EventCalendarInput } from "./icalUtils";
+import { portalHref } from "src/route/portalRouting";
+import { serverPortalHosting } from "src/route/server/portalConfig";
 
 interface ICalSettings {
     calendarName: string;
@@ -121,8 +123,8 @@ function renderCalendarEvent(calendar: ICalCalendar, event: CalendarFeedSnapshot
     }, snapshot.cancelledStatusIds, snapshot.bandTimeZone);
     for (const input of inputs?.segments ?? []) {
         const uri = new URL(input.eventUri);
-        uri.searchParams.set("bandPublicId", snapshot.bandPublicId);
-        addEventToCalendar2(calendar, personalization, { ...input, eventUri: uri.toString() }, settings);
+        const path = portalHref(`${uri.pathname}${uri.search}${uri.hash}`, { bandPublicId: snapshot.bandPublicId }, serverPortalHosting());
+        addEventToCalendar2(calendar, personalization, { ...input, eventUri: new URL(path, uri.origin).href }, settings);
     }
 }
 

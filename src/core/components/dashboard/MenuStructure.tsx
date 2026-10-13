@@ -14,7 +14,7 @@ import { useLocalStorageSet } from "../useLocalStorageState";
 import { gMenuSections, MenuLink, MenuSection, NavRealm } from './StaticMenuItems';
 import { HostingMode } from '@/shared/brandConfigBase';
 import { DashboardContextData, useClientTelemetryEvent, useDashboardContext } from '../dashboardContext/DashboardContext';
-import { withMemberPresentation } from "../user/bandMemberLinks";
+import { parsePortalPath, portalHref } from "src/route/portalRouting";
 import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
 import { wikiMakeRelativeURI } from "src/core/wiki/shared/wikiUtils";
 
@@ -53,7 +53,7 @@ export interface FlatMenuSection {
 export type FlatMenuItemAndSection = { sectionInfo: FlatMenuSection, item: FlatMenuItemSpec };
 
 // Helper function to convert dynamic menu items to static menu items
-type DynamicMenuPresentation = Pick<DashboardContextData, "permission" | "memberPresentation">;
+type DynamicMenuPresentation = Pick<DashboardContextData, "permission" | "memberPresentation" | "portalHosting">;
 
 export const DynMenuToMenuItem = (item: db3.MenuLinkListClient, dashboardContext: DynamicMenuPresentation): MenuLink | null => {
     let path = "";
@@ -64,7 +64,7 @@ export const DynMenuToMenuItem = (item: db3.MenuLinkListClient, dashboardContext
             path = item.externalURI || "";
             break;
         case "Wiki":
-            path = item.wikiSlug ? withMemberPresentation(wikiMakeRelativeURI(item.wikiSlug), dashboardContext.memberPresentation) : "";
+            path = item.wikiSlug ? portalHref(wikiMakeRelativeURI(item.wikiSlug), dashboardContext.memberPresentation, dashboardContext.portalHosting) : "";
             break;
     }
 
@@ -197,8 +197,9 @@ function MenuItemMatchesRealm(linkPath: string | undefined, linkRealm: NavRealm 
     if (!linkPath?.startsWith("/") || linkPath.startsWith("//")) {
         return false;
     }
-    const path = linkPath.split(/[?#]/, 1)[0];
-    return router.pathname === path || router.asPath.split(/[?#]/, 1)[0] === path;
+    const path = parsePortalPath(new URL(linkPath, "https://cmdb.invalid").pathname).pathname;
+    const visitedPath = parsePortalPath(new URL(router.asPath, "https://cmdb.invalid").pathname).pathname;
+    return router.pathname === path || visitedPath === path;
 }
 
 /** Dynamic routes use the visited path; section names own expansion, not group names. */
@@ -255,7 +256,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
                     {linkItem.openInNewTab ? (
                         <ListItemButton
                             component="a"
-                            href={withMemberPresentation(linkItem.path, dashboard.memberPresentation)}
+                            href={portalHref(linkItem.path, dashboard.memberPresentation, dashboard.portalHosting)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
@@ -269,7 +270,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
                     ) : (
                         <ListItemButton
                             component={Link}
-                            href={withMemberPresentation(linkItem.path, dashboard.memberPresentation)}
+                            href={portalHref(linkItem.path, dashboard.memberPresentation, dashboard.portalHosting)}
                             selected={MenuItemMatchesRealm(linkItem.path, linkItem.realm, props.realm, router)}
                             className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
                             onClick={e => {
@@ -293,7 +294,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
             return (
                 <ListItemButton
                     component="a"
-                    href={withMemberPresentation(linkItem.path, dashboard.memberPresentation)}
+                    href={portalHref(linkItem.path, dashboard.memberPresentation, dashboard.portalHosting)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
@@ -308,7 +309,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
             return (
                 <ListItemButton
                     component={Link}
-                    href={withMemberPresentation(linkItem.path, dashboard.memberPresentation)}
+                    href={portalHref(linkItem.path, dashboard.memberPresentation, dashboard.portalHosting)}
                     selected={MenuItemMatchesRealm(linkItem.path, linkItem.realm, props.realm, router)}
                     className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
                     onClick={e => {

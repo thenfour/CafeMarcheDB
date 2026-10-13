@@ -2,7 +2,7 @@ import { formatFileSize } from "@/shared/rootroot";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { readFileDetailPage } from "src/core/db3/server/fileDetailPage";
 import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
-import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
 import { gSSP } from "@/src/blitz-server";
 import { CMChipContainer } from "@/src/core/components/CMChip";
 import { InstrumentChip } from "@/src/core/components/CMCoreComponents";
@@ -47,13 +47,13 @@ export const FileBreadcrumbs = (props: FileBreadcrumbProps) => {
     const dashboardContext = useDashboardContext();
     return <Breadcrumbs aria-label="breadcrumb">
         <CMLink
-            href={withMemberPresentation("/backstage", dashboardContext.memberPresentation)}
+            href={portalHref("/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage
         </CMLink>
         <CMLink
-            href={withMemberPresentation("/backstage/files", dashboardContext.memberPresentation)}
+            href={portalHref("/backstage/files", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
         >
             Files
         </CMLink>
@@ -135,7 +135,7 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                         // A deleted detail target cannot be refetched. Return to the File list after committing.
                         await deleteFile.invoke({ identity: file.publicId });
                         api.close();
-                        await router.push(withMemberPresentation("/backstage/files", dashboardContext.memberPresentation));
+                        await router.push(portalHref("/backstage/files", dashboardContext.memberPresentation, dashboardContext.portalHosting));
                         await dashboardContext.refreshCachedData();
                     });
                 }}

@@ -1,7 +1,6 @@
 
-import { Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
-import { useRouter } from "next/router";
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { Permission } from "shared/permissions";
 import impersonateUser from "src/auth/mutations/impersonateUser";
 import type { UserPublicId } from "shared/publicId";
@@ -9,7 +8,7 @@ import { CMUserMgmtButton } from "../CMCoreComponents2";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 export const ImpersonateUserButton = ({ userId }: { userId: UserPublicId }) => {
-    const router = useRouter();
+    const router = useCmdbRouter();
     const [impersonateUserMutation] = useMutation(impersonateUser);
     const dashboardContext = useDashboardContext();
 
@@ -21,7 +20,7 @@ export const ImpersonateUserButton = ({ userId }: { userId: UserPublicId }) => {
         impersonateUserMutation({ userId })
             .then(() => {
                 // navigate to home page
-                void router.push(Routes.Home());
+                void router.push("/backstage");
             })
             .catch((e) => {
                 console.error(e);

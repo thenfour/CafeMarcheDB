@@ -23,7 +23,7 @@ describe("band brand loading", () => {
     it("reads native JSON strings and combines missing keys with registry defaults", async () => {
         mocks.findMany.mockResolvedValueOnce(validRows());
         await expect(loadDbBrandConfig({ hostHeader: "brand-load.example", bandId: 1, freshness: "cached" })).resolves.toMatchObject({
-            hostingMode: HostingMode.GenericSingleTenant, siteTitle: "Example Band", siteTitlePrefix: "EB: ",
+            hostingMode: HostingMode.Platform, siteTitle: "Example Band", siteTitlePrefix: "EB: ",
             siteFaviconUrl: "/example.png", siteLogoUrl: "/example-logo.svg", theme: { primaryMain: "#123456" },
         });
         expect(mocks.findMany).toHaveBeenCalledWith({ where: { bandId: 1 } });

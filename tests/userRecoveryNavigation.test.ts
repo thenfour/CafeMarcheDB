@@ -77,6 +77,7 @@ describe("user profile lifecycle navigation", () => {
         const deactivate = vi.fn().mockResolvedValue(true);
         vi.mocked(useRouter).mockReturnValue({ replace } as any);
         vi.mocked(useDashboardContext).mockReturnValue({
+            portalHosting: { kind: "platform" }, memberPresentation: {},
             currentUser: { publicId: userPublicId(1) },
             isAuthorized: (permission: Permission) => permission === Permission.manage_global_users ? canRecover : true,
         } as any);

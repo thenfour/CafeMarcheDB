@@ -20,7 +20,7 @@ vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDas
     requireBandPublicId: () => bandId,
     formattingLocale: language, localTimeZone: "America/Los_Angeles",
     eventDatePresentation: { viewerTimeZone: "America/Los_Angeles", bandTimeZone: "Europe/Brussels", locale: language },
-    memberPresentation: { bandPublicId: bandId, routeLocale: language },
+    portalHosting: { kind: "platform" as const }, memberPresentation: { bandPublicId: bandId, routeLocale: language },
     eventAttendance: { getById: (id: string | null) => id ? { publicId: id, strength: id === goingId ? 100 : 0 } : null },
     instrument: { getById: () => null },
 }) }));
@@ -134,7 +134,7 @@ describe("profile attendance and contribution parity", () => {
         await act(async () => root.render(<UserWikiContributionsTabContent user={person} />));
         const row = container.querySelector("tbody tr")!;
         expect(row.textContent).toContain("alpha2lun. 10 févr. 2025sam. 28 mars 2026");
-        expect(row.querySelector("a")?.getAttribute("href")).toBe(`/backstage/wiki/alpha?bandPublicId=${bandId}&routeLocale=fr-BE`);
+        expect(row.querySelector("a")?.getAttribute("href")).toBe(`/fr-BE/b/${bandId}/backstage/wiki/alpha`);
         const header = [...container.querySelectorAll("th")].find(th => th.textContent?.startsWith("Revisions"))!;
         await act(async () => header.click());
         expect(container.querySelector("tbody tr a")?.textContent).toBe("beta");

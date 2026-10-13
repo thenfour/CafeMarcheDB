@@ -40,7 +40,7 @@ describe("single-segment slugification", () => {
 });
 
 describe("entity routing with slash-containing names", () => {
-    const dashboard = new RoutingDashboard();
+    const dashboard = new RoutingDashboard({ kind: "platform" });
     dashboard.serverBaseUri = "https://cmdb.test";
     dashboard.memberPresentation = { bandPublicId: parsePublicId<"Band">("RoutingBand00001"), routeLocale: "fr-BE" };
     const eventId = parsePublicId<"Event">("RoutingEvent0001");
@@ -48,21 +48,20 @@ describe("entity routing with slash-containing names", () => {
 
     it.each(["info", "setlists", "attendance"])("keeps the event tab %s at its fixed path position", tab => {
         const url = new URL(dashboard.routingApi.getURIForEvent({ publicId: eventId, name: "River Fanfare Répétition / Repetitie 2" }, tab));
-        expect(url.pathname.split("/").slice(3)).toEqual([eventId, "river-fanfare-repetition-repetitie-2", tab]);
-        expect(url.searchParams.get("bandPublicId")).toBe(dashboard.memberPresentation.bandPublicId);
-        expect(url.searchParams.get("routeLocale")).toBe("fr-BE");
+        expect(url.pathname.split("/").slice(6)).toEqual([eventId, "river-fanfare-repetition-repetitie-2", tab]);
+        expect(url.pathname).toContain(`/fr-BE/b/${dashboard.memberPresentation.bandPublicId}/`);
+        expect(url.searchParams.has("bandPublicId")).toBe(false);
     });
 
     it("keeps song names in one segment and preserves the requested tab", () => {
         const url = new URL(dashboard.routingApi.getURIForSong({ publicId: songId, name: "March / Waltz" }, "files"));
-        expect(url.pathname.split("/").slice(3)).toEqual([songId, "march-waltz", "files"]);
+        expect(url.pathname.split("/").slice(6)).toEqual([songId, "march-waltz", "files"]);
     });
 
     it.each([undefined, "Score / Recording"])("preserves File band and locale with slug %s", slug => {
         const fileId = parsePublicId<"File">("RoutingFile00001");
         const url = new URL(dashboard.routingApi.getURIForFileLandingPage({ publicId: fileId, slug }));
-        expect(url.pathname).toBe(`/backstage/file/${fileId}${slug ? "/score-recording" : ""}`);
-        expect(url.searchParams.get("bandPublicId")).toBe(dashboard.memberPresentation.bandPublicId);
-        expect(url.searchParams.get("routeLocale")).toBe("fr-BE");
+        expect(url.pathname).toBe(`/fr-BE/b/${dashboard.memberPresentation.bandPublicId}/backstage/file/${fileId}${slug ? "/score-recording" : ""}`);
+        expect(url.searchParams.has("bandPublicId")).toBe(false);
     });
 });

@@ -1,6 +1,8 @@
 import { invoke, useMutation, useQuery } from "@blitzjs/rpc";
 import { Alert } from "@mui/material";
 import { useRouter } from "next/router";
+import { usePortalHosting } from "src/route/PortalRoutingProvider";
+import { portalHref } from "src/route/portalRouting";
 import React from "react";
 import type { UserPublicId } from "shared/publicId";
 import mergeUsers from "src/auth/mutations/mergeUsers";
@@ -69,6 +71,7 @@ export function UserMassAnalysisSummaryCard({ analysis, caption }: { analysis: U
 type MergeProfile = { publicId: UserPublicId; name: string };
 function MergeUsersDialog({ user, onClose, input }: { user: MergeProfile; onClose: () => void; input: UserMergePresentation }) {
     const router = useRouter();
+    const hosting = usePortalHosting();
     const locale = useLocale();
     // The parent remounts on any presentation/actor change. Pin this dialog's request context.
     const [requestInput] = React.useState(input);
@@ -126,7 +129,7 @@ function MergeUsersDialog({ user, onClose, input }: { user: MergeProfile; onClos
             const result = await merge({ ...requestInput, participants, confirmation: preview.confirmation });
             if (live.current) {
                 onClose();
-                await router.push("/backstage/user/" + result.mainUserId);
+                await router.push(portalHref("/backstage/user/" + result.mainUserId, requestInput, hosting));
             }
         } catch (failure) {
             if (live.current) {

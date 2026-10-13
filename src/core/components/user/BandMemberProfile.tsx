@@ -1,3 +1,4 @@
+import { usePortalHosting } from "src/route/PortalRoutingProvider";
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert, Breadcrumbs, Typography } from "@mui/material";
@@ -17,7 +18,7 @@ import { BandUserInstrumentsEditor } from "./BandUserInstruments";
 import { BandUserTagsEditor } from "./BandUserTags";
 import { BandUserRoleEditor } from "./BandUserRoles";
 import { BandUserLifecycleControl } from "./BandUserLifecycle";
-import { withMemberPresentation } from "./bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
 import { UserProfileFieldsEditor } from "./UserProfileFieldsEditor";
 import { UserDetail } from "./UserDetail";
 
@@ -51,6 +52,7 @@ function MemberProfileRole({ member, refetch }: { readonly member: BandUserProfi
 }
 
 function LoadedMemberProfile({ personId }: { readonly personId: UserPublicId }) {
+    const hosting = usePortalHosting();
     const context = useDB3QueryContext();
     const presentation = usePresentation();
     const locale = useLocale();
@@ -67,7 +69,7 @@ function LoadedMemberProfile({ personId }: { readonly personId: UserPublicId }) 
     const member = bandUserProfileView.parseDto(row);
     return <>
         <Breadcrumbs>
-            {canOpenDirectory && <CMLink href={withMemberPresentation("/backstage/users", context)}>{locale.getPlainString("membership.directory.title")}</CMLink>}
+            {canOpenDirectory && <CMLink href={portalHref("/backstage/users", context, hosting)}>{locale.getPlainString("membership.directory.title")}</CMLink>}
             <Typography>{member.user.name}</Typography>
         </Breadcrumbs>
         <div className="EventDetail contentSection event">

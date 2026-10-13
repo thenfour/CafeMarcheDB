@@ -106,8 +106,8 @@ describe.skipIf(!settingsMysqlTestUrl)("restored song workflows on MariaDB", () 
         const results = await c.quick("s:harbour waltz");
         expect(results.map(result => result.id)).toEqual([c.songs[0]!.publicId, c.songs[2]!.publicId]);
         expect(results[0]!.matchStrength).toBeGreaterThan(results[1]!.matchStrength);
-        expect(results[0]!.absoluteUri).toContain(`bandPublicId=${c.target.bandPublicId}`);
-        expect(results[0]!.absoluteUri).toContain("routeLocale=fr-BE");
+        expect(results[0]!.absoluteUri).toContain(`/b/${c.target.bandPublicId}/`);
+        expect(results[0]!.absoluteUri).toContain("/fr-BE/");
         expect(results[0]!.name).toContain("(2026)");
         expect(await c.quick("event:Alpha")).toEqual([]);
         expect((await c.quick("#Concert")).map(result => result.id).sort()).toEqual([c.songs[0]!.publicId, c.songs[2]!.publicId].sort());

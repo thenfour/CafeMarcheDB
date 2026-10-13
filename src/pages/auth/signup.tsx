@@ -1,14 +1,14 @@
-import { BlitzPage, Routes } from "@blitzjs/next"
+import { BlitzPage } from "@blitzjs/next"
 import { Suspense } from "react"
 import { SignupForm } from "src/auth/components/SignupForm"
 import { AppContextMarker } from "src/core/components/AppContext"
-import { useRouter } from "next/router"
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout"
 
 const MainContent: BlitzPage = () => {
-  const router = useRouter()
+  const router = useCmdbRouter()
   return <Suspense>
-    <SignupForm onSuccess={() => router.push(Routes.Home())} />
+    <SignupForm onSuccess={() => router.push("/backstage")} />
   </Suspense>;
 }
 

@@ -4,7 +4,7 @@ import { Alert, Stack } from "@mui/material";
 import { CMLink } from "src/core/components/CMLink";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
-import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
 import { useLocale } from "src/locale/components/useLocale";
 import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 import { Permission } from "shared/permissions";
@@ -26,7 +26,7 @@ export function HomeContent() {
     {!dashboard.memberPresentation.bandPublicId && <Alert severity="info">{locale.getPlainString("dashboard.band.required")}</Alert>}
     {member && member.bandUserInstruments.length === 0 && <Alert severity="info">
       {locale.getPlainString("dashboard.instruments.missing")}{" "}
-      <CMLink href={withMemberPresentation("/backstage/profile", dashboard.memberPresentation)}>{locale.getPlainString("dashboard.profile")}</CMLink>
+      <CMLink href={portalHref("/backstage/profile", dashboard.memberPresentation, dashboard.portalHosting)}>{locale.getPlainString("dashboard.profile")}</CMLink>
     </Alert>}
     <div className="DashboardHeader"><BandLocalizedMarkdown id="BackstageFrontpageHeaderMarkdown" /></div>
     {bandPublicId && dashboard.currentUser && <PermissionBoundary permission={Permission.view_wiki_pages}>

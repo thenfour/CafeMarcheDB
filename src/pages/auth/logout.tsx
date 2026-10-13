@@ -1,18 +1,18 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
-import { useRouter } from "next/router";
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { useEffect } from 'react';
 import logout from "src/auth/mutations/logout";
 
 const LogoutPage: BlitzPage = () => {
     const [logoutMutation] = useMutation(logout);
-    const router = useRouter();
+    const router = useCmdbRouter();
 
     // all this to avoid triggering current state stuff and getting unauthorized exceptions instead of a clean login option.
     useEffect(() => {
         logoutMutation().then(() => {
             window.setTimeout(() => {
-                window.location.href = "/backstage";
+                window.location.href = router.href("/backstage");
             }, 0);
         }).catch((e) => {
             console.log(e);

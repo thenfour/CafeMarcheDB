@@ -52,7 +52,7 @@ describe.skipIf(!settingsMysqlTestUrl)("band-scoped personalized calendar feeds 
         expect(original.events()[0]!.uid()).toBe(MakeICalEventUid(c.event.segments[0]!.uid!, "stable-person-uid"));
         expect(original.events()[0]!.summary()).toContain("\u{1F44D}");
         expect(original.events()[0]!.url()).toContain(`/backstage/event/${c.event.publicId}/`);
-        expect(original.events()[0]!.url()).toContain(`bandPublicId=${c.args.bandPublicId}`);
+        expect(original.events()[0]!.url()).toContain(`/b/${c.args.bandPublicId}/`);
         const snapshot = await c.read();
         expect(snapshot.events[0]!.responses).toEqual([{ revision: response.revision, isInvited: false }]);
         expect(snapshot.events[0]!.segments[0]!.responses).toEqual([]);
@@ -203,8 +203,8 @@ describe.skipIf(!settingsMysqlTestUrl)("band-scoped personalized calendar feeds 
         await tx.bandUser.update({ where: { bandId_userId: { bandId: otherBand.id, userId: c.person.id } }, data: { bandRoleId: c.role.id } });
         const first = await saveCalendarFeedSubscription(tx, c.person.id, c.args.bandPublicId, "existing");
         const second = await saveCalendarFeedSubscription(tx, c.person.id, otherPublicId, "existing");
-        expect(first.subscriptionUrl).toContain(`${token}/upcoming?bandPublicId=${c.args.bandPublicId}`);
-        expect(second.subscriptionUrl).toContain(`${token}/upcoming?bandPublicId=${otherPublicId}`);
+        expect(first.subscriptionUrl).toContain(`/b/${c.args.bandPublicId}/api/ical/user/${token}/upcoming`);
+        expect(second.subscriptionUrl).toContain(`/b/${otherPublicId}/api/ical/user/${token}/upcoming`);
         expect(await tx.change.count()).toBe(0);
         const replaced = await saveCalendarFeedSubscription(tx, c.person.id, otherPublicId, "replace");
         const replacement = (await tx.user.findUniqueOrThrow({ where: { id: c.person.id } })).calendarFeedToken!;

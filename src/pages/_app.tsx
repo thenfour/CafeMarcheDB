@@ -1,7 +1,7 @@
 import { AppProps, BlitzPage, ErrorBoundary, ErrorFallbackProps } from "@blitzjs/next";
 import { CacheProvider, EmotionCache } from "@emotion/react";
 import PowerOffIcon from "@mui/icons-material/PowerOff";
-import { Box, Button, CssBaseline, Typography } from "@mui/material";
+import { Box, CssBaseline, Typography } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 //import CssBaseline from "@material-ui/core/CssBaseline";
 import { ThemeProvider, createTheme, PaletteColorOptions, SimplePaletteColorOptions } from '@mui/material/styles';
@@ -11,6 +11,7 @@ import { ZodError } from "zod";
 import React from "react";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { queryClient, withBlitz } from "src/blitz-client";
+import { CMButton } from "src/core/components/CMCoreComponents2";
 import { SnackbarProvider } from "src/core/components/SnackbarContext";
 import createEmotionCache from "src/core/createEmotionCache";
 import { themeOptions } from "src/core/theme";
@@ -27,8 +28,10 @@ import { invoke, useQueryErrorResetBoundary } from "@blitzjs/rpc";
 import { PresentationProvider } from "src/locale/components/PresentationProvider";
 import type { PresentationData } from "src/locale/shared/presentationContext";
 import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
-import Router, { useRouter } from "next/router";
+import Router from "next/router";
 import getPageBootstrap from "src/auth/queries/getPageBootstrap";
+import { PortalRoutingProvider } from "src/route/PortalRoutingProvider";
+import { parsePortalPath, portalHref, selectPortalContext, PORTAL_PATH_HEADER, type BandHostingConfig } from "src/route/portalRouting";
 
 // Client-side cache, shared for the whole session of the user in the browser.
 const clientSideEmotionCache = createEmotionCache();
@@ -38,6 +41,7 @@ const clientSideEmotionCache = createEmotionCache();
 interface SharedPageProps {
   brand?: DbBrandConfig;
   presentation?: PresentationData;
+  portalHosting?: BandHostingConfig;
 }
 
 export interface MyAppProps extends Omit<AppProps<SharedPageProps>, "Component"> {
@@ -118,7 +122,7 @@ function RootErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps) {
           <Typography variant="body1" sx={{ marginTop: 2 }}>
             This page will try again when the connection returns. Previously loaded pages remain available while their tabs stay open.
           </Typography>
-          <Button variant="contained" onClick={resetErrorBoundary} sx={{ marginTop: 3 }}>Try again</Button>
+          <CMButton onClick={resetErrorBoundary}>Try again</CMButton>
         </>}
       </Box>
     </Box>
@@ -131,8 +135,10 @@ function getMainPaletteColor(color: PaletteColorOptions | undefined): SimplePale
 
 // in order to emit css from the theme, this must be a CHILD of ThemeProvider.
 function ThemedApp({ Component, pageProps }: Pick<MyAppProps, "Component" | "pageProps">) {
-  const router = useRouter();
-  const presentationInput = pagePresentationInput(router.query);
+  // Bootstrap failures render an unscoped error shell; normal pages always carry server hosting.
+  const hosting: BandHostingConfig = pageProps.portalHosting ?? { kind: "platform" };
+  // The server bootstrap already validated the route. Error pages have no selected domain.
+  const presentationInput = pageProps.presentation?.input ?? { bandPublicId: null, routeLocale: null };
   const queryErrorResetBoundary = useQueryErrorResetBoundary();
   const getLayout = Component.getLayout || ((page: React.ReactElement) => page)
   // Persist brand across client navigations; only update when a new brand is provided
@@ -196,17 +202,20 @@ function ThemedApp({ Component, pageProps }: Pick<MyAppProps, "Component" | "pag
         <ConnectionHealthMonitor queryClient={queryClient} />
         <SnackbarProvider>
           <BrandContext.Provider value={brand}>
-            <ErrorBoundary FallbackComponent={RootErrorFallback} onReset={queryErrorResetBoundary.reset}>
-              <React.Suspense fallback={<span role="status">Loading language and settings…</span>}>
-                <PresentationProvider
-                  initial={pageProps.presentation}
-                  bandPublicId={presentationInput.bandPublicId ?? (router.pathname === "/" ? pageProps.presentation?.input.bandPublicId : null) ?? null}
-                  routeLocale={presentationInput.routeLocale ?? (router.pathname === "/" ? pageProps.presentation?.input.routeLocale : null) ?? null}
-                >
-                  {getLayout(<Component {...pageProps} />)}
-                </PresentationProvider>
-              </React.Suspense>
-            </ErrorBoundary>
+            <PortalRoutingProvider hosting={hosting}>
+              <ErrorBoundary FallbackComponent={RootErrorFallback} onReset={queryErrorResetBoundary.reset}>
+                {/* lsmb todo: less intrusive suspense fallback. also is this necessary? the presentationProvider also has a suspense and this might not be needed. */}
+                <React.Suspense fallback={<span role="status">Loading…</span>}>
+                  <PresentationProvider
+                    initial={pageProps.presentation}
+                    bandPublicId={presentationInput.bandPublicId ?? null}
+                    routeLocale={presentationInput.routeLocale ?? null}
+                  >
+                    {getLayout(<Component {...pageProps} />)}
+                  </PresentationProvider>
+                </React.Suspense>
+              </ErrorBoundary>
+            </PortalRoutingProvider>
           </BrandContext.Provider>
         </SnackbarProvider>
       </ThemeProvider>
@@ -232,8 +241,9 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
   let bootstrap: Awaited<ReturnType<typeof getPageBootstrap>>;
   try {
     const presentationInput = pagePresentationInput(appCtx.ctx.query, req?.headers["accept-language"]);
-    const routeLocale = presentationInput.routeLocale ?? (pathname === "/" && appCtx.ctx.locale !== appCtx.ctx.defaultLocale ? appCtx.ctx.locale : undefined);
-    const input = { ...presentationInput, routeLocale, pathname };
+    const hint = req?.headers[PORTAL_PATH_HEADER];
+    const requestPath = typeof hint === "string" ? hint : appCtx.ctx.asPath ?? pathname;
+    const input = { ...presentationInput, requestPath, pathname };
     bootstrap = req ? await getPageBootstrap(input, appCtx.ctx) : await invoke(getPageBootstrap, input);
   } catch (error) {
     if (error instanceof AuthorizationError && res) {
@@ -242,10 +252,9 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
       res.end();
       return { pageProps: {} };
     }
-    // App bootstrap runs before the catch-all's own 404 handler.
-    // LSMB todo: this behavior needs to go in a dedicated, centralized structured router.
+    // Route bootstrap rejects unavailable selections before page loaders run.
     const invalidBandInput = error instanceof ZodError && error.issues.some(issue => issue.path[0] === "bandPublicId");
-    if ((pathname === "/[...customLinkSlug]" || pathname === "/") && (error instanceof NotFoundError || invalidBandInput || (pathname === "/" && error instanceof RangeError))) {
+    if (error instanceof NotFoundError || invalidBandInput || error instanceof RangeError) {
       if (res) {
         res.statusCode = 404;
         res.end();
@@ -257,12 +266,17 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
     if (!(error instanceof AuthenticationError)) {
       throw error;
     }
+
+    // lsmb todo: don't  hardcode this; refer to route registry logic.
     if (pathname !== "/backstage") {
+      const selection = selectPortalContext(parsePortalPath(new URL(appCtx.ctx.asPath ?? pathname, "https://cmdb.invalid").pathname),
+        pagePresentationInput(appCtx.ctx.query), { kind: "platform" });
+      const loginPath = portalHref("/backstage", selection, { kind: "platform" });
       if (res) {
-        res.writeHead(302, { Location: "/backstage" });
+        res.writeHead(302, { Location: loginPath });
         res.end();
       } else {
-        await Router.replace("/backstage");
+        await Router.replace(loginPath);
       }
     }
     return { pageProps: {} };

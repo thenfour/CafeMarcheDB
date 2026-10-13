@@ -1,4 +1,6 @@
 import type { GetServerSidePropsContext } from "next";
+import type { IncomingMessage } from "node:http";
+import type * as PortalRequestModule from "src/route/server/portalRequest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocked = vi.hoisted(() => ({ feed: vi.fn(), authorization: vi.fn() }));
@@ -6,13 +8,27 @@ vi.mock("db", () => ({ default: {} }));
 vi.mock("src/auth/server/serverAuthorization", () => ({ loadAuthorizationForUser: mocked.authorization }));
 vi.mock("src/core/db3/server/publicFeed", () => ({ readPublicFeed: mocked.feed }));
 vi.mock("src/core/components/frontpage/CMFrontpage", () => ({ CMPublicIndex: () => null }));
+vi.mock("src/route/server/portalRequest", async () => {
+    const actual = await vi.importActual<typeof PortalRequestModule>("src/route/server/portalRequest");
+    return { ...actual, withPortalRequest: async (request: IncomingMessage, work: (portal: PortalRequestModule.PortalRequest) => Promise<unknown>) =>
+        work(actual.resolvePortalRequest(request)) };
+});
 import { getServerSideProps } from "src/pages/index";
 
 const firstBand = "PublicationBand1";
 const secondBand = "PublicationBand2";
 function page(query: GetServerSidePropsContext["query"] = {}, locale = "en", acceptLanguage = "fr-CA,nl-NL;q=0.8") {
-    // The page loader consumes query, locale, headers and setHeader; Next supplies the other context fields.
-    const context = { query, locale, defaultLocale: "en", req: { headers: { "accept-language": acceptLanguage } },
+    const search = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+        for (const item of Array.isArray(value) ? value : [value]) {
+            if (item !== undefined) {
+                search.append(key, item);
+            }
+        }
+    }
+    // Next supplies its remaining context fields; this fixture models the actual incoming URL and host.
+    const context = { query, req: { url: `${locale === "en" ? "/" : `/${locale}`}?${search}`,
+        headers: { host: "publication.invalid", "accept-language": acceptLanguage } },
         res: { setHeader: vi.fn() } } as unknown as GetServerSidePropsContext;
     return getServerSideProps(context);
 }
@@ -33,10 +49,10 @@ describe("public homepage request selection", () => {
         expect(mocked.authorization).toHaveBeenCalledWith(null, undefined, firstBand);
         expect(mocked.feed.mock.calls[0]?.[1]).toBe("public authorization");
     });
-    it("lets explicit band and route locale override the configured host and Next prefix", async () => {
-        expect(await page({ bandPublicId: secondBand, routeLocale: "nl-NL" }, "fr")).toMatchObject({ props: {
-            lang: "nl", selection: { bandPublicId: secondBand, routeLocale: "nl-NL" },
-        } });
+    it("rejects foreign bands and conflicting locale selections on the configured host", async () => {
+        expect(await page({ bandPublicId: secondBand, routeLocale: "nl-NL" }, "fr")).toEqual({ notFound: true });
+        expect(mocked.feed).not.toHaveBeenCalled();
+        expect(mocked.authorization).not.toHaveBeenCalled();
     });
     it("retains /fr and /nl as explicit preferences while the default prefix leaves browser order intact", async () => {
         expect(await page({}, "fr")).toMatchObject({ props: { lang: "fr", selection: { routeLocale: "fr" } } });
@@ -51,10 +67,10 @@ describe("public homepage request selection", () => {
     it.each([{ bandPublicId: "bad" }, { bandPublicId: [firstBand, secondBand] }, { routeLocale: "invalid_locale" }])("returns 404 for invalid homepage selection %j", async query => {
         expect(await page(query)).toEqual({ notFound: true });
     });
-    it("retains generic hosting's Backstage redirect with explicit band/locale and no publication read", async () => {
+    it("retains generic hosting's familiar Backstage redirect and no publication read", async () => {
         vi.stubEnv("CMDB_HOSTING_MODE", "GenericSingleTenant");
-        expect(await page({ bandPublicId: secondBand, routeLocale: "nl-NL" })).toEqual({ redirect: {
-            destination: `/backstage?bandPublicId=${secondBand}&routeLocale=nl-NL`, permanent: false,
+        expect(await page({ bandPublicId: firstBand, routeLocale: "nl-NL" })).toEqual({ redirect: {
+            destination: "/nl-NL/backstage", permanent: false,
         } });
         expect(mocked.feed).not.toHaveBeenCalled();
         expect(mocked.authorization).not.toHaveBeenCalled();

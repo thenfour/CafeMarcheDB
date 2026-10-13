@@ -14,11 +14,12 @@ import createEmotionServer from "@emotion/server/create-instance";
 
 interface MyDocumentProps extends DocumentProps {
   emotionStyleTags: JSX.Element[];
+  language: string;
 }
 
-export default function MyDocument({ emotionStyleTags }: MyDocumentProps) {
+export default function MyDocument({ emotionStyleTags, language }: MyDocumentProps) {
   return (
-    <Html lang="en">
+    <Html lang={language}>
       <Head>
         {/* Insertion point for client. This connects with createEmotionCache.ts */}
         <meta name="emotion-insertion-point" content="" />
@@ -41,6 +42,8 @@ MyDocument.getInitialProps = async (ctx: DocumentContext) => {
   // However, be aware that it can have global side effects.
   const cache = createEmotionCache();
   const { extractCriticalToChunks } = createEmotionServer(cache);
+  // Error pages use the English error shell; normal pages provide their resolved formatting language.
+  let language = "en-US";
 
   // We're passing `emotionCache` to App component
   ctx.renderPage = () =>
@@ -48,7 +51,8 @@ MyDocument.getInitialProps = async (ctx: DocumentContext) => {
       enhanceApp: (
         App: React.ComponentType<React.ComponentProps<AppType> & MyAppProps>
       ) =>
-        function EnhanceApp(props) {
+        function EnhanceApp(props: MyAppProps) {
+          language = props.pageProps.presentation?.localization.formattingLocale ?? language;
           return <App emotionCache={cache} {...props} />;
         },
     });
@@ -70,6 +74,7 @@ MyDocument.getInitialProps = async (ctx: DocumentContext) => {
     ...initialProps,
     // return emotionStyleTags as props
     emotionStyleTags,
+    language,
   };
 };
 

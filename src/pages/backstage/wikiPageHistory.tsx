@@ -1,6 +1,6 @@
 import { Alert } from "@mui/material";
 import { useLocale } from "src/locale/components/useLocale";
-import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
 import { CMLink } from "@/src/core/components/CMLink";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
@@ -154,7 +154,7 @@ const WikiRevisionHistoryPageContent = () => {
             void qExtra.refetch();
         }} />}
         <h1>
-            <CMLink href={withMemberPresentation(wikiPath.uriRelativeToHost, dashboardContext.memberPresentation)} rel="noreferrer">{currentRevision.name || pageWithRevisions.slug}</CMLink>
+            <CMLink href={portalHref(wikiPath.uriRelativeToHost, dashboardContext.memberPresentation, dashboardContext.portalHosting)} rel="noreferrer">{currentRevision.name || pageWithRevisions.slug}</CMLink>
         </h1>
         <table>
             <thead>

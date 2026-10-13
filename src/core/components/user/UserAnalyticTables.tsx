@@ -1,4 +1,4 @@
-import { withMemberPresentation } from "./bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
 import { useQuery } from "@blitzjs/rpc";
 import React from "react";
 import { isAttendanceGoing } from "shared/eventAttendance";
@@ -218,7 +218,7 @@ export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabC
                     memberName: "slug",
                     allowSort: true,
                     render: (row) => {
-                        return <CMLink href={withMemberPresentation(`/backstage/wiki/${row.row.slug}`, dashboardContext.memberPresentation)}>{row.row.slug}</CMLink>;
+                        return <CMLink href={portalHref(`/backstage/wiki/${row.row.slug}`, dashboardContext.memberPresentation, dashboardContext.portalHosting)}>{row.row.slug}</CMLink>;
                     },
                 },
                 {

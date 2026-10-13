@@ -2,7 +2,7 @@ import { HomepageMain } from "@/src/core/components/frontpage/homepageComponents
 import { useSession } from "@blitzjs/auth";
 import { NoSsr } from "@mui/material";
 import Head from "next/head";
-import { useRouter } from "next/router";
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import React, { Suspense } from "react";
 import { EnNlFr, LangSelectString } from "shared/lang";
 import GoogleAnalytics from "src/core/components/GoogleAnalytics";
@@ -25,13 +25,9 @@ const MainContent = ({ lang, onLangChange, publicFeed, selection }: CMPublicInde
 };
 
 export const CMPublicIndex = (props: CMPublicIndexProps) => {
-    const router = useRouter();
+    const router = useCmdbRouter();
     const handleManualLangChange = async (newLang: EnNlFr) => {
-        await router.push({
-            pathname: "/",
-            query: { ...router.query, bandPublicId: props.selection.bandPublicId, routeLocale: newLang }
-        },
-            undefined, { locale: newLang });
+        await router.switchLanguage(newLang);
     };
     const lang = props.lang;
     const titleText = `Café Marché | Brussels fanfare-orkest`;

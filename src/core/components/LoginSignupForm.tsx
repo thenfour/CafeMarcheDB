@@ -1,16 +1,18 @@
 import Link from "next/link";
-import { useRouter } from "next/router";
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { LoginForm } from "src/auth/components/LoginForm";
 import { AppContextMarker } from "./AppContext";
 import { CMLink } from "./CMLink";
 import { ActivityFeature } from "./featureReports/activityTracking";
 
 export const LoginSignup = () => {
-    const router = useRouter();
+    const router = useCmdbRouter();
     return (
         <div className="signInPageMain">
             <AppContextMarker name="LoginSignup">
-                <CMLink trackingFeature={ActivityFeature.login_google} navigation="document" href="/api/auth/google" className="signInBlock google link googleSignInLink">
+                <CMLink trackingFeature={ActivityFeature.login_google} navigation="document"
+                    href={router.href(`/api/auth/google?redirectUrl=${encodeURIComponent(router.href("/backstage"))}`)}
+                    className="signInBlock google link googleSignInLink">
                     <div className="title">
                         <img src="/web_light_rd_na.svg" />
                         Click here to sign in via Google
@@ -29,7 +31,7 @@ export const LoginSignup = () => {
                         }}
                     />
                 </div>
-                <Link href={"/auth/signup"} className="signInBlock link createNewAccount">
+                <Link href={router.href("/auth/signup")} className="signInBlock link createNewAccount">
                     <div className="title">
                         Create a new account using email & password
                     </div>

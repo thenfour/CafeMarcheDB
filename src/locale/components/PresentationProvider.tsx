@@ -1,3 +1,6 @@
+// this doesn't actually do the loading, it mostly manages
+// invalidation and caching / refreshing.
+
 import { useQuery } from "@blitzjs/rpc";
 import React from "react";
 import { useSession } from "@blitzjs/auth";
@@ -6,6 +9,10 @@ import getPresentationData from "../queries/getPresentationData";
 import type { PresentationInput } from "../shared/presentationInput";
 import type { BandPublicId } from "shared/publicId";
 import { presentationContextKey, type PresentationData } from "../shared/presentationContext";
+
+function newKey(): string {
+    return `${Date.now().valueOf()}`;
+}
 
 interface PresentationContextValue {
     readonly data: PresentationData | null;
@@ -22,11 +29,12 @@ const changeEvent = "cmdb-presentation-changed";
 
 /** Call after localization, availability, settings, membership or grant mutations. */
 export async function invalidatePresentation(): Promise<void> {
-    // Localized entity queries must also drop their old strings and permission snapshots.
     await queryClient.invalidateQueries();
     if (typeof window !== "undefined") {
         window.dispatchEvent(new Event(changeEvent));
-        try { window.localStorage.setItem(changeEvent, `${Date.now()}/${Math.random()}`); } catch {
+        try {
+            window.localStorage.setItem(changeEvent, newKey());
+        } catch {
             // Storage may be disabled; the local change event still refreshes this tab.
         }
     }
@@ -43,6 +51,9 @@ function LoadedPresentation({ input, initial, children }: React.PropsWithChildre
     if (!data) {
         throw new Error("Presentation query returned no snapshot.");
     }
+    React.useEffect(() => {
+        document.documentElement.lang = data.localization.formattingLocale;
+    }, [data.localization.formattingLocale]);
     const value = React.useMemo(() => ({
         data,
         bandPublicId: input.bandPublicId,
@@ -57,7 +68,9 @@ export function PresentationProvider({ initial, bandPublicId, routeLocale, child
     bandPublicId?: BandPublicId | null;
     routeLocale?: string | null;
 }>) {
+    // nb: full dashboard context not available here
     const session = useSession();
+
     const [browserLanguages, setBrowserLanguages] = React.useState<readonly string[] | null>(null);
     React.useEffect(() => {
         const update = () => setBrowserLanguages([...navigator.languages]);
@@ -91,24 +104,32 @@ export function PresentationProvider({ initial, bandPublicId, routeLocale, child
     const sessionKey = `${session.userId ?? "public"}/${session.permissionNames?.join(",") ?? ""}`;
     const [initialSession] = React.useState(sessionKey);
     const initialEligible = React.useRef(true);
+
     // React may discard a changed useMemo during a suspended transition. Retain
     // each context's token across retries, or every retry starts another request.
     const requestIds = React.useRef(new Map<string, string>());
     const requestKey = JSON.stringify([contextKey, sessionKey, refresh]);
     let clientRequestId = requestIds.current.get(requestKey);
     if (!clientRequestId) {
-        clientRequestId = `${Date.now()}/${Math.random()}`;
+        clientRequestId = newKey();
         requestIds.current.set(requestKey, clientRequestId);
     }
     if (!initial || initialSession !== sessionKey || refresh > 0 || presentationContextKey(initial.input) !== contextKey) {
         initialEligible.current = false;
     }
     const canUseInitial = initial && initialEligible.current;
-    const scopeKey = JSON.stringify([contextKey, session.userId ?? null]);
+    const scopeKey = JSON.stringify([contextKey, session.userId]);
+
     // During a band/account change the new tree suspends, so old text/grants cannot remain visible.
     // Refresh queries without remounting same-scope forms and discarding their drafts.
-    return <React.Suspense key={scopeKey} fallback={<span role="status">Loading language and settings…</span>}>
-        <LoadedPresentation input={{ ...input, clientRequestId }} initial={canUseInitial ? initial : undefined}>
+    return <React.Suspense
+        key={scopeKey}
+        fallback={<span role="status">Loading language and settings…</span>}
+    >
+        <LoadedPresentation
+            input={{ ...input, clientRequestId }}
+            initial={canUseInitial ? initial : undefined}
+        >
             {children}
         </LoadedPresentation>
     </React.Suspense>;

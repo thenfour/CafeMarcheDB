@@ -123,7 +123,7 @@ describe.skipIf(!settingsMysqlTestUrl)("account and dashboard bootstrap on migra
         }
         const { context, auth } = await authorize(tx, fixture);
         const choices = await loadAvailableBands(context, auth, { routeLocale: "fr-BE", browserLanguages: ["en-US"] });
-        expect(choices).toEqual([
+        expect(choices.map(({ publicId, name }) => ({ publicId, name }))).toEqual([
             { publicId: fixture.bands[0]!.publicId, name: "Premiere" },
             { publicId: fixture.bands[1]!.publicId, name: "Second" },
         ]);
@@ -147,6 +147,15 @@ describe.skipIf(!settingsMysqlTestUrl)("account and dashboard bootstrap on migra
         const context = await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" });
         const choices = await loadAvailableBands(context, auth, {});
         expect(choices.map(band => band.publicId)).toEqual(expect.arrayContaining(fixture.bands.map(band => band.publicId)));
-        expect(choices.every(band => Object.keys(band).sort().join(",") === "name,publicId")).toBe(true);
+        expect(choices.every(band => Object.keys(band).sort().join(",") === "name,publicId,supportedLocales")).toBe(true);
+        expect(choices.every(band => band.supportedLocales.includes("fr-BE"))).toBe(true);
+    }));
+    it("returns each destination's active languages for an intentional band switch", () => withFixture(async (tx, fixture) => {
+        await tx.bandLocale.deleteMany({ where: { bandId: fixture.bands[1]!.id, localeId: fixture.frenchId } });
+        const { context, auth } = await authorize(tx, fixture);
+        const choices = await loadAvailableBands(context, auth, {});
+        expect(choices.find(choice => choice.publicId === fixture.bands[0]!.publicId)?.supportedLocales).toContain("fr-BE");
+        expect(choices.find(choice => choice.publicId === fixture.bands[1]!.publicId)?.supportedLocales).not.toContain("fr-BE");
+        expect(choices.find(choice => choice.publicId === fixture.bands[1]!.publicId)?.supportedLocales).toContain("nl-BE");
     }));
 });

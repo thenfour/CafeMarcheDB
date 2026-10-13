@@ -19,6 +19,10 @@ Open `http://localhost:10455/backstage`. For the built application, use
 Stop the running demo before resetting its database.
 Demo commands use `.next-demo` so an existing normal development server does not
 overwrite the built demo. Set `DEMO_PORT` to choose a different port when needed.
+Demo commands set `CMDB_HOSTING_MODE=Platform` for the multiple-band fixture.
+Choose a band on the dashboard; its pages use `/b/<publicBandId>/backstage/...`.
+The language control adds an optional locale prefix, while locale-free links
+retain the browser's ordered language preferences.
 
 The commands use the local connection in `DATABASE_URL`, replacing its database
 name with `cmdb_demo`. They do not modify environment files. To choose another

@@ -23,6 +23,7 @@ import { InstrumentChip, InstrumentFunctionalGroupChip } from "src/core/componen
 import { SongTagIndicatorContainer } from "src/core/components/SongTagIndicatorContainer";
 import { groupReferenceFixture, instrumentReferenceFixture, songTagReferenceFixture } from "./support/catalogReferenceFixtures";
 import { createDashboardReferenceStore, registerDashboardReferences } from "src/core/db3/shared/references/dashboardReferences";
+import { PortalRoutingProvider } from "src/route/PortalRoutingProvider";
 
 vi.mock("@blitzjs/rpc", async () => ({ ...await vi.importActual<typeof import("@blitzjs/rpc")>("@blitzjs/rpc"),
     useMutation: () => [mutation],
@@ -48,7 +49,7 @@ const dashboardStore = createDashboardReferenceStore();
 registerDashboardReferences(dashboardStore, { instrumentFunctionalGroup: [displayGroup], instrument: [displayInstrument], songTag: [displayTag] });
 const dashboard = { referenceStore: dashboardStore, instrument: new TableAccessor([displayInstrument]),
     instrumentFunctionalGroup: new TableAccessor([displayGroup]), songTag: new TableAccessor([displayTag]), refreshCachedData: vi.fn(),
-    memberPresentation: { bandPublicId: "Band000000000001", routeLocale: "en-US", browserLanguages: ["fr-BE"] } };
+    portalHosting: { kind: "platform" as const }, memberPresentation: { bandPublicId: "Band000000000001", routeLocale: "en-US", browserLanguages: ["fr-BE"] } };
 
 const authorization = new CMClientAuthorization({ id: 1, publicId: parsePublicId<"User">("User000000000001") },
     new PermissionSet([Permission.login, Permission.always_grant, Permission.admin_instruments]));
@@ -124,12 +125,12 @@ async function chooseLocale(selector: Element, localeTag: string) {
 
 describe("native DB3 localized catalog editors", () => {
     it("renders detail, instrument/group chips, and tag indicators from shared dashboard references without queries", async () => {
-        await act(async () => root.render(<>
+        await act(async () => root.render(<PortalRoutingProvider hosting={{ kind: "platform" }}>
             <BandInstrumentCatalog detailPublicId={displayInstrument.publicId} />
             <InstrumentChip value={displayInstrument.publicId} />
             <InstrumentFunctionalGroupChip value={displayGroup.publicId} />
             <SongTagIndicatorContainer tagIds={[displayTag.publicId]} allPossibleTags={[displayTag.publicId]} />
-        </>));
+        </PortalRoutingProvider>));
         expect(container.querySelector("h1")?.textContent).toBe("Trumpet");
         expect(container.textContent).toContain("Brass");
         expect(container.querySelector(".songTagIndicator")?.textContent).toBe("M");

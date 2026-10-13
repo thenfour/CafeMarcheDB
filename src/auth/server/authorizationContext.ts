@@ -36,6 +36,7 @@ export async function resolveAuthorizationContext(
         return { band: null };
     }
 
+    // lsmb todo: unacceptable direct query.
     const band = await database.band.findFirst({
         where: {
             isDeleted: false,

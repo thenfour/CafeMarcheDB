@@ -1,4 +1,4 @@
-import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
+import { parsePortalPath, portalHref, type BandHostingConfig } from "src/route/portalRouting";
 import type { ActivityDetailRow, FacetedBreakdownInput } from "../activityReportTypes";
 import { anonymousActivityContext } from "../activityContext";
 import { ActivityFeature } from "../activityTracking";
@@ -12,6 +12,7 @@ type AuthorizedActivityRow = Omit<ActivityDetailRow, "uri" | "queryText">;
 export interface ActivityMetadataPolicy {
     // The deployment owns this origin; a saved URL cannot declare its own authority.
     readonly applicationOrigin: string | null;
+    readonly hosting: BandHostingConfig;
 }
 
 /** Saved metadata must not add identities or text beyond the authorized reference projection. */
@@ -34,7 +35,7 @@ function savedApplicationPath(value: string | null, policy: ActivityMetadataPoli
         if (!relative && (!policy.applicationOrigin || url.origin !== new URL(policy.applicationOrigin).origin)) {
             return null;
         }
-        return url.pathname;
+        return parsePortalPath(url.pathname).pathname;
     } catch {
         return null;
     }
@@ -79,7 +80,7 @@ function disclosedActivityUri(source: SavedActivityMetadata, row: AuthorizedActi
     }
     try {
         const authorized = authorizedActivityPath(path, source, row);
-        return authorized === null ? null : withMemberPresentation(authorized, input);
+        return authorized === null ? null : portalHref(authorized, input, policy.hosting);
     } catch {
         // Malformed percent escapes cannot become a report link.
         return null;

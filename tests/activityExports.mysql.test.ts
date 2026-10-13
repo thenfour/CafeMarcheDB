@@ -40,7 +40,7 @@ describe.skipIf(!settingsMysqlTestUrl)("activity metadata and export on MariaDB"
         expect(general.data).toEqual(ledger.rows);
         const row = general.data[0]!;
         expect(row).toMatchObject({ queryText: "été", attendance: { buttonCaption: "Présent" }, songCreditType: { name: "Compositeur" }, instrument: { name: "Trompette globale" } });
-        expect(row.uri).toBe(`/backstage/song/${song.publicId}?bandPublicId=${report.band.publicId}&routeLocale=fr-BE`);
+        expect(row.uri).toBe(`/fr-BE/b/${report.band.publicId}/backstage/song/${song.publicId}`);
         const record = activityCsvRecord(parseActivityCsv(csv.csvContent), 0);
         expect(record.get("id")).toBe(row.rowKey);
         expect(record.get("userHash")).toBe(row.userHash);
@@ -159,7 +159,7 @@ describe.skipIf(!settingsMysqlTestUrl)("activity metadata and export on MariaDB"
         expect(second.data).toHaveLength(2);
         const own = second.data.find(row => row.song !== null)!;
         expect(own).toMatchObject({ song: { publicId: secondSong.publicId }, queryText: "Second" });
-        expect(own.uri).toBe(`/backstage/song/${secondSong.publicId}?bandPublicId=${band.publicId}&routeLocale=nl-BE`);
+        expect(own.uri).toBe(`/nl-BE/b/${band.publicId}/backstage/song/${secondSong.publicId}`);
         expect(own.userHash).not.toBe(first.data[0]!.userHash);
         expect(csv.rowCount).toBe(2);
         expect(csv.csvContent).not.toMatch(/First band song|unowned/);

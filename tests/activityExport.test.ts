@@ -4,7 +4,7 @@ import { activityRowsToCsv } from "src/core/components/featureReports/server/act
 import { activityCsvRecord, activityExportInput, activityExportRow, parseActivityCsv } from "./support/activityExportFixture";
 
 const source: Parameters<typeof projectActivitySavedMetadata>[0] = { uri: null, queryText: null, feature: "link_follow_internal", context: "App/association", songId: 21, eventId: 22, fileId: 23 };
-const policy = { applicationOrigin: "https://band.test" };
+const policy = { applicationOrigin: "https://band.test", hosting: { kind: "platform" as const } };
 const project = (overrides: Partial<typeof source>, row = activityExportRow()) =>
     projectActivitySavedMetadata({ ...source, ...overrides }, row, activityExportInput, policy);
 
@@ -19,8 +19,8 @@ describe("saved activity metadata disclosure", () => {
     ])("reconstructs %s from the authorized reference and current presentation", (uri, path) => {
         const value = project({ uri }).uri!;
         const url = new URL(value, "https://band.test");
-        expect(url.pathname).toBe(path);
-        expect([...url.searchParams.entries()]).toEqual([["bandPublicId", activityExportInput.bandPublicId], ["routeLocale", "fr-BE"]]);
+        expect(url.pathname).toBe(`/fr-BE/b/${activityExportInput.bandPublicId}${path}`);
+        expect([...url.searchParams.entries()]).toEqual([]);
         expect(url.hash).toBe("");
         expect(value).not.toMatch(/private|Foreign|Alice|userId|token|867/);
     });
@@ -44,9 +44,9 @@ describe("saved activity metadata disclosure", () => {
     it("requires the caller's trusted origin for absolute URLs while relative routes remain usable", () => {
         const row = activityExportRow();
         expect(projectActivitySavedMetadata({ ...source, uri: "https://band.test/backstage/song/21" }, row, activityExportInput,
-            { applicationOrigin: null }).uri).toBeNull();
+            { applicationOrigin: null, hosting: { kind: "platform" } }).uri).toBeNull();
         expect(projectActivitySavedMetadata({ ...source, uri: "/backstage/song/21" }, row, activityExportInput,
-            { applicationOrigin: null }).uri).toContain("/backstage/song/ActivitySong0001?");
+            { applicationOrigin: null, hosting: { kind: "platform" } }).uri).toContain("/backstage/song/ActivitySong0001");
     });
 
     it.each(["été", " CHANSON ", "Fête", "help/été"])("retains the confirmed association query fragment %s", queryText => {

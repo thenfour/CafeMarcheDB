@@ -341,6 +341,8 @@ export function MakeICalEventUid(eventUid: string, userUid: string | null) {
     return `${eventUid}_${userUid || "public"}`;
 }
 
+
+// lsmb todo: use proper routing
 export function GetICalRelativeURIForUserUpcomingEvents(args: { calendarFeedToken: string | null; bandPublicId: BandPublicId }) {
     return `/api/ical/user/${encodeURIComponent(args.calendarFeedToken || "public")}/upcoming?bandPublicId=${encodeURIComponent(args.bandPublicId)}`;
 }

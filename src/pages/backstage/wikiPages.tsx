@@ -1,7 +1,7 @@
 import React from "react";
 import { Alert } from "@mui/material";
 import { useLocale } from "src/locale/components/useLocale";
-import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
@@ -150,7 +150,7 @@ export const WikiPageListOuter = () => {
                     ID: wikiPage.publicId.toString(),
                     Slug: wikiPage.slug,
                     Namespace: wikiPage.namespace || "",
-                    URL: dashboardContext.getAbsoluteUri(withMemberPresentation(path.uriRelativeToHost, dashboardContext.memberPresentation)),
+                    URL: dashboardContext.getAbsoluteUri(portalHref(path.uriRelativeToHost, dashboardContext.memberPresentation, dashboardContext.portalHosting)),
                 }
             }
         },

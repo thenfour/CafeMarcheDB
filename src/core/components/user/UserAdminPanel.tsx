@@ -1,9 +1,9 @@
-import { Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import {
     Tooltip
 } from "@mui/material";
 import { useRouter } from "next/router";
+import { portalHref } from "src/route/portalRouting";
 import React from "react";
 import { Permission } from "shared/permissions";
 import setUserSysAdmin from "src/auth/mutations/setUserSysAdmin";
@@ -68,10 +68,10 @@ export const DeactivateUserButton = ({ capabilities, user, onOK }: DeactivateUse
                         }
                         snackbar.showSuccess("User deactivated");
                         if (dashboardContext.currentUser?.publicId === user.publicId) {
-                            window.location.assign("/backstage");
+                            window.location.assign(portalHref("/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting));
                         } else if (!dashboardContext.isAuthorized(Permission.manage_global_users)) {
-                            await router.replace(dashboardContext.isAuthorized(Permission.search_users)
-                                ? Routes.UserSearchPage() : "/backstage");
+                            await router.replace(portalHref(dashboardContext.isAuthorized(Permission.search_users)
+                                ? "/backstage/users" : "/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting));
                         } else {
                             await onOK?.();
                         }

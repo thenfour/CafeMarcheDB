@@ -1,5 +1,6 @@
+import { usePortalHosting } from "src/route/PortalRoutingProvider";
 import type { DB3QueryContextInput } from "../../db3/components/useDB3Context";
-import { withMemberPresentation } from "../user/bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
 import { nanoid } from 'nanoid';
 import React from "react";
 import { EnNlFr, LangSelectString } from 'shared/lang';
@@ -564,6 +565,7 @@ export interface HomepageMainProps {
 };
 
 export const HomepageMain = ({ content, className, fullPage, editable, lang, onLangChange, ...props }: HomepageMainProps) => {
+    const hosting = usePortalHosting();
     const [gallery, setGallery] = React.useState<Gallery>(() => new Gallery());
     gallery.setContent(content);
 
@@ -748,7 +750,7 @@ export const HomepageMain = ({ content, className, fullPage, editable, lang, onL
                     <img className="nbrussel" src="/homepage/CMbrusselicon.png" />
                 </div>
 
-                <div className="backstageContainer new"><a href={withMemberPresentation(gSettings.backstageURL, props.presentation ?? {})}><img src="/homepage/CMbackstage.png"></img></a></div>
+                <div className="backstageContainer new"><a href={portalHref(gSettings.backstageURL, props.presentation ?? {}, hosting)}><img src="/homepage/CMbackstage.png"></img></a></div>
             </>
             }
         </div>

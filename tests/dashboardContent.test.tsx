@@ -55,6 +55,7 @@ function authenticatedPerson(): { id: number } | null {
     return { id: 1 };
 }
 const dashboard = {
+    portalHosting: { kind: "platform" as const },
     permission: new TableAccessor([permission]),
     memberPresentation,
     brand: { hostingMode: HostingMode.CafeMarche },
@@ -88,13 +89,13 @@ afterEach(async () => { await act(async () => root.unmount()); container.remove(
 describe("dashboard announcements and navigation", () => {
     it("retains nested Wiki paths, contextual band/locale, authored blank captions and external URLs", () => {
         const link = DynMenuToMenuItem(menu(), dashboard)!;
-        expect(link.path).toBe(`/backstage/wiki/special/announcements?bandPublicId=${band}&routeLocale=fr-BE`);
+        expect(link.path).toBe(`/fr-BE/b/${band}/backstage/wiki/special/announcements`);
         expect(link).toMatchObject({ className: "score-link", permission: Permission.visibility_members, linkCaption: "Partitions", openInNewTab: false });
         expect(DynMenuToMenuItem(menu({ caption: { ...menu().caption, value: "" } }), dashboard)!.linkCaption).toBe("");
         const externalURI = "https://example.invalid/scores?edition=2026#brass";
         expect(DynMenuToMenuItem(menu({ linkType: "ExternalURL", externalURI }), dashboard)).toMatchObject({ path: externalURI, openInNewTab: true });
         dashboard.memberPresentation = { bandPublicId: otherBand, routeLocale: "nl-BE" };
-        expect(DynMenuToMenuItem(menu(), dashboard)!.path).toContain(`bandPublicId=${otherBand}&routeLocale=nl-BE`);
+        expect(DynMenuToMenuItem(menu(), dashboard)!.path).toContain(`/nl-BE/b/${otherBand}/`);
     });
     it("merges section/group names without case sensitivity and preserves static links and numeric order without mutating inputs", () => {
         const staticLink = DynMenuToMenuItem(menu({ caption: { ...menu().caption, value: "Static" } }), dashboard)!;
@@ -133,7 +134,7 @@ describe("dashboard announcements and navigation", () => {
         const text = container.textContent!;
         expect(text.indexOf("BackstageFrontpageHeaderMarkdown")).toBeLessThan(text.indexOf("special/announcements"));
         expect(text.indexOf("special/announcements")).toBeLessThan(text.indexOf("BackstageFrontpageMarkdown"));
-        expect(container.querySelector("a")!.getAttribute("href")).toBe(`/backstage/profile?bandPublicId=${band}&routeLocale=fr-BE`);
+        expect(container.querySelector("a")!.getAttribute("href")).toBe(`/fr-BE/b/${band}/backstage/profile`);
         expect(container.querySelector(".RelevantEvents")).not.toBeNull();
         expect(container.querySelector(".CMBigCalendar")).not.toBeNull();
         expect(text.indexOf("special/announcements")).toBeLessThan(text.indexOf("Relevant Events"));

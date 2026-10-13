@@ -1,5 +1,7 @@
 import type { DB3QueryContextInput } from "../../db3/components/useDB3Context";
-import { withMemberPresentation } from "../user/bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
+import { usePortalHosting } from "src/route/PortalRoutingProvider";
+import { usePresentation } from "src/locale/components/PresentationProvider";
 // <Markdown> = rendered markdown text (simple read only html)
 // <MarkdownEditor> = just the text editor which outputs markdown
 // <MarkdownControl> = full editor with debounced commitment (caller actually commits), displays saving indicator, switch between edit/view
@@ -43,9 +45,12 @@ interface MarkdownProps {
     onClick?: () => void,
 }
 export const Markdown = (props: MarkdownProps) => {
+    const hosting = usePortalHosting();
     const [html, setHtml] = React.useState('');
     const dashboardContext = useDashboardContext();
-    const presentation = props.presentation ?? dashboardContext.memberPresentation;
+    const selected = usePresentation();
+    // Public pages share the app's selection without mounting the dashboard provider.
+    const presentation = props.presentation ?? { bandPublicId: selected.bandPublicId, routeLocale: selected.data?.input.routeLocale };
     const containerRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
@@ -73,9 +78,8 @@ export const Markdown = (props: MarkdownProps) => {
             if (ihref >= 0) {
                 // distinguish internal vs. external.
                 const href = tokens[idx].attrs[ihref][1];
-                // lsmb todo: use a real routing mechanism, not ad-hoc parsing
                 if (href?.startsWith("/backstage/") || href?.startsWith("/api/files/download/")) {
-                    tokens[idx].attrs[ihref][1] = withMemberPresentation(href, presentation);
+                    tokens[idx].attrs[ihref][1] = portalHref(href, presentation, hosting);
                 }
                 if (href) {
                     const hrefClass = dashboardContext.routingApi.getURLClass(href);
@@ -118,13 +122,13 @@ export const Markdown = (props: MarkdownProps) => {
         };
 
         md.use(md => ReactInlineMarkdownPlugin(md));
-        md.use(ImageDimensionsMarkdownPlugin, presentation);
-        md.use(CMDBLinkMarkdownPlugin, presentation);
+        md.use(ImageDimensionsMarkdownPlugin, presentation, hosting);
+        md.use(CMDBLinkMarkdownPlugin, presentation, hosting);
         md.use(md => AbcNotationMarkdownPlugin(md));
 
         setHtml(md.render(props.markdown));
 
-    }, [props.markdown, presentation.bandPublicId, presentation.routeLocale]);
+    }, [props.markdown, presentation.bandPublicId, presentation.routeLocale, hosting]);
 
     return <NoSsr>
         {IsNullOrWhitespace(props.markdown) ? null :

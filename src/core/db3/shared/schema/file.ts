@@ -701,13 +701,13 @@ export const xFrontpageGalleryItem = db3.defineTable({
 
         caption_nl: columnName => new GenericStringField({
             columnName,
-            allowNull: false,
+            allowNull: true,
             format: "markdown",
             authMap: xFrontpageAuthMap_Basic,
         }),
         caption_fr: columnName => new GenericStringField({
             columnName,
-            allowNull: false,
+            allowNull: true,
             format: "markdown",
             authMap: xFrontpageAuthMap_Basic,
         }),

@@ -1,31 +1,41 @@
 import { IncomingMessage, ServerResponse } from "http";
 import { Socket } from "net";
 import { AuthenticationError, NotFoundError } from "blitz";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parsePublicId } from "shared/publicId";
 import { createAuthorizationTestContext } from "./authorization/support/authorizationFixtures";
+import type * as PortalRequestModule from "src/route/server/portalRequest";
 
 // The boundary tests fake its server services; native tests exercise real snapshots and grants.
 const services = vi.hoisted(() => ({
-    session: vi.fn(), authorize: vi.fn(), presentation: vi.fn(), brand: vi.fn(),
+    session: vi.fn(), authorize: vi.fn(), presentation: vi.fn(), brand: vi.fn(), availability: vi.fn(),
 }));
 vi.mock("src/blitz-server", () => ({ getSessionForRequest: services.session }));
 vi.mock("src/auth/server/pageRequestAuthorization", () => ({ loadPageAuthorization: services.authorize }));
 vi.mock("src/locale/server/presentation", () => ({ loadPresentationData: services.presentation }));
 vi.mock("src/server/brand", () => ({ loadDbBrandConfig: services.brand }));
+vi.mock("src/route/server/portalRequest", async () => {
+    const actual = await vi.importActual<typeof PortalRequestModule>("src/route/server/portalRequest");
+    return { ...actual, requirePortalAvailability: services.availability };
+});
 import getPageBootstrap from "src/auth/queries/getPageBootstrap";
 
 const context = createAuthorizationTestContext(null);
 const bandPublicId = parsePublicId<"Band">("BootstrapBand001");
-const input = { pathname: "/backstage/profile", bandPublicId, routeLocale: "fr-BE", browserLanguages: ["nl-BE"] };
+const input = { pathname: "/backstage/profile", requestPath: `/fr-BE/b/${bandPublicId}/backstage/profile`, bandPublicId, routeLocale: "fr-BE", browserLanguages: ["nl-BE"] };
 const authorization = { band: { id: 17 } };
 beforeEach(() => {
     vi.resetAllMocks();
+    vi.stubEnv("CMDB_BASE_URL", "https://band.example.test");
+    vi.stubEnv("CMDB_HOSTING_MODE", "Platform");
+    services.availability.mockResolvedValue(undefined);
     services.session.mockResolvedValue(context.session);
     services.authorize.mockResolvedValue(authorization);
     services.presentation.mockResolvedValue({ input: { bandPublicId } });
     services.brand.mockResolvedValue({ siteTitle: "Selected band" });
 });
+
+afterEach(() => { vi.unstubAllEnvs(); });
 
 describe("page bootstrap server boundary", () => {
     it("authorizes the explicit route and band before loading presentation and branding for RPC navigation", async () => {
@@ -37,7 +47,7 @@ describe("page bootstrap server boundary", () => {
         });
         expect(services.brand).toHaveBeenCalledWith({ hostHeader: undefined, bandId: 17, freshness: "refresh" });
         expect(services.authorize.mock.invocationCallOrder[0]).toBeLessThan(services.presentation.mock.invocationCallOrder[0]!);
-        expect(result).toEqual({ presentation: { input: { bandPublicId } }, brand: { siteTitle: "Selected band" } });
+        expect(result).toEqual({ presentation: { input: { bandPublicId } }, brand: { siteTitle: "Selected band" }, portalHosting: { kind: "platform" } });
     });
 
     it("establishes the SSR session from its trusted request and response", async () => {

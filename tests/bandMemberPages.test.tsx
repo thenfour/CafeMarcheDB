@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
+vi.mock("src/route/PortalRoutingProvider", () => ({ usePortalHosting: () => ({ kind: "platform" }) }));
 import { createRoot, type Root } from "react-dom/client";
 import { act, Simulate } from "react-dom/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -40,7 +41,7 @@ vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useFea
     referenceStore: references, authorizationContext: { bandPublicId: bandId },
     authorization: new CMClientAuthorization({ id: 1, publicId: personId }, new PermissionSet(permissions)),
     localePreferences: { routeLocale: "fr-BE", browserLanguages: ["nl-BE"] },
-    memberPresentation: { bandPublicId: bandId, routeLocale: "fr-BE" },
+    portalHosting: { kind: "platform" as const }, memberPresentation: { bandPublicId: bandId, routeLocale: "fr-BE" },
     isAuthorized: (permission: Permission) => permissions.includes(permission),
 }) }));
 vi.mock("src/core/components/SnackbarContext", async () => ({ ...await vi.importActual<typeof import("src/core/components/SnackbarContext")>("src/core/components/SnackbarContext"),
@@ -246,7 +247,7 @@ describe("member directory", () => {
     it("pages with scoped requests and resets to the first page when the search changes", async () => {
         await renderDirectory();
         const link = [...container.querySelectorAll<HTMLAnchorElement>("a")].find(element => element.textContent?.trim() === "Alice");
-        expect(link?.getAttribute("href")).toBe(`/backstage/user/${personId}?bandPublicId=${bandId}&routeLocale=fr-BE`);
+        expect(link?.getAttribute("href")).toBe(`/fr-BE/b/${bandId}/backstage/user/${personId}`);
         await click("Load more results...");
         expect(searchRequests.at(-1)).toMatchObject({ bandPublicId: bandId, routeLocale: "fr-BE", offset: 1 });
         const search = container.querySelector<HTMLInputElement>('input[placeholder="Search"]')!;

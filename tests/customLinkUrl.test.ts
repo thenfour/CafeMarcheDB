@@ -4,8 +4,8 @@ import { customLinkClientDestination, customLinkHref } from "src/core/db3/shared
 
 describe("custom link presentation URLs", () => {
     it("puts explicit ownership on copied, preview and opened URLs while preserving nested slugs", () => {
-        expect(customLinkHref("/folder/MyPage/", parsePublicId<"Band">("Band000000000007")))
-            .toBe("/folder/MyPage?bandPublicId=Band000000000007");
+        expect(customLinkHref("/folder/MyPage/", parsePublicId<"Band">("Band000000000007"), { kind: "platform" }))
+            .toBe("/b/Band000000000007/folder/MyPage");
     });
 
     it.each(["https://target.test/path", "https://target.test/path#old"])("forwards the browser hash as one fragment: %s", destination => {

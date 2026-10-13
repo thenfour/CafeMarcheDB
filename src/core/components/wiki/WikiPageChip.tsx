@@ -1,4 +1,4 @@
-import { withMemberPresentation } from "../user/bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
 import { Permission } from "@/shared/permissions";
 import { getHashedColor } from "@/shared/utils";
 import { wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
@@ -26,7 +26,7 @@ export const WikiPageChip = (props: WikiPageChipProps) => {
     return <CMChip
         variation={props.variation}
         size={props.size}
-        href={isAuthorized ? withMemberPresentation(wikiPath.uriRelativeToHost, dashboardContext.memberPresentation) : undefined}
+        href={isAuthorized ? portalHref(wikiPath.uriRelativeToHost, dashboardContext.memberPresentation, dashboardContext.portalHosting) : undefined}
         className={props.className}
     >
         {props.startAdornment}

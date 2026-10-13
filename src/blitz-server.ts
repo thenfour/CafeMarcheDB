@@ -1,11 +1,12 @@
 import { AuthServerPlugin, getSession, PrismaStorage } from "@blitzjs/auth"
 import { setupBlitzServer } from "@blitzjs/next"
-import { BlitzLogger, BlitzServerMiddleware } from "blitz"
+import { BlitzLogger, BlitzServerMiddleware, NotFoundError } from "blitz"
 import db from "db"
 import type { IncomingMessage, ServerResponse } from "http"
 import { CMDBResolverAuthorize } from "types"
 import { loadAuthorization } from "./auth/server/serverAuthorization"
 import { authConfig } from "./blitz-client"
+import { withPortalRequest } from "./route/server/portalRequest"
 
 // Used both by Blitz middleware and the Next page adapter in _app.
 export async function getSessionForRequest(req: IncomingMessage, res: ServerResponse) {
@@ -23,8 +24,21 @@ export const { gSSP, gSP, api } = setupBlitzServer({
       //isAuthorized: simpleRolesIsAuthorized,//CMDBRolesIsAuthorized,
     }),
     BlitzServerMiddleware(async (req, res, next) => {
-      await getSessionForRequest(req, res)
-      await next()
+      try {
+        await withPortalRequest(req, async () => {
+          await getSessionForRequest(req, res)
+          await next()
+        })
+      } catch (error) {
+        if (error instanceof NotFoundError) {
+          // never cache 404 responses
+          res.statusCode = 404
+          res.setHeader("Cache-Control", "no-store")
+          res.end()
+          return
+        }
+        throw error
+      }
     }),
   ],
   logger: BlitzLogger({

@@ -1,14 +1,22 @@
 import type { Ctx } from "blitz";
+import { NotFoundError } from "blitz";
 import type { NextPageContext } from "next";
 import { z } from "zod";
+import db from "db";
 import { getSessionForRequest } from "src/blitz-server";
+import { assertAuthorizationBandScope, withAuthorizationBandScope } from "src/auth/server/requestAuthorizationScope";
 import { loadPresentationData } from "src/locale/server/presentation";
 import { PresentationInputSchema } from "src/locale/shared/presentationInput";
-import { publicHomepageSelection } from "src/server/publicHomepage";
+import { parsePortalPath, selectPortalContext, type RouteBandAndLocale } from "src/route/portalRouting";
+import { resolvePortalRequest, requirePortalAvailability } from "src/route/server/portalRequest";
+import { serverPortalHosting } from "src/route/server/portalConfig";
 import { loadDbBrandConfig } from "src/server/brand";
 import { loadPageAuthorization } from "../server/pageRequestAuthorization";
 
-const PageBootstrapInputSchema = PresentationInputSchema.extend({ pathname: z.string().max(512) });
+const PageBootstrapInputSchema = PresentationInputSchema.extend({
+    pathname: z.string().max(512),
+    requestPath: z.string().startsWith("/").max(16384),
+});
 type PageBootstrapInput = z.infer<typeof PageBootstrapInputSchema>;
 type PageBootstrapContext = Ctx | Pick<NextPageContext, "req" | "res">;
 
@@ -22,16 +30,40 @@ async function pageSession(context: PageBootstrapContext) {
     return getSessionForRequest(context.req, context.res);
 }
 
-// The query boundary keeps server imports out of _app's browser bundle. SSR passes
-// its request context directly; client navigations use Blitz's authenticated RPC context.
+/** SSR and RPC use the same path, deployment and fresh page authorization contract. */
 export default async function getPageBootstrap(input: PageBootstrapInput, context: PageBootstrapContext) {
-    const { pathname, ...requestedPresentation } = PageBootstrapInputSchema.parse(input);
-    const presentationInput = pathname === "/" ? publicHomepageSelection(requestedPresentation) : requestedPresentation;
-    const session = await pageSession(context);
-    const auth = await loadPageAuthorization(pathname, session, presentationInput.bandPublicId ?? undefined);
-    const presentation = await loadPresentationData(auth, presentationInput);
-    const host = "req" in context ? context.req?.headers.host : undefined;
-    // Page and RPC bundles can hold separate caches; a reload must see committed branding.
-    const brand = await loadDbBrandConfig({ hostHeader: host, bandId: auth.band?.id ?? null, freshness: "refresh" });
-    return { presentation, brand };
+    // lsmb todo: use better routing system.
+    const { pathname, requestPath, ...requested } = PageBootstrapInputSchema.parse(input);
+    const hosting = serverPortalHosting();
+    const request = "req" in context ? context.req : undefined;
+    if (request) {
+        resolvePortalRequest(request);
+    }
+    let selection: RouteBandAndLocale;
+    try {
+        if (requestPath.startsWith("//")) {
+            throw new RangeError("Expected a local page path.");
+        }
+        const requestedURL = new URL(requestPath, "https://cmdb.invalid");
+        if (requestedURL.origin !== "https://cmdb.invalid") {
+            throw new RangeError("Expected a local page path.");
+        }
+        selection = selectPortalContext(parsePortalPath(requestedURL.pathname), requested, hosting);
+    } catch {
+        throw new NotFoundError();
+    }
+    const presentationInput = { ...requested, ...selection };
+
+    assertAuthorizationBandScope(selection.bandPublicId);
+
+    const boundBand = hosting.kind === "standalone" ? hosting.bandPublicId : selection.bandPublicId ?? null;
+    return withAuthorizationBandScope(boundBand, async () => {
+        await requirePortalAvailability({ hosting, selection, pathname }, db);
+        const session = await pageSession(context);
+        const auth = await loadPageAuthorization(pathname, session, selection.bandPublicId ?? undefined);
+        const presentation = await loadPresentationData(auth, presentationInput);
+        const host = request?.headers.host;
+        const brand = await loadDbBrandConfig({ hostHeader: host, bandId: auth.band?.id ?? null, freshness: "refresh" });
+        return { presentation, brand, portalHosting: hosting };
+    });
 }

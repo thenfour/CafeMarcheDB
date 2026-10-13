@@ -8,6 +8,8 @@ import { requireCanManageUser } from "../server/userManagementPolicy"
 import { findSignInUser, requireSignInMethodAdmin } from "../server/signInMethods"
 import { UserWithRolesArgs } from "@/src/core/db3/shared/schema/userPayloads"
 import { makeUserManagementActor, makeUserManagementTarget } from "../server/userManagementState"
+import { portalHref } from "src/route/portalRouting"
+import { serverPortalHosting } from "src/route/server/portalConfig"
 
 const RESET_PASSWORD_TOKEN_EXPIRATION_IN_HOURS = 48
 
@@ -60,6 +62,7 @@ export default resolver.pipe(
 
     // 8. Return the same result whether a password reset email was sent or not
 
-    const resetUrl = ServerApi.getAbsoluteUri(`/auth/reset-password?token=${token}`);
+    // Password credentials belong to the shared account, with no band or forced language.
+    const resetUrl = ServerApi.getAbsoluteUri(portalHref(`/auth/reset-password?token=${token}`, { bandPublicId: null }, serverPortalHosting()));
     return resetUrl;
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }))

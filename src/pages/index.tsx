@@ -6,14 +6,15 @@ import type { EnNlFr } from "shared/lang";
 import { HostingMode } from "shared/brandConfigBase";
 import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
 import { CMPublicIndex } from "src/core/components/frontpage/CMFrontpage";
-import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
 import React from "react";
 import { readPublicFeed } from "src/core/db3/server/publicFeed";
 import { PublicFeedInputSchema, type PublicFeedInput } from "src/core/db3/shared/publicFeedInput";
 import type { PublicFeedResponseSpec } from "src/core/db3/shared/publicTypes";
 import { homepageDisplayLanguage } from "src/locale/shared/authoredTranslations";
 import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
-import { publicFeedBaseURL, publicHomepageSelection } from "src/server/publicHomepage";
+import { publicFeedBaseURL } from "src/server/publicHomepage";
+import { withPortalRequest } from "src/route/server/portalRequest";
 
 interface PublicIndexProps {
     publicFeed: PublicFeedResponseSpec;
@@ -28,19 +29,27 @@ export default function PublicIndex(props: PublicIndexProps) {
 export const getServerSideProps: GetServerSideProps<PublicIndexProps> = async context => {
     context.res.setHeader("Cache-Control", "no-store");
     try {
-        const presentation = publicHomepageSelection(pagePresentationInput(context.query, context.req.headers["accept-language"]));
-        // Next's /fr and /nl URLs remain explicit preferences. The default prefix leaves browser order intact.
-        presentation.routeLocale ??= context.locale !== context.defaultLocale ? context.locale ?? null : null;
-        if (process.env.CMDB_HOSTING_MODE !== HostingMode.CafeMarche) {
-            return { redirect: { destination: withMemberPresentation("/backstage", presentation), permanent: false } };
-        }
-        if (!presentation.bandPublicId) {
-            return { notFound: true };
-        }
-        const selection = PublicFeedInputSchema.parse(presentation);
-        const auth = await loadAuthorizationForUser(null, undefined, selection.bandPublicId);
-        const publicFeed = await readPublicFeed(db, auth, selection, { baseURL: publicFeedBaseURL() });
-        return { props: { publicFeed, selection, lang: homepageDisplayLanguage(selection) } };
+        return await withPortalRequest(context.req, async ({ hosting, selection: portalSelection }) => {
+            const presentation = {
+                ...pagePresentationInput(context.query, context.req.headers["accept-language"]),
+                ...portalSelection,
+            };
+            if (process.env.CMDB_HOSTING_MODE !== HostingMode.CafeMarche) {
+                return {
+                    redirect: {
+                        destination: portalHref("/backstage", presentation, hosting),
+                        permanent: false
+                    }
+                };
+            }
+            if (!presentation.bandPublicId) {
+                return { notFound: true };
+            }
+            const selection = PublicFeedInputSchema.parse(presentation);
+            const auth = await loadAuthorizationForUser(null, undefined, selection.bandPublicId);
+            const publicFeed = await readPublicFeed(db, auth, selection, { baseURL: publicFeedBaseURL(), hosting });
+            return { props: { publicFeed, selection, lang: homepageDisplayLanguage(selection) } };
+        });
     } catch (error) {
         if (error instanceof NotFoundError || error instanceof ZodError || error instanceof RangeError) {
             return { notFound: true };

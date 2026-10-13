@@ -1,6 +1,7 @@
+import { serverPortalHosting } from "src/route/server/portalConfig";
 import { Prisma } from "@prisma/client";
 import { parsePublicId } from "shared/publicId";
-import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
+import { portalHref } from "src/route/portalRouting";
 import { resolveAuthorizedDynamicStrings } from "src/locale/server/localization";
 import { collectLocalePreferences, selectFormattingLocale } from "src/locale/shared/localePreferences";
 import type { PresentationInput } from "src/locale/shared/presentationInput";
@@ -16,9 +17,9 @@ type AuditEvent = Prisma.EventGetPayload<{ select: typeof eventSelection }>;
 function recordReference(publicId: string, label: string, deleted: boolean, bandPublicId: string | null,
     path: string | null, input: PresentationInput): AuditReference {
     return { publicId, label, deleted, bandPublicId,
-        href: deleted || path === null ? null : withMemberPresentation(path, {
+        href: deleted || path === null ? null : portalHref(path, {
             bandPublicId: bandPublicId === null ? null : parsePublicId<"Band">(bandPublicId), routeLocale: input.routeLocale,
-        }),
+        }, serverPortalHosting()),
     };
 }
 

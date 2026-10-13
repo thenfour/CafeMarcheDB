@@ -277,13 +277,20 @@ const previousRolePermissionAssignments: ReadonlyArray<[string, string]> =
 // migration. Existing branding administrators retain access to the new writers.
 export const MultibandBandPermissions = ["manage_band_settings", "manage_band_localization"] as const;
 export const MultibandPlatformPermissions = [
-    "manage_bands", "manage_global_catalogs", "manage_global_settings",
-    "manage_global_localization", "manage_global_users",
+    "manage_bands",
+    "manage_global_catalogs",
+    "manage_global_settings",
+    "manage_global_localization",
+    "manage_global_users",
 ] as const;
 
 export const DefaultRolePermissionAssignments: ReadonlyArray<[string, string]> = [
     ...previousRolePermissionAssignments,
-    ...[...MultibandPlatformPermissions, ...MultibandBandPermissions].map<[string, string]>(permission => ["Admin", permission]),
+    ...[
+        ...MultibandPlatformPermissions,
+        ...MultibandBandPermissions
+    ]
+        .map<[string, string]>(permission => ["Admin", permission]),
     ...previousRolePermissionAssignments.filter(([, permission]) => permission === "manage_site_branding")
         .filter(([role]) => role !== "Admin")
         .flatMap(([role]) => MultibandBandPermissions.map<[string, string]>(permission => [role, permission])),

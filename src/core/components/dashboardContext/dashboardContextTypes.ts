@@ -8,11 +8,12 @@ import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
 import type { EventAttendancePublicId, EventPublicId, EventStatusPublicId, EventTagPublicId, EventTypePublicId, FilePublicId, FileTagPublicId, InstrumentFunctionalGroupPublicId, InstrumentPublicId, PermissionPublicId, SongCreditTypePublicId, SongPublicId, SongTagPublicId, UserPublicId, UserTagPublicId, WikiPageTagPublicId } from "shared/publicId";
 import { SettingsDto } from "../../db3/shared/schema/settings";
 import type { PresentationInput } from "src/locale/shared/presentationInput";
-import { withMemberPresentation } from "../user/bandMemberLinks";
+import { portalHref, type BandHostingConfig } from "src/route/portalRouting";
 import type { CurrentAccount } from "src/auth/shared/currentAccount";
 import type { EventParticipantDto } from "../../db3/shared/entities/user/eventParticipant";
 
 export abstract class DashboardContextDataBase {
+    constructor(public portalHosting: BandHostingConfig) { }
     referenceStore = db3.createDashboardReferenceStore();
 
     settings: SettingsDto;
@@ -47,10 +48,7 @@ export abstract class DashboardContextDataBase {
     localTimeZone: string;
     formattingLocale: string; // the locale used for formatting dates, numbers...
 
-    // TODO: do not put such specific data here. 
-    // this is used for generating URLs with  query parameters; it should move to
-    // 1. general-purpose routing  logic
-    // 2. a correct routing API - when that work is ready to be implemented. for now we consider this an acceptable temporary solution.
+    // Presentation selects a band/language; the routing owner supplies deployment policy separately.
     memberPresentation: Pick<PresentationInput, "bandPublicId" | "routeLocale"> = {};
 
     eventDatePresentation: {
@@ -75,14 +73,14 @@ export abstract class DashboardContextDataBase {
             if (event.name) parts.push(slugify(event.name));
             if (!IsNullOrWhitespace(tabSlug)) parts.push(tabSlug || "");
 
-            return this.getAbsoluteUri(withMemberPresentation(`/backstage/event/${parts.join("/")}`, this.memberPresentation));
+            return this.getAbsoluteUri(portalHref(`/backstage/event/${parts.join("/")}`, this.memberPresentation, this.portalHosting));
         },
 
         getURIForSong: (song: { publicId: SongPublicId, name?: string }, tabSlug?: string) => {
             const parts: string[] = [song.publicId];
             if (song.name) parts.push(slugify(song.name));
             if (!IsNullOrWhitespace(tabSlug)) parts.push(tabSlug || "");
-            return this.getAbsoluteUri(withMemberPresentation(`/backstage/song/${parts.join("/")}`, this.memberPresentation));
+            return this.getAbsoluteUri(portalHref(`/backstage/song/${parts.join("/")}`, this.memberPresentation, this.portalHosting));
         },
 
         getURIForUser: (user: { publicId: UserPublicId, name?: string }) => {
@@ -90,7 +88,7 @@ export abstract class DashboardContextDataBase {
             if (user.name) {
                 parts.push(slugify(user.name));
             }
-            return this.getAbsoluteUri(withMemberPresentation(`/backstage/user/${parts.join("/")}`, this.memberPresentation));
+            return this.getAbsoluteUri(portalHref(`/backstage/user/${parts.join("/")}`, this.memberPresentation, this.portalHosting));
         },
 
         getURIForFile: (value: Prisma.FileGetPayload<{ select: { storedLeafName: true, fileLeafName: true, externalURI: true } }>) => {
@@ -98,16 +96,16 @@ export abstract class DashboardContextDataBase {
                 return value.externalURI;
             }
             if (!value.fileLeafName) {
-                return this.getAbsoluteUri(withMemberPresentation(`/api/files/download/${value.storedLeafName}`, this.memberPresentation));
+                return this.getAbsoluteUri(portalHref(`/api/files/download/${value.storedLeafName}`, this.memberPresentation, this.portalHosting));
             }
-            return this.getAbsoluteUri(withMemberPresentation(`/api/files/download/${value.storedLeafName}/${slugify(value.fileLeafName)}`, this.memberPresentation));
+            return this.getAbsoluteUri(portalHref(`/api/files/download/${value.storedLeafName}/${slugify(value.fileLeafName)}`, this.memberPresentation, this.portalHosting));
         },
 
         getURIForFileLandingPage: (value: { publicId: FilePublicId, slug?: string | null | undefined }) => {
             const path = IsNullOrWhitespace(value.slug)
                 ? `/backstage/file/${value.publicId}`
                 : `/backstage/file/${value.publicId}/${slugify(value.slug || "")}`;
-            return this.getAbsoluteUri(withMemberPresentation(path, this.memberPresentation));
+            return this.getAbsoluteUri(portalHref(path, this.memberPresentation, this.portalHosting));
         },
 
         getURLClass: (url: string, baseDomain: string = window.location.hostname): "internalPage" | "internalAPI" | "external" => {

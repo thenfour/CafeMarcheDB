@@ -1,7 +1,7 @@
 import { BlitzPage } from "@blitzjs/next"
 import { useMutation } from "@blitzjs/rpc"
 import { Button } from "@mui/base"
-import { useRouter } from "next/router"
+import { useCmdbRouter } from "src/route/useCmdbRouter"
 import React from "react"
 import resetPassword from "src/auth/mutations/resetPassword"
 import { ResetPassword } from "src/auth/schemas"
@@ -16,7 +16,7 @@ interface Result {
 }
 
 const ResetPasswordPage: BlitzPage = () => {
-  const router = useRouter()
+  const router = useCmdbRouter()
   const token = router.query.token?.toString()
   const [resetPasswordMutation, mutationInfo] = useMutation(resetPassword);
   const [password, setPassword] = React.useState("");
@@ -68,7 +68,7 @@ const ResetPasswordPage: BlitzPage = () => {
           <div>
             <h2>Password Reset Successfully</h2>
             <p>
-              Go to the <a href="/backstage">backstage.</a>
+              Go to the <a href={router.href("/backstage")}>backstage.</a>
             </p>
           </div>
         ) : (
