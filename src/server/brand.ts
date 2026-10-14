@@ -1,6 +1,6 @@
 import { DbBrandConfig, DefaultDbBrandConfig, HostingMode } from "shared/brandConfigBase";
 import { validateDbBrandConfig } from "shared/brandingValidation";
-import { kBandSettingsRegistry } from "src/setting/shared/bandSettingsRegistry";
+import { BandSettingsRegistryKey, kBandSettingsRegistry } from "src/setting/shared/bandSettingsRegistry";
 import { validateSettingValue } from "src/setting/shared/settingsContract";
 import db from "db";
 
@@ -21,16 +21,19 @@ export async function loadDbBrandConfig({ hostHeader, bandId: selectedBandId, fr
         return hit.value;
     }
     try {
+        // todo: probably cache settings; avoid ad-hoc one-row db fetches like this
         const rows = selectedBandId === null ? [] : await db.bandSetting.findMany({ where: { bandId: selectedBandId } });
         const byName = new Map(rows.map(row => [row.name, row.value]));
 
-        const read = (key: keyof typeof kBandSettingsRegistry): string => byName.has(key)
+        // helper to read a setting value from 
+        const read = (key: BandSettingsRegistryKey): string => byName.has(key)
             ? String(validateSettingValue("band", key, byName.get(key)!)) : kBandSettingsRegistry[key].defaultValue;
 
         const defaultTheme = DefaultDbBrandConfig.theme!;
         const value = validateDbBrandConfig({
             hostingMode: process.env.CMDB_HOSTING_MODE ?? HostingMode.Platform,
-            siteTitle: read("siteCustomization.title"), siteTitlePrefix: read("siteCustomization.titlePrefix"),
+            siteTitle: read("siteCustomization.title"),
+            siteTitlePrefix: read("siteCustomization.titlePrefix"),
             siteFaviconUrl: read("siteCustomization.faviconUrl"),
             siteLogoUrl: read("siteCustomization.logoUrl"),
             theme: {

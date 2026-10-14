@@ -7,7 +7,7 @@ import { gSSP } from "@/src/blitz-server";
 import { CMChipContainer } from "@/src/core/components/CMChip";
 import { InstrumentChip } from "@/src/core/components/CMCoreComponents";
 import { AdminInspectObject, KeyValueTable, Pre } from "@/src/core/components/CMCoreComponents2";
-import { CMLink } from "@/src/core/components/CMLink";
+import { CMLink } from "@/src/route/CMLink";
 import { DateValue } from "@/src/core/components/DateTime/DateTimeComponents";
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from "@/src/core/components/EditFieldsDialog";
 import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";

@@ -30,7 +30,7 @@ import { CMChipContainer, CMStandardDBChip } from '../CMChip';
 import { InstrumentChip, InstrumentFunctionalGroupChip } from '../CMCoreComponents';
 import { AdminInspectObject, CMButton, CMDialogContentText, DotMenu, EventDateField, NameValuePair } from '../CMCoreComponents2';
 import { CMDialog } from '../CMDialog';
-import { CMLink } from '../CMLink';
+import { CMLink } from "@/src/route/CMLink";
 import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
 import { ColorVariationSpec, gLightSwatchColors, StandardVariationSpec } from '../color/palette';
 import { DashboardContextData, useDashboardContext, useFeatureRecorder } from '../dashboardContext/DashboardContext';

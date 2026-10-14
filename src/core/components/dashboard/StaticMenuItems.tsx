@@ -1,4 +1,4 @@
-import { BackstageRouteKey, getBackstageRoute } from "@/src/auth/shared/backstageRoutes";
+import { BackstageRouteKey, getBackstageRoute } from "@/src/route/backstageRoutes";
 import {
     AudioFileOutlined,
     BackHand,

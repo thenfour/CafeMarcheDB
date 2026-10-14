@@ -1,6 +1,6 @@
 import { IsNullOrWhitespace } from "@/shared/utils";
 import { AdminInspectObject } from "../CMCoreComponents2";
-import { CMLink } from "../CMLink";
+import { CMLink } from "@/src/route/CMLink";
 
 export interface GenericSearchListItemProps<T> {
     index: number,

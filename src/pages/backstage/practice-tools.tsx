@@ -1,6 +1,6 @@
 import { AppContextMarker } from "@/src/core/components/AppContext";
 import { CMSinglePageSurfaceCard } from "@/src/core/components/CMCoreComponents";
-import { CMLink } from "@/src/core/components/CMLink";
+import { CMLink } from "@/src/route/CMLink";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { MetronomePanel } from "@/src/core/components/Metronome";

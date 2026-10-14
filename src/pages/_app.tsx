@@ -235,23 +235,44 @@ export function MyApp({
   );
 }
 
-// withBlitz preserves this hook; define it here so its Next types stay visible.
+// withBlitz preserves this hook
+// https://nextjs.org/docs/pages/api-reference/functions/get-initial-props
+// runs on server-side and again on client side (though ... i did not observe that)
+// client-side nav is possible through Router.push / replace.
 MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<SharedPageProps>> => {
   const { req, res, pathname } = appCtx.ctx;
   let bootstrap: Awaited<ReturnType<typeof getPageBootstrap>>;
   try {
     const presentationInput = pagePresentationInput(appCtx.ctx.query, req?.headers["accept-language"]);
-    const hint = req?.headers[PORTAL_PATH_HEADER];
+    const hint = req?.headers[PORTAL_PATH_HEADER]; // the original path as requested. client side doesn't get this and uses asPath.
+
+    // console.log(`[App.getInitialProps] hint: ${hint}`);  // requested raw path, without query params or hash
+    // console.log(`                      ctx : ${appCtx.ctx.asPath}`); // requested raw path with query params
+    // console.log(`                      path : ${pathname}`); // next transformed path
+
+    // todo: is it even necessary to have this fallback logic?
+    // it's actually selecting between raw request paths and next-resolved route patterns, which
+    // makes things confusing.
     const requestPath = typeof hint === "string" ? hint : appCtx.ctx.asPath ?? pathname;
-    const input = { ...presentationInput, requestPath, pathname };
+    const input = {
+      ...presentationInput,
+      requestPath,
+      pathname,
+    };
+
+    // req missing == client-side navigation
     bootstrap = req ? await getPageBootstrap(input, appCtx.ctx) : await invoke(getPageBootstrap, input);
-  } catch (error) {
+  } //
+  catch (error) {
+
+    console.log(`[MyApp.getInitialProps] error over ${pathname}`, error);
     if (error instanceof AuthorizationError && res) {
       res.statusCode = 403;
       res.setHeader("Cache-Control", "no-store");
       res.end();
       return { pageProps: {} };
     }
+
     // Route bootstrap rejects unavailable selections before page loaders run.
     const invalidBandInput = error instanceof ZodError && error.issues.some(issue => issue.path[0] === "bandPublicId");
     if (error instanceof NotFoundError || invalidBandInput || error instanceof RangeError) {
@@ -263,11 +284,12 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
       }
       return { pageProps: {} };
     }
+
     if (!(error instanceof AuthenticationError)) {
       throw error;
     }
 
-    // lsmb todo: don't  hardcode this; refer to route registry logic.
+    // lsmb todo: don't hardcode this; refer to route registry logic.
     if (pathname !== "/backstage") {
       const selection = selectPortalContext(parsePortalPath(new URL(appCtx.ctx.asPath ?? pathname, "https://cmdb.invalid").pathname),
         pagePresentationInput(appCtx.ctx.query), { kind: "platform" });
@@ -280,11 +302,17 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
       }
     }
     return { pageProps: {} };
-  }
+  } // catch
 
   // Route authorization precedes page loaders on both SSR and client navigation.
   const appProps: AppInitialProps<SharedPageProps> = await NextApp.getInitialProps(appCtx);
-  return { ...appProps, pageProps: { ...appProps.pageProps, ...bootstrap } };
+  return {
+    ...appProps,
+    pageProps: {
+      ...appProps.pageProps,
+      ...bootstrap
+    },
+  };
 };
 
 export default withBlitz(MyApp);

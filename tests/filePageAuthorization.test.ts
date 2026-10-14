@@ -4,7 +4,7 @@ import NextApp from "next/app";
 import { AuthorizationError } from "blitz";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
-import { findBackstageRouteByPattern } from "src/auth/shared/backstageRoutes";
+import { findBackstageRouteByPattern } from "@/src/route/backstageRoutes";
 import getPageBootstrap from "src/auth/queries/getPageBootstrap";
 import { MyApp } from "src/pages/_app";
 

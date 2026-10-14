@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
-import { getBackstageRoute } from "src/auth/shared/backstageRoutes";
+import { getBackstageRoute } from "@/src/route/backstageRoutes";
 import { getDB3CommandHandler } from "src/core/db3/server/db3CommandRegistry";
 import { validateDB3PaginatedQueryRequest } from "src/core/db3/server/db3RequestValidation";
 import { bandMemberRecoveryQuery, bandUserLifecycleCommand, bandUserLifecycleView } from "src/core/db3/shared/entities/user/bandUserLifecycle";
@@ -28,7 +28,8 @@ describe("membership lifecycle contracts", () => {
         expect(() => bandUserLifecycleCommand.parseResult({ membershipId, isDeleted: true, status: "confirmationRequired", permissions: ["forged"] })).toThrow();
     });
     it("uses canonical membership selections and strips shared account secrets", () => {
-        const dto = bandUserLifecycleView.parseDto({ publicId: membershipId, userId: "User000000000001",
+        const dto = bandUserLifecycleView.parseDto({
+            publicId: membershipId, userId: "User000000000001",
             user: { publicId: "User000000000001", name: "Alice", email: "private", hashedPassword: "secret" },
             bandRoleId: null, bandRole: null, isDeleted: true,
         });

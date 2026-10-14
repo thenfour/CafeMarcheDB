@@ -11,7 +11,7 @@ import { bandUserProfileCommand, bandUserProfileView, type BandUserProfileDto } 
 import { bandRoleChoicesView, bandRoleListView } from "src/core/db3/shared/entities/user/bandRoleViews";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
-import { CMLink } from "../CMLink";
+import { CMLink } from "@/src/route/CMLink";
 import { AdminInspectObject, CMButtonGroup, KeyValueTable } from "../CMCoreComponents2";
 import { CMChip, CMChipContainer } from "../CMChip";
 import { BandUserInstrumentsEditor } from "./BandUserInstruments";
@@ -87,10 +87,14 @@ function LoadedMemberProfile({ personId }: { readonly personId: UserPublicId }) 
                     <BandUserLifecycleControl member={member} refetch={refetch} />
                 </CMButtonGroup>
                 <KeyValueTable data={{
-                    ...(member.user.phone !== undefined ? { [locale.getPlainString("membership.profile.phone")]:
-                        <CMChipContainer>{member.user.phone ? <CMChip>{member.user.phone}</CMChip> : <span>—</span>}</CMChipContainer> } : {}),
-                    ...(member.user.email !== undefined ? { [locale.getPlainString("membership.profile.email")]:
-                        <CMChipContainer><CMChip>{member.user.email}</CMChip></CMChipContainer> } : {}),
+                    ...(member.user.phone !== undefined ? {
+                        [locale.getPlainString("membership.profile.phone")]:
+                        <CMChipContainer>{member.user.phone ? <CMChip>{member.user.phone}</CMChip> : <span>—</span>}</CMChipContainer>
+                    } : {}),
+                    ...(member.user.email !== undefined ? {
+                        [locale.getPlainString("membership.profile.email")]:
+                        <CMChipContainer><CMChip>{member.user.email}</CMChip></CMChipContainer>
+                    } : {}),
                 }} />
                 <UserDetail person={member.user} />
             </div>

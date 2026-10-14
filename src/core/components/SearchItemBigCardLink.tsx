@@ -1,5 +1,5 @@
 import { ActivityFeature } from "./featureReports/activityTracking";
-import { CMLink } from "./CMLink";
+import { CMLink } from "@/src/route/CMLink";
 import type { EventPublicId } from "shared/publicId";
 
 

@@ -1,5 +1,8 @@
-// shared platform-wide routing logic.
-// stuff like custom URLs
+// shared platform-wide routing behavior stuff.
+// major concerns are request path parsing:
+// - locale
+// - band
+// - mapping to registry
 
 import { HostingMode } from "shared/brandConfigBase";
 import { isPublicId, parsePublicId, type BandPublicId } from "shared/publicId";
@@ -13,6 +16,8 @@ export type BandHostingConfig =
         readonly bandPublicId: BandPublicId;
     };
 
+
+// to be more generic this could also be called "CommonRouteParams"
 export interface RouteBandAndLocale {
     readonly bandPublicId?: BandPublicId | null;
     readonly routeLocale?: string | null;
@@ -56,17 +61,34 @@ function isLocalePrefix(segment: string, next: string | undefined): boolean {
     if (!/^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/i.test(segment)) {
         return false;
     }
-    return true;
-    // not necessary to check further.
-    // try {
-    //     return Intl.DateTimeFormat.supportedLocalesOf([normalizeLocaleTag(segment)]).length > 0;
-    // } catch {
-    //     return false;
-    // }
+    // you have to check whether the locale is actually a real locale, in order to avoid
+    // treating `/api/...` as a locale prefix by mistake.
+    // TODO: this is fragile  and awful. don't rely on route names not being locale tags.
+    try {
+        return Intl.DateTimeFormat.supportedLocalesOf([normalizeLocaleTag(segment)]).length > 0;
+    } catch {
+        return false;
+    }
 }
 
+
+// // accept a raw request path and return the matching route registry def.
+// // this is quite a different lookup. Next route patterns are a direct hit, stable.
+// // but incoming requests take many different forms.
+// export function findRouteByRawPath(path: string): BackstageRouteDefinition | undefined {
+//     //
+// }
+
+
+
 // expects a local relative path.
-// - /
+// this must accept ALL valid paths on the platform.
+// some examples:
+//
+//     /api/rpc/getCurrentUser  <-- natural RPC route; no rewrite.
+//     /
+//     /backstage
+//     /
 // - /backstage
 // - /auth/logout?xyz#123
 // - /b/bandidhere
@@ -100,6 +122,7 @@ export function parsePortalPath(pathname: string): PortalPath {
     let bandPublicId: BandPublicId | null = null;
     if (hasBandPrefix) {
         const identity = parts[offset + 1];
+        // also unnecessary... sheesh.
         if (!isPublicId(identity)) {
             throw new RangeError("Invalid band portal identity.");
         }
@@ -117,12 +140,19 @@ export function parsePortalPath(pathname: string): PortalPath {
     };
 }
 
-/** Query selections remain readable for existing bookmarks; conflicting path selections fail. */
+
+// TODO: remove.
+// this function accepts multiple band/locale selections and resolves to one, throwing on conflict.
+// this was used in order to support both path-based and query-based band/locale selections. unnecessary to support that scenario.
+// - validates inputs
+// - selects the appropriate band and locale based on the path, query, and hosting context
 export function selectPortalContext(path: PortalPath, query: RouteBandAndLocale, hosting: BandHostingConfig): RouteBandAndLocale {
-    const queryLocale = query.routeLocale ? normalizeLocaleTag(query.routeLocale) : null;
+
     if (path.bandPublicId && query.bandPublicId && path.bandPublicId !== query.bandPublicId) {
         throw new RangeError("Conflicting band selections.");
     }
+
+    const queryLocale = query.routeLocale ? normalizeLocaleTag(query.routeLocale) : null;
     if (path.routeLocale && queryLocale && path.routeLocale !== queryLocale) {
         throw new RangeError("Conflicting language selections.");
     }
@@ -130,6 +160,9 @@ export function selectPortalContext(path: PortalPath, query: RouteBandAndLocale,
     if (path.hasPlatformPrefix && selectedBand) {
         throw new RangeError("Platform pages cannot select a band.");
     }
+
+    // todo: unnecessary diligence; this is enforced all over the place, not to mention
+    // it will just be a missing band like any other, no need to give psecial attention.
     if (hosting.kind === "standalone" && selectedBand && selectedBand !== hosting.bandPublicId) {
         throw new RangeError("The requested band does not belong to this host.");
     }
@@ -150,11 +183,12 @@ export function portalRoot(bandPublicId: BandPublicId, hosting: BandHostingConfi
     return `/b/${bandPublicId}`;
 }
 
-/** Explicit hosting and selection keep URL policy out of domains and presentation payloads. */
 // generates a relative URL given the path, selection, and hosting context.
+// transforms existing 
 // TODO: we should construct routes based on the registry, not hard-coded path manipulations.
 export function portalHref(path: string, selection: RouteBandAndLocale, hosting: BandHostingConfig): string {
     if (!path.startsWith("/") || path.startsWith("//")) {
+        // If the path is not a valid relative path, return it as-is.
         return path;
     }
     const url = new URL(path, "https://cmdb.invalid");

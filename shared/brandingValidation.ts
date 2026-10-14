@@ -15,9 +15,11 @@ function hasMuiSupportedColorSyntax(value: string): boolean {
     }
 }
 
+// todo:  make general
 function isBrandAssetUrl(value: string): boolean {
     if (value === "") return true;
     if (value !== value.trim()) return false;
+    // todo: use a helper, not this parsing
     if (value.startsWith("/") && !value.startsWith("//")) return true;
     try {
         const parsed = new URL(value);

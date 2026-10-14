@@ -11,7 +11,7 @@ import db3queries from "src/core/db3/queries/db3queries";
 import { platformUserEditorView } from "src/core/db3/shared/entities/user/platformUser";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
-import { CMLink } from "../CMLink";
+import { CMLink } from "@/src/route/CMLink";
 import { CMButtonGroup, KeyValueTable } from "../CMCoreComponents2";
 import { useDashboardContext, useRecordFeatureUse } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
@@ -78,8 +78,10 @@ function LoadedAccountProfile({ personId, mode }: {
             {controls}
             <UserProfileFieldsEditor person={user} canEdit={!user.isDeleted && capabilities.mergedIntoUserId === null} refetch={refresh}
                 saveProfile={patch => command.invoke({ identity: personId, patch })} />
-            <KeyValueTable data={{ [locale.getPlainString("membership.profile.phone")]: user.phone || "—",
-                [locale.getPlainString("membership.profile.email")]: user.email }} />
+            <KeyValueTable data={{
+                [locale.getPlainString("membership.profile.phone")]: user.phone || "—",
+                [locale.getPlainString("membership.profile.email")]: user.email
+            }} />
             {dashboard.isAuthorized(Permission.sysadmin) && <UserMassAnalysisTabContent user={user} />}
         </div></div>
     </>;

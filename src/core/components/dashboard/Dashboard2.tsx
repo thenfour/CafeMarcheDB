@@ -1,7 +1,7 @@
 import { shouldShowAdminControls } from "@/shared/adminControls";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { IsNullOrWhitespace } from "@/shared/utils";
-import { findBackstageRouteByPattern, pageRoutePermission } from "@/src/auth/shared/backstageRoutes";
+import { findBackstageRouteByPattern, pageRoutePermission } from "@/src/route/backstageRoutes";
 import { useSession } from "@blitzjs/auth";
 import { useMutation } from "@blitzjs/rpc";
 import { QrCode } from "@mui/icons-material";

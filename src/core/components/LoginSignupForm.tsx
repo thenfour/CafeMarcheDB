@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { LoginForm } from "src/auth/components/LoginForm";
 import { AppContextMarker } from "./AppContext";
-import { CMLink } from "./CMLink";
+import { CMLink } from "@/src/route/CMLink";
 import { ActivityFeature } from "./featureReports/activityTracking";
 
 export const LoginSignup = () => {

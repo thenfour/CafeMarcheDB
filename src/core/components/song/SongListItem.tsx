@@ -3,7 +3,7 @@ import { SelectEnglishNoun } from "shared/lang";
 import { IsNullOrWhitespace } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
-import { CMLink } from "src/core/components/CMLink";
+import { CMLink } from "@/src/route/CMLink";
 import { CalculateSongMetadata } from "src/core/components/song/SongComponentsBase";
 import * as db3 from "src/core/db3/db3";
 import { gIconMap } from "src/core/db3/components/IconMap";

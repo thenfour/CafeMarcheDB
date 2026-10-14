@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
     backstageRouteRegistry,
-} from "../../src/auth/shared/backstageRoutes";
+} from "../../src/route/backstageRoutes";
 import { Permission } from "../../shared/permissions";
 import { gMenuSections } from "../../src/core/components/dashboard/StaticMenuItems";
 

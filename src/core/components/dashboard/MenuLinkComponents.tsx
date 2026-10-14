@@ -12,7 +12,6 @@ import { gIconMap, RenderMuiIcon } from "../../db3/components/IconMap";
 import { DB3EditRowButton, type DB3EditRowButtonAPI } from '../../db3/components/db3NewObjectDialog';
 import { AppContextMarker } from "../AppContext";
 import { KeyValueDisplay } from '../CMCoreComponents2';
-import { CMLink } from "../CMLink";
 import { VisibilityValue } from "../VisibilityControl";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
@@ -21,6 +20,7 @@ import { LocalizedStringColumnClient } from "src/core/db3/components/DB3CatalogF
 import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
 import { portalHref } from "src/route/portalRouting";
 import { wikiMakeRelativeURI } from "src/core/wiki/shared/wikiUtils";
+import { CMLink } from "@/src/route/CMLink";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -188,7 +188,9 @@ export const MenuLinkList = () => {
             externalURI: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: "menuLink.externalURI.DescriptionMarkdown", columnName, cellWidth: 250, fieldCaptionKey: "db3.fields.externalUrl" }),
             wikiSlug: columnName => new SearchableWikiSlugColumnClient({ fieldDescriptionKey: "menuLink.wikiSlug.DescriptionMarkdown", fieldCaptionKey: "db3.fields.wikiSlug", columnName, cellWidth: 250 }),
 
-            visiblePermission: DB3Client.foreignRefFieldGen({ fieldDescriptionKey: "menuLink.visiblePermission.DescriptionMarkdown", fieldCaptionKey: "db3.fields.visibility",
+            visiblePermission: DB3Client.foreignRefFieldGen({
+                fieldDescriptionKey: "menuLink.visiblePermission.DescriptionMarkdown",
+                fieldCaptionKey: "db3.fields.visibility",
                 selectionView: db3.permissionVisibilityView,
             }),
 

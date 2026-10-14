@@ -21,7 +21,7 @@ import { AppContextMarker } from './AppContext';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 import { InstrumentChip } from "./CMCoreComponents";
 import { CMButton, CMSmallButton, DotMenu } from './CMCoreComponents2';
-import { CMLink } from './CMLink';
+import { CMLink } from "@/src/route/CMLink";
 import { SearchInput } from './CMTextField';
 import { VisibilityValue } from './VisibilityControl';
 import { gGeneralPaletteList, StandardVariationSpec } from './color/palette';
@@ -439,7 +439,8 @@ export const FileEditor = (props: FileEditorProps) => {
             // Any columns updated by the file CRUD command need to be specified here.
             // if they shouldn't be displayed to users, make a hidden version.
             publicId: DB3Client.publicIdFieldGen(),
-            visiblePermission: DB3Client.foreignRefFieldGen({ fieldDescriptionKey: "File.visiblePermission.DescriptionMarkdown", fieldCaptionKey: "db3.fields.visibility",
+            visiblePermission: DB3Client.foreignRefFieldGen({
+                fieldDescriptionKey: "File.visiblePermission.DescriptionMarkdown", fieldCaptionKey: "db3.fields.visibility",
                 selectionView: db3.permissionVisibilityView,
             }),
             fileLeafName: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, columnName, cellWidth: 150, fieldCaptionKey: "db3.fields.fileName" }),
@@ -453,7 +454,8 @@ export const FileEditor = (props: FileEditorProps) => {
                 selectStyle: 'inline',
                 selectionView: db3.bandFileTagView,
             }),
-            taggedInstruments: DB3Client.tagsFieldClientGen<db3.FileEditorInstrumentTag>({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.instruments",
+            taggedInstruments: DB3Client.tagsFieldClientGen<db3.FileEditorInstrumentTag>({
+                fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.instruments",
                 selectionView: db3.instrumentDashboardView,
                 cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline',
                 overrideRowInfo: (association: db3.FileEditorInstrumentTag, rowInfo: db3.RowInfo) => {
@@ -465,7 +467,8 @@ export const FileEditor = (props: FileEditorProps) => {
             }),
             taggedUsers: DB3Client.tagsFieldClientGen<db3.FileEditorUserTag>({ selectionView: db3.bandUserIdentityView, selectStyle: "inline", fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.members", allowDeleteFromCell: false }),
             taggedSongs: DB3Client.tagsFieldClientGen<db3.FileEditorSongTag>({ selectionView: db3.songReferenceView, selectStyle: "inline", fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.songs", allowDeleteFromCell: false }),
-            taggedEvents: DB3Client.tagsFieldClientGen<db3.FileEditorEventTag>({ selectStyle: "inline", fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.events",
+            taggedEvents: DB3Client.tagsFieldClientGen<db3.FileEditorEventTag>({
+                selectStyle: "inline", fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.events",
                 selectionView: db3.eventReferenceView,
                 cellWidth: 150,
                 allowDeleteFromCell: false,
@@ -873,7 +876,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                             <div className={`EventsFilterControlsValue`}>
                                 <div className="row">
                                     {uniqueSongTags.length > 1 && <CMChipContainer>
-                                    {uniqueSongTags.map(t => (
+                                        {uniqueSongTags.map(t => (
                                             <CMChip
                                                 key={t.tag.publicId}
                                                 //color={t.tag.color}

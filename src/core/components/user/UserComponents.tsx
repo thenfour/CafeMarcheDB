@@ -7,7 +7,7 @@ import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { gIconMap } from "../../db3/components/IconMap";
-import { CMLink } from "../CMLink";
+import { CMLink } from "@/src/route/CMLink";
 import { SelectionPicker } from "../select/SelectionPicker";
 import { makeLocalSelectionSource } from "../select/selectionSource";
 //import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabContent, UserWikiContributionsTabContent } from "./UserAnalyticTables";

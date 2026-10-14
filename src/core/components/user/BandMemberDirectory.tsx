@@ -8,7 +8,7 @@ import { userSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 import { useLocale } from "src/locale/components/useLocale";
 import { usePresentation } from "src/locale/components/PresentationProvider";
-import { CMLink } from "../CMLink";
+import { CMLink } from "@/src/route/CMLink";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { SearchPageContent, type SearchPageContentConfig, type FilterGroupDefinition } from "../search/SearchPageContent";
 import { UserListItem } from "./UserListItem";

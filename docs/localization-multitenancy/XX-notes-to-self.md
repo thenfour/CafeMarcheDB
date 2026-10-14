@@ -1018,43 +1018,59 @@ Your user dashboard will NOT be band-scoped because you can be in multiple bands
 which brings multiple band contexts to the single page. HOWEVER if you're in only
 1 band, we should likely not expose users to cross-band experiences.
 
+# string editor
+
+should probably be card-like. for markdown, likely should always be done in a modal
+for UX purposes.
+
+-  band scope / inherited
+-  key / description
+-  parameters
+-  default
+-  available languages
+
 # TECH DEBT accumulating / things to make sure we do
 
+-  make a localized string editor
+-  ❌ migrate `<Select` to our own thing, make selection & button-like things the target render base
+   -  selection pickers should not use MUI / should use chip selected states.
+-  routing
+   -  ❌router API needs to be made correct, backstage route catalog, ...
+      -  it should also be usable for the menu to understand which route we're on, which group we're in
+      -  and breadcrumbs
+   -  ❌locale selector
+   -  ❌band selector
+   -  ❌remove `/backstage` / startsWith(...backstage / api / etc...)
+   -  ❌ migrate `<Link` + cleanup `<CMLinkButton`, `<CMLink`, `<a`, and manual navigation / `window.location.href` / ... `router.push`, `window.location.assign`...
+      -  we should really have components that don't accept strings as URLs, but route registry-defined params. so route registry
+         defines its params too
+-  multiband POC
+   -  a user landing page which has mixed-band info (events for all bands, etc)
+   -  tab management system such that you can have band A in tab 1, band B in tab 2.
 -  ❌Unable to save
    http://localhost:10455/backstage/event/Zqx_kLufC_3QMdyJ/rehearsal/setlists?bandPublicId=LRnHh3DGxoKiKKI7
    DB3PublicIdError: EventSongListSong was not found.
 -  ❌unable to edit an event
--  ❌router API needs to be made correct, backstage route catalog, ...
-   -  it should also be usable for the menu to understand which route we're on, which group we're in
-   -  and breadcrumbs
--  ❌locale selector
--  ❌band selector
--  ❌remove `/backstage` / startsWith(...backstage / api / etc...)
--  ❌understand DefaultRolePermissionAssignments
--  ❌ migrate `<Link` + cleanup `<CMLinkButton`, `<CMLink`, `<a`, and manual navigation / `window.location.href` / ... `router.push`, `window.location.assign`...
-   -  we should really have components that don't accept strings as URLs, but route registry-defined params. so route registry
-      defines its params too
--  ❌ migrate `<Select`
+-  adding a hash to a URL causes an exception
+-  ❌understand `DefaultRolePermissionAssignments`
 -  clean up / collapse localized strings
 -  begin a localized string editor
+-  cleanup lsmb todo
+-  on role/perm mgmt pages, highlight global vs. band scoped roles & permissions.
+-  fix backstage home alerts formatting
+-  lots of entity details bleed into places it shouldn't. check for `isDeleted` and `mergedIntoUserId` to see all the places
+   that are trying to own their own copy of user / user merging policies.
+-  roles need to render as chips
+
+**nice-to-haves**
+
+-  clean up tests
+-  `parsePublicId<"Event">` -- these free strings are slightly a problem; better to use `xEvent.parseIdentity`
 -  also eval `" in ` instances -- also very shady
 -  `Loading language and settings…` is likely covering much more than just language & settings.
 -  `error instanceof` tend to be very shaky and spaghetti
--  cleanup lsmb todo
--  roles need to render as chips
--  on role/perm mgmt pages, highlight global vs. band scoped roles & permissions.
 -  cleanup scattered dayjs/temporal/custom
 -  `formattingLocale ?? navigator.language` -- not good. this should never be null
--  selection pickers should not use MUI / should use chip selected states.
--  `parsePublicId<"Event">` -- these free strings are slightly a problem; better to use `xEvent.parseIdentity`
--  replace adhoc localized strings on chrome
--  fix backstage home alerts formatting
--  a user landing page which has mixed-band info (events for all bands, etc)
--  base: full feature restoration
-   -  localization
-   -  band awareness and platform vs. band mgmt
-   -  supporting routing
--  tab management system such that you can have band A in tab 1, band B in tab 2.
 -  `xTable` should stop being used like a view
    -  only 1 xtable per db entity
    -  fieldbase should also own serialization, validation (and likely own zod schema at very least for DTO parsing)
@@ -1062,5 +1078,3 @@ which brings multiple band contexts to the single page. HOWEVER if you're in onl
    -  and should reconcile db3client -- which also is view-like. though it could just attach to a db3view, in which case it should
       specifically be concerned with rendering behavior. all columns should be specified
 -  find a way to auto-hydrate localized strings. the view would need a way to specify this.
--  lots of entity details bleed into places it shouldn't. check for `isDeleted` and `mergedIntoUserId` to see all the places
-   that are trying to own their own copy of user / user merging policies.

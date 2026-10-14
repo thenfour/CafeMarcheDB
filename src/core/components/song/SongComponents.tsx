@@ -19,7 +19,7 @@ import { DB3EditRowButton, DB3EditRowButtonAPI } from '../../db3/components/db3N
 import { AppContextMarker } from '../AppContext';
 import { CMChipContainer, CMStandardDBChip } from '../CMChip';
 import { AdminInspectObject, CMButton, NameValuePair } from '../CMCoreComponents2';
-import { CMLink } from '../CMLink';
+import { CMLink } from "@/src/route/CMLink";
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from '../EditFieldsDialog';
 import { MetronomeButton } from '../Metronome';
 import { SearchableNameColumnClient } from '../SearchableNameColumnClient';

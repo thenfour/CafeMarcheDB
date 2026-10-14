@@ -6,7 +6,6 @@ import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import { useDb3Query } from "../../db3/DB3Client";
 import { AppContextMarker } from "../AppContext";
-import { CMLink } from "../CMLink";
 import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
 import { StandardVariationSpec } from "../color/palette";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
@@ -16,6 +15,7 @@ import { EventStatusMinimal } from "./EventChips";
 import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
 import { RelevanceClassOverrideIndicator } from "./EventRelevanceOverrideComponents";
 import { EventShortDate } from "./EventShortDate";
+import { CMLink } from "@/src/route/CMLink";
 
 export const SubtleEventCard = ({ event, dateRange, now }: { event: db3.EventSearchClient, dateRange: DateTimeRange, now: Date }) => {
     const dashboardContext = useDashboardContext();

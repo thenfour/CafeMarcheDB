@@ -1,7 +1,7 @@
 import type { BlitzPage } from "@blitzjs/next";
 import React from "react";
 import { Alert, Stack } from "@mui/material";
-import { CMLink } from "src/core/components/CMLink";
+import { CMLink } from "@/src/route/CMLink";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
 import { portalHref } from "src/route/portalRouting";
@@ -45,7 +45,9 @@ export function HomeContent() {
 
 const Home: BlitzPage = () => {
   const locale = useLocale();
-  return <DashboardLayout title={locale.getPlainString("dashboard.title")}><HomeContent /></DashboardLayout>;
+  return <DashboardLayout title={locale.getPlainString("dashboard.title")}>
+    <HomeContent />
+  </DashboardLayout>;
 };
 
 export default Home;

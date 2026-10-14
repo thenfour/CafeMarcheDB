@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { Permission } from "shared/permissions";
 import { parsePublicId, type UserPublicId } from "shared/publicId";
-import { getBackstageRoute } from "src/auth/shared/backstageRoutes";
+import { getBackstageRoute } from "@/src/route/backstageRoutes";
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
 import * as db3 from "src/core/db3/db3";
 import { authorizeAndProjectViewDto } from "src/core/db3/server/db3QueryCore";

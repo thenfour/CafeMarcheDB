@@ -14,8 +14,13 @@ import { parsePortalPath, getServerBandHostingConfig, PORTAL_PATH_HEADER, select
 // - Use Driver Adapters: https://pris.ly/d/driver-adapters
 
 export function middleware(request: NextRequest) {
+    // nop:
+    //return NextResponse.next();
     try {
         const originalPath = request.nextUrl.pathname;
+
+        // console.log(`[middleware] ${originalPath}`);
+
         const path = parsePortalPath(originalPath);
         const hosting = getServerBandHostingConfig(process.env.CMDB_HOSTING_MODE, process.env.CMDB_PUBLIC_BAND_PUBLIC_ID);
 
@@ -46,18 +51,19 @@ export function middleware(request: NextRequest) {
         }
 
         if (destination.href === request.nextUrl.href) {
+            //console.log("[middleware] Not rewriting :", destination.href);
             return NextResponse.next({ request: { headers } });
         }
+        console.log("[middleware] Rewriting to :", destination.href);
         return NextResponse.rewrite(destination, { request: { headers } });
-    } catch {
+    } catch (error) {
+        console.log("[middleware] Error occurred, returning 404.", error);
         return new NextResponse(null, { status: 404 });
     }
 }
 
 // https://nextjs.org/docs/14/app/building-your-application/routing/middleware
 export const config = {
-    // it may not be totally necessary but this confines middleware handling to paths we actually treat.
-    // though i'm not sure this is entirely accurate or necessary.
-    // for example what if favicon.ico is a png?  i feel like it's better to use a blanket handler.
-    matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"]
+    // kinda messy to do this... here we exclude stuff we know doesn't need to go through middleware parsing
+    matcher: ["/((?!_next/static|_next/image|favicon.ico|favicon.png).*)"]
 };

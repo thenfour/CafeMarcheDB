@@ -10,7 +10,7 @@ import { Tooltip } from "@mui/material";
 import React from "react";
 import { IsNullOrWhitespace } from "shared/utils";
 import { gIconMap, RenderMuiIcon } from "../db3/components/IconMap";
-import { CMLink } from "./CMLink";
+import { CMLink } from "@/src/route/CMLink";
 import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "./color/palette";
 import { GetStyleVariablesForColor } from "./color/ColorClientUtils";
 

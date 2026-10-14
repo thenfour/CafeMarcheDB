@@ -1,7 +1,7 @@
 import { Alert } from "@mui/material";
 import { useLocale } from "src/locale/components/useLocale";
 import { portalHref } from "src/route/portalRouting";
-import { CMLink } from "@/src/core/components/CMLink";
+import { CMLink } from "@/src/route/CMLink";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { UserChip } from "@/src/core/components/user/userChip";

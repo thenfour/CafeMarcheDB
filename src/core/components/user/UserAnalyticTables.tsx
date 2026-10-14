@@ -11,7 +11,7 @@ import { sortEvents } from "../../db3/shared/apiTypes";
 import { CMChip, CMChipContainer } from "../CMChip";
 import { InstrumentChip } from "../CMCoreComponents";
 import { AdminInspectObject, KeyValueTable } from "../CMCoreComponents2";
-import { CMLink } from "../CMLink";
+import { CMLink } from "@/src/route/CMLink";
 import { CMTable } from "../CMTable";
 import { StandardVariationSpec } from "../color/palette";
 import { DateValue } from "../DateTime/DateTimeComponents";

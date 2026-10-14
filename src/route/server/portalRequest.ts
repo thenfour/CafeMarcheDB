@@ -62,6 +62,7 @@ export async function requirePortalAvailability(portal: PortalRequest, database:
     }) : null;
 
     if (portal.selection.bandPublicId && !band) {
+        console.log(`Band with publicId ${portal.selection.bandPublicId} not found.`);
         throw new NotFoundError();
     }
 
@@ -78,6 +79,7 @@ export async function requirePortalAvailability(portal: PortalRequest, database:
             }, select: { id: true },
         });
         if (!available) {
+            console.log(`Locale ${locale} not available for band ${band?.id ?? "none"}.`);
             throw new NotFoundError();
         }
     }

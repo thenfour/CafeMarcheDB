@@ -30,7 +30,7 @@ import { AppContextMarker } from './AppContext';
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
 import { AdminInspectObject, CMButton, CMDialogContentText, CMSmallButton, CMTextarea, NameValuePair } from './CMCoreComponents2';
 import { CMDialog } from './CMDialog';
-import { CMLink } from './CMLink';
+import { CMLink } from "@/src/route/CMLink";
 import { CMTextInputBase, SongLengthInput } from './CMTextField';
 import { GetStyleVariablesForColor } from './color/ColorClientUtils';
 import { ColorPick } from './color/ColorPick';
