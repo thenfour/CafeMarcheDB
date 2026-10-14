@@ -4,6 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { act } from "react-dom/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { invoke } from "@blitzjs/rpc";
+import type * as BlitzRpc from "@blitzjs/rpc";
 import { parsePublicId } from "shared/publicId";
 import { ActivityReportTimeBucketSize } from "shared/mysqlUtils";
 import { FacetItemDetailTable } from "src/core/components/featureReports/FacetItemDetailTable";
@@ -12,7 +13,11 @@ import getDetail from "src/core/components/featureReports/queries/getDetail";
 import { emptyActivityFacetFilters } from "src/core/components/featureReports/ClientFacetHandlers";
 import type { ActivityDetailInput, ActivityDetailResult, ActivityDetailRow, FacetedBreakdownResult } from "src/core/components/featureReports/activityReportTypes";
 
-vi.mock("@blitzjs/rpc", () => ({ invoke: vi.fn() }));
+vi.mock("@blitzjs/rpc", async () => {
+    // PresentationProvider initializes the Blitz client through shared controls.
+    const actual = await vi.importActual<typeof BlitzRpc>("@blitzjs/rpc");
+    return { ...actual, invoke: vi.fn() };
+});
 vi.mock("src/core/components/featureReports/queries/getDetail", () => ({ default: vi.fn() }));
 vi.mock("src/core/components/featureReports/queries/getDetailCsv", () => ({ default: vi.fn() }));
 vi.mock("src/core/components/featureReports/queries/getFacetedBreakdown", () => ({ default: vi.fn() }));

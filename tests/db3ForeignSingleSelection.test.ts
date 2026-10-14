@@ -3,6 +3,7 @@ import React from "react";
 import { act, Simulate } from "react-dom/test-utils";
 import { createRoot, Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type * as BlitzRpc from "@blitzjs/rpc";
 import { kStaticLocalizedStringRegistry, type LocalizedPlainStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
 
 vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({
@@ -12,7 +13,11 @@ vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({
     },
 }) }));
 
-vi.mock("@blitzjs/rpc", () => ({ useQuery: vi.fn(), useMutation: vi.fn() }));
+vi.mock("@blitzjs/rpc", async () => {
+    // PresentationProvider initializes the Blitz client through shared controls.
+    const actual = await vi.importActual<typeof BlitzRpc>("@blitzjs/rpc");
+    return { ...actual, useQuery: vi.fn(), useMutation: vi.fn() };
+});
 vi.mock("src/core/db3/db3", async () => {
     const { z } = await import("zod");
     const { isPublicId } = await import("shared/publicId");
