@@ -57,7 +57,7 @@ const UserListContent: React.FC<{}> = () => {
                 && auth.userPublicId !== userPayload.publicId && <MergeUsersButton user={userPayload} />}
             <ImpersonateUserButton userId={userPayload.publicId} />
             <AdminResetPasswordButton user={userPayload} />
-            <CMLinkButton href={portalHref(`/backstage/user/${userPayload.publicId}`, {
+            <CMLinkButton href={portalHref(`/backstage/platform-user/${userPayload.publicId}`, {
                 ...dashboardContext.memberPresentation, bandPublicId: null,
             }, hosting)}>{locale.getPlainString("membership.profile.accountTitle")}</CMLinkButton>
             {dashboardContext.memberPresentation.bandPublicId

@@ -73,16 +73,21 @@ export function ActivityLogUserChip({ user }: { user: { publicId: string; name?:
     if (!user) {
         return <span>{locale.getPlainString("auditLog.unknownActor")}</span>;
     }
+    // lsmb todo: do not construct URLs like this.
+    const page = context.bandPublicId ? "/backstage/user" : "/backstage/platform-user";
     return <CMChip size="small" tooltip={user.publicId}>
-        <a href={portalHref(`/backstage/user/${user.publicId}`, { ...context,
-            bandPublicId: context.bandPublicId ? parsePublicId<"Band">(context.bandPublicId) : null }, hosting)}
+        <a href={portalHref(`${page}/${user.publicId}`, {
+            ...context,
+            bandPublicId: context.bandPublicId ? parsePublicId<"Band">(context.bandPublicId) : null
+        }, hosting)}
             target="_blank" rel="noreferrer" style={{ color: getHashedColor(user.publicId) }}>{user.name ?? ""}</a>
     </CMChip>;
 }
 
 export class JSONStringColumnClient extends IColumnClient<string, string | null> {
     constructor(args: ColumnPresentationArgs & { columnName: "oldValues" | "newValues" }) {
-        super({ ...args, editable: false, visible: true, width: 400, className: "audit-json-cell", isAutoFocusable: false,
+        super({
+            ...args, editable: false, visible: true, width: 400, className: "audit-json-cell", isAutoFocusable: false,
             headerNameKey: args.fieldCaptionKey, GridColProps: { sortable: false, filterable: false },
         });
     }
@@ -108,15 +113,18 @@ export function AuditActorCell({ changeId, userId }: { changeId: number; userId:
 
 export class AuditActorColumnClient extends IColumnClient<string, number | null> {
     constructor(columnName: string) {
-        super({ columnName, editable: false, visible: true, width: 160, className: undefined, isAutoFocusable: false,
+        super({
+            columnName, editable: false, visible: true, width: 160, className: undefined, isAutoFocusable: false,
             headerNameKey: "db3.fields.member", fieldCaptionKey: "db3.fields.member", fieldDescriptionKey: null,
         });
     }
     renderForNewDialog = undefined;
     ApplyClientToPostClient = undefined;
     onSchemaConnected = () => {
-        this.GridColProps = { sortable: false, filterable: false, renderCell: (params: GridRenderCellParams) =>
-            <Suspense><AuditActorCell changeId={z.number().parse(params.id)} userId={z.number().nullable().parse(params.value)} /></Suspense> };
+        this.GridColProps = {
+            sortable: false, filterable: false, renderCell: (params: GridRenderCellParams) =>
+                <Suspense><AuditActorCell changeId={z.number().parse(params.id)} userId={z.number().nullable().parse(params.value)} /></Suspense>
+        };
     };
     renderViewer = (params: RenderViewerArgs<number | null>) =>
         <Suspense><AuditActorCell changeId={z.number().parse(params.row.id)} userId={params.value} /></Suspense>;
@@ -124,15 +132,18 @@ export class AuditActorColumnClient extends IColumnClient<string, number | null>
 
 export class AuditRecordColumnClient extends IColumnClient<string, number> {
     constructor(columnName: string) {
-        super({ columnName, editable: false, visible: true, width: 200, className: undefined, isAutoFocusable: false,
+        super({
+            columnName, editable: false, visible: true, width: 200, className: undefined, isAutoFocusable: false,
             headerNameKey: "db3.fields.recordId", fieldCaptionKey: "db3.fields.recordId", fieldDescriptionKey: null,
         });
     }
     renderForNewDialog = undefined;
     ApplyClientToPostClient = undefined;
     onSchemaConnected = () => {
-        this.GridColProps = { sortable: false, filterable: false, renderCell: (params: GridRenderCellParams) =>
-            <Suspense><AuditRecordCell changeId={z.number().parse(params.id)} recordId={z.number().parse(params.value)} /></Suspense> };
+        this.GridColProps = {
+            sortable: false, filterable: false, renderCell: (params: GridRenderCellParams) =>
+                <Suspense><AuditRecordCell changeId={z.number().parse(params.id)} recordId={z.number().parse(params.value)} /></Suspense>
+        };
     };
     renderViewer = (params: RenderViewerArgs<number>) => <Suspense><AuditRecordCell changeId={z.number().parse(params.row.id)} recordId={params.value} /></Suspense>;
 }

@@ -25,15 +25,15 @@ describe("wiki tag page authorization", () => {
         return requirePermission;
     }
 
-    it("admits signed-in accounts to the band-selection prompt", async () => {
+    it("admits signed-in accounts to the platform placeholder", async () => {
         const requirePermission = grant(Permission.login);
-        await authorizePageRequest("/backstage/editWikiPageTags", session);
+        await authorizePageRequest("/backstage/platform-editWikiPageTags", session);
         expect(requirePermission).toHaveBeenCalledWith(Permission.login);
     });
 
-    it("does not admit anonymous accounts to the selection page", async () => {
+    it("does not admit anonymous accounts to the platform placeholder", async () => {
         grant(Permission.public);
-        await expect(authorizePageRequest("/backstage/editWikiPageTags", session)).rejects.toThrow("Denied");
+        await expect(authorizePageRequest("/backstage/platform-editWikiPageTags", session)).rejects.toThrow("Denied");
     });
 
     it("retains the wiki-tag administration capability check after band selection", async () => {

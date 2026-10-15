@@ -1,3 +1,5 @@
+// support for the admin logs page
+
 import { serverPortalHosting } from "src/route/server/portalConfig";
 import { Prisma } from "@prisma/client";
 import { parsePublicId } from "shared/publicId";
@@ -14,9 +16,11 @@ const eventSelection = Prisma.validator<Prisma.EventSelect>()({
 });
 type AuditEvent = Prisma.EventGetPayload<{ select: typeof eventSelection }>;
 
+// lsmb todo: every call to this is doing ad-hoc path construction. use routing  mechanism instead.
 function recordReference(publicId: string, label: string, deleted: boolean, bandPublicId: string | null,
     path: string | null, input: PresentationInput): AuditReference {
-    return { publicId, label, deleted, bandPublicId,
+    return {
+        publicId, label, deleted, bandPublicId,
         href: deleted || path === null ? null : portalHref(path, {
             bandPublicId: bandPublicId === null ? null : parsePublicId<"Band">(bandPublicId), routeLocale: input.routeLocale,
         }, serverPortalHosting()),
@@ -33,6 +37,7 @@ async function eventReference(database: Prisma.TransactionClient, event: AuditEv
     const date = event.startsAt === null ? "TBD" : new Intl.DateTimeFormat(locale, {
         day: "2-digit", month: "short", year: "numeric", timeZone,
     }).format(event.startsAt);
+    // lsmb todo: do not construct URLs like this.
     return recordReference(event.publicId, `${event.name} (${date})`, event.isDeleted, event.band.publicId,
         `/backstage/event/${event.publicId}`, input);
 }
@@ -45,26 +50,34 @@ export async function readAuditRecord(database: Prisma.TransactionClient, tableN
         case "event":
             return eventReference(database, await database.event.findUnique({ where: { id: recordId }, select: eventSelection }), input);
         case "song": {
-            const row = await database.song.findUnique({ where: { id: recordId }, select: {
-                publicId: true, name: true, isDeleted: true, band: { select: { publicId: true } },
-            } });
+            const row = await database.song.findUnique({
+                where: { id: recordId }, select: {
+                    publicId: true, name: true, isDeleted: true, band: { select: { publicId: true } },
+                }
+            });
+            // lsmb todo: do not construct URLs like this.
             return row ? recordReference(row.publicId, row.name, row.isDeleted, row.band.publicId, `/backstage/song/${row.publicId}`, input) : null;
         }
         case "user": {
             const row = await database.user.findUnique({ where: { id: recordId }, select: { publicId: true, name: true, isDeleted: true } });
-            return row ? recordReference(row.publicId, row.name, row.isDeleted, null, `/backstage/user/${row.publicId}`, input) : null;
+            // lsmb todo: do not construct URLs like this.
+            return row ? recordReference(row.publicId, row.name, row.isDeleted, null, `/backstage/platform-user/${row.publicId}`, input) : null;
         }
         case "banduser": {
-            const row = await database.bandUser.findUnique({ where: { id: recordId }, select: {
-                isDeleted: true, user: { select: { publicId: true, name: true, isDeleted: true } }, band: { select: { publicId: true } },
-            } });
+            const row = await database.bandUser.findUnique({
+                where: { id: recordId }, select: {
+                    isDeleted: true, user: { select: { publicId: true, name: true, isDeleted: true } }, band: { select: { publicId: true } },
+                }
+            });
             return row ? recordReference(row.user.publicId, row.user.name, row.isDeleted || row.user.isDeleted, row.band.publicId,
                 `/backstage/user/${row.user.publicId}`, input) : null;
         }
         case "file": {
-            const row = await database.file.findUnique({ where: { id: recordId }, select: {
-                publicId: true, fileLeafName: true, isDeleted: true, band: { select: { publicId: true } },
-            } });
+            const row = await database.file.findUnique({
+                where: { id: recordId }, select: {
+                    publicId: true, fileLeafName: true, isDeleted: true, band: { select: { publicId: true } },
+                }
+            });
             return row ? recordReference(row.publicId, row.fileLeafName, row.isDeleted, row.band.publicId, `/backstage/file/${row.publicId}`, input) : null;
         }
         case "eventsegment":
@@ -82,17 +95,21 @@ export async function readAuditRecord(database: Prisma.TransactionClient, tableN
                 `/backstage/event/${row.event.publicId}`, input) : null;
         }
         case "eventsegmentuserresponse": {
-            const row = await database.eventSegmentUserResponse.findUnique({ where: { id: recordId }, select: {
-                publicId: true, eventSegment: { select: { event: { select: eventSelection } } },
-            } });
+            const row = await database.eventSegmentUserResponse.findUnique({
+                where: { id: recordId }, select: {
+                    publicId: true, eventSegment: { select: { event: { select: eventSelection } } },
+                }
+            });
             const event = row?.eventSegment.event;
             return row && event ? recordReference(row.publicId, row.publicId, event.isDeleted, event.band.publicId,
                 `/backstage/event/${event.publicId}`, input) : null;
         }
         case "bandinstrument": {
-            const row = await database.bandInstrument.findUnique({ where: { id: recordId }, select: {
-                publicId: true, nameId: true, bandId: true, band: { select: { publicId: true } }, globalInstrument: { select: { nameId: true } },
-            } });
+            const row = await database.bandInstrument.findUnique({
+                where: { id: recordId }, select: {
+                    publicId: true, nameId: true, bandId: true, band: { select: { publicId: true } }, globalInstrument: { select: { nameId: true } },
+                }
+            });
             if (!row) {
                 return null;
             }
@@ -108,10 +125,12 @@ export async function readAuditRecord(database: Prisma.TransactionClient, tableN
 
 export async function readAuditFileTags(database: Prisma.TransactionClient, recordId: number,
     input: PresentationInput): Promise<AuditReference[]> {
-    const row = await database.file.findUnique({ where: { id: recordId }, select: {
-        taggedEvents: { select: { eventId: true } }, taggedSongs: { select: { songId: true } },
-        taggedUsers: { select: { bandUserId: true } }, taggedInstruments: { select: { bandInstrumentId: true } },
-    } });
+    const row = await database.file.findUnique({
+        where: { id: recordId }, select: {
+            taggedEvents: { select: { eventId: true } }, taggedSongs: { select: { songId: true } },
+            taggedUsers: { select: { bandUserId: true } }, taggedInstruments: { select: { bandInstrumentId: true } },
+        }
+    });
     if (!row) {
         return [];
     }

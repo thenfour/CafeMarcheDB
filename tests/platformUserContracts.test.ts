@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { Permission } from "shared/permissions";
 import { parsePublicId, type UserPublicId } from "shared/publicId";
-import { getBackstageRoute } from "@/src/route/backstageRoutes";
+import { CmdbRoutes } from "@/src/route/cmdbRoutes";
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
 import * as db3 from "src/core/db3/db3";
 import { authorizeAndProjectViewDto } from "src/core/db3/server/db3QueryCore";
@@ -20,7 +20,7 @@ const bandManager = authorize(20, Permission.login, Permission.manage_users, Per
 
 describe("platform account maintenance contract", () => {
     it("uses the platform capability on the page and table, including for the account owner", () => {
-        expect(getBackstageRoute("adminUsers").permission).toBe(Permission.manage_global_users);
+        expect(CmdbRoutes.routeByKey("/backstage/platform-adminUsers").permission).toBe(Permission.manage_global_users);
         expect(db3.xPlatformUser.authorizeTableForView(platform)).toBe(true);
         for (const auth of [bandManager, authorize(person.id, Permission.login), authorize(1, Permission.sysadmin), testServerAuthorization(null, new ServerPermissionSet([]))]) {
             expect(db3.xPlatformUser.authorizeTableForView(auth)).toBe(false);

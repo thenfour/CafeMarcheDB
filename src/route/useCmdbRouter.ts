@@ -4,7 +4,7 @@ import { usePortalHosting } from "./PortalRoutingProvider";
 import { portalHref, type RouteBandAndLocale } from "./portalRouting";
 
 // lsmb TODO: this should directly understand
-// our backstage routes registry, and be the coordinator for all platform-wide route
+// our cmdb routes registry, and be the coordinator for all platform-wide route
 // services 
 // - parsing, manips, conversions. ...
 // - breadcrumbs

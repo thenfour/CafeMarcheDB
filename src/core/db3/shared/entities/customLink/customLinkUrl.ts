@@ -1,6 +1,6 @@
 import type { ParsedUrlQuery } from "node:querystring";
 import { isPublicId, parsePublicId, type BandPublicId } from "shared/publicId";
-import { portalRoot, type BandHostingConfig } from "src/route/portalRouting";
+import { cmdbRouting, type BandHostingConfig } from "src/route/portalRouting";
 
 export function customLinkBand(query: ParsedUrlQuery): BandPublicId | null {
     return isPublicId(query.bandPublicId) ? parsePublicId<"Band">(query.bandPublicId) : null;
@@ -10,7 +10,7 @@ export function customLinkBand(query: ParsedUrlQuery): BandPublicId | null {
 // lsmb todo: use cmdb Router system
 export function customLinkHref(slug: string, bandPublicId: BandPublicId, hosting: BandHostingConfig): string {
     const path = slug.split("/").filter(Boolean).map(encodeURIComponent).join("/");
-    return `${portalRoot(bandPublicId, hosting)}/${path}`;
+    return `${cmdbRouting.getBandPortalRoot(bandPublicId, hosting)}/${path}`;
 }
 
 export function customLinkDestination(destination: string, query: ParsedUrlQuery, forwardQuery: boolean): string {

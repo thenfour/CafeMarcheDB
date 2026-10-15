@@ -1,7 +1,7 @@
 import { DbBrandConfig } from "@/shared/brandConfigBase";
-import { isAbsoluteUri, slugify, TableAccessor } from "@/shared/rootroot";
+import { concatenateUrlParts, isAbsoluteUri, slugify, TableAccessor } from "@/shared/rootroot";
 import { ServerStartInfo } from "@/shared/serverStateBase";
-import { concatenateUrlParts, IsNullOrWhitespace } from "@/shared/utils";
+import { IsNullOrWhitespace } from "@/shared/utils";
 import * as db3 from "@db3/db3";
 import { Prisma } from "db";
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
@@ -73,6 +73,7 @@ export abstract class DashboardContextDataBase {
             if (event.name) parts.push(slugify(event.name));
             if (!IsNullOrWhitespace(tabSlug)) parts.push(tabSlug || "");
 
+            // lsmb todo: no ad-hoc url construction.
             return this.getAbsoluteUri(portalHref(`/backstage/event/${parts.join("/")}`, this.memberPresentation, this.portalHosting));
         },
 
@@ -80,6 +81,7 @@ export abstract class DashboardContextDataBase {
             const parts: string[] = [song.publicId];
             if (song.name) parts.push(slugify(song.name));
             if (!IsNullOrWhitespace(tabSlug)) parts.push(tabSlug || "");
+            // lsmb todo: no ad-hoc url construction.
             return this.getAbsoluteUri(portalHref(`/backstage/song/${parts.join("/")}`, this.memberPresentation, this.portalHosting));
         },
 
@@ -88,7 +90,9 @@ export abstract class DashboardContextDataBase {
             if (user.name) {
                 parts.push(slugify(user.name));
             }
-            return this.getAbsoluteUri(portalHref(`/backstage/user/${parts.join("/")}`, this.memberPresentation, this.portalHosting));
+            // lsmb todo: no ad-hoc url construction.
+            const path = this.memberPresentation.bandPublicId ? "/backstage/user" : "/backstage/platform-user";
+            return this.getAbsoluteUri(portalHref(`${path}/${parts.join("/")}`, this.memberPresentation, this.portalHosting));
         },
 
         getURIForFile: (value: Prisma.FileGetPayload<{ select: { storedLeafName: true, fileLeafName: true, externalURI: true } }>) => {

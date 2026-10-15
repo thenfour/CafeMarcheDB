@@ -1,7 +1,7 @@
 import type { SessionContext } from "@blitzjs/auth";
-import { findBackstageRouteByPattern, pageRoutePermission } from "../../route/backstageRoutes";
 import { loadAuthorization } from "./serverAuthorization";
 import type { BandPublicId } from "shared/publicId";
+import { CmdbRoutes } from "@/src/route/cmdbRoutes";
 
 export async function loadPageAuthorization(
     pathname: string,
@@ -14,13 +14,10 @@ export async function loadPageAuthorization(
 
     //console.log(`Loading page authorization for pathname: ${pathname}, bandPublicId: ${bandPublicId}`);
 
-    const route = findBackstageRouteByPattern(pathname);
-    if (!route) {
-        throw new Error(`Backstage page is missing route authorization metadata: ${pathname}`);
-    }
+    const route = CmdbRoutes.requireRouteByPattern(pathname);
 
     const auth = await loadAuthorization(session, bandPublicId);
-    auth.requirePermission(pageRoutePermission(route, bandPublicId));
+    auth.requirePermission(route.permission);
     return auth;
 }
 

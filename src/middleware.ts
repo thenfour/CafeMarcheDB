@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { parsePublicId } from "shared/publicId";
 import { parsePortalPath, getServerBandHostingConfig, PORTAL_PATH_HEADER, selectPortalContext } from "src/route/portalRouting";
 
-// must be a simple URL rewriter, based on metadata in backstageRoutes registry.
+// must be a simple URL rewriter, for band and locale prefixes.
 // this is the 1st stage in cmdb url processing
 // can not perform any db queries and therefore auth / locale selection etc can't be done here.
 

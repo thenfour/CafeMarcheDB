@@ -50,7 +50,7 @@ function LoadedAccountProfile({ personId, mode }: {
     const controls = <>
         {user.isDeleted && <Alert severity="warning">{capabilities.mergedIntoUserId
             ? <>{locale.getPlainString("membership.profile.merged")} <CMLink href={portalHref(
-                `/backstage/user/${capabilities.mergedIntoUserId}`, { ...context, bandPublicId: null }, dashboard.portalHosting)}>
+                `/backstage/platform-user/${capabilities.mergedIntoUserId}`, { ...context, bandPublicId: null }, dashboard.portalHosting)}>
                 {locale.getPlainString("membership.profile.remainingAccount")}</CMLink></>
             : locale.getPlainString("membership.profile.deactivated")}</Alert>}
         <Stack spacing={1} alignItems="flex-start">
@@ -58,7 +58,7 @@ function LoadedAccountProfile({ personId, mode }: {
             <CMButtonGroup>
                 <UserAdminPanel user={user} capabilities={capabilities} refetch={refresh}
                     onDeactivated={mode === "controls" ? () => router.replace(portalHref(
-                        `/backstage/user/${personId}`, { ...context, bandPublicId: null }, dashboard.portalHosting)) : refresh} />
+                        `/backstage/platform-user/${personId}`, { ...context, bandPublicId: null }, dashboard.portalHosting)) : refresh} />
                 {dashboard.isAuthorized(Permission.sysadmin) && <UserIdentityIndicator user={user} />}
                 {capabilities.canResetPassword && <AdminResetPasswordButton user={user} />}
                 {capabilities.canManageSignInMethods && <UserSignInMethodsButton user={user} onChanged={refresh} />}
@@ -69,8 +69,11 @@ function LoadedAccountProfile({ personId, mode }: {
         return controls;
     }
     return <>
-        <Breadcrumbs><CMLink href={portalHref("/backstage/adminUsers", { ...context, bandPublicId: null }, dashboard.portalHosting)}>
-            {locale.getPlainString("platformUser.title")}</CMLink><Typography>{user.name}</Typography></Breadcrumbs>
+        <Breadcrumbs>
+            <CMLink href={portalHref("/backstage/platform-adminUsers", { ...context, bandPublicId: null }, dashboard.portalHosting)}>
+                {locale.getPlainString("platformUser.title")}</CMLink>
+            <Typography>{user.name}</Typography>
+        </Breadcrumbs>
         <div className="EventDetail contentSection event"><div className="content">
             <div className="titleLine">
                 <div className="titleText"><div className="titleLink"><span className="title">{user.name}</span></div></div>

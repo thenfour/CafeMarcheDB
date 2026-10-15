@@ -1,3 +1,7 @@
+// try not to put things here that have no dependencies (bringing in utils.ts brings in heavy things)
+// put generic things either in domain-specific util files,
+// or in rootroot.
+
 import { crc32 } from "@foxglove/crc";
 import db from "db";
 import z from "zod";
@@ -65,22 +69,6 @@ let gUniqueNegativeID = -1;
 
 export function getUniqueNegativeID() {
     return gUniqueNegativeID--;
-}
-
-
-export function removeTrailingSlash(path: string): string {
-    return path.replace(/\/+$/, '');
-}
-export function removeLeadingAndTrailingSlash(path: string): string {
-    return path.replace(/^\/+|\/+$/g, '');
-}
-
-export function concatenateUrlParts(...parts: string[]): string {
-    return parts
-        .map(part => part.trim())  // Trim whitespace from each part
-        .filter(part => part !== '')  // Remove empty parts to avoid extra slashes
-        .map(part => removeLeadingAndTrailingSlash(part))
-        .join('/');  // Join parts with a single slash
 }
 
 

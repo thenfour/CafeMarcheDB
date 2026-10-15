@@ -1,3 +1,4 @@
+import { useLocale } from "src/locale/components/useLocale";
 import { groupByMap } from '@/shared/arrayUtils';
 import { Box, Collapse, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Typography } from '@mui/material';
 import Link from "next/link";
@@ -11,12 +12,13 @@ import { AppContextMarker } from "../AppContext";
 import { AdminInspectObject } from '../CMCoreComponents2';
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { useLocalStorageSet } from "../useLocalStorageState";
-import { gMenuSections, MenuLink, MenuSection, NavRealm } from './StaticMenuItems';
+import { gMenuSections, MenuContext, MenuLink, MenuSection, NavRealm } from './StaticMenuItems';
 import { HostingMode } from '@/shared/brandConfigBase';
 import { DashboardContextData, useClientTelemetryEvent, useDashboardContext } from '../dashboardContext/DashboardContext';
 import { parsePortalPath, portalHref } from "src/route/portalRouting";
 import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
 import { wikiMakeRelativeURI } from "src/core/wiki/shared/wikiUtils";
+import { MenuCaptionKey } from "@/src/locale/shared/menuStrings";
 
 
 // Flattened types for rendering (used internally by flattening functions)
@@ -392,6 +394,22 @@ export const AddDynMenuItemsToStatic = (
 };
 
 
+
+// effectively creates a copy of the static menu section registry, but with links filtered and captions resolved according to the provided context.
+function resolveStaticMenuSections(getCaption: (key: MenuCaptionKey) => string, context: MenuContext): MenuSection[] {
+    return gMenuSections.map(section => ({
+        ...section,
+        groups: section.groups.map(group => ({
+            ...group,
+            links: group.links.filter(link => link.context === context).map(({ captionKey, context: _context, ...link }) => ({
+                ...link,
+                linkCaption: getCaption(captionKey),
+            })),
+        })),
+    }));
+}
+
+
 // Side menu component that handles all menu logic and rendering
 interface SideMenuProps {
     navRealm?: NavRealm;
@@ -411,7 +429,12 @@ export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme 
     for (const [sectionName, items] of dynamicSections) {
         dynamicSectionsAndGroups.set(sectionName, groupByMap(items, item => item.groupName || gNullValue));
     }
-    const menuSections = AddDynMenuItemsToStatic(gMenuSections, dynamicSectionsAndGroups, dashboardContext);
+
+    const locale = useLocale();
+    const staticSections = resolveStaticMenuSections(key => locale.getPlainString(key),
+        dashboardContext.memberPresentation.bandPublicId ? "band" : "platform");
+    const menuSections = AddDynMenuItemsToStatic(staticSections, dynamicSectionsAndGroups, dashboardContext);
+
     const menuItems = FlattenMenuSections(dashboardContext, menuSections);
     const currentSection = getCurrentMenuSection(menuItems, navRealm, router);
 
@@ -420,7 +443,7 @@ export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme 
         const expanded = new Set<string>();
 
         // Add sections that should be expanded by default
-        gMenuSections.forEach((section) => {
+        staticSections.forEach((section) => {
             if (section.expandedByDefault && section.name) {
                 expanded.add(section.name);
             }

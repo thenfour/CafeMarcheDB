@@ -1,7 +1,6 @@
 import { shouldShowAdminControls } from "@/shared/adminControls";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { IsNullOrWhitespace } from "@/shared/utils";
-import { findBackstageRouteByPattern, pageRoutePermission } from "@/src/route/backstageRoutes";
 import { useSession } from "@blitzjs/auth";
 import { useMutation } from "@blitzjs/rpc";
 import { QrCode } from "@mui/icons-material";
@@ -43,6 +42,7 @@ import {
     SideMenu
 } from "./MenuStructure";
 import { NavRealm } from "./StaticMenuItems";
+import { CmdbRoutes } from "@/src/route/cmdbRoutes";
 
 const drawerWidth = 260;
 
@@ -147,12 +147,21 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
             </>
         }
 
+        {dashboardContext.memberPresentation.bandPublicId &&
+            <MenuItem
+                component={Link}
+                href={portalHref('/backstage/profile', dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+                onClick={closeMenu}
+            >
+                Your profile
+            </MenuItem>
+        }
         <MenuItem
             component={Link}
-            href={portalHref('/backstage/profile', dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+            href={portalHref('/backstage/platform-profile', dashboardContext.memberPresentation, dashboardContext.portalHosting)}
             onClick={closeMenu}
         >
-            Your profile
+            Your global profile
         </MenuItem>
         <Divider />
 
@@ -403,11 +412,8 @@ const Dashboard3 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
     const mediaPlayer = useMediaPlayer();
     let forceLogin = false;
 
-    const registeredRoute = findBackstageRouteByPattern(router.pathname);
-    if (!registeredRoute) {
-        throw new Error(`No route for path: ${router.pathname}`);
-    }
-    const isPageAuthorized = dashboardContext.isAuthorized(pageRoutePermission(registeredRoute, dashboardContext.memberPresentation.bandPublicId));
+    const registeredRoute = CmdbRoutes.requireRouteByPattern(router.pathname);
+    const isPageAuthorized = dashboardContext.isAuthorized(registeredRoute.permission);
     if (!isPageAuthorized) {
         // are you even logged in?
         if (!dashboardContext.session?.userId) {

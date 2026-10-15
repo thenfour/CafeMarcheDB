@@ -1,3 +1,4 @@
+import { menuStrings } from "./menuStrings";
 import { z } from "zod";
 import { markdownStaticString, plainStaticString } from "./staticLocalizedStringRegistryHelpers";
 import { freezeRegistry } from "@/src/setting/shared/registryHelpers";
@@ -27,6 +28,7 @@ function defaultMarkdownStaticString() {
 }
 
 export const kStaticLocalizedStringRegistry = freezeRegistry({
+    ...menuStrings,
     ...auditLogStrings,
     ...instrumentStrings,
     ...catalogStrings,

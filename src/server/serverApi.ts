@@ -1,5 +1,4 @@
-import { concatenateUrlParts } from "@/shared/utils";
-
+import { concatenateUrlParts } from "@/shared/rootroot";
 
 export const ServerApi = {
     // clients cannot access process.env. For client-side, use the routing API on the dashboardContext.

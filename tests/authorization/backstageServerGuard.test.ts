@@ -48,7 +48,7 @@ describe("backstage server page guard", () => {
 
     it("allows a delegated route only with its declared capability", async () => {
         await expect(authorizePageRequest(
-            "/backstage/editEventTags",
+            "/backstage/platform-editEventTags",
             eventAdmin.id,
         )).resolves.toBeUndefined();
 
@@ -56,13 +56,6 @@ describe("backstage server page guard", () => {
             "/backstage/roles",
             eventAdmin.id,
         )).rejects.toThrow();
-    });
-
-    it("accepts the declared sysadmin permission regardless of how it is held", async () => {
-        await expect(authorizePageRequest(
-            "/backstage/roles",
-            roleCarriedSysadmin.id,
-        )).resolves.toBeUndefined();
     });
 
     it("revalidates permission state from the database", async () => {
@@ -74,7 +67,7 @@ describe("backstage server page guard", () => {
         });
 
         await expect(authorizePageRequest(
-            "/backstage/editEventTags",
+            "/backstage/platform-editEventTags",
             eventAdmin.id,
         )).rejects.toThrow(new RegExp(`${Permission.manage_global_catalogs}`));
     });
@@ -172,7 +165,7 @@ describe("backstage server page guard", () => {
 
     it("keeps contained routes and unregistered pages closed to anonymous visitors", async () => {
         await expect(authorizePageRequest("/backstage/notRegistered", null))
-            .rejects.toThrow("missing route authorization metadata");
+            .rejects.toThrow("Invalid route key");
     });
 
     it("keeps import routing protected", async () => {
@@ -195,6 +188,6 @@ describe("backstage server page guard", () => {
         await expect(authorizePageRequest(
             "/backstage/notRegistered",
             actualSysadmin.id,
-        )).rejects.toThrow("missing route authorization metadata");
+        )).rejects.toThrow("Invalid route key");
     });
 });

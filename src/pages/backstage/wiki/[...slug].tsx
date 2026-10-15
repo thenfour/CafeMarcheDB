@@ -79,7 +79,7 @@ export const getServerSideProps = gSSP<PageProps>(async (args) => {
 
 });
 
-const WikiPage: BlitzPage = (x: PageProps) => {
+const WikiPage: BlitzPage<PageProps> = (x) => {
     // if (x.wikiPageId == null) {
     //     return <div>Wiki page not found</div>;
     // }

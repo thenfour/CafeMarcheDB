@@ -1,6 +1,6 @@
 import db from "db";
-import { ValidateRouteRegistry } from "../route/backstageRoutes";
 import { initializeAccessControl } from "./accessControl";
+import { ValidateRouteRegistry } from "../route/routeValidation";
 
 export async function instrumentationSetup(): Promise<void> {
     await ValidateRouteRegistry();

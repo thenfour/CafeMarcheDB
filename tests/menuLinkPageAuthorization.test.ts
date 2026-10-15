@@ -25,15 +25,15 @@ describe("menu link page authorization", () => {
         return requirePermission;
     }
 
-    it("admits signed-in accounts to the band-selection prompt", async () => {
+    it("admits signed-in accounts to the platform placeholder", async () => {
         const requirePermission = grant(Permission.login);
-        await authorizePageRequest("/backstage/menuLinks", session);
+        await authorizePageRequest("/backstage/platform-menuLinks", session);
         expect(requirePermission).toHaveBeenCalledWith(Permission.login);
     });
 
-    it("does not admit anonymous accounts to the selection page", async () => {
+    it("does not admit anonymous accounts to the platform placeholder", async () => {
         grant(Permission.public);
-        await expect(authorizePageRequest("/backstage/menuLinks", session)).rejects.toThrow("Denied");
+        await expect(authorizePageRequest("/backstage/platform-menuLinks", session)).rejects.toThrow("Denied");
     });
 
     it("retains the menu-link capability check after band selection", async () => {

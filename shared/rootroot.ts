@@ -329,3 +329,18 @@ export function isAbsoluteUri(input: string): boolean {
     return /^[A-Za-z][A-Za-z0-9+.-]*:/.test(trimmed);
 }
 
+export function removeTrailingSlash(path: string): string {
+    return path.replace(/\/+$/, '');
+}
+export function removeLeadingAndTrailingSlash(path: string): string {
+    return path.replace(/^\/+|\/+$/g, '');
+}
+
+export function concatenateUrlParts(...parts: string[]): string {
+    return parts
+        .map(part => part.trim())  // Trim whitespace from each part
+        .filter(part => part !== '')  // Remove empty parts to avoid extra slashes
+        .map(part => removeLeadingAndTrailingSlash(part))
+        .join('/');  // Join parts with a single slash
+}
+

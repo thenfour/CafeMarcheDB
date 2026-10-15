@@ -38,6 +38,7 @@ export function readAuditDetail(database: DB3ReadDatabase, auth: CMServerAuthori
             throw new Error("Audit record is unavailable.");
         }
         const record = await readAuditRecord(context.database, row.table, row.recordId, input);
+        // TODO: do not hardcode table names like this.
         const related = row.table.toLowerCase() === "file" ? await readAuditFileTags(context.database, row.recordId, input) : [];
         return AuditDetailSchema.parse({
             user: row.user, record, related, oldValues: parseAuditSnapshot(row.oldValues), newValues: parseAuditSnapshot(row.newValues),

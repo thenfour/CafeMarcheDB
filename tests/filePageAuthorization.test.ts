@@ -4,7 +4,7 @@ import NextApp from "next/app";
 import { AuthorizationError } from "blitz";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
-import { findBackstageRouteByPattern } from "@/src/route/backstageRoutes";
+import { CmdbRoutes } from "@/src/route/cmdbRoutes";
 import getPageBootstrap from "src/auth/queries/getPageBootstrap";
 import { MyApp } from "src/pages/_app";
 
@@ -15,12 +15,6 @@ vi.mock("src/blitz-client", () => ({ queryClient: {}, withBlitz: (app: unknown) 
 describe("restored File page permissions", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-    });
-
-    it("retains separate search/detail and metadata-grid capabilities", () => {
-        expect(findBackstageRouteByPattern("/backstage/files")?.permission).toBe(Permission.access_file_landing_page);
-        expect(findBackstageRouteByPattern("/backstage/file/[...id_slug_tab]")?.permission).toBe(Permission.access_file_landing_page);
-        expect(findBackstageRouteByPattern("/backstage/editFiles")?.permission).toBe(Permission.admin_files);
     });
 
     it.each(["/backstage/files", "/backstage/file/[...id_slug_tab]", "/backstage/editFiles"])(

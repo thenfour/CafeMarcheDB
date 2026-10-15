@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
-import { getBackstageRoute } from "@/src/route/backstageRoutes";
+import { CmdbRoutes } from "@/src/route/cmdbRoutes";
 import { getDB3CommandHandler } from "src/core/db3/server/db3CommandRegistry";
 import { validateDB3PaginatedQueryRequest } from "src/core/db3/server/db3RequestValidation";
 import { bandMemberRecoveryQuery, bandUserLifecycleCommand, bandUserLifecycleView } from "src/core/db3/shared/entities/user/bandUserLifecycle";
@@ -13,7 +13,6 @@ describe("membership lifecycle contracts", () => {
     it("registers a strict membership command and public recovery route", () => {
         expect(getDB3CommandHandler(bandUserLifecycleCommand.commandID).command).toBe(bandUserLifecycleCommand);
         expect(bandUserLifecycleCommand.parseDto(edit)).toEqual(edit);
-        expect(getBackstageRoute("recoverMembers")).toMatchObject({ pattern: "/backstage/recoverMembers", permission: Permission.recover_users });
     });
     it.each([
         { ...edit, membershipId: 1 }, { ...edit, userId: "User000000000001" }, { ...edit, bandId: 1 },

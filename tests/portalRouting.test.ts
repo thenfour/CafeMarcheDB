@@ -59,10 +59,20 @@ describe("portal route identities and deployment policy", () => {
         expect(selectPortalContext(parsePortalPath("/fr/backstage"), {}, standalone)).toEqual({ bandPublicId: first, routeLocale: "fr" });
     });
     it("keeps shared account pages explicitly unscoped on a standalone host", () => {
-        expect(portalHref("/backstage/user/PortalPerson001", { bandPublicId: null, routeLocale: "fr-BE" }, standalone))
-            .toBe("/fr-BE/platform/backstage/user/PortalPerson001");
-        expect(selectPortalContext(parsePortalPath("/fr-BE/platform/backstage/adminUsers"), {}, standalone))
+        expect(portalHref("/backstage/platform-user/PortalPerson001", { bandPublicId: null, routeLocale: "fr-BE" }, standalone))
+            .toBe("/fr-BE/platform/backstage/platform-user/PortalPerson001");
+        expect(selectPortalContext(parsePortalPath("/fr-BE/platform/backstage/platform-adminUsers"), {}, standalone))
             .toEqual({ bandPublicId: null, routeLocale: "fr-BE" });
+    });
+    it("keeps band and platform page identities distinct through locale and hosting rewrites", () => {
+        const bandHref = portalHref("/backstage/settings", { bandPublicId: first, routeLocale: "fr-BE" }, platform);
+        expect(parsePortalPath(bandHref)).toMatchObject({ pathname: "/backstage/settings", bandPublicId: first });
+        for (const hosting of [platform, standalone]) {
+            const platformHref = portalHref("/backstage/platform-settings", { bandPublicId: null, routeLocale: "fr-BE" }, hosting);
+            const path = parsePortalPath(platformHref);
+            expect(path).toMatchObject({ pathname: "/backstage/platform-settings", bandPublicId: null });
+            expect(selectPortalContext(path, {}, hosting).bandPublicId).toBeNull();
+        }
     });
     it.each([
         `/b/${first}/backstage?bandPublicId=${second}`,

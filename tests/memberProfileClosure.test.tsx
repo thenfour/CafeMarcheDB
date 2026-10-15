@@ -159,12 +159,12 @@ describe("profile closure interactions", () => {
         capabilities = { ...initialCapabilities, canAssignRole: false, mergedIntoUserId: "ProfilePerson002" }; revision = "merged"; await platform();
         expect(container.textContent).toContain("cannot be reactivated");
         expect(container.querySelector('a[href*="ProfilePerson002"]')?.getAttribute("href"))
-            .toBe("/fr-BE/backstage/user/ProfilePerson002");
+            .toBe("/fr-BE/backstage/platform-user/ProfilePerson002");
         expect(container.textContent).not.toContain("Edit shared profile");
     });
     it("leaves a deactivated band profile for its account URL while retaining the explicit route locale", async () => {
         permissions = [Permission.login, Permission.manage_global_users]; band = "ProfileBand00001"; await platform("controls");
-        await click("Deactivate account"); expect(replace).toHaveBeenCalledWith(`/fr-BE/backstage/user/${personId}`);
+        await click("Deactivate account"); expect(replace).toHaveBeenCalledWith(`/fr-BE/backstage/platform-user/${personId}`);
     });
     it("retains contextual analytic tabs and dedicated impersonation independent of account management", async () => {
         permissions = [Permission.login, Permission.sysadmin]; band = "ProfileBand00001"; requestedTab = "credits";

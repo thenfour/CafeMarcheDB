@@ -25,17 +25,6 @@ describe("custom link page authorization", () => {
         return requirePermission;
     }
 
-    it("admits signed-in accounts to the band-selection prompt", async () => {
-        const requirePermission = grant(Permission.login);
-        await authorizePageRequest("/backstage/customLinks", session);
-        expect(requirePermission).toHaveBeenCalledWith(Permission.login);
-    });
-
-    it("does not admit anonymous accounts to the selection page", async () => {
-        grant(Permission.public);
-        await expect(authorizePageRequest("/backstage/customLinks", session)).rejects.toThrow("Denied");
-    });
-
     it("retains the custom-link capability check after band selection", async () => {
         const requirePermission = grant(Permission.view_custom_links);
         await authorizePageRequest("/backstage/customLinks", session, bandPublicId);

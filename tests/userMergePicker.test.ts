@@ -228,7 +228,7 @@ describe("merge report lifecycle", () => {
         expect(commitMutation).toHaveBeenCalledWith({ participants: { mainUserId: profile.publicId, retiringUserId: first.publicId }, confirmation: "a".repeat(64),
             routeLocale: "fr-BE", browserLanguages: ["fr-BE", "nl-BE"], clientRequestId: "1" });
         await act(async () => complete({ mainUserId: profile.publicId }));
-        expect(navigate).toHaveBeenCalledWith("/fr-BE/backstage/user/" + profile.publicId);
+        expect(navigate).toHaveBeenCalledWith("/fr-BE/backstage/platform-user/" + profile.publicId);
         expect(document.querySelector('[role="dialog"]')).toBeNull();
     });
     it("blocks a report with blockers, resets the report on swapping and previews the reversed direction", async () => {

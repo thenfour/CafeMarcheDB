@@ -173,7 +173,8 @@ export function selectPortalContext(path: PortalPath, query: RouteBandAndLocale,
 }
 
 // return the relative URL of a band's root.
-export function portalRoot(bandPublicId: BandPublicId, hosting: BandHostingConfig): string {
+// TODO: the band portal root is just another route. use a common route construction.
+function getBandPortalRoot(bandPublicId: BandPublicId, hosting: BandHostingConfig): string {
     if (hosting.kind === "standalone") {
         if (hosting.bandPublicId !== bandPublicId) {
             throw new RangeError("The requested band does not belong to this host.");
@@ -183,9 +184,14 @@ export function portalRoot(bandPublicId: BandPublicId, hosting: BandHostingConfi
     return `/b/${bandPublicId}`;
 }
 
+export const cmdbRouting = {
+    getBandPortalRoot,
+};
+
 // generates a relative URL given the path, selection, and hosting context.
 // transforms existing 
 // TODO: we should construct routes based on the registry, not hard-coded path manipulations.
+// almost every CALL to this function also needs to be treated because they mostly do ad-hoc path construction
 export function portalHref(path: string, selection: RouteBandAndLocale, hosting: BandHostingConfig): string {
     if (!path.startsWith("/") || path.startsWith("//")) {
         // If the path is not a valid relative path, return it as-is.
@@ -194,7 +200,7 @@ export function portalHref(path: string, selection: RouteBandAndLocale, hosting:
     const url = new URL(path, "https://cmdb.invalid");
     const parsed = parsePortalPath(url.pathname);
     // Standalone hosts need an explicit namespace for account/platform pages without band context.
-    const bandRoot = selection.bandPublicId ? portalRoot(selection.bandPublicId, hosting)
+    const bandRoot = selection.bandPublicId ? getBandPortalRoot(selection.bandPublicId, hosting)
         : hosting.kind === "standalone" ? "/platform" : "";
     const localeRoot = selection.routeLocale ? `/${normalizeLocaleTag(selection.routeLocale)}` : "";
     const remainder = parsed.pathname === "/" ? "" : parsed.pathname;
