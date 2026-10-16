@@ -58,9 +58,9 @@ describe("public homepage request selection", () => {
         expect(await page({}, "fr")).toMatchObject({ props: { lang: "fr", selection: { routeLocale: "fr" } } });
         expect(await page({}, "nl")).toMatchObject({ props: { lang: "nl", selection: { routeLocale: "nl" } } });
     });
-    it("does not infer a band when Café Marché host configuration is absent", async () => {
+    it("rejects missing Café Marché host configuration before reading publication data", async () => {
         vi.stubEnv("CMDB_PUBLIC_BAND_PUBLIC_ID", "");
-        expect(await page()).toEqual({ notFound: true });
+        await expect(page()).rejects.toThrow("Expected a 16-character public ID.");
         expect(mocked.feed).not.toHaveBeenCalled();
         expect(mocked.authorization).not.toHaveBeenCalled();
     });

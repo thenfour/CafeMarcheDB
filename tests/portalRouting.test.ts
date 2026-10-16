@@ -1,5 +1,4 @@
-import { describe, expect, it } from "vitest";
-import { HostingMode } from "shared/brandConfigBase";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { parsePublicId } from "shared/publicId";
 import { parsePortalPath, portalHref, getServerBandHostingConfig, retainPortalPageState, selectPortalContext, type BandHostingConfig } from "src/route/portalRouting";
 import { customLinkHref } from "src/core/db3/shared/entities/customLink/customLinkUrl";
@@ -8,6 +7,37 @@ const first = parsePublicId<"Band">("PortalBand000001");
 const second = parsePublicId<"Band">("PortalBand000002");
 const platform: BandHostingConfig = { kind: "platform" };
 const standalone: BandHostingConfig = { kind: "standalone", bandPublicId: first, tenant: "generic" };
+
+describe("server hosting configuration", () => {
+    afterEach(() => { vi.unstubAllEnvs(); });
+
+    it("uses the test environment's explicit platform configuration", () => {
+        expect(getServerBandHostingConfig()).toEqual(platform);
+    });
+
+    it.each([
+        { mode: "CafeMarche", tenant: "CafeMarche" },
+        { mode: "GenericSingleTenant", tenant: "generic" },
+    ])("binds $mode hosting to its configured band", ({ mode, tenant }) => {
+        vi.stubEnv("CMDB_HOSTING_MODE", mode);
+        vi.stubEnv("CMDB_PUBLIC_BAND_PUBLIC_ID", first);
+        expect(getServerBandHostingConfig()).toEqual({ kind: "standalone", tenant, bandPublicId: first });
+    });
+
+    it.each([undefined, "", "platform", "invalid"])("rejects missing or invalid hosting mode %s", mode => {
+        vi.stubEnv("CMDB_HOSTING_MODE", mode ?? "");
+        if (mode === undefined) {
+            delete process.env.CMDB_HOSTING_MODE;
+        }
+        expect(() => getServerBandHostingConfig()).toThrow(`Invalid hosting mode: ${mode}`);
+    });
+
+    it.each(["CafeMarche", "GenericSingleTenant"])("rejects %s hosting without a configured band", mode => {
+        vi.stubEnv("CMDB_HOSTING_MODE", mode);
+        vi.stubEnv("CMDB_PUBLIC_BAND_PUBLIC_ID", "");
+        expect(() => getServerBandHostingConfig()).toThrow("Expected a 16-character public ID.");
+    });
+});
 
 describe("portal route identities and deployment policy", () => {
     it("retains existing filters, repeated query values and hash while canonicalizing a detail tab", () => {

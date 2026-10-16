@@ -46,6 +46,14 @@ Some authorization tests intentionally exercise rejected requests and write the
 expected errors to stderr. Judge the run by its final Vitest summary and exit
 code, not by the presence of those messages.
 
+## Hosting configuration
+
+The shared test setup explicitly sets `CMDB_HOSTING_MODE=Platform`, independently
+of the shell's deployment configuration. Tests for other hosting modes use
+`vi.stubEnv` and restore overrides with `vi.unstubAllEnvs` in `afterEach`.
+Production configuration still requires a valid hosting mode and, for standalone
+hosting, a valid `CMDB_PUBLIC_BAND_PUBLIC_ID`.
+
 ## Migration reference specifications
 
 The localization/multiband migration temporarily preserves disabled feature
