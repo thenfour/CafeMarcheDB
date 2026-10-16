@@ -14,7 +14,6 @@ export type BandHostingConfig =
     | {
         readonly kind: "standalone";
         readonly tenant: "generic" | "CafeMarche";
-        readonly bandPublicId: BandPublicId;
     };
 
 export function isTenant(config: BandHostingConfig, tenant: "generic" | "CafeMarche"): boolean {
@@ -48,7 +47,6 @@ export function getServerBandHostingConfig(mode?: string | undefined, configured
     return {
         kind: "standalone",
         tenant: resolvedMode === "GenericSingleTenant" ? "generic" : "CafeMarche",
-        bandPublicId: parsePublicId<"Band">(configuredBand || process.env.CMDB_PUBLIC_BAND_PUBLIC_ID),
     };
 }
 
@@ -138,47 +136,9 @@ export function parsePortalPath(pathname: string): PortalPath {
     };
 }
 
-
-// TODO: remove.
-// this function accepts multiple band/locale selections and resolves to one, throwing on conflict.
-// this was used in order to support both path-based and query-based band/locale selections. unnecessary to support that scenario.
-// - validates inputs
-// - selects the appropriate band and locale based on the path, query, and hosting context
-export function selectPortalContext(path: PortalPath, query: RouteBandAndLocale, hosting: BandHostingConfig): RouteBandAndLocale {
-
-    if (path.bandPublicId && query.bandPublicId && path.bandPublicId !== query.bandPublicId) {
-        throw new RangeError("Conflicting band selections.");
-    }
-
-    const queryLocale = query.routeLocale ? normalizeLocaleTag(query.routeLocale) : null;
-    if (path.routeLocale && queryLocale && path.routeLocale !== queryLocale) {
-        throw new RangeError("Conflicting language selections.");
-    }
-    const selectedBand = path.bandPublicId ?? query.bandPublicId ?? null;
-    if (path.hasPlatformPrefix && selectedBand) {
-        throw new RangeError("Platform pages cannot select a band.");
-    }
-
-    // todo: unnecessary diligence; this is enforced all over the place, not to mention
-    // it will just be a missing band like any other, no need to give psecial attention.
-    if (hosting.kind === "standalone" && selectedBand && selectedBand !== hosting.bandPublicId) {
-        throw new RangeError("The requested band does not belong to this host.");
-    }
-    return {
-        bandPublicId: path.hasPlatformPrefix ? null : hosting.kind === "standalone" ? hosting.bandPublicId : selectedBand,
-        routeLocale: path.routeLocale ?? queryLocale,
-    };
-}
-
 // return the relative URL of a band's root.
 // TODO: the band portal root is just another route. use a common route construction.
 function getBandPortalRoot(bandPublicId: BandPublicId, hosting: BandHostingConfig): string {
-    if (hosting.kind === "standalone") {
-        if (hosting.bandPublicId !== bandPublicId) {
-            throw new RangeError("The requested band does not belong to this host.");
-        }
-        return "";
-    }
     return `/b/${bandPublicId}`;
 }
 

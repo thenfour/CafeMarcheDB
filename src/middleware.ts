@@ -1,8 +1,7 @@
 // src/middleware.ts
 
 import { NextResponse, type NextRequest } from "next/server";
-import { parsePublicId } from "shared/publicId";
-import { parsePortalPath, getServerBandHostingConfig, PORTAL_PATH_HEADER, selectPortalContext } from "src/route/portalRouting";
+import { parsePortalPath, PORTAL_PATH_HEADER } from "src/route/portalRouting";
 
 // must be a simple URL rewriter, for band and locale prefixes.
 // this is the 1st stage in cmdb url processing
@@ -22,32 +21,20 @@ export function middleware(request: NextRequest) {
         // console.log(`[middleware] ${originalPath}`);
 
         const path = parsePortalPath(originalPath);
-        const hosting = getServerBandHostingConfig(process.env.CMDB_HOSTING_MODE, process.env.CMDB_PUBLIC_BAND_PUBLIC_ID);
-
-        // parse band & locale from query params.
-        // todo: should not be hard-coded query parameters!
-        const query = request.nextUrl.searchParams;
-        if (query.getAll("bandPublicId").length > 1 || query.getAll("routeLocale").length > 1) {
-            return new NextResponse(null, { status: 404 });
-        }
-        const requestedBand = query.get("bandPublicId");
-        const selection = selectPortalContext(path, {
-            bandPublicId: requestedBand === null ? null : parsePublicId<"Band">(requestedBand),
-            routeLocale: query.get("routeLocale"),
-        }, hosting);
 
         const headers = new Headers(request.headers);
         headers.delete(PORTAL_PATH_HEADER);
         headers.set(PORTAL_PATH_HEADER, originalPath);
 
-        // now construct the internal dest route, with params as query string params.
+        // construct the internal dest route, with params as query string params.
+        // this might be better done in a header?
         const destination = request.nextUrl.clone();
         destination.pathname = path.pathname;
-        if (selection.bandPublicId) {
-            destination.searchParams.set("bandPublicId", selection.bandPublicId);
+        if (path.bandPublicId) {
+            destination.searchParams.set("bandPublicId", path.bandPublicId);
         }
-        if (selection.routeLocale) {
-            destination.searchParams.set("routeLocale", selection.routeLocale);
+        if (path.routeLocale) {
+            destination.searchParams.set("routeLocale", path.routeLocale);
         }
 
         if (destination.href === request.nextUrl.href) {

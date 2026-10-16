@@ -1054,16 +1054,15 @@ for UX purposes.
 -  adding a hash to a URL causes an exception
 -  ❌understand `DefaultRolePermissionAssignments`
 -  clean up / collapse localized strings
--  begin a localized string editor
 -  cleanup lsmb todo
--  on role/perm mgmt pages, highlight global vs. band scoped roles & permissions.
--  fix backstage home alerts formatting
+-  fix backstage home alerts formatting. and why is it appearing?
 -  lots of entity details bleed into places it shouldn't. check for `isDeleted` and `mergedIntoUserId` to see all the places
    that are trying to own their own copy of user / user merging policies.
--  roles need to render as chips
+-  user roles need to render as chips
 
 **nice-to-haves**
 
+-  on role/perm mgmt pages, highlight global vs. band scoped roles & permissions.
 -  clean up tests
 -  `parsePublicId<"Event">` -- these free strings are slightly a problem; better to use `xEvent.parseIdentity`
 -  also eval `" in ` instances -- also very shady

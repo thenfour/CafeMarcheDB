@@ -7,7 +7,7 @@ import { getSessionForRequest } from "src/blitz-server";
 import { assertAuthorizationBandScope, withAuthorizationBandScope } from "src/auth/server/requestAuthorizationScope";
 import { loadPresentationData } from "src/locale/server/presentation";
 import { PresentationInputSchema } from "src/locale/shared/presentationInput";
-import { getServerBandHostingConfig, parsePortalPath, selectPortalContext, type RouteBandAndLocale } from "src/route/portalRouting";
+import { getServerBandHostingConfig, parsePortalPath, type RouteBandAndLocale } from "src/route/portalRouting";
 import { resolvePortalRequest } from "src/route/server/portalRequest";
 import { loadDbBrandConfig } from "src/server/brand";
 import { loadPageAuthorization } from "../server/pageRequestAuthorization";
@@ -41,14 +41,14 @@ export default async function getPageBootstrap(input: PageBootstrapInput, contex
     }
     let selection: RouteBandAndLocale;
     try {
-        if (requestPath.startsWith("//")) {
+        if (requestPath.startsWith("//")) { // lsmb todo: why ? is there a spceific scenario we are catching here or  just  pessimistic check
             throw new RangeError("Expected a local page path.");
         }
         const requestedURL = new URL(requestPath, "https://cmdb.invalid");
         if (requestedURL.origin !== "https://cmdb.invalid") {
             throw new RangeError("Expected a local page path.");
         }
-        selection = selectPortalContext(parsePortalPath(requestedURL.pathname), requested, hosting);
+        selection = parsePortalPath(requestedURL.pathname);
     } catch (error) {
         console.log("[getPageBootstrap] Failed to select portal context for requestPath:", requestPath, error);
         throw new NotFoundError();

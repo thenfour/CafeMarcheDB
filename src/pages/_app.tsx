@@ -4,10 +4,12 @@ import PowerOffIcon from "@mui/icons-material/PowerOff";
 import { Box, CssBaseline, Typography } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 //import CssBaseline from "@material-ui/core/CssBaseline";
-import { ThemeProvider, createTheme, PaletteColorOptions, SimplePaletteColorOptions } from '@mui/material/styles';
+import { BrandContext, useBrand } from "@/shared/brandConfig";
+import { createTheme, PaletteColorOptions, SimplePaletteColorOptions, ThemeProvider } from '@mui/material/styles';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { AuthenticationError, AuthorizationError, NotFoundError } from "blitz";
-import { ZodError } from "zod";
+import NextApp, { AppContext, AppInitialProps } from "next/app";
+import Head from "next/head";
 import React from "react";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { queryClient, withBlitz } from "src/blitz-client";
@@ -15,23 +17,21 @@ import { CMButton } from "src/core/components/CMCoreComponents2";
 import { SnackbarProvider } from "src/core/components/SnackbarContext";
 import createEmotionCache from "src/core/createEmotionCache";
 import { themeOptions } from "src/core/theme";
-import Head from "next/head";
-import NextApp, { AppContext, AppInitialProps } from "next/app";
-import { BrandContext, useBrand } from "@/shared/brandConfig";
+import { ZodError } from "zod";
 
-import 'src/styles/main.css';
-import '../../public/frontpage.css';
 import { DbBrandConfig, DefaultDbBrandConfig } from "@/shared/brandConfigBase";
-import { ConnectionHealthMonitor } from "src/core/connectivity/ConnectionHealthComponents";
-import { isConnectivityError } from "src/core/connectivity/connectionHealth";
 import { invoke, useQueryErrorResetBoundary } from "@blitzjs/rpc";
-import { PresentationProvider } from "src/locale/components/PresentationProvider";
-import type { PresentationData } from "src/locale/shared/presentationContext";
-import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
 import Router from "next/router";
 import getPageBootstrap from "src/auth/queries/getPageBootstrap";
+import { ConnectionHealthMonitor } from "src/core/connectivity/ConnectionHealthComponents";
+import { isConnectivityError } from "src/core/connectivity/connectionHealth";
+import { PresentationProvider } from "src/locale/components/PresentationProvider";
+import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
+import type { PresentationData } from "src/locale/shared/presentationContext";
 import { PortalRoutingProvider } from "src/route/PortalRoutingProvider";
-import { parsePortalPath, portalHref, selectPortalContext, PORTAL_PATH_HEADER, type BandHostingConfig } from "src/route/portalRouting";
+import { parsePortalPath, PORTAL_PATH_HEADER, portalHref, type BandHostingConfig } from "src/route/portalRouting";
+import 'src/styles/main.css';
+import '../../public/frontpage.css';
 
 // Client-side cache, shared for the whole session of the user in the browser.
 const clientSideEmotionCache = createEmotionCache();
@@ -291,8 +291,7 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
 
     // lsmb todo: don't hardcode this; refer to route registry logic.
     if (pathname !== "/backstage") {
-      const selection = selectPortalContext(parsePortalPath(new URL(appCtx.ctx.asPath ?? pathname, "https://cmdb.invalid").pathname),
-        pagePresentationInput(appCtx.ctx.query), { kind: "platform" });
+      const selection = parsePortalPath(new URL(appCtx.ctx.asPath ?? pathname, "https://cmdb.invalid").pathname);
       const loginPath = portalHref("/backstage", selection, { kind: "platform" });
       if (res) {
         res.writeHead(302, { Location: loginPath });

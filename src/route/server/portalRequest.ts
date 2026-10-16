@@ -4,8 +4,7 @@ import { NotFoundError } from "blitz";
 import db from "db";
 import type { IncomingMessage } from "node:http";
 import { withAuthorizationBandScope } from "src/auth/server/requestAuthorizationScope";
-import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
-import { getServerBandHostingConfig, parsePortalPath, PORTAL_PATH_HEADER, selectPortalContext, type BandHostingConfig, type RouteBandAndLocale } from "../portalRouting";
+import { getServerBandHostingConfig, parsePortalPath, PORTAL_PATH_HEADER, type BandHostingConfig, type RouteBandAndLocale } from "../portalRouting";
 import { assertPortalHost, portalPublicOrigin } from "./portalConfig";
 
 export type PortalAvailabilityDatabase = Pick<typeof db, "band" | "locale">;
@@ -16,7 +15,7 @@ export interface PortalRequest {
     readonly pathname: string;
 }
 
-
+// lsmb todo: this is likely reduceable/removable. `selection` and pathname?
 export function resolvePortalRequest(request: Pick<IncomingMessage, "url" | "headers">, requestedPath?: string): PortalRequest {
     const hosting = getServerBandHostingConfig();
     const origin = portalPublicOrigin();
@@ -33,13 +32,9 @@ export function resolvePortalRequest(request: Pick<IncomingMessage, "url" | "hea
         if (["bandPublicId", "routeLocale"].some(key => incoming.searchParams.getAll(key).length > 1)) {
             throw new RangeError("Ambiguous portal selection.");
         }
-        const query = pagePresentationInput({
-            bandPublicId: incoming.searchParams.get("bandPublicId") ?? undefined,
-            routeLocale: incoming.searchParams.get("routeLocale") ?? undefined,
-        });
         return {
             hosting,
-            selection: selectPortalContext(path, query, hosting),
+            selection: path,
             pathname: path.pathname
         };
     } catch {
