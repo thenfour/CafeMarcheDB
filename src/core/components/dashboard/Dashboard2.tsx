@@ -1,4 +1,3 @@
-import { useServerStartupState } from "../ServerStartupStateContext";
 import { shouldShowAdminControls } from "@/shared/adminControls";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { IsNullOrWhitespace } from "@/shared/utils";
@@ -28,7 +27,7 @@ import { AppContextMarker } from "../AppContext";
 import { AdminInspectObject } from "../CMCoreComponents2";
 import { useDialogAfterMenuClose } from "../CMDialog";
 import { ConfirmProvider } from "../ConfirmationDialog";
-import { DashboardContextProvider, useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
+import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { DateValue } from "../DateTime/DateTimeComponents";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { LoginSignup } from "../LoginSignupForm";
@@ -38,6 +37,7 @@ import { MessageBoxProvider } from "../MessageBoxContext";
 import { QrCodeDialog } from "../QrCode";
 import { useDialogViewportRect } from "../ResponsiveDialog";
 import { MainSiteSearch } from "../search/MainSiteSearch";
+import { useServerStartupState } from "../ServerStartupStateContext";
 import { ApplicationFrameProvider, useApplicationFrame, useApplicationFrameBackgroundRef } from "./ApplicationFrameContext";
 import { BandSelection } from "./BandSelection";
 import {
@@ -93,7 +93,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
             {versionLabel && (
                 <MenuItem
                     component={Link}
-                    href={router.href('/backstage/serverHealth')}
+                    href={router.href('/dev/serverHealth')}
                     onClick={closeMenu}>
                     <ListItemIcon>{gIconMap.Info()}</ListItemIcon>
                     Version: {versionLabel}
@@ -125,7 +125,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
 
         {currentUser &&
             <>
-                {dashboardContext.isAuthorized(Permission.view_events_nonpublic) && <MenuItem
+                {dashboardContext.memberPresentation.bandPublicId && dashboardContext.isAuthorized(Permission.view_events_nonpublic) && <MenuItem
                     component={Link}
                     href={router.href("/backstage/calendar")}
                     onClick={closeMenu}
@@ -161,7 +161,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
         }
         <MenuItem
             component={Link}
-            href={router.href('/backstage/platform-profile')}
+            href={router.href('/platform/profile')}
             onClick={closeMenu}
         >
             Your global profile
@@ -326,7 +326,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                 <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
                     {brand.siteLogoUrl && (
                         <Link
-                            href={router.href("/backstage")}
+                            href={router.homeHref()}
                             aria-label="Home"
                             style={{ display: 'inline-flex' }}
                         >
@@ -339,7 +339,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                         component="div"
                     >
                         {!IsNullOrWhitespace(brand.siteTitle) && <Link
-                            href={router.href("/backstage")}
+                            href={router.homeHref()}
                             className={`logo`}
                         >
                             {brand.siteTitle}
@@ -347,7 +347,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                     </Typography>
                 </Box>
 
-                <Tooltip title="Practice tools">
+                {dashboardContext.memberPresentation.bandPublicId && <Tooltip title="Practice tools">
                     <Link
                         href={router.href("/backstage/practice-tools")}
                         aria-label="Practice tools"
@@ -355,7 +355,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                     >
                         {gIconMap.VolumeDown()}
                     </Link>
-                </Tooltip>
+                </Tooltip>}
 
                 <MainSiteSearch />
 
@@ -380,7 +380,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                     </>}>
                         <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', sm: 'inline-flex' }, alignItems: 'center', cursor: 'pointer' }}>
                             <a
-                                href={router.href("/backstage/serverHealth")}
+                                href={router.href("/dev/serverHealth")}
                                 style={{ color: 'inherit', textDecoration: 'none' }}
                             >
                                 {versionLabel}
@@ -580,21 +580,19 @@ const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
 
     return (
         <Box className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} cmdb_env_${process.env.NODE_ENV}`}>
-            <DashboardContextProvider>
-                <ApplicationFrameProvider>
-                    <AppContextMarker name="bs">
-                        <ConfirmProvider>
-                            <MessageBoxProvider>
-                                <MediaPlayerProvider>
-                                    <Dashboard3 navRealm={navRealm}>
-                                        {children}
-                                    </Dashboard3>
-                                </MediaPlayerProvider>
-                            </MessageBoxProvider>
-                        </ConfirmProvider>
-                    </AppContextMarker>
-                </ApplicationFrameProvider>
-            </DashboardContextProvider>
+            <ApplicationFrameProvider>
+                <AppContextMarker name="bs">
+                    <ConfirmProvider>
+                        <MessageBoxProvider>
+                            <MediaPlayerProvider>
+                                <Dashboard3 navRealm={navRealm}>
+                                    {children}
+                                </Dashboard3>
+                            </MediaPlayerProvider>
+                        </MessageBoxProvider>
+                    </ConfirmProvider>
+                </AppContextMarker>
+            </ApplicationFrameProvider>
         </Box>
     );
 }

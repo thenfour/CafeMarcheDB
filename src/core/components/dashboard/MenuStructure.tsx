@@ -8,7 +8,7 @@ import { Permission } from "shared/permissions";
 import { gNullValue } from "shared/rootroot";
 import * as db3 from "src/core/db3/db3";
 import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
-import { wikiMakeRelativeURI } from "src/core/wiki/shared/wikiUtils";
+import { wikiPageInternalHref } from "src/core/wiki/shared/wikiUtils";
 import { useLocale } from "src/locale/components/useLocale";
 import { type BandHostingConfig, type PortalPath } from "src/route/portalRouting";
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
@@ -54,7 +54,7 @@ export interface FlatMenuSection {
 export type FlatMenuItemAndSection = { sectionInfo: FlatMenuSection, item: FlatMenuItemSpec };
 
 // Helper function to convert dynamic menu items to static menu items
-type DynamicMenuPresentation = Pick<DashboardContextData, "permission">;
+type DynamicMenuPresentation = Pick<DashboardContextData, "permission" | "memberPresentation">;
 
 export const DynMenuToMenuItem = (item: db3.MenuLinkListClient, dashboardContext: DynamicMenuPresentation): MenuLink | null => {
     let path = "";
@@ -65,7 +65,7 @@ export const DynMenuToMenuItem = (item: db3.MenuLinkListClient, dashboardContext
             path = item.externalURI || "";
             break;
         case "Wiki":
-            path = item.wikiSlug ? wikiMakeRelativeURI(item.wikiSlug) : "";
+            path = item.wikiSlug ? wikiPageInternalHref(item.wikiSlug, dashboardContext.memberPresentation.bandPublicId) : "";
             break;
     }
 

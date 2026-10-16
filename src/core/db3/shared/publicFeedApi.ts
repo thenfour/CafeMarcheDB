@@ -5,6 +5,7 @@ import * as db3 from "../db3";
 import { sortEventsRaw } from "./apiTypes";
 import { PublicAgendaItemSpec, PublicFeedResponseSpec, PublicGalleryItemSpec } from "./publicTypes";
 import { SharedAPI } from "./sharedAPI";
+import { fileDownloadHref } from "./fileDownloadUrl";
 
 // The same authored fields supply the public feed and the Event editor preview.
 type AgendaItem = Pick<db3.EventPublicFeedDto,
@@ -63,7 +64,8 @@ function convertGalleryItem(item: db3.FrontpageGalleryFeedDto, context: PublicFe
         || item.sortOrder === undefined || item.displayParams === undefined) {
         return null;
     }
-    const fileUrl = new URL(portalHref(SharedAPI.files.getURIForFile({ storedLeafName: file.storedLeafName }), {
+    const downloadHref = fileDownloadHref(SharedAPI.files.getURIForFile({ storedLeafName: file.storedLeafName }), context.bandPublicId);
+    const fileUrl = new URL(portalHref(downloadHref, {
         bandPublicId: context.bandPublicId,
         routeLocale: context.translations.preferences.routeLocale,
     }, context.hosting), context.baseURL).href;

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { createTestRouter } from "./support/routing";
 import { parsePortalPath } from "src/route/portalRouting";
-vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: () => createTestRouter({ baseUri: window.location.origin, hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/backstage", { kind: "multiBand" }) }, { push: navigate }) }));
+vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: () => createTestRouter({ baseUri: window.location.origin, hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/platform", { kind: "multiBand" }) }, { push: navigate }) }));
 import React from "react";
 import { act, Simulate } from "react-dom/test-utils";
 import { createRoot, type Root } from "react-dom/client";
@@ -230,7 +230,7 @@ describe("merge report lifecycle", () => {
         expect(commitMutation).toHaveBeenCalledWith({ participants: { mainUserId: profile.publicId, retiringUserId: first.publicId }, confirmation: "a".repeat(64),
             routeLocale: "fr-BE", browserLanguages: ["fr-BE", "nl-BE"], clientRequestId: "1" });
         await act(async () => complete({ mainUserId: profile.publicId }));
-        expect(navigate).toHaveBeenCalledWith("/fr-BE/backstage/platform-user/" + profile.publicId, undefined, undefined);
+        expect(navigate).toHaveBeenCalledWith("/fr-BE/platform/user/" + profile.publicId, undefined, undefined);
         expect(document.querySelector('[role="dialog"]')).toBeNull();
     });
     it("blocks a report with blockers, resets the report on swapping and previews the reversed direction", async () => {

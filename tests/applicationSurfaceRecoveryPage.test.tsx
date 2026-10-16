@@ -22,8 +22,8 @@ import EditEvents from "src/pages/backstage/editEvents";
 import EditSegments from "src/pages/backstage/editEventSegments";
 import Agenda from "src/pages/backstage/frontpageEvents";
 import EditSongs from "src/pages/backstage/editSongs";
-import Examples from "src/pages/backstage/gallery";
-import GridExamples from "src/pages/backstage/test";
+import Examples from "src/pages/dev/gallery";
+import GridExamples from "src/pages/dev/test2";
 
 let language = "en-US";
 let root: Root;

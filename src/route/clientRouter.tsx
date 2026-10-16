@@ -44,7 +44,8 @@ export class CmdbClientRouter extends CmdbRouter {
         const current = new URL(this.asPath, "https://cmdb.invalid");
         // Shallow tab/slug updates change asPath without running bootstrap again.
         const prefix = replacePortalPathname(this.requestPath, "");
-        const internalPathname = current.pathname.slice(prefix.length) || "/";
+        const remainder = current.pathname.slice(prefix.length);
+        const internalPathname = this.requestPath.hasBandPrefix ? `/backstage${remainder}` : remainder || "/";
         const href = this.href(`${internalPathname}${current.search}${current.hash}`, { routeLocale });
         return this.push(href);
     }

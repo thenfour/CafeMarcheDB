@@ -25,6 +25,7 @@ function route<const TPattern extends string>(pattern: TPattern, permission: Per
 const kRouteRegistry = registryFor<RouteCommon>()({
     // root-like
     "root": route("/", Permission.public),
+    "platformRoot": route("/platform", Permission.public),
     "_error": route("/_error", Permission.public),
     "auth_signup": route("/auth/signup", Permission.public),
     "auth_login": route("/auth/login", Permission.public),
@@ -35,7 +36,7 @@ const kRouteRegistry = registryFor<RouteCommon>()({
     "auth_resetpassword": route("/auth/reset-password", Permission.public),
     "auth_stopImpersonating": route("/auth/stopImpersonating", Permission.public),
 
-    "customLink": route("/[...customLinkSlug]", Permission.public),
+    "customLink": route("/backstage/[...customLinkSlug]", Permission.public),
 
     "practiceTools": route("/backstage/practice-tools", Permission.practice_tools_use),
 
@@ -93,36 +94,35 @@ const kRouteRegistry = registryFor<RouteCommon>()({
     "bandRolePermissions": route("/backstage/rolePermissions", Permission.sysadmin),
     "bandAdminUsers": route("/backstage/adminUsers", Permission.manage_global_users),
 
-    "serverHealth": route("/backstage/serverHealth", Permission.sysadmin),
+    "serverHealth": route("/dev/serverHealth", Permission.sysadmin),
     "adminLogs": route("/backstage/adminLogs", Permission.sysadmin),
 
-    "platformWiki": route("/backstage/platform-wiki/[...slug]", Permission.login),
-    "platformWikiPageHistory": route("/backstage/platform-wikiPageHistory", Permission.login),
-    "platformUser": route("/backstage/platform-user/[...id_slug_tab]", Permission.manage_global_users),
-    "platformProfile": route("/backstage/platform-profile", Permission.login),
-    "platformFeatureReports": route("/backstage/platform-featureReports", Permission.login),
-    "platformMenuLinks": route("/backstage/platform-menuLinks", Permission.login),
-    "platformCustomLinks": route("/backstage/platform-customLinks", Permission.login),
-    "platformEditEventTags": route("/backstage/platform-editEventTags", Permission.manage_global_catalogs),
-    "platformEditFileTags": route("/backstage/platform-editFileTags", Permission.manage_global_catalogs),
-    "platformEditWikiPageTags": route("/backstage/platform-editWikiPageTags", Permission.login),
-    "platformSettings": route("/backstage/platform-settings", Permission.login),
+    "platformWiki": route("/platform/wiki/[...slug]", Permission.login),
+    "platformWikiPageHistory": route("/platform/wikiPageHistory", Permission.login),
+    "platformUser": route("/platform/user/[...id_slug_tab]", Permission.manage_global_users),
+    "platformProfile": route("/platform/profile", Permission.login),
+    "platformFeatureReports": route("/platform/featureReports", Permission.login),
+    "platformMenuLinks": route("/platform/menuLinks", Permission.login),
+    "platformCustomLinks": route("/platform/customLinks", Permission.login),
+    "platformEditEventTags": route("/platform/editEventTags", Permission.manage_global_catalogs),
+    "platformEditFileTags": route("/platform/editFileTags", Permission.manage_global_catalogs),
+    "platformEditWikiPageTags": route("/platform/editWikiPageTags", Permission.login),
+    "platformSettings": route("/platform/settings", Permission.login),
 
-    "platformRoles": route("/backstage/platform-roles", Permission.sysadmin),
-    "platformPermissions": route("/backstage/platform-permissions", Permission.sysadmin),
-    "platformRolePermissions": route("/backstage/platform-rolePermissions", Permission.sysadmin),
-    "platformAdminUsers": route("/backstage/platform-adminUsers", Permission.manage_global_users),
+    "platformRoles": route("/platform/roles", Permission.sysadmin),
+    "platformPermissions": route("/platform/permissions", Permission.sysadmin),
+    "platformRolePermissions": route("/platform/rolePermissions", Permission.sysadmin),
+    "platformAdminUsers": route("/platform/adminUsers", Permission.manage_global_users),
 
-    "testTest": route("/test/test", Permission.public),
-    "devGallery": route("/backstage/gallery", Permission.sysadmin),
-    "devColorEditor2": route("/backstage/colorEditor2", Permission.sysadmin),
-    "devTest": route("/backstage/test", Permission.sysadmin),
-    "devTest_test": route("/backstage/test/test", Permission.sysadmin),
-    "devtestQuickSearchTest": route("/backstage/test/quickSearchTest", Permission.sysadmin),
-    "devtestCMSelectTest": route("/backstage/test/CMSelectTest", Permission.sysadmin),
-    "devtestAttendance": route("/backstage/test/attendance", Permission.sysadmin),
-    "devtestDate": route("/backstage/test/date", Permission.sysadmin),
-    "devtestDialogs": route("/backstage/test/dialogs", Permission.sysadmin),
+    "devGallery": route("/dev/gallery", Permission.sysadmin),
+    "devColorEditor2": route("/dev/colorEditor2", Permission.sysadmin),
+    "devTest": route("/dev/test2", Permission.sysadmin),
+    "devTest_test": route("/dev/test", Permission.sysadmin),
+    "devtestQuickSearchTest": route("/dev/quickSearchTest", Permission.sysadmin),
+    "devtestCMSelectTest": route("/dev/CMSelectTest", Permission.sysadmin),
+    "devtestAttendance": route("/dev/attendance", Permission.sysadmin),
+    "devtestDate": route("/dev/date", Permission.sysadmin),
+    "devtestDialogs": route("/dev/dialogs", Permission.sysadmin),
 });
 
 export type CmdbRouteKey = keyof typeof kRouteRegistry;

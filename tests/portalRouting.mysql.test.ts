@@ -23,7 +23,7 @@ describe.skipIf(!settingsMysqlTestUrl)("portal routing with native memberships a
     it("selects two portals independently and rejects cross-band payloads before authorization", () => withSettingsMysqlFixture(database!, async (tx, fixture) => {
         const bands = fixture.bands.map(band => parsePublicId<"Band">(band.publicId));
         for (const [index, band] of bands.entries()) {
-            const path = parsePortalPath(`/fr-BE/b/${band}/backstage/profile`, { kind: "multiBand" });
+            const path = parsePortalPath(`/fr-BE/b/${band}/profile`, { kind: "multiBand" });
             const portal = await resolvePortalRequestContext({ headers: {} }, path);
             expect(portal.requestPath.bandPublicId).toBe(band);
             await withAuthorizationBandScope(band, async () => {
@@ -40,7 +40,7 @@ describe.skipIf(!settingsMysqlTestUrl)("portal routing with native memberships a
         const first = parsePublicId<"Band">(fixture.bands[0]!.publicId);
         const second = parsePublicId<"Band">(fixture.bands[1]!.publicId);
         vi.stubEnv("CMDB_HOSTING_MODE", "GenericSingleTenant");
-        await expect(resolvePortalPath(parsePortalPath("/nl-BE/b/backstage/profile", { kind: "singleBand", tenant: "generic" }), { kind: "singleBand", tenant: "generic" }, tx)).rejects.toThrow("exactly one Band");
+        await expect(resolvePortalPath(parsePortalPath("/nl-BE/b/profile", { kind: "singleBand", tenant: "generic" }), { kind: "singleBand", tenant: "generic" }, tx)).rejects.toThrow("exactly one Band");
         await withAuthorizationBandScope(first, async () => {
             await expect(loadAuthorizationForUser(fixture.user, tx, second)).rejects.toBeInstanceOf(NotFoundError);
         });

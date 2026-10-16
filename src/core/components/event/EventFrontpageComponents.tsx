@@ -8,11 +8,11 @@ import React from "react";
 import { EnNlFr } from "shared/lang";
 import { DateTimeRange } from "shared/time";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { usePresentation } from "src/locale/components/PresentationProvider";
+import { authoredTranslationContext, resolveAuthoredTranslations } from "src/locale/shared/authoredTranslations";
 import { BandLocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
 import { API } from '../../db3/clientAPI';
 import { gIconMap } from "../../db3/components/IconMap";
-import { usePresentation } from "src/locale/components/PresentationProvider";
-import { authoredTranslationContext, resolveAuthoredTranslations } from "src/locale/shared/authoredTranslations";
 import { getAgendaItem } from "../../db3/shared/publicFeedApi";
 import { PublicAgendaItemSpec } from "../../db3/shared/publicTypes";
 import { CMChip, CMChipContainer } from "../CMChip";
@@ -22,7 +22,7 @@ import { CMDialog } from "../CMDialog";
 import { useConfirm } from "../ConfirmationDialog";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
-import { AgendaItem } from '../frontpage/homepageComponents';
+import { AgendaItem } from '../frontpage/CMHomepageComponents';
 import type { EventDetailEvent } from "./EventComponentsBase";
 
 

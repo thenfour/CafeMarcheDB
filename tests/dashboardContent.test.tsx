@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
 import { createTestRouter } from "./support/routing";
 import { parsePortalPath } from "src/route/portalRouting";
-vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: () => createTestRouter({ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath(`/fr-BE/b/${band}/backstage`, { kind: "multiBand" }) }) }));
+vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: () => createTestRouter({ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath(`/fr-BE/b/${band}`, { kind: "multiBand" }) }) }));
 import { parsePublicId } from "shared/publicId";
 import type { PresentationInput } from "src/locale/shared/presentationInput";
 import { TableAccessor } from "shared/rootroot";
@@ -139,7 +139,7 @@ describe("dashboard announcements and navigation", () => {
         const text = container.textContent!;
         expect(text.indexOf("BackstageFrontpageHeaderMarkdown")).toBeLessThan(text.indexOf("special/announcements"));
         expect(text.indexOf("special/announcements")).toBeLessThan(text.indexOf("BackstageFrontpageMarkdown"));
-        expect(container.querySelector("a")!.getAttribute("href")).toBe(`/fr-BE/b/${band}/backstage/profile`);
+        expect(container.querySelector("a")!.getAttribute("href")).toBe(`/fr-BE/b/${band}/profile`);
         expect(container.querySelector(".RelevantEvents")).not.toBeNull();
         expect(container.querySelector(".CMBigCalendar")).not.toBeNull();
         expect(text.indexOf("special/announcements")).toBeLessThan(text.indexOf("Relevant Events"));

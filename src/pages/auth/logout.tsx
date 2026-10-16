@@ -12,7 +12,7 @@ const LogoutPage: BlitzPage = () => {
     useEffect(() => {
         logoutMutation().then(() => {
             window.setTimeout(() => {
-                window.location.href = router.href("/backstage");
+                window.location.href = router.homeHref();
             }, 0);
         }).catch((e) => {
             console.log(e);

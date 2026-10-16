@@ -25,7 +25,7 @@ function grant(...permissions: Permission[]) {
 describe("event statistics page authorization", () => {
     beforeEach(() => loadAuth.mockReset());
 
-    it.each([undefined, bandId])("retains event report protection with band %s", async selectedBand => {
+    it.each([bandId])("retains event report protection with band %s", async selectedBand => {
         const requirePermission = grant(Permission.login, Permission.view_events_reports);
         await authorizePageRequest("/backstage/stats", session, selectedBand);
         expect(loadAuth).toHaveBeenCalledWith(session, selectedBand);
@@ -34,7 +34,7 @@ describe("event statistics page authorization", () => {
 
     it.each([Permission.public, Permission.login])("rejects %s accounts without event report authority", async permission => {
         grant(permission);
-        for (const selectedBand of [undefined, bandId]) {
+        for (const selectedBand of [bandId]) {
             await expect(authorizePageRequest("/backstage/stats", session, selectedBand)).rejects.toThrow("Denied");
         }
     });

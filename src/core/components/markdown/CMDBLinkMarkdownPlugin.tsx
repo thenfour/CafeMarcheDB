@@ -69,7 +69,8 @@ export function CMDBLinkMarkdownPlugin(md: MarkdownIt, context: DB3QueryContextI
                 return `<a href="${portalHref(`/backstage/song/${id}`, context, hosting)}" class="wikiCMLink wikiSongLink">🎵 ${caption}</a>`;
             } else if (type === 'user') {
                 caption = caption || `Person ${id}`;
-                return `<a href="${portalHref(`/backstage/user/${id}`, context, hosting)}" class="wikiCMLink wikiUserLink">${caption}</a>`;
+                const userRoot = context.bandPublicId ? "/backstage/user" : "/platform/user";
+                return `<a href="${portalHref(`${userRoot}/${id}`, context, hosting)}" class="wikiCMLink wikiUserLink">${caption}</a>`;
             }
             return match;
         });
@@ -78,7 +79,8 @@ export function CMDBLinkMarkdownPlugin(md: MarkdownIt, context: DB3QueryContextI
         output = output.replace(MarkdownWikiLinkRegex, (match, slug, caption) => {
             if (slug) {
                 caption = caption || slug;
-                return `<a href="${portalHref(`/backstage/wiki/${slug}`, context, hosting)}" class="wikiCMLink wikiWikiLink">${caption}</a>`;
+                const wikiRoot = context.bandPublicId ? "/backstage/wiki" : "/platform/wiki";
+                return `<a href="${portalHref(`${wikiRoot}/${slug}`, context, hosting)}" class="wikiCMLink wikiWikiLink">${caption}</a>`;
             }
             return match;
         });

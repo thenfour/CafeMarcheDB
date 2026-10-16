@@ -90,7 +90,7 @@ describe.skipIf(!settingsMysqlTestUrl)("public publication on MariaDB", () => {
         expect(feed.gallery.map(item => item.galleryItemId)).toEqual([c.earlier.publicId, c.gallery.publicId]);
         expect(feed.gallery.map(item => item.fileId)).toEqual([c.source.publicId, c.source.publicId]);
         expect(JSON.stringify(feed)).not.toMatch(/Unpublished|"(?:bandId|uploadedByUserId|createdByUserId|visiblePermissionId)":/);
-        expect(feed.gallery[0]?.imageFileUri).toBe(`https://publication.invalid/fr-BE/b/${c.input.bandPublicId}/api/files/download/${c.source.storedLeafName}`);
+        expect(feed.gallery[0]?.imageFileUri).toBe(`https://publication.invalid/fr-BE/api/files/download/${c.source.storedLeafName}?bandPublicId=${c.input.bandPublicId}`);
     }));
     it("resolves each field independently and keeps intentional French and Dutch blanks", () => run(async (tx, fixture) => {
         const c = await prepare(tx, fixture);

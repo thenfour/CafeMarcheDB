@@ -2,9 +2,9 @@
 
 import type MarkdownIt from "markdown-it";
 import type { DB3QueryContextInput } from "../../db3/components/useDB3Context";
-import { portalHref, type BandHostingConfig } from "src/route/portalRouting";
+import { fileDownloadHref } from "src/core/db3/shared/fileDownloadUrl";
 
-export function ImageDimensionsMarkdownPlugin(md: MarkdownIt, presentation: DB3QueryContextInput, hosting: BandHostingConfig) {
+export function ImageDimensionsMarkdownPlugin(md: MarkdownIt, presentation: DB3QueryContextInput) {
     const defaultRender = md.renderer.rules.image || function (tokens, idx, options, env, self) {
         return self.renderToken(tokens, idx, options);
     };
@@ -31,10 +31,9 @@ export function ImageDimensionsMarkdownPlugin(md: MarkdownIt, presentation: DB3Q
             }
         }
 
-        // lsmb todo: use a real routing mechanism, not ad-hoc parsing
         const source = token.attrGet("src");
-        if (source?.startsWith("/api/files/download/")) {
-            token.attrSet("src", portalHref(source, presentation, hosting));
+        if (source?.startsWith("/api/files/download/") && presentation.bandPublicId) {
+            token.attrSet("src", fileDownloadHref(source, presentation.bandPublicId));
         }
         return defaultRender(tokens, idx, options, env, self);
     };

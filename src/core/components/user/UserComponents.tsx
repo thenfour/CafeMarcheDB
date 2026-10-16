@@ -67,7 +67,7 @@ export const UserBreadcrumbs = (props: UserBreadcrumbProps) => {
     const router = useCmdbRouter();
     return <Breadcrumbs aria-label="breadcrumb">
         <CMLink
-            href={router.href("/backstage")}
+            href={router.homeHref()}
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage

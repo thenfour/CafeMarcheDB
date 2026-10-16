@@ -60,7 +60,7 @@ export async function readAuditRecord(database: Prisma.TransactionClient, tableN
         case "user": {
             const row = await database.user.findUnique({ where: { id: recordId }, select: { publicId: true, name: true, isDeleted: true } });
             // lsmb todo: do not construct URLs like this.
-            return row ? recordReference(row.publicId, row.name, row.isDeleted, null, `/backstage/platform-user/${row.publicId}`, input) : null;
+            return row ? recordReference(row.publicId, row.name, row.isDeleted, null, `/platform/user/${row.publicId}`, input) : null;
         }
         case "banduser": {
             const row = await database.bandUser.findUnique({

@@ -130,7 +130,7 @@ function MergeUsersDialog({ user, onClose, input }: { user: MergeProfile; onClos
             const result = await merge({ ...requestInput, participants, confirmation: preview.confirmation });
             if (live.current) {
                 onClose();
-                await router.push(portalHref("/backstage/platform-user/" + result.mainUserId, requestInput, router.hosting));
+                await router.push(portalHref("/platform/user/" + result.mainUserId, requestInput, router.hosting));
             }
         } catch (failure) {
             if (live.current) {

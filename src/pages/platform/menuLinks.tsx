@@ -1,4 +1,4 @@
-import Page from "./menuLinks";
+import Page from "../backstage/menuLinks";
 
 export default function PlatformMenuLinksPage() {
     return <Page />;

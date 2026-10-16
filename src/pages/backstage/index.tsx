@@ -1,3 +1,5 @@
+// band dashboard.
+
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 import type { BlitzPage } from "@blitzjs/next";
 import React from "react";
@@ -15,7 +17,7 @@ import { RelevantEvents } from "src/core/components/event/RelevantEvents";
 import { BigEventCalendar } from "src/core/components/EventCalendar";
 
 export function HomeContent() {
-    const cmdbRouter = useCmdbRouter();
+  const cmdbRouter = useCmdbRouter();
   const dashboard = useDashboardContext();
   const locale = useLocale();
   const member = dashboard.currentMembership;

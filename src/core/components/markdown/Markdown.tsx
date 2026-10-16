@@ -1,5 +1,6 @@
 import type { DB3QueryContextInput } from "../../db3/components/useDB3Context";
 import { portalHref } from "src/route/portalRouting";
+import { fileDownloadHref } from "src/core/db3/shared/fileDownloadUrl";
 // <Markdown> = rendered markdown text (simple read only html)
 // <MarkdownEditor> = just the text editor which outputs markdown
 // <MarkdownControl> = full editor with debounced commitment (caller actually commits), displays saving indicator, switch between edit/view
@@ -77,11 +78,13 @@ export const Markdown = (props: MarkdownProps) => {
             if (ihref >= 0) {
                 // distinguish internal vs. external.
                 const href = tokens[idx].attrs[ihref][1];
-                if (href?.startsWith("/backstage/") || href?.startsWith("/api/files/download/")) {
+                if (href?.startsWith("/backstage/")) {
                     tokens[idx].attrs[ihref][1] = portalHref(href, presentation, router.hosting);
+                } else if (href?.startsWith("/api/files/download/") && presentation.bandPublicId) {
+                    tokens[idx].attrs[ihref][1] = fileDownloadHref(href, presentation.bandPublicId);
                 }
                 if (href) {
-                    const hrefClass = router.getURLClass(href);
+                    const hrefClass = router.getURLClass(tokens[idx].attrs[ihref][1]);
                     switch (hrefClass) {
                         case "external":
                             className = " externalLink opensInNewTab";
@@ -121,7 +124,7 @@ export const Markdown = (props: MarkdownProps) => {
         };
 
         md.use(md => ReactInlineMarkdownPlugin(md, router.getAbsoluteUri));
-        md.use(ImageDimensionsMarkdownPlugin, presentation, router.hosting);
+        md.use(ImageDimensionsMarkdownPlugin, presentation);
         md.use(CMDBLinkMarkdownPlugin, presentation, router.hosting);
         md.use(md => AbcNotationMarkdownPlugin(md, router.getAbsoluteUri));
 

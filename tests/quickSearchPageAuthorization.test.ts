@@ -15,10 +15,10 @@ const bandId = parsePublicId<"Band">("SearchBand000001");
 describe("quick search explorer authorization", () => {
     beforeEach(() => loadAuth.mockReset());
 
-    it.each([undefined, bandId])("retains Sysadmin protection with band %s", async selectedBand => {
+    it.each([undefined])("retains Sysadmin protection with band %s", async selectedBand => {
         const requirePermission = vi.fn();
         loadAuth.mockResolvedValue({ requirePermission });
-        await authorizePageRequest("/backstage/test/quickSearchTest", session, selectedBand);
+        await authorizePageRequest("/dev/quickSearchTest", session, selectedBand);
         expect(loadAuth).toHaveBeenCalledWith(session, selectedBand);
         expect(requirePermission).toHaveBeenCalledWith(Permission.sysadmin);
     });
@@ -29,8 +29,8 @@ describe("quick search explorer authorization", () => {
                 throw new Error("Denied");
             }
         } });
-        for (const selectedBand of [undefined, bandId]) {
-            await expect(authorizePageRequest("/backstage/test/quickSearchTest", session, selectedBand)).rejects.toThrow("Denied");
+        for (const selectedBand of [undefined]) {
+            await expect(authorizePageRequest("/dev/quickSearchTest", session, selectedBand)).rejects.toThrow("Denied");
         }
     });
 });

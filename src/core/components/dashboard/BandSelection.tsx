@@ -42,7 +42,7 @@ function PlatformBandSelection() {
 
             // lsmb todo: use a strong routing strategy.
             // lsmb todo: preserve current domain (if you're viewing songs in band A, when switching to band B you should see songs as well.)
-            const changed = await router.push(portalHref("/backstage", {
+            const changed = await router.push(portalHref(value ? "/backstage" : "/platform", {
                 bandPublicId: value ? parsePublicId<"Band">(value) : null,
                 routeLocale: destinationLocale,
             }, router.hosting));

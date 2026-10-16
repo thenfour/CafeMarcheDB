@@ -12,7 +12,7 @@ let container: HTMLDivElement;
 beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     replace.mockClear();
-    window.history.replaceState({}, "", "/fr-BE/b/PortalBand000001/backstage/songs?probe=keep#results");
+    window.history.replaceState({}, "", "/fr-BE/b/PortalBand000001/songs?probe=keep#results");
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -37,7 +37,7 @@ describe("filter URL state in a portal", () => {
             throw new Error("The filter did not publish a URL.");
         }
         const url = new URL(href, window.location.origin);
-        expect(url.pathname).toBe("/fr-BE/b/PortalBand000001/backstage/songs");
+        expect(url.pathname).toBe("/fr-BE/b/PortalBand000001/songs");
         expect(url.searchParams.get("probe")).toBe("keep");
         expect(url.searchParams.get("qf")).toBe('"brass"');
         expect(url.hash).toBe("#results");

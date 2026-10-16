@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { createTestRouter } from "./support/routing";
 import { parsePortalPath } from "src/route/portalRouting";
-vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: () => createTestRouter({ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath(`/${language}/b/${bandId}/backstage`, { kind: "multiBand" }) }) }));
+vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: () => createTestRouter({ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath(`/${language}/b/${bandId}`, { kind: "multiBand" }) }) }));
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { act } from "react-dom/test-utils";
@@ -137,7 +137,7 @@ describe("profile attendance and contribution parity", () => {
         await act(async () => root.render(<UserWikiContributionsTabContent user={person} />));
         const row = container.querySelector("tbody tr")!;
         expect(row.textContent).toContain("alpha2lun. 10 févr. 2025sam. 28 mars 2026");
-        expect(row.querySelector("a")?.getAttribute("href")).toBe(`/fr-BE/b/${bandId}/backstage/wiki/alpha`);
+        expect(row.querySelector("a")?.getAttribute("href")).toBe(`/fr-BE/b/${bandId}/wiki/alpha`);
         const header = [...container.querySelectorAll("th")].find(th => th.textContent?.startsWith("Revisions"))!;
         await act(async () => header.click());
         expect(container.querySelector("tbody tr a")?.textContent).toBe("beta");

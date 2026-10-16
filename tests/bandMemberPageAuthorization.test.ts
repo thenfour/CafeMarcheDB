@@ -3,7 +3,7 @@ import { parsePortalPath, PORTAL_PATH_QUERY_PARAM } from "src/route/portalRoutin
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import getUser from "src/core/db3/queries/getUser";
 import { getServerSideProps } from "src/pages/backstage/user/[...id_slug_tab]";
-import { getServerSideProps as getPlatformServerSideProps } from "src/pages/backstage/platform-user/[...id_slug_tab]";
+import { getServerSideProps as getPlatformServerSideProps } from "src/pages/platform/user/[...id_slug_tab]";
 import { invokeResolver } from "./authorization/support/resolverHarness";
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./authorization/support/authorizationFixtures";
 import { bandUserIdentityView, bandUserProfileView } from "src/core/db3/shared/entities/user/bandUserProfile";
@@ -47,7 +47,7 @@ interface PageInput {
 const page = getServerSideProps as unknown as (input: PageInput) => Promise<unknown>;
 // The platform entrypoint exposes the same mocked Blitz callback.
 const platformPage = getPlatformServerSideProps as unknown as (input: PageInput) => Promise<unknown>;
-const pageInput: PageInput = { params: { id_slug_tab: [personId, "old-slug", "attendance"] }, query: { [PORTAL_PATH_QUERY_PARAM]: JSON.stringify(parsePortalPath(`/fr-BE/b/${bandPublicId}/backstage/user/${personId}`, { kind: "multiBand" })) },
+const pageInput: PageInput = { params: { id_slug_tab: [personId, "old-slug", "attendance"] }, query: { [PORTAL_PATH_QUERY_PARAM]: JSON.stringify(parsePortalPath(`/fr-BE/b/${bandPublicId}/user/${personId}`, { kind: "multiBand" })) },
     req: { headers: { "accept-language": "nl-BE" } }, ctx };
 
 beforeEach(() => {
@@ -86,13 +86,13 @@ describe("member page and lazy person lookup boundaries", () => {
     });
     it("rejects invalid identities and unauthorized account context without a shared-person lookup", async () => {
         expect(await page({ ...pageInput, params: { id_slug_tab: ["123"] } })).toEqual({ notFound: true });
-        expect(await platformPage({ ...pageInput, req: { headers: { "accept-language": "nl-BE" } }, query: { [PORTAL_PATH_QUERY_PARAM]: JSON.stringify(parsePortalPath("/backstage/platform-user", { kind: "multiBand" })) } })).toEqual({ notFound: true });
+        expect(await platformPage({ ...pageInput, req: { headers: { "accept-language": "nl-BE" } }, query: { [PORTAL_PATH_QUERY_PARAM]: JSON.stringify(parsePortalPath("/platform/user", { kind: "multiBand" })) } })).toEqual({ notFound: true });
         expect(reads).toEqual([]);
         expect(authorizations).toEqual([[ctx.session, null]]);
     });
     it("uses the platform account view for an explicit account URL, including inactive targets", async () => {
         platformAccess = true;
-        expect(await platformPage({ ...pageInput, req: { headers: { "accept-language": "nl-BE" } }, query: { [PORTAL_PATH_QUERY_PARAM]: JSON.stringify(parsePortalPath("/fr-BE/backstage/platform-user", { kind: "multiBand" })) } })).toEqual({ props: { personId, profileScope: "account", title: "Alice" } });
+        expect(await platformPage({ ...pageInput, req: { headers: { "accept-language": "nl-BE" } }, query: { [PORTAL_PATH_QUERY_PARAM]: JSON.stringify(parsePortalPath("/fr-BE/platform/user", { kind: "multiBand" })) } })).toEqual({ props: { personId, profileScope: "account", title: "Alice" } });
         expect(authorizations).toEqual([[ctx.session, null]]);
         expect(reads[0]).toMatchObject({ input: { view: platformUserEditorView, includeDeleted: true,
             filter: { publicIds: [personId] }, bandPublicId: null, routeLocale: "fr-BE" } });
@@ -102,6 +102,6 @@ describe("member page and lazy person lookup boundaries", () => {
         available = false;
         expect(await page(pageInput)).toEqual({ notFound: true });
         expect(reads[0]).toMatchObject({ input: { view: bandUserProfileView } });
-        expect(await platformPage({ ...pageInput, req: { headers: { "accept-language": "nl-BE" } }, query: { [PORTAL_PATH_QUERY_PARAM]: JSON.stringify(parsePortalPath("/backstage/platform-user", { kind: "multiBand" })) } })).toEqual({ notFound: true });
+        expect(await platformPage({ ...pageInput, req: { headers: { "accept-language": "nl-BE" } }, query: { [PORTAL_PATH_QUERY_PARAM]: JSON.stringify(parsePortalPath("/platform/user", { kind: "multiBand" })) } })).toEqual({ notFound: true });
     });
 });

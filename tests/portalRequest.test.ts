@@ -27,7 +27,7 @@ function request(externalPathname: string, hosting: BandHostingConfig) {
 
 describe("server portal request resolution", () => {
     it("deserializes middleware metadata without interpreting the rewritten pathname again", async () => {
-        const portal = await resolvePortalRequestContext(request(`/fr-BE/b/${first}/backstage/events`, multi));
+        const portal = await resolvePortalRequestContext(request(`/fr-BE/b/${first}/events`, multi));
         expect(portal.requestPath).toMatchObject({ internalPathname: "/backstage/events", bandPublicId: first, routeLocale: "fr-BE" });
         expect(reads.bands).not.toHaveBeenCalled();
     });
@@ -36,14 +36,14 @@ describe("server portal request resolution", () => {
     });
     it("resolves the single database band only for an explicit /b prefix", async () => {
         vi.stubEnv("CMDB_HOSTING_MODE", "GenericSingleTenant");
-        expect((await resolvePortalRequestContext(request("/fr/b/backstage", single))).requestPath.bandPublicId).toBe(first);
+        expect((await resolvePortalRequestContext(request("/fr/b", single))).requestPath.bandPublicId).toBe(first);
         expect(reads.bands).toHaveBeenCalledOnce();
-        expect((await resolvePortalRequestContext(request("/fr/backstage", single))).requestPath.bandPublicId).toBeNull();
+        expect((await resolvePortalRequestContext(request("/fr/platform", single))).requestPath.bandPublicId).toBeNull();
         expect(reads.bands).toHaveBeenCalledOnce();
     });
     it("reuses a request's resolution across server consumers", async () => {
         vi.stubEnv("CMDB_HOSTING_MODE", "GenericSingleTenant");
-        const incoming = request("/b/backstage", single);
+        const incoming = request("/b", single);
         const [one, two] = await Promise.all([resolvePortalRequestContext(incoming), resolvePortalRequestContext(incoming)]);
         expect(one).toBe(two);
         expect(reads.bands).toHaveBeenCalledOnce();
@@ -51,15 +51,15 @@ describe("server portal request resolution", () => {
     it.each([{ bands: [] }, { bands: [{ publicId: first }, { publicId: second }] }])("rejects a single-band database that does not contain exactly one band", async ({ bands }) => {
         vi.stubEnv("CMDB_HOSTING_MODE", "GenericSingleTenant");
         reads.bands.mockResolvedValue(bands);
-        await expect(resolvePortalRequestContext(request("/b/backstage", single))).rejects.toThrow("exactly one Band");
+        await expect(resolvePortalRequestContext(request("/b", single))).rejects.toThrow("exactly one Band");
     });
     it("rejects a supplied single-band ID that differs from the database band", async () => {
-        const path = { ...parsePortalPath("/b/backstage", single), bandPublicId: second };
+        const path = { ...parsePortalPath("/b", single), bandPublicId: second };
         await expect(resolvePortalPath(path, single)).rejects.toBeInstanceOf(NotFoundError);
     });
     it("establishes the resolved band constraint before invoking an operation", async () => {
         vi.stubEnv("CMDB_HOSTING_MODE", "GenericSingleTenant");
-        await withPortalRequest(request("/b/api/rpc/query", single), async () => {
+        await withPortalRequest(request("/b/events", single), async () => {
             expect(() => assertAuthorizationBandScope(second)).toThrow(NotFoundError);
         });
     });

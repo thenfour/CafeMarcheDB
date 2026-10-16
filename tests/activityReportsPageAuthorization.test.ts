@@ -27,12 +27,12 @@ describe("activity report page authorization", () => {
 
     it("admits a signed-in account to the explicit band-selection notice", async () => {
         grant(Permission.login);
-        await authorizePageRequest("/backstage/platform-featureReports", session);
+        await authorizePageRequest("/platform/featureReports", session);
     });
 
     it("requires login in account context", async () => {
         grant(Permission.public);
-        await expect(authorizePageRequest("/backstage/platform-featureReports", session)).rejects.toThrow("Denied");
+        await expect(authorizePageRequest("/platform/featureReports", session)).rejects.toThrow("Denied");
     });
 
     it("retains the selected band's report capability check", async () => {

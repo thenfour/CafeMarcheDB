@@ -74,7 +74,7 @@ export function ActivityLogUserChip({ user }: { user: { publicId: string; name?:
         return <span>{locale.getPlainString("auditLog.unknownActor")}</span>;
     }
     // lsmb todo: do not construct URLs like this.
-    const page = context.bandPublicId ? "/backstage/user" : "/backstage/platform-user";
+    const page = context.bandPublicId ? "/backstage/user" : "/platform/user";
     return <CMChip size="small" tooltip={user.publicId}>
         <a href={portalHref(`${page}/${user.publicId}`, {
             ...context,

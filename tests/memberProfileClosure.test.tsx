@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { createTestRouter } from "./support/routing";
 import { parsePortalPath } from "src/route/portalRouting";
-vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: () => createTestRouter({ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath(band ? `/${routeLocale}/b/${band}/backstage/user/${personId}` : `/${routeLocale}/backstage/platform-user/${personId}`, { kind: "multiBand" }) }, { query: { id_slug_tab: [personId, "member", requestedTab] }, push, replace }) }));
+vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: () => createTestRouter({ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath(band ? `/${routeLocale}/b/${band}/user/${personId}` : `/${routeLocale}/platform/user/${personId}`, { kind: "multiBand" }) }, { query: { id_slug_tab: [personId, "member", requestedTab] }, push, replace }) }));
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { act, Simulate } from "react-dom/test-utils";
@@ -162,19 +162,19 @@ describe("profile closure interactions", () => {
         capabilities = { ...initialCapabilities, canAssignRole: false, mergedIntoUserId: "ProfilePerson002" }; revision = "merged"; await platform();
         expect(container.textContent).toContain("cannot be reactivated");
         expect(container.querySelector('a[href*="ProfilePerson002"]')?.getAttribute("href"))
-            .toBe("/fr-BE/backstage/platform-user/ProfilePerson002");
+            .toBe("/fr-BE/platform/user/ProfilePerson002");
         expect(container.textContent).not.toContain("Edit shared profile");
     });
     it("leaves a deactivated band profile for its account URL while retaining the explicit route locale", async () => {
         permissions = [Permission.login, Permission.manage_global_users]; band = "ProfileBand00001"; await platform("controls");
-        await click("Deactivate account"); expect(replace).toHaveBeenCalledWith(`/fr-BE/backstage/platform-user/${personId}`, undefined, undefined);
+        await click("Deactivate account"); expect(replace).toHaveBeenCalledWith(`/fr-BE/platform/user/${personId}`, undefined, undefined);
     });
     it("retains contextual analytic tabs and dedicated impersonation independent of account management", async () => {
         permissions = [Permission.login, Permission.sysadmin]; band = "ProfileBand00001"; requestedTab = "credits";
         await act(async () => root.render(<UserDetail person={accountTemplate} />));
         expect(container.textContent).toContain("Song credits");
         await click("Wiki Contributions"); expect(push).toHaveBeenCalledWith(
-            `/fr-BE/b/${band}/backstage/user/${personId}/shared-profile/wiki`, undefined, { shallow: true });
+            `/fr-BE/b/${band}/user/${personId}/shared-profile/wiki`, undefined, { shallow: true });
         permissions = [Permission.login, Permission.impersonate_user]; actorId = "ProfileActor0001";
         await act(async () => root.render(<UserDetail person={accountTemplate} />));
         expect(container.textContent).toContain("Impersonate account"); expect(container.textContent).not.toContain("Attendance history");

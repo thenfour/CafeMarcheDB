@@ -10,7 +10,6 @@ import { api } from "src/blitz-server";
 import { exportCalendarFeedForToken } from "src/core/db3/server/ical";
 import { CalendarBandContextSchema } from "src/core/db3/shared/calendarFeed";
 import { createActionRecord } from "src/core/db3/server/recordActionServer";
-import { resolvePortalRequestContext } from "src/route/server/portalRequest";
 
 const redactedCalendarFeedRoute = "/api/ical/user/[calendarFeedToken]/upcoming";
 
@@ -26,8 +25,7 @@ export default api(async (req, res) => {
     res.setHeader("Referrer-Policy", "no-referrer");
     res.setHeader("X-Robots-Tag", "noindex, nofollow");
     try {
-        const { requestPath } = await resolvePortalRequestContext(req);
-        const context = CalendarBandContextSchema.safeParse({ bandPublicId: requestPath.bandPublicId });
+        const context = CalendarBandContextSchema.safeParse({ bandPublicId: req.query.bandPublicId });
         const calendarFeedToken = req.query.calendarFeedToken;
         if (!context.success || typeof calendarFeedToken !== "string" || !isCalendarFeedToken(calendarFeedToken)) {
             throw new CalendarFeedNotFoundError();

@@ -25,7 +25,7 @@ function grant(...permissions: Permission[]) {
 describe("audit page authorization", () => {
     beforeEach(() => loadAuth.mockReset());
 
-    it.each([undefined, bandId])("retains platform administration protection with band %s", async selectedBand => {
+    it.each([bandId])("retains platform administration protection with band %s", async selectedBand => {
         const requirePermission = grant(Permission.login, Permission.sysadmin);
         await authorizePageRequest("/backstage/adminLogs", session, selectedBand);
         expect(loadAuth).toHaveBeenCalledWith(session, selectedBand);
@@ -34,7 +34,7 @@ describe("audit page authorization", () => {
 
     it.each([Permission.public, Permission.login])("rejects %s accounts without platform administration", async permission => {
         grant(permission);
-        for (const selectedBand of [undefined, bandId]) {
+        for (const selectedBand of [bandId]) {
             await expect(authorizePageRequest("/backstage/adminLogs", session, selectedBand)).rejects.toThrow("Denied");
         }
     });

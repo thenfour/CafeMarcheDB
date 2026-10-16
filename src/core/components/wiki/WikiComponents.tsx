@@ -12,7 +12,7 @@ import { gIconMap } from "../../db3/components/IconMap";
 import * as db3 from "../../db3/db3";
 import * as DB3Client from "../../db3/DB3Client";
 import wikiPageSetVisibility from "../../wiki/mutations/wikiPageSetVisibility";
-import { getFileUploadContext, UpdateWikiPageResultOutcome, WikiPath } from "../../wiki/shared/wikiUtils";
+import { getFileUploadContext, UpdateWikiPageResultOutcome, WikiPath, wikiPageInternalHref } from "../../wiki/shared/wikiUtils";
 import { AppContextMarker } from "../AppContext";
 import { EventTextLink } from "../CMCoreComponents";
 import { AdminContainer, AdminInspectObject, CMButton, DotMenu, KeyValueTable, NameValuePair } from "../CMCoreComponents2";
@@ -47,7 +47,7 @@ const WikiTitleViewer = (props: WikiTitleControlProps) => {
     const router = useCmdbRouter();
 
     return <a
-        href={router.getAbsoluteUri(router.href(props.wikiPageApi.wikiPath.uriRelativeToHost))}
+        href={router.getAbsoluteUri(router.href(wikiPageInternalHref(props.wikiPageApi.wikiPath.canonicalWikiPath, router.requestPath.bandPublicId)))}
         rel="noreferrer">
         <span className="WikiTitleView">
             {props.potentiallyEditedTitle}
@@ -376,7 +376,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
             await snackbar.invokeAsync(async () =>
                 navigator.clipboard.writeText(
                     router.getAbsoluteUri(
-                        router.href(props.wikiPageApi.wikiPath.uriRelativeToHost)
+                        router.href(wikiPageInternalHref(props.wikiPageApi.wikiPath.canonicalWikiPath, router.requestPath.bandPublicId))
                     )
                 ),
                 "Copied link to clipboard");

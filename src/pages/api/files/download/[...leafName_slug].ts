@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { api } from "src/blitz-server";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { AuthenticationError, AuthorizationError } from "blitz";
-import { resolvePortalRequestContext } from "src/route/server/portalRequest";
+import { isPublicId, parsePublicId } from "shared/publicId";
 import {
     ServeAuthorizedFileDownload,
 } from "src/core/db3/server/fileDownload";
@@ -25,17 +25,12 @@ export const downloadFileRoute = async (
         return;
     }
 
-    let bandPublicId;
-    try {
-        bandPublicId = (await resolvePortalRequestContext(req)).requestPath.bandPublicId;
-        if (!bandPublicId) {
-            res.status(404).end();
-            return;
-        }
-    } catch {
+    const selectedBand = req.query.bandPublicId;
+    if (!isPublicId(selectedBand)) {
         res.status(404).end();
         return;
     }
+    const bandPublicId = parsePublicId<"Band">(selectedBand);
     try {
         await ServeAuthorizedFileDownload(req, res, await loadAuthorization(ctx.session, bandPublicId), storedLeafName);
     } catch (error) {

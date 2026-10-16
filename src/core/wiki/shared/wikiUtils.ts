@@ -222,6 +222,11 @@ export const wikiMakeRelativeURI = (canonicalWikiPath: string, aestheticSlug?: s
     return `${wikiPath.uriRelativeToHost}${aestheticSlug ? `/${slugify(aestheticSlug)}` : ''}`;
 };
 
+export function wikiPageInternalHref(canonicalWikiPath: string, bandPublicId: BandPublicId | null | undefined): string {
+    const root = bandPublicId ? "/backstage/wiki" : "/platform/wiki";
+    return `${root}/${wikiParseCanonicalWikiPath(canonicalWikiPath).canonicalWikiPath}`;
+}
+
 // returns a canonical wiki path from event.
 export const wikiMakeWikiPathFromEventDescription = (event: { publicId: EventPublicId; name: string }): WikiPath => {
     const canonicalWikiPath = `${SpecialWikiNamespace.EventDescription}/${event.publicId}`;

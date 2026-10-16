@@ -32,7 +32,7 @@ const actualSysadmin = createAuthorizationTestUser("sysadmin", { id: 812 });
 // Model a distinct Next request for each guard invocation.
 const authorizePageRequest = (pathname: string, userId: number | null | undefined) => {
     const user = userId ? createAuthorizationTestUser("normal", { id: userId }) : null;
-    return authorizeRequest(pathname, createAuthorizationTestContext(user).session);
+    return authorizeRequest(pathname, createAuthorizationTestContext(user).session, pathname.startsWith("/backstage") ? authorizationBandId : undefined);
 };
 
 describe("backstage server page guard", () => {
@@ -48,7 +48,7 @@ describe("backstage server page guard", () => {
 
     it("allows a delegated route only with its declared capability", async () => {
         await expect(authorizePageRequest(
-            "/backstage/platform-editEventTags",
+            "/platform/editEventTags",
             eventAdmin.id,
         )).resolves.toBeUndefined();
 
@@ -67,7 +67,7 @@ describe("backstage server page guard", () => {
         });
 
         await expect(authorizePageRequest(
-            "/backstage/platform-editEventTags",
+            "/platform/editEventTags",
             eventAdmin.id,
         )).rejects.toThrow(new RegExp(`${Permission.manage_global_catalogs}`));
     });

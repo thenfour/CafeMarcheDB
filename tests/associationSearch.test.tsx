@@ -24,7 +24,7 @@ vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({
         localePreferences: { routeLocale: "fr-BE", browserLanguages },
         isAuthorized: (permission: Permission) => permissions.includes(permission),
     }),
-    useFeatureRecorder: () => async () => {},
+    useFeatureRecorder: () => async () => { },
 }));
 vi.mock("src/core/components/dashboard/DashboardLayout", () => ({ default: ({ children }: React.PropsWithChildren) => <main>{children}</main> }));
 vi.mock("src/auth/server/serverPageAuthorization", () => ({ makeServerSidePermissionGuard: () => () => ({ props: {} }) }));
@@ -35,12 +35,16 @@ vi.mock("src/core/components/CMCoreComponents2", async () => ({
 }));
 
 import { AssociationSelect, AssociationAutocomplete } from "src/core/components/ItemAssociation";
-import { QuickSearchExplorer } from "src/pages/backstage/test/quickSearchTest";
+import { QuickSearchExplorer } from "@/src/pages/dev/quickSearchTest";
 
-const saved: QuickSearchItemMatch<Type.song> = { itemType: Type.song, id: parsePublicId<"Song">("PickerSong000001"), name: "Saved song",
-    absoluteUri: "/backstage/song/PickerSong000001?bandPublicId=PickerBand000001", matchStrength: 1, matchingField: "name" };
-const person: QuickSearchItemMatch<Type.user> = { itemType: Type.user, id: parsePublicId<"User">("PickerPerson0001"), name: "Band person",
-    absoluteUri: "/backstage/user/PickerPerson0001?bandPublicId=PickerBand000001&routeLocale=fr-BE", matchStrength: 1, matchingField: "name" };
+const saved: QuickSearchItemMatch<Type.song> = {
+    itemType: Type.song, id: parsePublicId<"Song">("PickerSong000001"), name: "Saved song",
+    absoluteUri: "/backstage/song/PickerSong000001?bandPublicId=PickerBand000001", matchStrength: 1, matchingField: "name"
+};
+const person: QuickSearchItemMatch<Type.user> = {
+    itemType: Type.user, id: parsePublicId<"User">("PickerPerson0001"), name: "Band person",
+    absoluteUri: "/backstage/user/PickerPerson0001?bandPublicId=PickerBand000001&routeLocale=fr-BE", matchStrength: 1, matchingField: "name"
+};
 let root: Root;
 let container: HTMLDivElement;
 const requests: Array<{ url: string; init: RequestInit; resolve: (response: Response) => void }> = [];

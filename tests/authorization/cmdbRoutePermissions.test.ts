@@ -32,15 +32,20 @@ const splitRoutes = [
 beforeEach(() => loadAuth.mockReset());
 
 describe.each(splitRoutes)("independent route permission for %s", (suffix, bandPermission, platformPermission) => {
-    it.each([undefined, band])("uses each route's declared permission with band selection %s", async selectedBand => {
+    it("uses the band permission with a band and the platform permission without one", async () => {
         const requirePermission = vi.fn();
         loadAuth.mockResolvedValue({ requirePermission });
-        await authorizePageRequest(`/backstage/${suffix}`, session, selectedBand);
-        expect(loadAuth).toHaveBeenLastCalledWith(session, selectedBand);
+        await authorizePageRequest(`/backstage/${suffix}`, session, band);
+        expect(loadAuth).toHaveBeenLastCalledWith(session, band);
         expect(requirePermission).toHaveBeenLastCalledWith(bandPermission);
-        await authorizePageRequest(`/backstage/platform-${suffix}`, session, selectedBand);
-        expect(loadAuth).toHaveBeenLastCalledWith(session, selectedBand);
+        await authorizePageRequest(`/platform/${suffix}`, session);
+        expect(loadAuth).toHaveBeenLastCalledWith(session, undefined);
         expect(requirePermission).toHaveBeenLastCalledWith(platformPermission);
+    });
+    it("rejects missing band scope and band-scoped platform requests before loading authorization", async () => {
+        await expect(authorizePageRequest(`/backstage/${suffix}`, session)).rejects.toMatchObject({ statusCode: 404 });
+        await expect(authorizePageRequest(`/platform/${suffix}`, session, band)).rejects.toMatchObject({ statusCode: 404 });
+        expect(loadAuth).not.toHaveBeenCalled();
     });
 
     it("propagates authorization rejection for both entrypoints", async () => {
@@ -48,6 +53,6 @@ describe.each(splitRoutes)("independent route permission for %s", (suffix, bandP
             throw new Error("Denied");
         } });
         await expect(authorizePageRequest(`/backstage/${suffix}`, session, band)).rejects.toThrow("Denied");
-        await expect(authorizePageRequest(`/backstage/platform-${suffix}`, session)).rejects.toThrow("Denied");
+        await expect(authorizePageRequest(`/platform/${suffix}`, session)).rejects.toThrow("Denied");
     });
 });

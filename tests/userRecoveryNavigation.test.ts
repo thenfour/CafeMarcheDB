@@ -77,7 +77,7 @@ describe("user profile lifecycle navigation", () => {
         const replace = vi.fn();
         const refresh = vi.fn();
         const deactivate = vi.fn().mockResolvedValue(true);
-        vi.mocked(useCmdbRouter).mockReturnValue(createTestRouter({ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/backstage", { kind: "multiBand" }) }, { replace }));
+        vi.mocked(useCmdbRouter).mockReturnValue(createTestRouter({ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/platform", { kind: "multiBand" }) }, { replace }));
         vi.mocked(useDashboardContext).mockReturnValue({
             portalHosting: { kind: "platform" }, memberPresentation: {},
             currentUser: { publicId: userPublicId(1) },
@@ -92,7 +92,7 @@ describe("user profile lifecycle navigation", () => {
             expect(refresh).toHaveBeenCalledTimes(1);
             expect(replace).not.toHaveBeenCalled();
         } else {
-            expect(replace).toHaveBeenCalledWith("/backstage/users", undefined, undefined);
+            expect(replace).toHaveBeenCalledWith("/platform", undefined, undefined);
             expect(refresh).not.toHaveBeenCalled();
         }
     });
@@ -101,7 +101,7 @@ describe("user profile lifecycle navigation", () => {
         const replace = vi.fn();
         const refresh = vi.fn();
         vi.spyOn(console, "error").mockImplementation(() => undefined);
-        vi.mocked(useCmdbRouter).mockReturnValue(createTestRouter({ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/backstage", { kind: "multiBand" }) }, { replace }));
+        vi.mocked(useCmdbRouter).mockReturnValue(createTestRouter({ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/platform", { kind: "multiBand" }) }, { replace }));
         vi.mocked(useDashboardContext).mockReturnValue({ currentUser: { publicId: userPublicId(1) }, isAuthorized: () => false } as any);
         const deactivate = fails ? vi.fn().mockRejectedValue(new Error("Denied")) : vi.fn().mockResolvedValue(false);
         vi.mocked(useUserLifecycleActions).mockReturnValue({ deactivate, reactivate: vi.fn() });

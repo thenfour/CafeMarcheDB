@@ -14,9 +14,9 @@ import { customLinkClientDestination, customLinkDestination } from "src/core/db3
 import { ServeAuthorizedCustomLinkFileDownload } from "src/core/db3/server/fileDownload";
 import { gSSP } from "src/blitz-server";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
-import { CMButton } from "../core/components/CMCoreComponents2";
-import { deserializePortalPath } from "../route/portalRouting";
-import { resolvePortalRequestContext } from "../route/server/portalRequest";
+import { CMButton } from "src/core/components/CMCoreComponents2";
+import { deserializePortalPath } from "src/route/portalRouting";
+import { resolvePortalRequestContext } from "src/route/server/portalRequest";
 
 interface CustomLinkPageProps {
     destinationURL?: string;
@@ -25,7 +25,7 @@ interface CustomLinkPageProps {
     forwardQuery?: boolean | null;
 }
 
-// custom link route is basically a site-wide fallback.
+// Unknown band paths resolve through the band custom-link namespace.
 // client-side nav to a custom URL is not supported / not needed because it's just a redirect, usually external.
 export const getServerSideProps = gSSP<CustomLinkPageProps>(async ({ params, req, res, query, ctx }) => {
     const { requestPath: reqPath } = await resolvePortalRequestContext(req, deserializePortalPath(query));

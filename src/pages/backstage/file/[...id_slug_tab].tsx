@@ -48,7 +48,7 @@ export const FileBreadcrumbs = (props: FileBreadcrumbProps) => {
 
     return <Breadcrumbs aria-label="breadcrumb">
         <CMLink
-            href={cmdbRouter.href("/backstage")}
+            href={cmdbRouter.homeHref()}
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage

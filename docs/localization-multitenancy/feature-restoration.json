@@ -429,13 +429,13 @@
   ],
   "references": [
     {
-      "file": "src/pages/backstage/gallery.tsx",
+      "file": "src/pages/dev/gallery.tsx",
       "featureId": "developer-examples",
       "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/gallery.tsx:1-474",
       "sha256": "1642d706c090bcc8e1a4162b3b079db004145ba8c15df38e23f30a58ec8313cf"
     },
     {
-      "file": "src/pages/backstage/test.tsx",
+      "file": "src/pages/dev/test2.tsx",
       "featureId": "developer-examples",
       "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/test.tsx:1-272",
       "sha256": "a8f67e7a82c9bcc421082d853c3cb4aa86105b3083bda6ed6290128bd8b4bec6"

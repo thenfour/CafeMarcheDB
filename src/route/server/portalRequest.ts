@@ -5,7 +5,7 @@ import type { ParsedUrlQuery } from "querystring";
 import { parsePublicId } from "shared/publicId";
 import { withAuthorizationBandScope } from "src/auth/server/requestAuthorizationScope";
 import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
-import { deserializePortalPath, getServerBandHostingConfig, PORTAL_PATH_QUERY_PARAM, type BandHostingConfig, type PortalPath } from "../portalRouting";
+import { deserializePortalPath, getServerBandHostingConfig, isBandPagePathname, PORTAL_PATH_QUERY_PARAM, type BandHostingConfig, type PortalPath } from "../portalRouting";
 import { serverGetBaseUrl } from "./portalConfig";
 
 export type PortalBandDatabase = Pick<typeof db, "band">;
@@ -20,6 +20,9 @@ const requests = new WeakMap<PortalIncomingRequest, Promise<PortalRequest>>();
 
 /** Resolve the parameter omitted by single-band URLs, without reparsing the path. */
 export async function resolvePortalPath(path: PortalPath, hosting: BandHostingConfig, database: PortalBandDatabase = db): Promise<PortalPath> {
+    if (isBandPagePathname(path.internalPathname) !== path.hasBandPrefix) {
+        throw new NotFoundError();
+    }
     if (!path.hasBandPrefix) {
         if (path.bandPublicId !== null) {
             throw new NotFoundError();

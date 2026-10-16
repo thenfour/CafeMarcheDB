@@ -67,10 +67,11 @@ export const DeactivateUserButton = ({ capabilities, user, onOK }: DeactivateUse
                         }
                         snackbar.showSuccess("User deactivated");
                         if (dashboardContext.currentUser?.publicId === user.publicId) {
-                            window.location.assign(router.href("/backstage"));
+                            window.location.assign(router.homeHref());
                         } else if (!dashboardContext.isAuthorized(Permission.manage_global_users)) {
-                            await router.replace(router.href(dashboardContext.isAuthorized(Permission.search_users)
-                                ? "/backstage/users" : "/backstage"));
+                            const destination = dashboardContext.memberPresentation.bandPublicId && dashboardContext.isAuthorized(Permission.search_users)
+                                ? router.href("/backstage/users") : router.homeHref();
+                            await router.replace(destination);
                         } else {
                             await onOK?.();
                         }

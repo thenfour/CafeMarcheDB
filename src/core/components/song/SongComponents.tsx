@@ -80,7 +80,7 @@ export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
             // underline="hover"
             // color="inherit"
             // sx={{ display: 'flex', alignItems: 'center' }}
-            href={router.href("/backstage")}
+            href={router.homeHref()}
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage

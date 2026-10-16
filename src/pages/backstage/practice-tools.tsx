@@ -1,3 +1,7 @@
+// even though there is nothing band-specific about practice tools, we keep it  under the band scope,
+// to allow bands to brand the page, or in the future there may be customization.
+// or adding features based on subscription, which is band-specific etc...
+
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { AppContextMarker } from "@/src/core/components/AppContext";
 import { CMSinglePageSurfaceCard } from "@/src/core/components/CMCoreComponents";
@@ -16,7 +20,7 @@ export const PracticeToolsBreadcrumbs = () => {
 
     return <Breadcrumbs aria-label="breadcrumb">
         <CMLink
-            href={cmdbRouter.href("/backstage")}
+            href={cmdbRouter.homeHref()}
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage

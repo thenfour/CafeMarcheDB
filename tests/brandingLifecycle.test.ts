@@ -103,6 +103,10 @@ vi.mock("src/locale/components/PresentationProvider", async () => {
   const ReactModule = await vi.importActual<typeof import("react")>("react");
   return { PresentationProvider: ({ children }: React.PropsWithChildren) => ReactModule.createElement(ReactModule.Fragment, null, children) };
 })
+// Brand lifecycle is independent of the dashboard data loaded by the app shell.
+vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({
+  DashboardContextProvider: ({ children }: React.PropsWithChildren) => React.createElement(React.Fragment, null, children),
+}));
 vi.mock("src/core/components/CMCoreComponents2", () => ({
   CMButton: ({ children, onClick }: React.PropsWithChildren<{ onClick: () => void }>) => React.createElement("button", { onClick }, children),
 }))
@@ -166,7 +170,7 @@ describe("application branding lifecycle", () => {
         contrastText: "#ffffff",
       },
     }
-    const bootstrap = { status: "ready", data: { brand, routing: { baseUri: "https://brand.test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/backstage", { kind: "multiBand" }) }, serverStartupState: null } };
+    const bootstrap = { status: "ready", data: { brand, routing: { baseUri: "https://brand.test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/platform", { kind: "multiBand" }) }, serverStartupState: null } };
     let renderedBrandTitle: string | undefined
 
     const CaptureBrand = () => {

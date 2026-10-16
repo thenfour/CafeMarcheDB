@@ -23,7 +23,7 @@ vi.mock("db", async () => {
   }
 })
 
-import { getServerSideProps } from "src/pages/[...customLinkSlug]"
+import { getServerSideProps } from "src/pages/backstage/[...customLinkSlug]"
 
 const portalPath = parsePortalPath(`/b/${bandPublicId}/folder/MyPage`, { kind: "multiBand" })
 const serializedPath = JSON.stringify(portalPath)
@@ -109,7 +109,7 @@ describe("custom link direct file response", () => {
   })
 
   it("returns 404 for an unscoped custom link", async () => {
-    expect(await visit({})).toEqual({ notFound: true })
+    await expect(visit({})).rejects.toBeInstanceOf(NotFoundError)
     expect(loadAuth).not.toHaveBeenCalled()
   })
 

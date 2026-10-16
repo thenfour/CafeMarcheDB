@@ -1,4 +1,4 @@
-import Page from "./permissions";
+import Page from "../backstage/permissions";
 
 export default function PlatformPermissionsPage() {
     return <Page />;

@@ -138,7 +138,7 @@ async function chooseLocale(selector: Element, localeTag: string) {
 
 describe("native DB3 localized catalog editors", () => {
     it("renders detail, instrument/group chips, and tag indicators from shared dashboard references without queries", async () => {
-        await act(async () => root.render(<PortalRoutingProvider config={{ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/b/Band000000000001/backstage", { kind: "multiBand" }) }}>
+        await act(async () => root.render(<PortalRoutingProvider config={{ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/b/Band000000000001", { kind: "multiBand" }) }}>
             <BandInstrumentCatalog detailPublicId={displayInstrument.publicId} />
             <InstrumentChip value={displayInstrument.publicId} />
             <InstrumentFunctionalGroupChip value={displayGroup.publicId} />

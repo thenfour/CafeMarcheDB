@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { createTestRouter } from "./support/routing";
 import { parsePortalPath } from "src/route/portalRouting";
-vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: () => createTestRouter({ baseUri: window.location.origin, hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/backstage", { kind: "multiBand" }) }) }));
+vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: () => createTestRouter({ baseUri: window.location.origin, hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/platform", { kind: "multiBand" }) }) }));
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { act } from "react-dom/test-utils";
@@ -249,7 +249,7 @@ describe("member directory", () => {
     it("pages with scoped requests and resets to the first page when the search changes", async () => {
         await renderDirectory();
         const link = [...container.querySelectorAll<HTMLAnchorElement>("a")].find(element => element.textContent?.trim() === "Alice");
-        expect(link?.getAttribute("href")).toBe(`/fr-BE/b/${bandId}/backstage/user/${personId}`);
+        expect(link?.getAttribute("href")).toBe(`/fr-BE/b/${bandId}/user/${personId}`);
         await click("Load more results...");
         expect(searchRequests.at(-1)).toMatchObject({ bandPublicId: bandId, routeLocale: "fr-BE", offset: 1 });
         const search = container.querySelector<HTMLInputElement>('input[placeholder="Search"]')!;

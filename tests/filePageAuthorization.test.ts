@@ -35,7 +35,7 @@ describe("restored File page permissions", () => {
             vi.mocked(getPageBootstrap).mockRejectedValue(new AuthorizationError());
             const response = { statusCode: 200, setHeader: vi.fn(), end: vi.fn() };
             // Rejected bootstrap reads only these Next request/response fields, before page rendering.
-            const context = { ctx: { pathname, query: { [PORTAL_PATH_QUERY_PARAM]: JSON.stringify(parsePortalPath("/b/FileAuthBand0001/backstage/files", { kind: "multiBand" })) }, req: { headers: {} }, res: response } } as unknown as AppContext;
+            const context = { ctx: { pathname, query: { [PORTAL_PATH_QUERY_PARAM]: JSON.stringify(parsePortalPath("/b/FileAuthBand0001/files", { kind: "multiBand" })) }, req: { headers: {} }, res: response } } as unknown as AppContext;
             expect(await MyApp.getInitialProps(context)).toMatchObject({ pageProps: { appBootstrap: { status: "error", statusCode: 403 } } });
             expect(response.statusCode).toBe(403);
             expect(response.setHeader).toHaveBeenCalledWith("Cache-Control", "no-store");

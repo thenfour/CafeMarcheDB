@@ -1,7 +1,7 @@
 import { Permission } from "@/shared/permissions";
 import { getHashedColor } from "@/shared/utils";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
-import { wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
+import { wikiParseCanonicalWikiPath, wikiPageInternalHref } from "../../wiki/shared/wikiUtils";
 import { CMChip, CMChipSizeOptions } from "../CMChip";
 import { ColorVariationSpec } from "../color/palette";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
@@ -27,7 +27,7 @@ export const WikiPageChip = (props: WikiPageChipProps) => {
     return <CMChip
         variation={props.variation}
         size={props.size}
-        href={isAuthorized ? router.href(wikiPath.uriRelativeToHost) : undefined}
+        href={isAuthorized ? router.href(wikiPageInternalHref(wikiPath.canonicalWikiPath, router.requestPath.bandPublicId)) : undefined}
         className={props.className}
     >
         {props.startAdornment}

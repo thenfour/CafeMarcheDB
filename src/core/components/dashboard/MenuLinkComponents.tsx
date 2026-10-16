@@ -12,7 +12,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { LocalizedStringColumnClient } from "src/core/db3/components/DB3CatalogFields";
 import * as db3 from "src/core/db3/db3";
 import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
-import { wikiMakeRelativeURI } from "src/core/wiki/shared/wikiUtils";
+import { wikiPageInternalHref } from "src/core/wiki/shared/wikiUtils";
 import { gIconMap, RenderMuiIcon } from "../../db3/components/IconMap";
 import { DB3EditRowButton, type DB3EditRowButtonAPI } from '../../db3/components/db3NewObjectDialog';
 import { AppContextMarker } from "../AppContext";
@@ -117,7 +117,7 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
 
             {
                 ((props.item.linkType as keyof typeof DynamicMenuLinkType) === "Wiki") &&
-                <CMLink href={router.href(wikiMakeRelativeURI(props.item.wikiSlug || ""))} target="_blank" rel="noreferrer" className="menuLinkTestLink wikiCMLink">
+                <CMLink href={router.href(wikiPageInternalHref(props.item.wikiSlug || "", router.requestPath.bandPublicId))} target="_blank" rel="noreferrer" className="menuLinkTestLink wikiCMLink">
                     <div>Test wiki link</div>
                     {gIconMap.Launch()}
                 </CMLink>

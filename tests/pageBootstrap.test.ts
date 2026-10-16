@@ -23,7 +23,7 @@ import getPageBootstrap from "src/auth/queries/getPageBootstrap";
 
 const context = createAuthorizationTestContext(null);
 const bandPublicId = parsePublicId<"Band">("BootstrapBand001");
-const input = { pagePattern: "/backstage/profile", requestPath: parsePortalPath(`/fr-BE/b/${bandPublicId}/backstage/profile`, { kind: "multiBand" }), browserLanguages: ["nl-BE"] };
+const input = { pagePattern: "/backstage/profile", requestPath: parsePortalPath(`/fr-BE/b/${bandPublicId}/profile`, { kind: "multiBand" }), browserLanguages: ["nl-BE"] };
 const authorization = { band: { id: 17 }, hasPermission: vi.fn(() => false) };
 beforeEach(() => {
     vi.resetAllMocks();
@@ -53,6 +53,16 @@ describe("page bootstrap server boundary", () => {
         vi.stubEnv("CMDB_GIT_REVISION", "test-revision");
         const result = await getPageBootstrap(input, context);
         expect(result.serverStartupState?.gitRevision).toBe("test-revision");
+    });
+    it("loads platform branding without band context on ordinary platform pages", async () => {
+        services.authorize.mockResolvedValue({ ...authorization, band: null });
+        const requestPath = parsePortalPath("/fr-BE/platform/adminUsers", { kind: "multiBand" });
+        const result = await getPageBootstrap({ ...input, pagePattern: "/platform/adminUsers", requestPath }, context);
+        expect(result.routing.requestPath.bandPublicId).toBeNull();
+        expect(services.brand).toHaveBeenCalledWith({ hostHeader: undefined, bandId: null, freshness: "refresh" });
+        expect(services.presentation).toHaveBeenCalledWith(expect.objectContaining({ band: null }), {
+            bandPublicId: null, routeLocale: "fr-BE", browserLanguages: ["nl-BE"],
+        });
     });
     it("establishes the SSR session from its trusted request and response", async () => {
         const request = new IncomingMessage(new Socket());

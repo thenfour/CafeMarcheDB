@@ -8,7 +8,7 @@ import { AppContextMarker } from "src/core/components/AppContext"
 const MainContent: BlitzPage = () => {
   const router = useCmdbRouter()
   return <Suspense>
-    <SignupForm onSuccess={() => router.push(router.href("/backstage"))} />
+    <SignupForm onSuccess={() => router.push(router.homeHref())} />
   </Suspense>;
 }
 

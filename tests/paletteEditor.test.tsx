@@ -11,7 +11,7 @@ import { createLocaleApi, type LocalizationCatalog } from "src/locale/shared/loc
 import { collectLocalePreferences } from "src/locale/shared/localePreferences";
 import { resolveString } from "src/locale/shared/stringResolution";
 import { kStaticLocalizedStringRegistry } from "src/locale/shared/staticLocalizedStringRegistry";
-import ColorEditorPage from "src/pages/backstage/colorEditor2";
+import ColorEditorPage from "src/pages/dev/colorEditor2";
 
 vi.mock("@blitzjs/rpc", () => ({ useMutation: () => [mutate] }));
 vi.mock("src/setting/server/mutations/updateSetting", () => ({ default: vi.fn() }));

@@ -112,11 +112,20 @@ Multi-band hosting uses `/[locale]/b/<Band.publicId>/...`. Single-band hosting u
 `/[locale]/b/...`: the server requires exactly one Band in the database and uses
 its public ID. There is no environment setting for that ID. An absent `/b`
 prefix always means no route-level band, including on a single-band instance.
-There is no special `/platform` prefix or query-string alternative for selecting
-the route-level band or locale.
+The `/b` namespace maps exclusively into the internal `/backstage` page tree:
+`/b/<Band.publicId>/events` (multi-band) or `/b/events` (single-band) resolves to
+`/backstage/events`. The band root resolves to `/backstage`. Direct external
+`/backstage` paths are rejected because those pages require a route-level band.
+All other page paths remain unchanged after removing the optional locale.
+`/` is the public platform root, and `/platform/...` and `/dev/...` are ordinary
+unscoped page directories. Their names have no special rewrite behavior.
+There is no query-string alternative for selecting route-level band or locale.
+API endpoints remain under `/api/...`; downloads and calendar feeds take an
+explicit `bandPublicId` domain input. Band custom links live in the internal
+`/backstage/[...customLinkSlug]` route and retain their external `/b/...` URLs.
 
-`externalPathname` is the incoming pathname; `internalPathname` is the remainder
-after removing prefixes. Query parameters and browser fragments are separate
+`externalPathname` is the incoming pathname; `internalPathname` is the resolved
+Next pathname, including `/backstage` for band pages. Query parameters and browser fragments are separate
 URL state. Explicit account/platform pages retain their own page identities.
 Pages validate their required parameters and authorization remains responsible
 for current band availability, membership, and grants.

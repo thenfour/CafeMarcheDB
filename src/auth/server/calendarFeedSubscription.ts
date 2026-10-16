@@ -6,7 +6,7 @@ import db from "db";
 import type { BandPublicId } from "shared/publicId";
 import { requireAttendanceRead } from "src/core/db3/server/eventAttendancePolicy";
 import { UserForCalBackendArgs } from "src/core/db3/shared/schema/prismArgs";
-import { getICalRelativeURIForUserUpcomingEvents, getServerBandHostingConfig, portalHref } from "src/route/portalRouting";
+import { getICalRelativeURIForUserUpcomingEvents } from "src/route/portalRouting";
 import { ServerApi } from "src/server/serverApi";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "./activityLog";
 import { loadAuthorizationForUser } from "./serverAuthorization";
@@ -48,7 +48,7 @@ export const getCalendarFeedSubscriptionInfo = (
     bandPublicId: BandPublicId,
 ): CalendarFeedSubscriptionInfo => {
     const subscriptionUrl = ServerApi.getAbsoluteUri(
-        portalHref(getICalRelativeURIForUserUpcomingEvents({ calendarFeedToken }), { bandPublicId }, getServerBandHostingConfig()),
+        getICalRelativeURIForUserUpcomingEvents({ calendarFeedToken, bandPublicId }),
     );
     return {
         subscriptionUrl,

@@ -10,12 +10,12 @@ const project = (overrides: Partial<typeof source>, row = activityExportRow()) =
 
 describe("saved activity metadata disclosure", () => {
     it.each([
-        ["/backstage/song/ActivitySong0001/private-slug?email=private@example.invalid#secret", "/backstage/song/ActivitySong0001"],
-        ["/backstage/song/21/private-slug", "/backstage/song/ActivitySong0001"],
-        ["https://band.test/backstage/event/22/private-slug?bandPublicId=ForeignBand0001&token=secret", "/backstage/event/ActivityEvent001"],
-        ["/backstage/file/23/private-slug", "/backstage/file/ActivityFile0001"],
-        ["/backstage/wiki/help/%C3%A9t%C3%A9?secret=private", "/backstage/wiki/help/%C3%A9t%C3%A9"],
-        ["/backstage/songs?q=Alice&userId=867&token=secret", "/backstage/songs"],
+        ["/b/ActivityBand0001/song/ActivitySong0001/private-slug?email=private@example.invalid#secret", "/song/ActivitySong0001"],
+        ["/b/ActivityBand0001/song/21/private-slug", "/song/ActivitySong0001"],
+        ["https://band.test/b/ActivityBand0001/event/22/private-slug?bandPublicId=ForeignBand0001&token=secret", "/event/ActivityEvent001"],
+        ["/b/ActivityBand0001/file/23/private-slug", "/file/ActivityFile0001"],
+        ["/b/ActivityBand0001/wiki/help/%C3%A9t%C3%A9?secret=private", "/wiki/help/%C3%A9t%C3%A9"],
+        ["/b/ActivityBand0001/songs?q=Alice&userId=867&token=secret", "/songs"],
     ])("reconstructs %s from the authorized reference and current presentation", (uri, path) => {
         const value = project({ uri }).uri!;
         const url = new URL(value, "https://band.test");
@@ -26,27 +26,27 @@ describe("saved activity metadata disclosure", () => {
     });
 
     it.each([
-        "/backstage/user/867/Alice?email=private@example.invalid", "/backstage/user/PersonPublic001/Alice", "/backstage/profile",
+        "/b/ActivityBand0001/user/867/Alice?email=private@example.invalid", "/b/ActivityBand0001/user/PersonPublic001/Alice", "/b/ActivityBand0001/profile",
         "/auth/reset-password?token=secret", "/api/ical/user/secret/upcoming", "/api/files/download/storage-key.pdf",
-        "/backstage/song/PrivateSong0001", "/backstage/event/21", "/backstage/wiki/private-page",
-        "https://external.test/backstage/song/21", "https://name:password@band.test/backstage/song/21",
-        "//band.test/backstage/song/21", "javascript:alert(1)", "data:text/html,private", "/backstage/song/%XX",
-        "/backstage\\song\\21", "\n/backstage/song/21", "/unrecognized/private", null,
+        "/b/ActivityBand0001/song/PrivateSong0001", "/b/ActivityBand0001/event/21", "/b/ActivityBand0001/wiki/private-page",
+        "https://external.test/b/ActivityBand0001/song/21", "https://name:password@band.test/b/ActivityBand0001/song/21",
+        "//band.test/b/ActivityBand0001/song/21", "javascript:alert(1)", "data:text/html,private", "/b/ActivityBand0001/song/%XX",
+        "/b/ActivityBand0001\\song\\21", "\n/b/ActivityBand0001/song/21", "/unrecognized/private", null,
     ])("withholds identifying, unverified or malformed saved URL %s", uri => {
         expect(project({ uri }).uri).toBeNull();
     });
 
     it("withholds matching entity routes when the reference is unavailable", () => {
-        expect(project({ uri: "/backstage/song/21" }, activityExportRow({ song: null })).uri).toBeNull();
-        expect(project({ uri: "/backstage/file/23" }, activityExportRow({ file: null })).uri).toBeNull();
+        expect(project({ uri: "/b/ActivityBand0001/song/21" }, activityExportRow({ song: null })).uri).toBeNull();
+        expect(project({ uri: "/b/ActivityBand0001/file/23" }, activityExportRow({ file: null })).uri).toBeNull();
     });
 
     it("requires the caller's trusted origin for absolute URLs while relative routes remain usable", () => {
         const row = activityExportRow();
-        expect(projectActivitySavedMetadata({ ...source, uri: "https://band.test/backstage/song/21" }, row, activityExportInput,
+        expect(projectActivitySavedMetadata({ ...source, uri: "https://band.test/b/ActivityBand0001/song/21" }, row, activityExportInput,
             { applicationOrigin: null, hosting: { kind: "multiBand" } }).uri).toBeNull();
-        expect(projectActivitySavedMetadata({ ...source, uri: "/backstage/song/21" }, row, activityExportInput,
-            { applicationOrigin: null, hosting: { kind: "multiBand" } }).uri).toContain("/backstage/song/ActivitySong0001");
+        expect(projectActivitySavedMetadata({ ...source, uri: "/b/ActivityBand0001/song/21" }, row, activityExportInput,
+            { applicationOrigin: null, hosting: { kind: "multiBand" } }).uri).toContain("/song/ActivitySong0001");
     });
 
     it.each(["été", " CHANSON ", "Fête", "help/été"])("retains the confirmed association query fragment %s", queryText => {

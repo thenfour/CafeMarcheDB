@@ -203,8 +203,8 @@ describe.skipIf(!settingsMysqlTestUrl)("band-scoped personalized calendar feeds 
         await tx.bandUser.update({ where: { bandId_userId: { bandId: otherBand.id, userId: c.person.id } }, data: { bandRoleId: c.role.id } });
         const first = await saveCalendarFeedSubscription(tx, c.person.id, c.args.bandPublicId, "existing");
         const second = await saveCalendarFeedSubscription(tx, c.person.id, otherPublicId, "existing");
-        expect(first.subscriptionUrl).toContain(`/b/${c.args.bandPublicId}/api/ical/user/${token}/upcoming`);
-        expect(second.subscriptionUrl).toContain(`/b/${otherPublicId}/api/ical/user/${token}/upcoming`);
+        expect(first.subscriptionUrl).toContain(`/api/ical/user/${token}/upcoming?bandPublicId=${c.args.bandPublicId}`);
+        expect(second.subscriptionUrl).toContain(`/api/ical/user/${token}/upcoming?bandPublicId=${otherPublicId}`);
         expect(await tx.change.count()).toBe(0);
         const replaced = await saveCalendarFeedSubscription(tx, c.person.id, otherPublicId, "replace");
         const replacement = (await tx.user.findUniqueOrThrow({ where: { id: c.person.id } })).calendarFeedToken!;

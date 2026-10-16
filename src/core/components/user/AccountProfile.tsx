@@ -49,7 +49,7 @@ function LoadedAccountProfile({ personId, mode }: {
     const controls = <>
         {user.isDeleted && <Alert severity="warning">{capabilities.mergedIntoUserId
             ? <>{locale.getPlainString("membership.profile.merged")} <CMLink href={portalHref(
-                `/backstage/platform-user/${capabilities.mergedIntoUserId}`, { ...context, bandPublicId: null }, router.hosting)}>
+                `/platform/user/${capabilities.mergedIntoUserId}`, { ...context, bandPublicId: null }, router.hosting)}>
                 {locale.getPlainString("membership.profile.remainingAccount")}</CMLink></>
             : locale.getPlainString("membership.profile.deactivated")}</Alert>}
         <Stack spacing={1} alignItems="flex-start">
@@ -57,7 +57,7 @@ function LoadedAccountProfile({ personId, mode }: {
             <CMButtonGroup>
                 <UserAdminPanel user={user} capabilities={capabilities} refetch={refresh}
                     onDeactivated={mode === "controls" ? () => router.replace(portalHref(
-                        `/backstage/platform-user/${personId}`, { ...context, bandPublicId: null }, router.hosting)) : refresh} />
+                        `/platform/user/${personId}`, { ...context, bandPublicId: null }, router.hosting)) : refresh} />
                 {dashboard.isAuthorized(Permission.sysadmin) && <UserIdentityIndicator user={user} />}
                 {capabilities.canResetPassword && <AdminResetPasswordButton user={user} />}
                 {capabilities.canManageSignInMethods && <UserSignInMethodsButton user={user} onChanged={refresh} />}
@@ -69,7 +69,7 @@ function LoadedAccountProfile({ personId, mode }: {
     }
     return <>
         <Breadcrumbs>
-            <CMLink href={portalHref("/backstage/platform-adminUsers", { ...context, bandPublicId: null }, router.hosting)}>
+            <CMLink href={portalHref("/platform/adminUsers", { ...context, bandPublicId: null }, router.hosting)}>
                 {locale.getPlainString("platformUser.title")}</CMLink>
             <Typography>{user.name}</Typography>
         </Breadcrumbs>

@@ -35,7 +35,7 @@ beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     push.mockReset().mockResolvedValue(true);
     choicesRead.mockClear();
-    path = `/fr-BE/b/${band}/backstage/event/PortalEvent0001/rehearsal/attendance?page=2#answer`;
+    path = `/fr-BE/b/${band}/event/PortalEvent0001/rehearsal/attendance?page=2#answer`;
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -63,20 +63,20 @@ describe("portal language navigation", () => {
     it("switches the equivalent platform page, retaining identity, tab, query and hash", async () => {
         await render({ kind: "multiBand" });
         await select("nl-BE");
-        expect(push).toHaveBeenCalledWith(`/nl-BE/b/${band}/backstage/event/PortalEvent0001/rehearsal/attendance?page=2#answer`, undefined, undefined);
+        expect(push).toHaveBeenCalledWith(`/nl-BE/b/${band}/event/PortalEvent0001/rehearsal/attendance?page=2#answer`, undefined, undefined);
     });
     it("returns to browser preference order without changing the page or band", async () => {
         await render({ kind: "multiBand" });
         await select("");
-        expect(push).toHaveBeenCalledWith(`/b/${band}/backstage/event/PortalEvent0001/rehearsal/attendance?page=2#answer`, undefined, undefined);
+        expect(push).toHaveBeenCalledWith(`/b/${band}/event/PortalEvent0001/rehearsal/attendance?page=2#answer`, undefined, undefined);
     });
     it("preserves the familiar standalone URL and hides the band picker without reading choices", async () => {
-        path = "/fr-BE/b/backstage/songs?q=brass#results";
+        path = "/fr-BE/b/songs?q=brass#results";
         await render({ kind: "singleBand", tenant: "generic" }, <><BandSelection /><PortalLanguageSelection /></>);
         expect(container.querySelector("#dashboard-band")).toBeNull();
         expect(choicesRead).not.toHaveBeenCalled();
         await select("nl-BE");
-        expect(push).toHaveBeenCalledWith("/nl-BE/b/backstage/songs?q=brass#results", undefined, undefined);
+        expect(push).toHaveBeenCalledWith("/nl-BE/b/songs?q=brass#results", undefined, undefined);
     });
     it("retains the selected language and shows a failed navigation", async () => {
         push.mockResolvedValueOnce(false);

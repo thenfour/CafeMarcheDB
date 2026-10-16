@@ -25,7 +25,7 @@ function grant(...permissions: Permission[]) {
 describe("event import page authorization", () => {
     beforeEach(() => loadAuth.mockReset());
 
-    it.each([undefined, bandId])("retains Sysadmin protection with band %s", async selectedBand => {
+    it.each([bandId])("retains Sysadmin protection with band %s", async selectedBand => {
         const requirePermission = grant(Permission.login, Permission.sysadmin);
         await authorizePageRequest("/backstage/eventImport", session, selectedBand);
         expect(loadAuth).toHaveBeenCalledWith(session, selectedBand);
@@ -34,7 +34,7 @@ describe("event import page authorization", () => {
 
     it.each([Permission.public, Permission.admin_events])("rejects %s without platform administration", async permission => {
         grant(Permission.login, permission);
-        for (const selectedBand of [undefined, bandId]) {
+        for (const selectedBand of [bandId]) {
             await expect(authorizePageRequest("/backstage/eventImport", session, selectedBand)).rejects.toThrow("Denied");
         }
     });

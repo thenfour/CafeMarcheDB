@@ -70,7 +70,7 @@ const ResetPasswordPage: BlitzPage = () => {
           <div>
             <h2>Password Reset Successfully</h2>
             <p>
-              Go to the <a href={router.href("/backstage")}>backstage.</a>
+              Go to the <a href={router.homeHref()}>backstage.</a>
             </p>
           </div>
         ) : (

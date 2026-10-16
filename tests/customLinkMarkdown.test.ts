@@ -10,12 +10,12 @@ import { Markdown } from "src/core/components/markdown/Markdown";
 import { getCmdbWindow } from "src/core/components/dashboardContext/DashboardContext";
 import { parsePublicId } from "shared/publicId";
 
-let requestPath = parsePortalPath("/backstage", { kind: "multiBand" });
+let requestPath = parsePortalPath("/platform", { kind: "multiBand" });
 let root: Root;
 
 beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-    requestPath = parsePortalPath("/backstage", { kind: "multiBand" });
+    requestPath = parsePortalPath("/platform", { kind: "multiBand" });
     delete getCmdbWindow().cmdbDashboardContext;
     document.body.innerHTML = "<div id='root'></div>";
     root = createRoot(document.getElementById("root")!);
@@ -34,7 +34,7 @@ describe("Markdown on a public custom-link page", () => {
         // Routing is available without dashboard data.
         await act(async () => root.render(React.createElement(Markdown, { markdown: "[Wiki](/backstage/wiki/welcome)" })));
         expect(document.querySelector(".renderedContent a")?.getAttribute("href"))
-            .toBe("/fr-BE/b/PublicationBand1/backstage/wiki/welcome");
+            .toBe("/fr-BE/b/PublicationBand1/wiki/welcome");
     });
     it("keeps explicit publication band/locale on internal links, mentions and dimensioned File images", async () => {
         const bandPublicId = parsePublicId<"Band">("PublicationBand1");
@@ -43,12 +43,17 @@ describe("Markdown on a public custom-link page", () => {
             markdown, presentation: { bandPublicId, routeLocale: "nl-NL" },
         })));
         for (const anchor of document.querySelectorAll<HTMLAnchorElement>(".renderedContent a")) {
-            expect(new URL(anchor.href).pathname).toContain(`/nl-NL/b/${bandPublicId}/`);
-            expect(new URL(anchor.href).searchParams.has("bandPublicId")).toBe(false);
+            const destination = new URL(anchor.href);
+            if (destination.pathname.startsWith("/api/files/download/")) {
+                expect(destination.searchParams.get("bandPublicId")).toBe(bandPublicId);
+            } else {
+                expect(destination.pathname).toContain(`/nl-NL/b/${bandPublicId}/`);
+                expect(destination.searchParams.has("bandPublicId")).toBe(false);
+            }
         }
         expect(document.querySelectorAll(".renderedContent a")).toHaveLength(4);
         const image = document.querySelector<HTMLImageElement>(".renderedContent img");
-        expect(image?.src).toContain("/nl-NL/b/PublicationBand1/api/files/download/");
+        expect(image?.src).toContain("/api/files/download/photo.png?bandPublicId=PublicationBand1");
         expect(image?.style.maxWidth).toBe("240px");
     });
     it("renders formatted text and inline components without dashboard data", async () => {

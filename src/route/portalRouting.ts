@@ -5,6 +5,7 @@ import { isPublicId, parsePublicId, type BandPublicId, type EventPublicId, type 
 import { concatenateUrlParts, isAbsoluteUri, slugify } from "shared/rootroot";
 import { normalizeLocaleTag } from "src/locale/shared/localePreferences";
 import { CmdbRouteRegistry, type CmdbRouteKey } from "./cmdbRoutes";
+import { fileDownloadHref } from "src/core/db3/shared/fileDownloadUrl";
 
 export type BandHostingConfig =
     | { readonly kind: "multiBand" }
@@ -77,6 +78,10 @@ function isLocalePrefix(segment: string): boolean {
     }
 }
 
+export function isBandPagePathname(pathname: string): boolean {
+    return pathname === "/backstage" || pathname.startsWith("/backstage/");
+}
+
 /** Parse the external pathname once, before Next resolves the remaining route. */
 export function parsePortalPath(externalPathname: string, hosting: BandHostingConfig): PortalPath {
     ZLocalPathname.parse(externalPathname);
@@ -95,7 +100,14 @@ export function parsePortalPath(externalPathname: string, hosting: BandHostingCo
             bandPublicId = parsePublicId<"Band">(identity);
         }
     }
-    return { externalPathname, internalPathname: `/${parts.slice(offset).join("/")}`, bandPublicId, routeLocale, hasBandPrefix };
+    const remainingPathname = `/${parts.slice(offset).join("/")}`;
+    if (!hasBandPrefix && isBandPagePathname(remainingPathname)) {
+        throw new RangeError("Band pages require a /b route prefix.");
+    }
+    const internalPathname = hasBandPrefix
+        ? `/backstage${remainingPathname === "/" ? "" : remainingPathname}`
+        : remainingPathname;
+    return { externalPathname, internalPathname, bandPublicId, routeLocale, hasBandPrefix };
 }
 
 export function getBandPortalRoot(bandPublicId: BandPublicId, hosting: BandHostingConfig): string {
@@ -108,11 +120,17 @@ export function portalHref(internalHref: string, selection: RouteBandAndLocale, 
         return internalHref;
     }
     const url = new URL(internalHref, "https://cmdb.invalid");
-    const bandRoot = selection.bandPublicId ? getBandPortalRoot(selection.bandPublicId, hosting) : "";
+    let pathname = url.pathname;
+    if (isBandPagePathname(pathname)) {
+        const bandPublicId = selection.bandPublicId;
+        if (!bandPublicId) {
+            throw new RangeError("A band page URL requires a resolved band.");
+        }
+        pathname = `${getBandPortalRoot(bandPublicId, hosting)}${pathname.slice("/backstage".length)}`;
+    }
     const localeRoot = selection.routeLocale ? `/${normalizeLocaleTag(selection.routeLocale)}` : "";
-    const remainder = url.pathname === "/" ? "" : url.pathname;
     url.searchParams.delete(PORTAL_PATH_QUERY_PARAM);
-    return `${localeRoot}${bandRoot}${remainder || (!localeRoot && !bandRoot ? "/" : "")}${url.search}${url.hash}`;
+    return `${localeRoot}${pathname === "/" && localeRoot ? "" : pathname}${url.search}${url.hash}`;
 }
 
 /** Updating this page retains filters and fragments unless the destination replaces them. */
@@ -132,10 +150,15 @@ export function retainPortalPageState(destination: string, currentHref: string):
 
 /** Replace the remaining pathname while preserving the already parsed external prefixes. */
 export function replacePortalPathname(path: PortalPath, internalPathname: string): string {
-    const prefix = path.externalPathname.endsWith(path.internalPathname)
-        ? path.externalPathname.slice(0, -path.internalPathname.length)
-        : path.externalPathname;
-    return `${prefix}${internalPathname}`;
+    const remainder = path.hasBandPrefix ? path.internalPathname.slice("/backstage".length) : path.internalPathname;
+    const prefix = remainder && remainder !== "/"
+        ? path.externalPathname.slice(0, -remainder.length)
+        : path.externalPathname.replace(/\/$/, "");
+    if (internalPathname === "") {
+        return prefix;
+    }
+    const destination = path.hasBandPrefix ? internalPathname.slice("/backstage".length) : internalPathname;
+    return `${prefix}${destination}` || "/";
 }
 
 export interface CmdbRouterRequestArgs {
@@ -160,6 +183,11 @@ export class CmdbRouter {
             bandPublicId: overrides.bandPublicId === undefined ? this.requestPath.bandPublicId : overrides.bandPublicId,
             routeLocale: overrides.routeLocale === undefined ? this.requestPath.routeLocale : overrides.routeLocale,
         }, this.hosting);
+    }
+
+    homeHref(): string {
+        const route = CmdbRouteRegistry.routeByKey(this.requestPath.hasBandPrefix ? "bandRoot" : "platformRoot");
+        return this.href(route.nextPattern);
     }
 
     getAbsoluteUri = (href: string): string => {
@@ -189,7 +217,12 @@ export class CmdbRouter {
             return file.externalURI;
         }
         const leaf = file.fileLeafName ? `/${slugify(file.fileLeafName)}` : "";
-        return this.getAbsoluteUri(this.href(`/api/files/download/${encodeURIComponent(file.storedLeafName)}${leaf}`));
+        const bandPublicId = this.requestPath.bandPublicId;
+        if (!bandPublicId) {
+            throw new RangeError("A band file URL requires a resolved band.");
+        }
+        const downloadHref = fileDownloadHref(`/api/files/download/${encodeURIComponent(file.storedLeafName)}${leaf}`, bandPublicId);
+        return this.getAbsoluteUri(this.href(downloadHref));
     };
 
     getURIForFileLandingPage = (file: { publicId: FilePublicId; slug?: string | null }): string => {
@@ -212,8 +245,10 @@ export class CmdbRouter {
 }
 
 // lsmb todo: use proper routing
-export function getICalRelativeURIForUserUpcomingEvents(args: { calendarFeedToken: string }) {
-    return `/api/ical/user/${encodeURIComponent(args.calendarFeedToken)}/upcoming`;
+// this general file should not be concerned with route specifics like this.
+export function getICalRelativeURIForUserUpcomingEvents(args: { calendarFeedToken: string; bandPublicId: BandPublicId }) {
+    const query = new URLSearchParams({ bandPublicId: args.bandPublicId });
+    return `/api/ical/user/${encodeURIComponent(args.calendarFeedToken)}/upcoming?${query}`;
 }
 
 function detailParts(value: { publicId: string; name?: string }, tabSlug?: string): string[] {

@@ -32,6 +32,7 @@ import { parseAcceptLanguage } from "src/locale/shared/localePreferences";
 import { deserializePortalPath, replacePortalPathname, type PortalPath } from "src/route/portalRouting";
 import 'src/styles/main.css';
 import '../../public/frontpage.css';
+import { DashboardContextProvider } from "../core/components/dashboardContext/DashboardContext";
 
 // Client-side cache, shared for the whole session of the user in the browser.
 const clientSideEmotionCache = createEmotionCache();
@@ -222,7 +223,9 @@ function ThemedApp({ Component, pageProps }: Pick<MyAppProps, "Component" | "pag
                       bandPublicId={state.data.routing.requestPath.bandPublicId}
                       routeLocale={state.data.routing.requestPath.routeLocale}
                     >
-                      {getLayout(<Component {...pageProps} />)}
+                      <DashboardContextProvider>
+                        {getLayout(<Component {...pageProps} />)}
+                      </DashboardContextProvider>
                     </PresentationProvider>
                   </React.Suspense>
                 </ErrorBoundary>
@@ -301,9 +304,10 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
       res.statusCode = statusCode;
       res.setHeader("Cache-Control", "no-store");
     }
-    // /backstage owns the sign-in UI. A failure there must not redirect to itself.
-    if (error instanceof AuthenticationError && pathname !== "/backstage" && requestPath) {
-      const loginPath = replacePortalPathname(requestPath, "/backstage");
+    // Each dashboard root owns its sign-in UI; it must not redirect to itself.
+    const loginPattern = requestPath?.hasBandPrefix ? "/backstage" : "/platform";
+    if (error instanceof AuthenticationError && pathname !== loginPattern && requestPath) {
+      const loginPath = replacePortalPathname(requestPath, loginPattern);
       if (res) {
         res.writeHead(302, { Location: loginPath });
         res.end();

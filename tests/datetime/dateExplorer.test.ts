@@ -11,7 +11,7 @@ vi.mock("src/core/components/dashboard/DashboardLayout", () => ({ default: ({ ch
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({ bandTimeZone: "Europe/Brussels" }) }))
 vi.mock("src/core/components/DateTime/useEventsForDateRange", () => ({ useEventsForDateRange: () => ({ events: [], loading: false }) }))
 
-import { DateTestPageCtrl } from "src/pages/backstage/test/date"
+import { DateTestPageCtrl } from "@/src/pages/dev/date"
 
 let root: Root | undefined
 let container: HTMLDivElement

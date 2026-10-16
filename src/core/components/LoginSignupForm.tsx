@@ -11,7 +11,7 @@ export const LoginSignup = () => {
         <div className="signInPageMain">
             <AppContextMarker name="LoginSignup">
                 <CMLink trackingFeature={ActivityFeature.login_google} navigation="document"
-                    href={router.href(`/api/auth/google?redirectUrl=${encodeURIComponent(router.href("/backstage"))}`)}
+                    href={router.href(`/api/auth/google?redirectUrl=${encodeURIComponent(router.homeHref())}`)}
                     className="signInBlock google link googleSignInLink">
                     <div className="title">
                         <img src="/web_light_rd_na.svg" />
@@ -26,7 +26,7 @@ export const LoginSignup = () => {
                 <div className="signInBlock login">
                     <LoginForm
                         onSuccess={(_user) => {
-                            return router.push(router.href("/backstage"));
+                            return router.push(router.homeHref());
                         }}
                     />
                 </div>

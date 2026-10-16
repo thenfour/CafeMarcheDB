@@ -20,7 +20,7 @@ const bandManager = authorize(20, Permission.login, Permission.manage_users, Per
 
 describe("platform account maintenance contract", () => {
     it("uses the platform capability on the page and table, including for the account owner", () => {
-        expect(CmdbRouteRegistry.requireRouteByPattern("/backstage/platform-adminUsers").permission).toBe(Permission.manage_global_users);
+        expect(CmdbRouteRegistry.requireRouteByPattern("/platform/adminUsers").permission).toBe(Permission.manage_global_users);
         expect(db3.xPlatformUser.authorizeTableForView(platform)).toBe(true);
         for (const auth of [bandManager, authorize(person.id, Permission.login), authorize(1, Permission.sysadmin), testServerAuthorization(null, new ServerPermissionSet([]))]) {
             expect(db3.xPlatformUser.authorizeTableForView(auth)).toBe(false);

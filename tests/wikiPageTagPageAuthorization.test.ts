@@ -27,13 +27,13 @@ describe("wiki tag page authorization", () => {
 
     it("admits signed-in accounts to the platform placeholder", async () => {
         const requirePermission = grant(Permission.login);
-        await authorizePageRequest("/backstage/platform-editWikiPageTags", session);
+        await authorizePageRequest("/platform/editWikiPageTags", session);
         expect(requirePermission).toHaveBeenCalledWith(Permission.login);
     });
 
     it("does not admit anonymous accounts to the platform placeholder", async () => {
         grant(Permission.public);
-        await expect(authorizePageRequest("/backstage/platform-editWikiPageTags", session)).rejects.toThrow("Denied");
+        await expect(authorizePageRequest("/platform/editWikiPageTags", session)).rejects.toThrow("Denied");
     });
 
     it("retains the wiki-tag administration capability check after band selection", async () => {

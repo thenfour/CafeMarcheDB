@@ -204,7 +204,7 @@ export const gMenuSections: StaticMenuSection[] = [
 
                     pageLink("serverHealth", "menu.serverHealth", "platform", { renderIcon: () => <SettingsIcon /> }),
                     pageLink("bandCalendarPreview", "menu.calendarPreview", "band", { renderIcon: () => gIconMap.CalendarMonth() }),
-                    pageLink("devGallery", "menu.gallery", "band", { renderIcon: () => <CollectionsIcon /> }),
+                    pageLink("devGallery", "menu.gallery", "platform", { renderIcon: () => <CollectionsIcon /> }),
                     pageLink("devtestAttendance", "menu.attendanceTest", "platform", { renderIcon: () => <BackHand /> }),
                     pageLink("devtestDate", "menu.dateTest", "platform", { renderIcon: gIconMap.CalendarMonth }),
                     pageLink("devtestDialogs", "menu.dialogTest", "platform", { renderIcon: () => <Monitor /> }),

@@ -1,44 +1,44 @@
-import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { authoredTranslationContext, resolveAuthoredTranslations } from "src/locale/shared/authoredTranslations";
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext, useFeatureRecorder } from "@/src/core/components/dashboardContext/DashboardContext";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
-import { HomepageMain } from "@/src/core/components/frontpage/homepageComponents";
+import { HomepageMain } from "@/src/core/components/frontpage/CMHomepageComponents";
 import { ImageEditParams, MakeDefaultImageEditParams, UpdateGalleryItemImageParams } from "@/src/core/db3/shared/fileTypes";
 import type { PublicFeedResponseSpec } from "@/src/core/db3/shared/publicTypes";
-import { type EnNlFr } from "shared/lang";
 import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 import { BlitzPage } from "@blitzjs/next";
+import { useMutation } from "@blitzjs/rpc";
 import { Tooltip } from "@mui/material";
 import { assert } from "blitz";
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
+import { type EnNlFr } from "shared/lang";
 import { Permission } from "shared/permissions";
 import { Coord2D, formatFileSize } from "shared/rootroot";
 import { calculateNewDimensions, gDefaultImageArea, IsNullOrWhitespace } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
 import { CMButton, CMButtonGroup, KeyValueTable } from "src/core/components/CMCoreComponents2";
-import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
 import { CMDBUploadFile } from "src/core/components/file/CMDBUploadFile";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "src/core/components/file/FileDrop";
+import { galleryColumnSelection } from "src/core/components/file/GalleryColumns";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { useMutation } from "@blitzjs/rpc";
-import updateGalleryItemImage from "src/core/db3/mutations/updateGalleryItemImage";
-import { galleryColumnSelection } from "src/core/components/file/GalleryColumns";
-import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
-import { applyGalleryImageDrag, type ImageEditorTool } from "src/core/db3/shared/galleryImageEditor";
-import { SelectionField, CMSelectDisplayStyle } from "src/core/components/select/SelectionField";
+import { CMSelectDisplayStyle, SelectionField } from "src/core/components/select/SelectionField";
 import { makeLocalSelectionSource } from "src/core/components/select/selectionSource";
-import { useLocale } from "src/locale/components/useLocale";
+import * as DB3Client from "src/core/db3/DB3Client";
 import { gIconMap } from "src/core/db3/components/IconMap";
+import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
 import * as db3 from "src/core/db3/db3";
+import updateGalleryItemImage from "src/core/db3/mutations/updateGalleryItemImage";
+import { applyGalleryImageDrag, type ImageEditorTool } from "src/core/db3/shared/galleryImageEditor";
+import { useLocale } from "src/locale/components/useLocale";
+import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 
 type FrontpageGalleryItemClient = db3.ClientOf<typeof db3.frontpageGalleryItemEditorView>;
 type FrontpageGalleryClient = DB3Client.CrudTableRenderContext<typeof db3.frontpageGalleryItemEditorView>;
@@ -50,13 +50,19 @@ export interface NewGalleryItemComponentProps {
 const ExistingImageSelection = ({ onSelect }: { onSelect: (fileId: db3.ClientOf<typeof db3.fileImageChoiceView>["publicId"]) => void }) => {
     const { getPlainString } = useLocale();
     const dashboard = useDashboardContext();
-    const tableSpec = DB3Client.defineTableClientSpec({ view: db3.fileImageChoiceView, columns: {
-        publicId: DB3Client.publicIdFieldGen(),
-    } });
-    const client = DB3Client.useTableRenderContext({ tableSpec, requestedCaps: DB3Client.xTableClientCaps.Query,
-        referenceProvider: dashboard.referenceStore });
-    const source = makeLocalSelectionSource({ items: client.items, getKey: file => file.publicId,
-        getLabel: file => file.fileLeafName, renderValue: file => file.fileLeafName });
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.fileImageChoiceView, columns: {
+            publicId: DB3Client.publicIdFieldGen(),
+        }
+    });
+    const client = DB3Client.useTableRenderContext({
+        tableSpec, requestedCaps: DB3Client.xTableClientCaps.Query,
+        referenceProvider: dashboard.referenceStore
+    });
+    const source = makeLocalSelectionSource({
+        items: client.items, getKey: file => file.publicId,
+        getLabel: file => file.fileLeafName, renderValue: file => file.fileLeafName
+    });
     return <SelectionField source={source} value={[]} displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
         dialogTitle={getPlainString("gallery.chooseImage")} onChange={values => {
             if (values[0]) {
@@ -79,9 +85,11 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
         if (!permission) {
             throw new Error("Public visibility is unavailable.");
         }
-        await create.invoke({ fileId, sortOrder: props.client.items.reduce((next, item) => Math.max(next, item.sortOrder + 1), 0),
+        await create.invoke({
+            fileId, sortOrder: props.client.items.reduce((next, item) => Math.max(next, item.sortOrder + 1), 0),
             caption: "", caption_fr: "", caption_nl: "", displayParams: JSON.stringify(MakeDefaultImageEditParams()),
-            visiblePermissionId: db3.xPermission.getIdentity(permission) });
+            visiblePermissionId: db3.xPermission.getIdentity(permission)
+        });
     };
     const addExistingImage = async (fileId: db3.ClientOf<typeof db3.fileImageChoiceView>["publicId"]) => {
         if (busy.current) {
@@ -107,9 +115,11 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
         }
         busy.current = true; setProgress(0);
         try {
-            const response = await CMDBUploadFile({ bandPublicId: dashboard.requireBandPublicId(), files,
+            const response = await CMDBUploadFile({
+                bandPublicId: dashboard.requireBandPublicId(), files,
                 fields: { visiblePermissionId: db3.xPermission.getIdentity(dashboard.getPermission(Permission.visibility_public)!) },
-                onProgress: progress01 => setProgress(progress01) });
+                onProgress: progress01 => setProgress(progress01)
+            });
             for (const file of response.files) {
                 await createItem(file.publicId);
             }
@@ -320,15 +330,17 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
         setEditParams(applyGalleryImageDrag(info.fileDimensions, info.displayParams, selectedTool, delta));
     };
     const presentationSnapshot = usePresentation();
-    const content: PublicFeedResponseSpec = { agenda: [], gallery: [{
-        galleryItemId: editingValue.publicId, fileId: editingValue.fileId, sortOrder: editingValue.sortOrder,
-        caption: resolveAuthoredTranslations({ en: editingValue.caption, nl: editingValue.caption_nl, fr: editingValue.caption_fr },
-            authoredTranslationContext({ ...dashboard.memberPresentation, routeLocale: lang },
-                presentationSnapshot.data?.localization.availability.band ?? [])),
-        imageFileUri: cmdbRouter.getURIForFile(editingValue.file), storedLeafName: editingValue.file.storedLeafName,
-        editParams: info.displayParams, customData: editingValue.file.customData,
-        displayParams: editingValue.displayParams, mimeType: editingValue.file.mimeType,
-    }] };
+    const content: PublicFeedResponseSpec = {
+        agenda: [], gallery: [{
+            galleryItemId: editingValue.publicId, fileId: editingValue.fileId, sortOrder: editingValue.sortOrder,
+            caption: resolveAuthoredTranslations({ en: editingValue.caption, nl: editingValue.caption_nl, fr: editingValue.caption_fr },
+                authoredTranslationContext({ ...dashboard.memberPresentation, routeLocale: lang },
+                    presentationSnapshot.data?.localization.availability.band ?? [])),
+            imageFileUri: cmdbRouter.getURIForFile(editingValue.file), storedLeafName: editingValue.file.storedLeafName,
+            editParams: info.displayParams, customData: editingValue.file.customData,
+            displayParams: editingValue.displayParams, mimeType: editingValue.file.mimeType,
+        }]
+    };
 
     const origArea = info.fileDimensions.width * info.fileDimensions.height;
     const croppedArea = info.cropSize.width * info.cropSize.height;
