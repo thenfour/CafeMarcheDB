@@ -1,5 +1,6 @@
 import { execSync } from "node:child_process";
 import { instrumentationSetup } from "./setup/instrumentation-setup";
+import { getServerBandHostingConfig } from "./route/portalRouting";
 
 type GitVersionInfo = {
     versionTag: string;
@@ -26,9 +27,19 @@ const readGitVersionInfo = (): GitVersionInfo => {
     };
 };
 
+function validateEnv() {
+    getServerBandHostingConfig(); // assumes throws if invalid
+    if (!process.env.CMDB_BASE_URL) {
+        throw new Error("CMDB_BASE_URL is not set in the environment.");
+    }
+}
+
 export async function registerNodeInstrumentation() {
     console.log(`INSTRUMENTATION RUNNING`);
     await instrumentationSetup();
+
+    // ensure config
+    validateEnv();
 
     // Data backfills now run in SQL migrations, before application startup.
     //const startupState = getServerStartStateRef();

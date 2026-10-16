@@ -1,4 +1,4 @@
-import { portalHref, retainPortalPageState } from "src/route/portalRouting";
+import { isTenant, portalHref, retainPortalPageState } from "src/route/portalRouting";
 import type { EventPublicId, EventSegmentPublicId } from "shared/publicId";
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
@@ -1136,7 +1136,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryIcon={gIconMap.Public()}
             summaryTitle="Frontpage"
             summarySubtitle={<>{eventData.event.frontpageVisible && gCharMap.Checkmark()}</>}
-            enabled={dashboardContext.brand.hostingMode === HostingMode.CafeMarche}
+            enabled={isTenant(dashboardContext.portalHosting, "CafeMarche")}
         >
             <AppContextMarker name="frontpage tab">
                 <EventFrontpageTabContent

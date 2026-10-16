@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parsePublicId } from "shared/publicId";
 import { assertAuthorizationBandScope, withAuthorizationBandScope } from "src/auth/server/requestAuthorizationScope";
 import { PORTAL_PATH_HEADER } from "src/route/portalRouting";
-import { requirePortalAvailability, resolvePortalRequest } from "src/route/server/portalRequest";
+import { resolvePortalRequest } from "src/route/server/portalRequest";
 
 const reads = vi.hoisted(() => ({ band: vi.fn(), locale: vi.fn() }));
 vi.mock("db", () => ({ default: { band: { findFirst: reads.band }, locale: { findFirst: reads.locale } } }));
@@ -21,8 +21,10 @@ const request = (url: string, host = "portal.test") => ({ url, headers: { host }
 
 describe("server portal request validation", () => {
     it("validates rewritten metadata against deployment and original path context", () => {
-        expect(resolvePortalRequest({ url: `/backstage/events?bandPublicId=${first}&routeLocale=fr-BE`,
-            headers: { host: "portal.test", [PORTAL_PATH_HEADER]: `/fr-BE/b/${first}/backstage/events` } }))
+        expect(resolvePortalRequest({
+            url: `/backstage/events?bandPublicId=${first}&routeLocale=fr-BE`,
+            headers: { host: "portal.test", [PORTAL_PATH_HEADER]: `/fr-BE/b/${first}/backstage/events` }
+        }))
             .toMatchObject({ pathname: "/backstage/events", selection: { bandPublicId: first, routeLocale: "fr-BE" } });
     });
     it.each(["evil.test", "portal.test:8080", "portal.test@evil.test", "portal.test,evil.test", "[", ""])("rejects unconfigured host %s", host => {
@@ -33,8 +35,8 @@ describe("server portal request validation", () => {
     });
     it.each([`/b/${first}/backstage?bandPublicId=${second}`, `/backstage?bandPublicId=${first}&bandPublicId=${second}`,
         "/fr/backstage?routeLocale=nl", "/backstage?routeLocale=fr&routeLocale=nl"])("rejects ambiguous request %s", url => {
-        expect(() => resolvePortalRequest(request(url))).toThrow(NotFoundError);
-    });
+            expect(() => resolvePortalRequest(request(url))).toThrow(NotFoundError);
+        });
     it("fails closed for an absent standalone binding and a foreign band", () => {
         vi.stubEnv("CMDB_HOSTING_MODE", "GenericSingleTenant");
         vi.stubEnv("CMDB_PUBLIC_BAND_PUBLIC_ID", "");
@@ -42,14 +44,6 @@ describe("server portal request validation", () => {
         vi.stubEnv("CMDB_PUBLIC_BAND_PUBLIC_ID", first);
         expect(resolvePortalRequest(request("/backstage")).selection.bandPublicId).toBe(first);
         expect(() => resolvePortalRequest(request(`/b/${second}/backstage`))).toThrow(NotFoundError);
-    });
-    it("rejects unknown/deleted bands and unsupported languages before domain reads", async () => {
-        const portal = resolvePortalRequest(request(`/fr-BE/b/${first}/backstage`));
-        reads.band.mockResolvedValueOnce(null);
-        await expect(requirePortalAvailability(portal, db)).rejects.toBeInstanceOf(NotFoundError);
-        expect(reads.locale).not.toHaveBeenCalled();
-        reads.locale.mockResolvedValueOnce(null);
-        await expect(requirePortalAvailability(portal, db)).rejects.toBeInstanceOf(NotFoundError);
     });
 });
 
@@ -77,7 +71,7 @@ describe("request authorization band scope", () => {
             await withAuthorizationBandScope(null, async () => {
                 expect(() => assertAuthorizationBandScope(second)).toThrow(NotFoundError);
             });
-            expect(() => withAuthorizationBandScope(second, async () => {})).toThrow(NotFoundError);
+            expect(() => withAuthorizationBandScope(second, async () => { })).toThrow(NotFoundError);
         });
     });
 });

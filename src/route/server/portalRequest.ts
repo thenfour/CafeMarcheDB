@@ -1,12 +1,12 @@
 // server
 
-import type { IncomingMessage } from "node:http";
 import { NotFoundError } from "blitz";
 import db from "db";
+import type { IncomingMessage } from "node:http";
 import { withAuthorizationBandScope } from "src/auth/server/requestAuthorizationScope";
 import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
-import { parsePortalPath, PORTAL_PATH_HEADER, selectPortalContext, type BandHostingConfig, type RouteBandAndLocale } from "../portalRouting";
-import { assertPortalHost, portalPublicOrigin, serverPortalHosting } from "./portalConfig";
+import { getServerBandHostingConfig, parsePortalPath, PORTAL_PATH_HEADER, selectPortalContext, type BandHostingConfig, type RouteBandAndLocale } from "../portalRouting";
+import { assertPortalHost, portalPublicOrigin } from "./portalConfig";
 
 export type PortalAvailabilityDatabase = Pick<typeof db, "band" | "locale">;
 
@@ -18,7 +18,7 @@ export interface PortalRequest {
 
 
 export function resolvePortalRequest(request: Pick<IncomingMessage, "url" | "headers">, requestedPath?: string): PortalRequest {
-    const hosting = serverPortalHosting();
+    const hosting = getServerBandHostingConfig();
     const origin = portalPublicOrigin();
     assertPortalHost(request.headers.host, origin);
     const incoming = new URL(request.url ?? "/", origin);
@@ -47,48 +47,11 @@ export function resolvePortalRequest(request: Pick<IncomingMessage, "url" | "hea
     }
 }
 
-// lsmb todo: evaluate if this is strictly necessary.
-// issues:
-// - it adds multiple db queries just to check availability. anti-pattern; assume it exists and fail later
-// - embeds soft-delete logic, skips auth & vis checks.
-// - embeds locale splitting / matching logic.
-export async function requirePortalAvailability(portal: PortalRequest, database: PortalAvailabilityDatabase): Promise<void> {
-    const band = portal.selection.bandPublicId ? await database.band.findFirst({
-        where: {
-            publicId: portal.selection.bandPublicId,
-            isDeleted: false
-        },
-        select: { id: true },
-    }) : null;
-
-    if (portal.selection.bandPublicId && !band) {
-        console.log(`Band with publicId ${portal.selection.bandPublicId} not found.`);
-        throw new NotFoundError();
-    }
-
-    const locale = portal.selection.routeLocale;
-    if (locale) {
-        const language = locale.split("-")[0]!;
-        const available = await database.locale.findFirst({
-            where: {
-                isDeleted: false,
-                ...(band ? { bandLocales: { some: { bandId: band.id } } } : {}),
-                OR: [
-                    { ietfTag: locale },
-                    { ietfTag: { startsWith: `${language}-` } }],
-            }, select: { id: true },
-        });
-        if (!available) {
-            console.log(`Locale ${locale} not available for band ${band?.id ?? "none"}.`);
-            throw new NotFoundError();
-        }
-    }
-}
-
-// Wraps an operation in  a portal req context. (locale + band)
+// Wraps an operation in a portal req context. (locale + band)
 export async function withPortalRequest<T>(request: Pick<IncomingMessage, "url" | "headers">, operation: (portal: PortalRequest) => Promise<T>): Promise<T> {
     const portal = resolvePortalRequest(request);
-    await requirePortalAvailability(portal, db);
-    const boundBand = portal.hosting.kind === "standalone" ? portal.hosting.bandPublicId : portal.selection.bandPublicId ?? null;
-    return withAuthorizationBandScope(boundBand, () => operation(portal));
+    // while we could force standalone to always use the configured singleton band,
+    // it's simpler to just use the requested band. non-expistent bands get rejected anyway.
+    //const boundBand = portal.hosting.kind === "standalone" ? portal.hosting.bandPublicId : portal.selection.bandPublicId ?? null;
+    return withAuthorizationBandScope(portal.selection.bandPublicId ?? null, () => operation(portal));
 }

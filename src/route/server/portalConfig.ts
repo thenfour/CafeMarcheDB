@@ -1,15 +1,4 @@
 import { NotFoundError } from "blitz";
-import { getServerBandHostingConfig, type BandHostingConfig } from "../portalRouting";
-
-// lsmb todo: remove this wrapper. just make getServerBandHostingConfig resolve correctly.
-// careful with tests.
-export function serverPortalHosting(): BandHostingConfig {
-    try {
-        return getServerBandHostingConfig(process.env.CMDB_HOSTING_MODE, process.env.CMDB_PUBLIC_BAND_PUBLIC_ID);
-    } catch {
-        throw new NotFoundError();
-    }
-}
 
 export function portalPublicOrigin(): URL {
     const configured = process.env.CMDB_BASE_URL;

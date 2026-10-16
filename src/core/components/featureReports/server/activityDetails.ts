@@ -1,26 +1,30 @@
+import { getServerBandHostingConfig } from "@/src/route/portalRouting";
 import { Prisma } from "@prisma/client";
 import { executeDB3Read, type DB3ReadContext, type DB3ReadDatabase } from "src/core/db3/server/db3ReadExecution";
 import { loadBandTimeZone } from "src/server/bandTimeZone";
-import { ActivityDetailInputSchema, FacetedBreakdownInputSchema, type ActivityDetailInput, type ActivityDetailResult, type ActivityDetailRow,
-    type ActivityDetailSelection, type FacetedBreakdownInput, type GeneralActivityDetailResult } from "../activityReportTypes";
 import { anonymousActivityContext } from "../activityContext";
+import {
+    ActivityDetailInputSchema, FacetedBreakdownInputSchema, type ActivityDetailInput, type ActivityDetailResult, type ActivityDetailRow,
+    type ActivityDetailSelection, type FacetedBreakdownInput, type GeneralActivityDetailResult
+} from "../activityReportTypes";
 import { activityParticipantToken, activityRowToken } from "./activityAnonymization";
-import { authorizeActivityReport } from "./activityReportAuthorization";
-import { activityFacetBaseWhere, activityFacetReferenceWhere } from "./activityFacetSelection";
-import { activityReferencesById, authorizedActivityReferenceIds, readActivityFacetReferences, type ActivityAuthorizedReferences } from "./activityFacetReferences";
 import { readActivityDetailReferences, type ActivityAuthorizedDetailReferences } from "./activityDetailReferences";
+import { activityReferencesById, authorizedActivityReferenceIds, readActivityFacetReferences, type ActivityAuthorizedReferences } from "./activityFacetReferences";
+import { activityFacetBaseWhere, activityFacetReferenceWhere } from "./activityFacetSelection";
+import { authorizeActivityReport } from "./activityReportAuthorization";
 import { projectActivitySavedMetadata, type ActivityMetadataPolicy } from "./activitySavedMetadata";
-import { serverPortalHosting } from "src/route/server/portalConfig";
 
 /** Natural identities and unchecked saved metadata stay server-side; person relations are never selected. */
-export const activityDetailSelection = Prisma.validator<Prisma.ActionDefaultArgs>()({ select: {
-    id: true, createdAt: true, userId: true, feature: true, context: true, isClient: true, uri: true, queryText: true,
-    pointerType: true, screenWidth: true, screenHeight: true, deviceClass: true, browserName: true,
-    operatingSystem: true, language: true, locale: true, timezone: true,
-    songId: true, eventId: true, wikiPageId: true, menuLinkId: true, customLinkId: true,
-    fileId: true, eventSegmentId: true, eventSongListId: true, frontpageGalleryItemId: true,
-    setlistPlanId: true, songCreditTypeId: true, attendanceId: true, bandInstrumentId: true,
-} });
+export const activityDetailSelection = Prisma.validator<Prisma.ActionDefaultArgs>()({
+    select: {
+        id: true, createdAt: true, userId: true, feature: true, context: true, isClient: true, uri: true, queryText: true,
+        pointerType: true, screenWidth: true, screenHeight: true, deviceClass: true, browserName: true,
+        operatingSystem: true, language: true, locale: true, timezone: true,
+        songId: true, eventId: true, wikiPageId: true, menuLinkId: true, customLinkId: true,
+        fileId: true, eventSegmentId: true, eventSongListId: true, frontpageGalleryItemId: true,
+        setlistPlanId: true, songCreditTypeId: true, attendanceId: true, bandInstrumentId: true,
+    }
+});
 type ActivityDatabaseRow = Prisma.ActionGetPayload<typeof activityDetailSelection>;
 
 export function projectActivityDetailRows(rows: readonly ActivityDatabaseRow[], references: ActivityAuthorizedReferences,
@@ -30,25 +34,25 @@ export function projectActivityDetailRows(rows: readonly ActivityDatabaseRow[], 
     const custom = activityReferencesById(references.customLinks);
     return rows.map(row => {
         const authorized = {
-        rowKey: activityRowToken(row.id, input), createdAt: row.createdAt,
-        userHash: row.userId === null ? null : activityParticipantToken(row.userId, input),
-        feature: row.feature, context: anonymousActivityContext(row.context), isClient: row.isClient,
-        pointerType: row.pointerType, screenWidth: row.screenWidth, screenHeight: row.screenHeight,
-        deviceClass: row.deviceClass, browserName: row.browserName, operatingSystem: row.operatingSystem,
-        language: row.language, locale: row.locale, timezone: row.timezone,
-        song: row.songId === null ? null : songs.get(row.songId) ?? null,
-        event: row.eventId === null ? null : events.get(row.eventId) ?? null,
-        wikiPage: row.wikiPageId === null ? null : wiki.get(row.wikiPageId) ?? null,
-        menuLink: row.menuLinkId === null ? null : menu.get(row.menuLinkId) ?? null,
-        customLink: row.customLinkId === null ? null : custom.get(row.customLinkId) ?? null,
-        file: row.fileId === null ? null : auxiliary.files.get(row.fileId) ?? null,
-        eventSegment: row.eventSegmentId === null ? null : auxiliary.segments.get(row.eventSegmentId) ?? null,
-        eventSongList: row.eventSongListId === null ? null : auxiliary.setlists.get(row.eventSongListId) ?? null,
-        frontpageGalleryItem: row.frontpageGalleryItemId === null ? null : auxiliary.galleryItems.get(row.frontpageGalleryItemId) ?? null,
-        setlistPlan: row.setlistPlanId === null ? null : auxiliary.plans.get(row.setlistPlanId) ?? null,
-        songCreditType: row.songCreditTypeId === null ? null : auxiliary.creditTypes.get(row.songCreditTypeId) ?? null,
-        attendance: row.attendanceId === null ? null : auxiliary.attendance.get(row.attendanceId) ?? null,
-        instrument: row.bandInstrumentId === null ? null : auxiliary.instruments.get(row.bandInstrumentId) ?? null,
+            rowKey: activityRowToken(row.id, input), createdAt: row.createdAt,
+            userHash: row.userId === null ? null : activityParticipantToken(row.userId, input),
+            feature: row.feature, context: anonymousActivityContext(row.context), isClient: row.isClient,
+            pointerType: row.pointerType, screenWidth: row.screenWidth, screenHeight: row.screenHeight,
+            deviceClass: row.deviceClass, browserName: row.browserName, operatingSystem: row.operatingSystem,
+            language: row.language, locale: row.locale, timezone: row.timezone,
+            song: row.songId === null ? null : songs.get(row.songId) ?? null,
+            event: row.eventId === null ? null : events.get(row.eventId) ?? null,
+            wikiPage: row.wikiPageId === null ? null : wiki.get(row.wikiPageId) ?? null,
+            menuLink: row.menuLinkId === null ? null : menu.get(row.menuLinkId) ?? null,
+            customLink: row.customLinkId === null ? null : custom.get(row.customLinkId) ?? null,
+            file: row.fileId === null ? null : auxiliary.files.get(row.fileId) ?? null,
+            eventSegment: row.eventSegmentId === null ? null : auxiliary.segments.get(row.eventSegmentId) ?? null,
+            eventSongList: row.eventSongListId === null ? null : auxiliary.setlists.get(row.eventSongListId) ?? null,
+            frontpageGalleryItem: row.frontpageGalleryItemId === null ? null : auxiliary.galleryItems.get(row.frontpageGalleryItemId) ?? null,
+            setlistPlan: row.setlistPlanId === null ? null : auxiliary.plans.get(row.setlistPlanId) ?? null,
+            songCreditType: row.songCreditTypeId === null ? null : auxiliary.creditTypes.get(row.songCreditTypeId) ?? null,
+            attendance: row.attendanceId === null ? null : auxiliary.attendance.get(row.attendanceId) ?? null,
+            instrument: row.bandInstrumentId === null ? null : auxiliary.instruments.get(row.bandInstrumentId) ?? null,
         };
         return { ...authorized, ...projectActivitySavedMetadata(row, authorized, input, metadataPolicy) };
     });
@@ -133,12 +137,16 @@ function readActivityRows(database: DB3ReadDatabase, authorization: DB3ReadConte
         const filtered = activityFacetReferenceWhere(base, args, references);
         const where = detailWhere(filtered, detail, references);
         const totalRowCount = await context.database.action.count({ where });
-        const rows = await context.database.action.findMany({ ...activityDetailSelection, where,
-            orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: rowLimit });
+        const rows = await context.database.action.findMany({
+            ...activityDetailSelection, where,
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: rowLimit
+        });
         const auxiliary = await readActivityDetailReferences(context, args, rows);
-        return { rows: projectActivityDetailRows(rows, references, auxiliary, args, {
-            applicationOrigin: process.env.CMDB_BASE_URL ?? null, hosting: serverPortalHosting(),
-        }), timeZone, rowLimit,
-            metrics: { totalRowCount, queryTimeMs: Math.round(performance.now() - start) } };
+        return {
+            rows: projectActivityDetailRows(rows, references, auxiliary, args, {
+                applicationOrigin: process.env.CMDB_BASE_URL ?? null, hosting: getServerBandHostingConfig(),
+            }), timeZone, rowLimit,
+            metrics: { totalRowCount, queryTimeMs: Math.round(performance.now() - start) }
+        };
     });
 }

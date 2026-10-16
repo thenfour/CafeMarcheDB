@@ -1,15 +1,15 @@
+import { getServerBandHostingConfig } from "@/src/route/portalRouting";
 import { AuthorizationError, NotFoundError, type Ctx } from "blitz";
-import type { NextApiRequest, NextApiResponse } from "next";
-import { z, ZodError } from "zod";
 import db from "db";
+import type { NextApiRequest, NextApiResponse } from "next";
 import { loadAuthorization, loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
-import { publicFeedBaseURL } from "src/server/publicHomepage";
 import { getSessionForRequest } from "src/blitz-server";
 import { readPublicFeed } from "src/core/db3/server/publicFeed";
 import { PublicFeedInputSchema } from "src/core/db3/shared/publicFeedInput";
 import { collectLocalePreferences, parseAcceptLanguage } from "src/locale/shared/localePreferences";
-import { serverPortalHosting } from "src/route/server/portalConfig";
 import { withPortalRequest } from "src/route/server/portalRequest";
+import { publicFeedBaseURL } from "src/server/publicHomepage";
+import { z, ZodError } from "zod";
 
 export const config = { api: { bodyParser: false } };
 const PublicFeedQuerySchema = PublicFeedInputSchema.omit({ browserLanguages: true })
@@ -46,7 +46,7 @@ export async function publicFeedHandler(req: NextApiRequest, res: NextApiRespons
         const auth = isCrossOrigin(req, baseURL)
             ? await loadAuthorizationForUser(null, undefined, input.bandPublicId)
             : await loadAuthorization(ctx?.session ?? await getSessionForRequest(req, res), input.bandPublicId);
-        const payload = await readPublicFeed(db, auth, input, { baseURL, hosting: serverPortalHosting() });
+        const payload = await readPublicFeed(db, auth, input, { baseURL, hosting: getServerBandHostingConfig() });
         if (req.method === "HEAD") {
             res.status(200).end();
             return;

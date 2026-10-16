@@ -1,3 +1,4 @@
+import { type CmdbRouteKey, CmdbRoutes } from '@/src/route/cmdbRoutes';
 import {
     AudioFileOutlined,
     BackHand,
@@ -17,9 +18,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import SecurityIcon from '@mui/icons-material/Security';
 import * as React from 'react';
 import { Permission } from "shared/permissions";
-import { gIconMap } from "../../db3/components/IconMap";
-import { type CmdbRouteKey, CmdbRoutes } from '@/src/route/cmdbRoutes';
 import type { MenuCaptionKey } from 'src/locale/shared/menuStrings';
+import { gIconMap } from "../../db3/components/IconMap";
 
 export enum NavRealm {
     backstageHome = "",
@@ -45,7 +45,7 @@ export interface MenuLink {
     openInNewTab?: boolean;
     realm?: NavRealm;
     renderIcon: () => React.ReactNode;
-    enabledForGenericSingleTenant?: boolean; // default true
+    enabledForSingleTenant?: boolean; // default true
 }
 
 export type MenuContext = "band" | "platform";
@@ -130,9 +130,9 @@ export const gMenuSections: StaticMenuSection[] = [
         groups: [
             {
                 links: [
-                    pageLink("/", "menu.homepage", "band", { renderIcon: () => gIconMap.Public(), enabledForGenericSingleTenant: false }),
-                    pageLink("/backstage/frontpagegallery", "menu.frontpagegallery", "band", { renderIcon: () => gIconMap.Image(), enabledForGenericSingleTenant: false }),
-                    pageLink("/backstage/frontpageEvents", "menu.frontpageEvents", "band", { renderIcon: () => <CalendarMonthOutlinedIcon />, enabledForGenericSingleTenant: false }),
+                    pageLink("/", "menu.homepage", "band", { renderIcon: () => gIconMap.Public(), enabledForSingleTenant: false }),
+                    pageLink("/backstage/frontpagegallery", "menu.frontpagegallery", "band", { renderIcon: () => gIconMap.Image(), enabledForSingleTenant: false }),
+                    pageLink("/backstage/frontpageEvents", "menu.frontpageEvents", "band", { renderIcon: () => <CalendarMonthOutlinedIcon />, enabledForSingleTenant: false }),
                 ]
             }
         ]

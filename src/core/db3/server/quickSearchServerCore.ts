@@ -1,4 +1,3 @@
-import { serverPortalHosting } from "src/route/server/portalConfig";
 // LSMB todo: figure out a unified design for searches.
 // we have
 // - paginated search features + frontpage relevant events (currently using paginated faceted search; ad-hoc SQL)
@@ -15,7 +14,7 @@ import {
 } from "shared/quickFilter";
 import { slugify } from "shared/rootroot";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
-import { portalHref } from "src/route/portalRouting";
+import { getServerBandHostingConfig, portalHref } from "src/route/portalRouting";
 import { collectLocalePreferences, selectFormattingLocale } from "src/locale/shared/localePreferences";
 import { loadBandTimeZone } from "src/server/bandTimeZone";
 import { ServerApi } from "src/server/serverApi";
@@ -65,7 +64,7 @@ const personFields: SearchableTableFieldSpec[] = [{ fieldName: "name", fieldType
 
 // lsmb todo: use a robust routing mechanism to generate URLs
 function contextualUri(path: string, input: QuickSearchInput): string {
-    return ServerApi.getAbsoluteUri(portalHref(path, input, serverPortalHosting()));
+    return ServerApi.getAbsoluteUri(portalHref(path, input, getServerBandHostingConfig()));
 }
 
 async function readSongMatches(context: DB3ReadContext, query: ParseQuickFilterResult, input: QuickSearchInput, catalogs: SearchCatalogs) {
@@ -75,8 +74,10 @@ async function readSongMatches(context: DB3ReadContext, query: ParseQuickFilterR
     }));
     const authoredWhere: Prisma.SongWhereInput = MakeWhereCondition(songFields, query);
     // The reference #tag grammar requires every tag; authored words contribute ranking.
-    const where = await GetAuthorizedTableReadWhere({ table: xSong, auth: context.authorization,
-        where: tagConditions.length ? { AND: tagConditions } : authoredWhere });
+    const where = await GetAuthorizedTableReadWhere({
+        table: xSong, auth: context.authorization,
+        where: tagConditions.length ? { AND: tagConditions } : authoredWhere
+    });
     const songs = await context.database.song.findMany({
         where,
         select: {

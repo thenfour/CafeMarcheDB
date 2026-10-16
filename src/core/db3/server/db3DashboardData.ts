@@ -1,3 +1,4 @@
+import { getServerBandHostingConfig } from "@/src/route/portalRouting";
 import { Permission } from "shared/permissions";
 import { getClientServerState } from "shared/serverStateBase";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
@@ -5,16 +6,16 @@ import { loadLocalizationCatalog } from "src/locale/server/localization";
 import type { PresentationInput } from "src/locale/shared/presentationInput";
 import { loadSettingsSnapshot } from "src/setting/server/settings";
 import { readSettingSnapshot } from "src/setting/shared/settingsContract";
+import { xBandUser } from "../db3";
+import { menuLinkListView } from "../shared/entities/menuLink/menuLinkViews";
 import { eventParticipantView } from "../shared/entities/user/eventParticipant";
 import type { DashboardDataDto } from "../shared/references/dashboardData";
 import { permissionDashboardView } from "../shared/references/dashboardReferences";
-import { loadDashboardCatalogs, loadSharedCatalogs } from "./db3DashboardCatalogs";
-import { executeDB3Read, type DB3ReadDatabase, type DB3ReadContext } from "./db3ReadExecution";
-import { queryView } from "./db3QueryCore";
-import { xBandUser } from "../db3";
-import { menuLinkListView } from "../shared/entities/menuLink/menuLinkViews";
-import { readDashboardRelevantEvents } from "./dashboardEvents";
 import { hasLimitedDashboardAccess } from "./dashboardAccountNotice";
+import { readDashboardRelevantEvents } from "./dashboardEvents";
+import { loadDashboardCatalogs, loadSharedCatalogs } from "./db3DashboardCatalogs";
+import { queryView } from "./db3QueryCore";
+import { executeDB3Read, type DB3ReadContext, type DB3ReadDatabase } from "./db3ReadExecution";
 
 async function loadCurrentMembership(context: DB3ReadContext, input: PresentationInput) {
     const { authorization } = context;

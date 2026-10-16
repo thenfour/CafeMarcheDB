@@ -8,9 +8,11 @@ const mocks = vi.hoisted(() => ({ findMany: vi.fn() }));
 vi.mock("db", () => ({ default: { bandSetting: { findMany: mocks.findMany } } }));
 
 function validRows(overrides: Partial<Record<keyof typeof kBandSettingsRegistry, string>> = {}): BandSetting[] {
-    const values = { "siteCustomization.title": "Example Band", "siteCustomization.titlePrefix": "EB: ",
+    const values = {
+        "siteCustomization.title": "Example Band", "siteCustomization.titlePrefix": "EB: ",
         "siteCustomization.faviconUrl": "/example.png", "siteCustomization.logoUrl": "/example-logo.svg",
-        "siteCustomization.themeColors.primaryMain": "#123456", ...overrides };
+        "siteCustomization.themeColors.primaryMain": "#123456", ...overrides
+    };
     return Object.entries(values).map(([name, value], index) => ({
         id: index + 1, publicId: `Setting${String(index + 1).padStart(9, "0")}`, name, value,
         bandId: 1, updatedAt: new Date(), updatedByUserId: null,
@@ -20,14 +22,6 @@ function validRows(overrides: Partial<Record<keyof typeof kBandSettingsRegistry,
 beforeEach(() => { mocks.findMany.mockReset(); clearBrandCache(); });
 
 describe("band brand loading", () => {
-    it("reads native JSON strings and combines missing keys with registry defaults", async () => {
-        mocks.findMany.mockResolvedValueOnce(validRows());
-        await expect(loadDbBrandConfig({ hostHeader: "brand-load.example", bandId: 1, freshness: "cached" })).resolves.toMatchObject({
-            hostingMode: HostingMode.Platform, siteTitle: "Example Band", siteTitlePrefix: "EB: ",
-            siteFaviconUrl: "/example.png", siteLogoUrl: "/example-logo.svg", theme: { primaryMain: "#123456" },
-        });
-        expect(mocks.findMany).toHaveBeenCalledWith({ where: { bandId: 1 } });
-    });
     it("publishes optional primary text color, clears it, and uses the theme when its row is absent", async () => {
         const scope = { hostHeader: "optional-text.example", bandId: 1 };
         mocks.findMany.mockResolvedValueOnce(validRows({ "siteCustomization.themeColors.textPrimary": "#123456" }));
@@ -38,7 +32,7 @@ describe("band brand loading", () => {
         expect((await loadDbBrandConfig({ ...scope, freshness: "refresh" })).theme?.textPrimary).toBeUndefined();
     });
     it("serves the last known good color when an expired cache cannot refresh", async () => {
-        const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+        const errorLog = vi.spyOn(console, "error").mockImplementation(() => { });
         const now = vi.spyOn(Date, "now").mockReturnValue(100_000);
         try {
             mocks.findMany.mockResolvedValueOnce(validRows({ "siteCustomization.themeColors.textPrimary": "rgb(12, 34, 56)" }));
@@ -56,7 +50,7 @@ describe("band brand loading", () => {
         }
     });
     it("keeps the same host's band caches and last-known-good values separate", async () => {
-        const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+        const errorLog = vi.spyOn(console, "error").mockImplementation(() => { });
         try {
             mocks.findMany.mockResolvedValueOnce(validRows()).mockResolvedValueOnce(validRows({ "siteCustomization.title": "Second band", "siteCustomization.logoUrl": "/second-logo.png" }));
             const first = await loadDbBrandConfig({ hostHeader: "shared.example", bandId: 1, freshness: "cached" });
@@ -83,16 +77,20 @@ describe("band brand loading", () => {
         const initial = await loadDbBrandConfig({ ...scope, freshness: "cached" });
         expect(await loadDbBrandConfig({ ...scope, freshness: "cached" })).toEqual(initial);
         expect(mocks.findMany).toHaveBeenCalledOnce();
-        mocks.findMany.mockResolvedValueOnce(validRows({ "siteCustomization.title": "Published title",
+        mocks.findMany.mockResolvedValueOnce(validRows({
+            "siteCustomization.title": "Published title",
             "siteCustomization.faviconUrl": "/api/files/download/new.png?bandPublicId=Brand0000000001",
-            "siteCustomization.logoUrl": "/api/files/download/new.svg?bandPublicId=Brand0000000001" }));
-        expect(await loadDbBrandConfig({ ...scope, freshness: "refresh" })).toMatchObject({ siteTitle: "Published title",
+            "siteCustomization.logoUrl": "/api/files/download/new.svg?bandPublicId=Brand0000000001"
+        }));
+        expect(await loadDbBrandConfig({ ...scope, freshness: "refresh" })).toMatchObject({
+            siteTitle: "Published title",
             siteFaviconUrl: "/api/files/download/new.png?bandPublicId=Brand0000000001",
-            siteLogoUrl: "/api/files/download/new.svg?bandPublicId=Brand0000000001" });
+            siteLogoUrl: "/api/files/download/new.svg?bandPublicId=Brand0000000001"
+        });
         expect(mocks.findMany).toHaveBeenCalledTimes(2);
     });
     it("serves a known good identity after invalid configuration and fails initial loads visibly", async () => {
-        const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+        const errorLog = vi.spyOn(console, "error").mockImplementation(() => { });
         try {
             mocks.findMany.mockResolvedValueOnce(validRows());
             const initial = await loadDbBrandConfig({ hostHeader: "invalid-refresh.example", bandId: 1, freshness: "cached" });

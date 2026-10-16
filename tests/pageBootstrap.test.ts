@@ -16,7 +16,7 @@ vi.mock("src/locale/server/presentation", () => ({ loadPresentationData: service
 vi.mock("src/server/brand", () => ({ loadDbBrandConfig: services.brand }));
 vi.mock("src/route/server/portalRequest", async () => {
     const actual = await vi.importActual<typeof PortalRequestModule>("src/route/server/portalRequest");
-    return { ...actual, requirePortalAvailability: services.availability };
+    return { ...actual };
 });
 import getPageBootstrap from "src/auth/queries/getPageBootstrap";
 

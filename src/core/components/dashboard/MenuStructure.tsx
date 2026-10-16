@@ -1,5 +1,5 @@
-import { useLocale } from "src/locale/components/useLocale";
 import { groupByMap } from '@/shared/arrayUtils';
+import { MenuCaptionKey } from "@/src/locale/shared/menuStrings";
 import { Box, Collapse, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Typography } from '@mui/material';
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -7,18 +7,17 @@ import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { gNullValue } from "shared/rootroot";
 import * as db3 from "src/core/db3/db3";
+import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
+import { wikiMakeRelativeURI } from "src/core/wiki/shared/wikiUtils";
+import { useLocale } from "src/locale/components/useLocale";
+import { parsePortalPath, portalHref } from "src/route/portalRouting";
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
 import { AppContextMarker } from "../AppContext";
 import { AdminInspectObject } from '../CMCoreComponents2';
+import { DashboardContextData, useClientTelemetryEvent, useDashboardContext } from '../dashboardContext/DashboardContext';
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { useLocalStorageSet } from "../useLocalStorageState";
 import { gMenuSections, MenuContext, MenuLink, MenuSection, NavRealm } from './StaticMenuItems';
-import { HostingMode } from '@/shared/brandConfigBase';
-import { DashboardContextData, useClientTelemetryEvent, useDashboardContext } from '../dashboardContext/DashboardContext';
-import { parsePortalPath, portalHref } from "src/route/portalRouting";
-import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
-import { wikiMakeRelativeURI } from "src/core/wiki/shared/wikiUtils";
-import { MenuCaptionKey } from "@/src/locale/shared/menuStrings";
 
 
 // Flattened types for rendering (used internally by flattening functions)
@@ -85,13 +84,10 @@ export const DynMenuToMenuItem = (item: db3.MenuLinkListClient, dashboardContext
     };
 };
 
-interface MenuAuthorization {
-    brand: Pick<DashboardContextData["brand"], "hostingMode">;
-    isAuthorized: DashboardContextData["isAuthorized"];
-}
+type MenuAuthorization = Pick<DashboardContextData, "portalHosting" | "isAuthorized">;
 
 function IsLinkEnabled(dashboardContext: MenuAuthorization, link: MenuLink): boolean {
-    if (link.enabledForGenericSingleTenant === false && dashboardContext.brand.hostingMode === HostingMode.GenericSingleTenant) {
+    if (link.enabledForSingleTenant === false && dashboardContext.portalHosting.kind === "standalone") {
         return false;
     }
     return dashboardContext.isAuthorized(link.permission);

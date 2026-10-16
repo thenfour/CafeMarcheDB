@@ -5,7 +5,7 @@ import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
 import { withAuthorizationBandScope } from "src/auth/server/requestAuthorizationScope";
-import { requirePortalAvailability, resolvePortalRequest } from "src/route/server/portalRequest";
+import { resolvePortalRequest } from "src/route/server/portalRequest";
 import { initializeAccessControl } from "src/setup/accessControl";
 import { settingsMysqlTestUrl, withSettingsMysqlFixture } from "./support/settingsMysqlFixture";
 
@@ -23,7 +23,6 @@ describe.skipIf(!settingsMysqlTestUrl)("portal routing with native memberships a
         const bands = fixture.bands.map(band => parsePublicId<"Band">(band.publicId));
         for (const [index, band] of bands.entries()) {
             const portal = resolvePortalRequest({ url: `/fr-BE/b/${band}/backstage/profile`, headers: { host: "portal.test" } });
-            await requirePortalAvailability(portal, tx);
             await withAuthorizationBandScope(band, async () => {
                 expect((await loadAuthorizationForUser(fixture.user, tx, band)).band?.publicId).toBe(band);
                 await expect(loadAuthorizationForUser(fixture.user, tx, bands[1 - index])).rejects.toBeInstanceOf(NotFoundError);
@@ -41,19 +40,9 @@ describe.skipIf(!settingsMysqlTestUrl)("portal routing with native memberships a
         vi.stubEnv("CMDB_PUBLIC_BAND_PUBLIC_ID", first);
         const portal = resolvePortalRequest({ url: "/nl-BE/backstage/profile", headers: { host: "portal.test" } });
         expect(portal.selection.bandPublicId).toBe(first);
-        await requirePortalAvailability(portal, tx);
         await withAuthorizationBandScope(first, async () => {
             await expect(loadAuthorizationForUser(fixture.user, tx, second)).rejects.toBeInstanceOf(NotFoundError);
         });
-    }));
-
-    it("rejects a deleted band and a locale disabled in the selected band", () => withSettingsMysqlFixture(database!, async (tx, fixture) => {
-        const band = fixture.bands[0]!;
-        const portal = resolvePortalRequest({ url: `/fr-BE/b/${band.publicId}/backstage`, headers: { host: "portal.test" } });
-        await tx.bandLocale.deleteMany({ where: { bandId: band.id, localeId: fixture.frenchId } });
-        await expect(requirePortalAvailability(portal, tx)).rejects.toBeInstanceOf(NotFoundError);
-        await tx.band.update({ where: { id: band.id }, data: { isDeleted: true } });
-        await expect(requirePortalAvailability({ ...portal, selection: { ...portal.selection, routeLocale: null } }, tx)).rejects.toBeInstanceOf(NotFoundError);
     }));
 
     it("does not turn a validated path into a stale membership grant", () => withSettingsMysqlFixture(database!, async (tx, fixture) => {

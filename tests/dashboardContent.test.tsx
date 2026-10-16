@@ -32,9 +32,11 @@ vi.mock("src/core/components/wiki/WikiStandaloneComponents", () => ({
         <div className={props.className} data-floating={props.floatingHeader}>{props.canonicalWikiPath}</div>,
 }));
 vi.mock("src/setting/client/components/SettingMarkdown", () => ({ BandLocalizedMarkdown: ({ id }: { id: string }) => <div data-setting={id}>{id}</div> }));
-vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({
-    getPlainString: (key: LocalizedPlainStringKey) => kStaticLocalizedStringRegistry[key].defaultValue,
-}) }));
+vi.mock("src/locale/components/useLocale", () => ({
+    useLocale: () => ({
+        getPlainString: (key: LocalizedPlainStringKey) => kStaticLocalizedStringRegistry[key].defaultValue,
+    })
+}));
 import { AddDynMenuItemsToStatic, DynMenuToMenuItem, FlattenMenuSections, getCurrentMenuSection } from "src/core/components/dashboard/MenuStructure";
 import { NavRealm, type MenuSection } from "src/core/components/dashboard/StaticMenuItems";
 import { HomeContent } from "src/pages/backstage/index";
@@ -58,21 +60,22 @@ const dashboard = {
     portalHosting: { kind: "platform" as const },
     permission: new TableAccessor([permission]),
     memberPresentation,
-    brand: { hostingMode: HostingMode.CafeMarche },
     currentUser: authenticatedPerson(),
     hasLimitedAccess: false,
     currentMembership: { bandUserInstruments: [] },
     isAuthorized: (value: Permission | string) => grants.has(value),
 };
 function menu(overrides: Partial<MenuLinkListClient> = {}): MenuLinkListClient {
-    return { ...menuLinkListView.hydrate(menuLinkListView.parseDto({
-        publicId: parsePublicId<"MenuLink">("DashboardMenu001"), caption: "Partitions", linkType: "Wiki",
-        wikiSlug: "special/announcements", externalURI: null, applicationPage: "Resources", groupName: "scores",
-        groupCssClass: "", itemCssClass: "score-link", iconName: null, visiblePermissionId: permission.publicId,
-        realm: null, sortOrder: 2, createdAt: new Date(), createdByUserId: null, createdByUser: null,
-        captionStringPublicId: null,
-        captionResolution: { value: "Partitions", localeTag: "fr-BE", scope: "band", source: "stored", reason: "exact", requestedTag: "fr-BE" },
-    }), references), ...overrides };
+    return {
+        ...menuLinkListView.hydrate(menuLinkListView.parseDto({
+            publicId: parsePublicId<"MenuLink">("DashboardMenu001"), caption: "Partitions", linkType: "Wiki",
+            wikiSlug: "special/announcements", externalURI: null, applicationPage: "Resources", groupName: "scores",
+            groupCssClass: "", itemCssClass: "score-link", iconName: null, visiblePermissionId: permission.publicId,
+            realm: null, sortOrder: 2, createdAt: new Date(), createdByUserId: null, createdByUser: null,
+            captionStringPublicId: null,
+            captionResolution: { value: "Partitions", localeTag: "fr-BE", scope: "band", source: "stored", reason: "exact", requestedTag: "fr-BE" },
+        }), references), ...overrides
+    };
 }
 let root: Root;
 let container: HTMLDivElement;

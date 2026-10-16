@@ -4,7 +4,7 @@
 // - band
 // - mapping to registry
 
-import { HostingMode } from "shared/brandConfigBase";
+import { normalizeHostingMode } from "@/shared/brandConfigBase";
 import { isPublicId, parsePublicId, type BandPublicId } from "shared/publicId";
 import { normalizeLocaleTag } from "src/locale/shared/localePreferences";
 
@@ -13,9 +13,13 @@ export type BandHostingConfig =
     | { readonly kind: "platform" }
     | {
         readonly kind: "standalone";
+        readonly tenant: "generic" | "CafeMarche";
         readonly bandPublicId: BandPublicId;
     };
 
+export function isTenant(config: BandHostingConfig, tenant: "generic" | "CafeMarche"): boolean {
+    return config.kind === "standalone" && config.tenant === tenant;
+}
 
 // to be more generic this could also be called "CommonRouteParams"
 export interface RouteBandAndLocale {
@@ -33,24 +37,18 @@ export interface PortalPath extends RouteBandAndLocale {
 // Middleware replaces this hint. Servers still validate configuration, identities and grants.
 export const PORTAL_PATH_HEADER = "x-cmdb-portal-path";
 
-export function getServerBandHostingConfig(mode: string | undefined, configuredBand: string | undefined): BandHostingConfig {
-    // todo: use zod schema; simplify this to parse -> switch
-    if (mode === undefined || mode === HostingMode.Platform) {
+// args are overrides.  normally use from env.
+export function getServerBandHostingConfig(mode?: string | undefined, configuredBand?: string | undefined): BandHostingConfig {
+    const resolvedMode = normalizeHostingMode(mode || process.env.CMDB_HOSTING_MODE);
+    if (resolvedMode === "Platform") {
         return {
             kind: "platform",
         };
     }
-
-    if (mode !== HostingMode.CafeMarche && mode !== HostingMode.GenericSingleTenant) {
-        throw new RangeError("Unknown hosting mode.");
-    }
-    if (!isPublicId(configuredBand)) {
-        throw new RangeError("Standalone hosting requires CMDB_PUBLIC_BAND_PUBLIC_ID.");
-    }
-
     return {
         kind: "standalone",
-        bandPublicId: parsePublicId<"Band">(configuredBand),
+        tenant: resolvedMode === "GenericSingleTenant" ? "generic" : "CafeMarche",
+        bandPublicId: parsePublicId<"Band">(configuredBand || process.env.CMDB_PUBLIC_BAND_PUBLIC_ID),
     };
 }
 

@@ -7,9 +7,8 @@ import { getSessionForRequest } from "src/blitz-server";
 import { assertAuthorizationBandScope, withAuthorizationBandScope } from "src/auth/server/requestAuthorizationScope";
 import { loadPresentationData } from "src/locale/server/presentation";
 import { PresentationInputSchema } from "src/locale/shared/presentationInput";
-import { parsePortalPath, selectPortalContext, type RouteBandAndLocale } from "src/route/portalRouting";
-import { resolvePortalRequest, requirePortalAvailability } from "src/route/server/portalRequest";
-import { serverPortalHosting } from "src/route/server/portalConfig";
+import { getServerBandHostingConfig, parsePortalPath, selectPortalContext, type RouteBandAndLocale } from "src/route/portalRouting";
+import { resolvePortalRequest } from "src/route/server/portalRequest";
 import { loadDbBrandConfig } from "src/server/brand";
 import { loadPageAuthorization } from "../server/pageRequestAuthorization";
 
@@ -34,7 +33,7 @@ async function pageSession(context: PageBootstrapContext) {
 export default async function getPageBootstrap(input: PageBootstrapInput, context: PageBootstrapContext) {
     // lsmb todo: use better routing system.
     const { pathname, requestPath, ...requested } = PageBootstrapInputSchema.parse(input);
-    const hosting = serverPortalHosting();
+    const hosting = getServerBandHostingConfig();
     //console.log(`[getPageBootstrap] path ${pathname}`, input, hosting);
     const request = "req" in context ? context.req : undefined;
     if (request) {
@@ -58,9 +57,7 @@ export default async function getPageBootstrap(input: PageBootstrapInput, contex
 
     assertAuthorizationBandScope(selection.bandPublicId);
 
-    const boundBand = hosting.kind === "standalone" ? hosting.bandPublicId : selection.bandPublicId ?? null;
-    return withAuthorizationBandScope(boundBand, async () => {
-        await requirePortalAvailability({ hosting, selection, pathname }, db);
+    return withAuthorizationBandScope(selection.bandPublicId ?? null, async () => {
         const session = await pageSession(context);
         const auth = await loadPageAuthorization(pathname, session, selection.bandPublicId ?? undefined);
         const presentation = await loadPresentationData(auth, presentationInput);

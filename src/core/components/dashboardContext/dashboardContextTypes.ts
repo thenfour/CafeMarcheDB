@@ -6,11 +6,11 @@ import * as db3 from "@db3/db3";
 import { Prisma } from "db";
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
 import type { EventAttendancePublicId, EventPublicId, EventStatusPublicId, EventTagPublicId, EventTypePublicId, FilePublicId, FileTagPublicId, InstrumentFunctionalGroupPublicId, InstrumentPublicId, PermissionPublicId, SongCreditTypePublicId, SongPublicId, SongTagPublicId, UserPublicId, UserTagPublicId, WikiPageTagPublicId } from "shared/publicId";
-import { SettingsDto } from "../../db3/shared/schema/settings";
+import type { CurrentAccount } from "src/auth/shared/currentAccount";
 import type { PresentationInput } from "src/locale/shared/presentationInput";
 import { portalHref, type BandHostingConfig } from "src/route/portalRouting";
-import type { CurrentAccount } from "src/auth/shared/currentAccount";
 import type { EventParticipantDto } from "../../db3/shared/entities/user/eventParticipant";
+import { SettingsDto } from "../../db3/shared/schema/settings";
 
 export abstract class DashboardContextDataBase {
     constructor(public portalHosting: BandHostingConfig) { }

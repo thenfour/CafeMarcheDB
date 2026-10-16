@@ -6,7 +6,7 @@ import type { EnNlFr } from "shared/lang";
 import { HostingMode } from "shared/brandConfigBase";
 import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
 import { CMPublicIndex } from "src/core/components/frontpage/CMFrontpage";
-import { portalHref } from "src/route/portalRouting";
+import { isTenant, portalHref } from "src/route/portalRouting";
 import React from "react";
 import { readPublicFeed } from "src/core/db3/server/publicFeed";
 import { PublicFeedInputSchema, type PublicFeedInput } from "src/core/db3/shared/publicFeedInput";
@@ -34,7 +34,7 @@ export const getServerSideProps: GetServerSideProps<PublicIndexProps> = async co
                 ...pagePresentationInput(context.query, context.req.headers["accept-language"]),
                 ...portalSelection,
             };
-            if (process.env.CMDB_HOSTING_MODE !== HostingMode.CafeMarche) {
+            if (isTenant(hosting, "generic")) {
                 return {
                     redirect: {
                         destination: portalHref("/backstage", presentation, hosting),

@@ -1,9 +1,8 @@
 // support for the admin logs page
 
-import { serverPortalHosting } from "src/route/server/portalConfig";
 import { Prisma } from "@prisma/client";
 import { parsePublicId } from "shared/publicId";
-import { portalHref } from "src/route/portalRouting";
+import { getServerBandHostingConfig, portalHref } from "src/route/portalRouting";
 import { resolveAuthorizedDynamicStrings } from "src/locale/server/localization";
 import { collectLocalePreferences, selectFormattingLocale } from "src/locale/shared/localePreferences";
 import type { PresentationInput } from "src/locale/shared/presentationInput";
@@ -23,7 +22,7 @@ function recordReference(publicId: string, label: string, deleted: boolean, band
         publicId, label, deleted, bandPublicId,
         href: deleted || path === null ? null : portalHref(path, {
             bandPublicId: bandPublicId === null ? null : parsePublicId<"Band">(bandPublicId), routeLocale: input.routeLocale,
-        }, serverPortalHosting()),
+        }, getServerBandHostingConfig()),
     };
 }
 

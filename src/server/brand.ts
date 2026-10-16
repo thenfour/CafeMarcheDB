@@ -31,7 +31,6 @@ export async function loadDbBrandConfig({ hostHeader, bandId: selectedBandId, fr
 
         const defaultTheme = DefaultDbBrandConfig.theme!;
         const value = validateDbBrandConfig({
-            hostingMode: process.env.CMDB_HOSTING_MODE ?? HostingMode.Platform,
             siteTitle: read("siteCustomization.title"),
             siteTitlePrefix: read("siteCustomization.titlePrefix"),
             siteFaviconUrl: read("siteCustomization.faviconUrl"),

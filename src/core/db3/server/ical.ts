@@ -1,19 +1,18 @@
-import type { EventPublicId, EventSegmentPublicId } from "shared/publicId";
-import { parsePublicId } from "shared/publicId";
 import db from "db";
 import ical, { ICalCalendarMethod, type ICalCalendar, type ICalEvent } from "ical-generator";
 import { isAttendanceGoing } from "shared/eventAttendance";
-import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
+import type { EventPublicId, EventSegmentPublicId } from "shared/publicId";
+import { parsePublicId } from "shared/publicId";
 import { resolveActiveCalendarFeedUser } from "src/auth/server/calendarFeedSubscription";
+import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
+import { getServerBandHostingConfig, portalHref } from "src/route/portalRouting";
 import { readSettingSnapshot, type SettingsSnapshot } from "src/setting/shared/settingsContract";
 import { MakeICalEventUid } from "../shared/apiTypes";
-import { CalendarExportSchema, type CalendarExportArgs } from "../shared/calendarFeed";
 import { shouldIncludeEventInCalendarFeed } from "../shared/calendarAttendance";
-import type { DB3ReadRootDatabase } from "./db3ReadExecution";
+import { CalendarExportSchema, type CalendarExportArgs } from "../shared/calendarFeed";
 import { readCalendarFeedInTransaction } from "./calendarFeedRead";
+import type { DB3ReadRootDatabase } from "./db3ReadExecution";
 import { GetEventCalendarInput, type EventCalendarInput } from "./icalUtils";
-import { portalHref } from "src/route/portalRouting";
-import { serverPortalHosting } from "src/route/server/portalConfig";
 
 interface ICalSettings {
     calendarName: string;
@@ -102,7 +101,8 @@ function renderCalendarEvent(calendar: ICalCalendar, event: CalendarFeedSnapshot
     const attendanceById = new Map(snapshot.attendance.map(row => [row.id, row]));
     // These policy helpers use a generic identity; each private feed contains only its subscriber's BandUser answers.
     const membershipIdentity = snapshot.membershipId;
-    const segments = event.segments.map(segment => ({ ...segment,
+    const segments = event.segments.map(segment => ({
+        ...segment,
         responses: segment.responses.map(answer => ({ ...answer, userId: membershipIdentity })),
     }));
     if (!shouldIncludeEventInCalendarFeed({
@@ -118,12 +118,13 @@ function renderCalendarEvent(calendar: ICalCalendar, event: CalendarFeedSnapshot
         isAttending: event.segments.some(segment => segment.responses.some(answer =>
             answer.attendanceId != null && isAttendanceGoing(attendanceById.get(answer.attendanceId)))),
     };
-    const inputs = GetEventCalendarInput({ ...event, id: parsePublicId<"Event">(event.publicId),
+    const inputs = GetEventCalendarInput({
+        ...event, id: parsePublicId<"Event">(event.publicId),
         segments: event.segments.map(segment => ({ ...segment, id: parsePublicId<"EventSegment">(segment.publicId) })),
     }, snapshot.cancelledStatusIds, snapshot.bandTimeZone);
     for (const input of inputs?.segments ?? []) {
         const uri = new URL(input.eventUri);
-        const path = portalHref(`${uri.pathname}${uri.search}${uri.hash}`, { bandPublicId: snapshot.bandPublicId }, serverPortalHosting());
+        const path = portalHref(`${uri.pathname}${uri.search}${uri.hash}`, { bandPublicId: snapshot.bandPublicId }, getServerBandHostingConfig());
         addEventToCalendar2(calendar, personalization, { ...input, eventUri: new URL(path, uri.origin).href }, settings);
     }
 }

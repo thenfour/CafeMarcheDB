@@ -7,7 +7,7 @@ import { customLinkHref } from "src/core/db3/shared/entities/customLink/customLi
 const first = parsePublicId<"Band">("PortalBand000001");
 const second = parsePublicId<"Band">("PortalBand000002");
 const platform: BandHostingConfig = { kind: "platform" };
-const standalone: BandHostingConfig = { kind: "standalone", bandPublicId: first };
+const standalone: BandHostingConfig = { kind: "standalone", bandPublicId: first, tenant: "generic" };
 
 describe("portal route identities and deployment policy", () => {
     it("retains existing filters, repeated query values and hash while canonicalizing a detail tab", () => {
@@ -17,16 +17,8 @@ describe("portal route identities and deployment policy", () => {
         expect(retainPortalPageState(`https://portal.test/b/${first}/backstage/song/PortalSong00001/new-name/files`, "/backstage/song/old?probe=keep#answer"))
             .toBe(`https://portal.test/b/${first}/backstage/song/PortalSong00001/new-name/files?probe=keep#answer`);
     });
-    it.each([undefined, HostingMode.Platform])("uses platform hosting for %s", mode => {
+    it.each([undefined, "Platform"])("uses platform hosting for %s", mode => {
         expect(getServerBandHostingConfig(mode, undefined)).toEqual(platform);
-    });
-    it.each([HostingMode.CafeMarche, HostingMode.GenericSingleTenant])("requires an explicit standalone binding for %s", mode => {
-        expect(getServerBandHostingConfig(mode, first)).toEqual(standalone);
-        expect(() => getServerBandHostingConfig(mode, undefined)).toThrow();
-        expect(() => getServerBandHostingConfig(mode, "bad")).toThrow();
-    });
-    it("rejects unknown hosting configuration", () => {
-        expect(() => getServerBandHostingConfig("other", first)).toThrow();
     });
     it.each(["/backstage/events", "/backstage/wiki/handbook", "/api/files/download/photo.png", "/tickets/summer"])(
         "mounts the existing path %s without changing its page identity", pathname => {

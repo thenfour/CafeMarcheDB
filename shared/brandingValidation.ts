@@ -1,6 +1,6 @@
 import parseCssColor from "parse-css-color";
 import { z } from "zod";
-import { HostingMode, type DbBrandConfig } from "./brandConfigBase";
+import { type DbBrandConfig } from "./brandConfigBase";
 
 function hasMuiSupportedColorSyntax(value: string): boolean {
     const trimmed = value.trim();
@@ -39,12 +39,17 @@ export const OptionalBrandColorSchema = z.string().max(150).refine(
 );
 
 export const DbBrandConfigSchema = z.object({
-    siteTitle: z.string(), siteTitlePrefix: z.string(), siteFaviconUrl: BrandAssetUrlSchema,
-    siteLogoUrl: BrandAssetUrlSchema.optional(), hostingMode: z.nativeEnum(HostingMode),
+    siteTitle: z.string(),
+    siteTitlePrefix: z.string(),
+    siteFaviconUrl: BrandAssetUrlSchema,
+    siteLogoUrl: BrandAssetUrlSchema.optional(),
     theme: z.object({
-        primaryMain: RequiredBrandColorSchema, secondaryMain: RequiredBrandColorSchema,
-        backgroundDefault: RequiredBrandColorSchema, backgroundPaper: RequiredBrandColorSchema,
-        textPrimary: OptionalBrandColorSchema.optional(), contrastText: RequiredBrandColorSchema,
+        primaryMain: RequiredBrandColorSchema,
+        secondaryMain: RequiredBrandColorSchema,
+        backgroundDefault: RequiredBrandColorSchema,
+        backgroundPaper: RequiredBrandColorSchema,
+        textPrimary: OptionalBrandColorSchema.optional(),
+        contrastText: RequiredBrandColorSchema,
     }).strict(),
 }).strict();
 

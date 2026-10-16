@@ -1,9 +1,13 @@
 
-// todo: better to just make this a zod schema, for parsing/normalization
-export enum HostingMode {
-    Platform = "Platform",
-    CafeMarche = "CafeMarche",
-    GenericSingleTenant = "GenericSingleTenant",
+
+export type HostingMode = "Platform" | "CafeMarche" | "GenericSingleTenant";
+
+// for performance don't use zod
+export function normalizeHostingMode(mode: string | undefined): HostingMode {
+    if (mode === "Platform" || mode === "CafeMarche" || mode === "GenericSingleTenant") {
+        return mode;
+    }
+    throw new Error(`Invalid hosting mode: ${mode}`);
 }
 
 export type ThemeBrand = {
@@ -21,7 +25,6 @@ export type DbBrandConfig = {
     siteFaviconUrl: string;
     siteLogoUrl?: string;
     theme?: ThemeBrand;
-    hostingMode: HostingMode;
 };
 
 export const DefaultDbBrandConfig: DbBrandConfig = {
@@ -29,7 +32,6 @@ export const DefaultDbBrandConfig: DbBrandConfig = {
     siteTitlePrefix: "BS: ",
     siteFaviconUrl: "/favicon.png",
     siteLogoUrl: undefined,
-    hostingMode: HostingMode.Platform,
     theme: {
         primaryMain: "#344873", // matches themeOptions
         secondaryMain: "#831012",

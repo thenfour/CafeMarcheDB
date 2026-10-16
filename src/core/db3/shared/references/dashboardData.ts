@@ -1,12 +1,12 @@
 import type { EventPublicId } from "shared/publicId";
 import type { ServerStartInfo } from "shared/serverStateBase";
 import type { ScopedAuthorizationData } from "src/auth/shared/cmAuthorization";
+import type { LocalizationCatalog } from "src/locale/shared/localizationCatalog";
 import { hydrateView, type AnyDB3View, type ClientOf, type DtoOf } from "../core/db3View";
 import { menuLinkListView } from "../entities/menuLink/menuLinkViews";
+import type { EventParticipantDto } from "../entities/user/eventParticipant";
 import { SettingsDto } from "../schema/settings";
 import * as dashboard from "./dashboardReferences";
-import type { LocalizationCatalog } from "src/locale/shared/localizationCatalog";
-import type { EventParticipantDto } from "../entities/user/eventParticipant";
 
 /** RPC payload: field codecs and reference expansion have not run yet. */
 export interface DashboardDataDto {
@@ -31,7 +31,6 @@ export interface DashboardDataDto {
     relevantEventIds: EventPublicId[];
     hasLimitedAccess: boolean;
     bandTimeZone: string;
-
     settings: SettingsDto;
 }
 

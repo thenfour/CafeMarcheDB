@@ -1,17 +1,16 @@
 import { generateToken, hash256 } from "@blitzjs/auth";
 import type { Ctx } from "@blitzjs/next";
 import type { Prisma } from "@prisma/client";
-import db from "db";
 import { NotFoundError } from "blitz";
+import db from "db";
 import type { BandPublicId } from "shared/publicId";
-import { ServerApi } from "src/server/serverApi";
+import { requireAttendanceRead } from "src/core/db3/server/eventAttendancePolicy";
 import { GetICalRelativeURIForUserUpcomingEvents } from "src/core/db3/shared/apiTypes";
 import { UserForCalBackendArgs } from "src/core/db3/shared/schema/prismArgs";
+import { getServerBandHostingConfig, portalHref } from "src/route/portalRouting";
+import { ServerApi } from "src/server/serverApi";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "./activityLog";
 import { loadAuthorizationForUser } from "./serverAuthorization";
-import { requireAttendanceRead } from "src/core/db3/server/eventAttendancePolicy";
-import { portalHref } from "src/route/portalRouting";
-import { serverPortalHosting } from "src/route/server/portalConfig";
 
 export class CalendarFeedAuthorizationError extends Error {
     name = "CalendarFeedAuthorizationError";
@@ -50,7 +49,7 @@ export const getCalendarFeedSubscriptionInfo = (
     bandPublicId: BandPublicId,
 ): CalendarFeedSubscriptionInfo => {
     const subscriptionUrl = ServerApi.getAbsoluteUri(
-        portalHref(GetICalRelativeURIForUserUpcomingEvents({ calendarFeedToken, bandPublicId }), { bandPublicId }, serverPortalHosting()),
+        portalHref(GetICalRelativeURIForUserUpcomingEvents({ calendarFeedToken, bandPublicId }), { bandPublicId }, getServerBandHostingConfig()),
     );
     return {
         subscriptionUrl,
@@ -119,7 +118,8 @@ export async function saveCalendarFeedSubscription(database: Prisma.TransactionC
     const { calendarFeedToken, changed } = await saveCalendarFeedToken(database, userId, mode);
     if (changed) {
         const replacing = mode === "replace";
-        await RegisterChange({ action: ChangeAction.update,
+        await RegisterChange({
+            action: ChangeAction.update,
             changeContext: CreateChangeContext(replacing ? "replaceCalendarFeedSubscription" : "createCalendarFeedSubscription"),
             table: "User", pkid: userId,
             oldValues: replacing ? { calendarFeedLinkReplaced: false } : { calendarFeedEnabled: false },
