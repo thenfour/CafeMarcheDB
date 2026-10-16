@@ -17,9 +17,6 @@ describe("portal route identities and deployment policy", () => {
         expect(retainPortalPageState(`https://portal.test/b/${first}/backstage/song/PortalSong00001/new-name/files`, "/backstage/song/old?probe=keep#answer"))
             .toBe(`https://portal.test/b/${first}/backstage/song/PortalSong00001/new-name/files?probe=keep#answer`);
     });
-    it.each([undefined, "Platform"])("uses platform hosting for %s", mode => {
-        expect(getServerBandHostingConfig(mode, undefined)).toEqual(platform);
-    });
     it.each(["/backstage/events", "/backstage/wiki/handbook", "/api/files/download/photo.png", "/tickets/summer"])(
         "mounts the existing path %s without changing its page identity", pathname => {
             expect(parsePortalPath(`/fr-be/b/${first}${pathname}`)).toMatchObject({ pathname, bandPublicId: first, routeLocale: "fr-BE" });

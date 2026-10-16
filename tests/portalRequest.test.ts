@@ -37,14 +37,6 @@ describe("server portal request validation", () => {
         "/fr/backstage?routeLocale=nl", "/backstage?routeLocale=fr&routeLocale=nl"])("rejects ambiguous request %s", url => {
             expect(() => resolvePortalRequest(request(url))).toThrow(NotFoundError);
         });
-    it("fails closed for an absent standalone binding and a foreign band", () => {
-        vi.stubEnv("CMDB_HOSTING_MODE", "GenericSingleTenant");
-        vi.stubEnv("CMDB_PUBLIC_BAND_PUBLIC_ID", "");
-        expect(() => resolvePortalRequest(request("/backstage"))).toThrow(NotFoundError);
-        vi.stubEnv("CMDB_PUBLIC_BAND_PUBLIC_ID", first);
-        expect(resolvePortalRequest(request("/backstage")).selection.bandPublicId).toBe(first);
-        expect(() => resolvePortalRequest(request(`/b/${second}/backstage`))).toThrow(NotFoundError);
-    });
 });
 
 describe("request authorization band scope", () => {

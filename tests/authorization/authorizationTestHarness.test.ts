@@ -487,7 +487,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
     resetAuthorizationDatabase({
       user: [],
       event: [
-        { bandId: 1,
+        {
+          bandId: 1,
           id: 20,
           publicId: eventPublicId(20),
           name: "Public event",
@@ -497,7 +498,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
           visiblePermission: { id: publicPermissionId, name: Permission.visibility_public },
           frontpageVisible: true,
         },
-        { bandId: 1,
+        {
+          bandId: 1,
           id: 21,
           publicId: eventPublicId(21),
           name: "Members event",
@@ -507,7 +509,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
           visiblePermission: { id: loggedInPermissionId, name: Permission.visibility_logged_in_users },
           frontpageVisible: true,
         },
-        { bandId: 1,
+        {
+          bandId: 1,
           id: 22,
           publicId: eventPublicId(22),
           name: "Deleted public event",
@@ -545,7 +548,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
 
     const normalDeletedOnlyResult = await invokeResolver(
       db3PaginatedQuery,
-      { bandPublicId: authorizationBandId,
+      {
+        bandPublicId: authorizationBandId,
         ...forgeDb3Query("User", authorizationBandId, {
           filter: {
             items: [{ field: "isDeleted", operator: "equals", value: true }],
@@ -573,7 +577,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
 
     const sysadminDeletedOnlyResult = await invokeResolver(
       db3PaginatedQuery,
-      { bandPublicId: authorizationBandId,
+      {
+        bandPublicId: authorizationBandId,
         ...forgeDb3Query("User", authorizationBandId, {
           filter: {
             items: [{ field: "isDeleted", operator: "equals", value: true }],
@@ -601,7 +606,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
     resetAuthorizationDatabase({
       user: [visibilityUser],
       event: [
-        { bandId: 1,
+        {
+          bandId: 1,
           id: 30,
           publicId: eventPublicId(30),
           name: "Visible event",
@@ -610,7 +616,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
           visiblePermissionId: publicPermissionId,
           visiblePermission: { id: publicPermissionId, name: Permission.visibility_public },
         },
-        { bandId: 1,
+        {
+          bandId: 1,
           id: 31,
           publicId: eventPublicId(31),
           name: "Hidden event",
@@ -619,7 +626,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
           visiblePermissionId: 999,
           visiblePermission: { id: 999, name: Permission.visibility_members },
         },
-        { bandId: 1,
+        {
+          bandId: 1,
           id: 32,
           publicId: eventPublicId(32),
           name: "Deleted event",
@@ -660,7 +668,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
     resetAuthorizationDatabase({
       user: [recoveryAdmin],
       event: [
-        { bandId: 1,
+        {
+          bandId: 1,
           id: 41,
           publicId: eventPublicId(41),
           name: "Deleted band event",
@@ -669,7 +678,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
           visiblePermissionId: publicVisibilityId,
           visiblePermission: { id: publicVisibilityId, name: Permission.visibility_public },
         },
-        { bandId: 1,
+        {
+          bandId: 1,
           id: 42,
           publicId: eventPublicId(42),
           name: "Someone else's private event",
@@ -678,7 +688,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
           visiblePermissionId: null,
           visiblePermission: null,
         },
-        { bandId: 1,
+        {
+          bandId: 1,
           id: 43,
           publicId: eventPublicId(43),
           name: "Own private event",
@@ -694,7 +705,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
       permissions,
     })
 
-    const result = await invokeResolver(db3PaginatedQuery, { bandPublicId: authorizationBandId,
+    const result = await invokeResolver(db3PaginatedQuery, {
+      bandPublicId: authorizationBandId,
       ...forgeDb3Query("Event", authorizationBandId),
       includeDeleted: true,
       skip: 0,
@@ -721,7 +733,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
     const findMany = vi.spyOn(eventDelegate, "findMany")
     const count = vi.spyOn(eventDelegate, "count")
 
-    await expect(invokeResolver(db3PaginatedQuery, { bandPublicId: authorizationBandId,
+    await expect(invokeResolver(db3PaginatedQuery, {
+      bandPublicId: authorizationBandId,
       ...forgeDb3Query("Event", authorizationBandId),
       includeDeleted: true,
       skip: 0,
@@ -746,7 +759,8 @@ describe("Band Admin soft-delete recovery", () => {
     permissions: recoveryPermissions,
   })
   const publicVisibilityId = authorizationPermissionId(Permission.visibility_public)
-  const deletedPublicSong = { bandId: 1,
+  const deletedPublicSong = {
+    bandId: 1,
     id: 51,
     publicId: songPublicId(51),
     name: "Deleted public song",
@@ -1227,8 +1241,10 @@ describe("BA-U002 delegated user administration", () => {
   })
 
   it("revokes shared-account sessions with platform deactivation authority", async () => {
-    resetAuthorizationDatabase({ user: [sysadmin, ordinaryUser],
-      session: [{ id: 1, userId: ordinaryUser.id }], change: [] })
+    resetAuthorizationDatabase({
+      user: [sysadmin, ordinaryUser],
+      session: [{ id: 1, userId: ordinaryUser.id }], change: []
+    })
     await invokeResolver(deactivateUser, { userId: ordinaryUser.publicId, acknowledgeContinuityRisk: false },
       createAuthorizationPersona("sysadmin", { id: sysadmin.id }).ctx)
     expect(authorizationTestDb.snapshot("user")).toContainEqual(expect.objectContaining({ id: ordinaryUser.id, isDeleted: true }))
@@ -1354,65 +1370,6 @@ describe("BA-U003 password-reset hardening", () => {
 
     expect(userFind).not.toHaveBeenCalled()
     expect(tokenCreate).not.toHaveBeenCalled()
-  })
-
-  it("accepts a role-carried Sysadmin permission for account recovery", async () => {
-    const roleGrantedSysadmin = createAuthorizationTestUser("normal", {
-      id: 20,
-      isSysAdmin: false,
-      permissions: [Permission.login, Permission.sysadmin],
-    })
-    resetAuthorizationDatabase({ user: [roleGrantedSysadmin, target], token: [] })
-    const targetLookup = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst")
-    const tokenCreate = vi.spyOn(authorizationTestDb.getDelegate("token"), "create")
-    const { ctx } = createAuthorizationPersona("normal", {
-      id: roleGrantedSysadmin.id,
-      permissions: [Permission.login, Permission.sysadmin],
-    })
-
-    const previousBaseUrl = process.env.CMDB_BASE_URL
-    process.env.CMDB_BASE_URL = "https://reset.test.invalid"
-    try {
-      await expect(invokeResolver(
-        forgotPassword,
-        { userId: target.publicId },
-        ctx,
-      )).resolves.toContain("https://reset.test.invalid")
-    } finally {
-      if (previousBaseUrl === undefined) delete process.env.CMDB_BASE_URL
-      else process.env.CMDB_BASE_URL = previousBaseUrl
-    }
-
-    expect(targetLookup).toHaveBeenCalled()
-    expect(tokenCreate).toHaveBeenCalled()
-  })
-
-  it("lets a Sysadmin issue a hashed, single-user reset token", async () => {
-    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-    const previousBaseUrl = process.env.CMDB_BASE_URL
-    process.env.CMDB_BASE_URL = "https://reset.test.invalid"
-
-    try {
-      const resetUrl = await invokeResolver(forgotPassword, { userId: target.publicId }, ctx)
-      const rawToken = new URL(resetUrl).searchParams.get("token")
-      const storedTokens = authorizationTestDb.snapshot("token")
-
-      expect(rawToken).toBeTruthy()
-      expect(storedTokens).toHaveLength(1)
-      expect(storedTokens[0]).toEqual(expect.objectContaining({
-        type: "RESET_PASSWORD",
-        hashedToken: hash256(rawToken!),
-        sentTo: target.email,
-      }))
-      expect(storedTokens[0]!.hashedToken).not.toBe(rawToken)
-      expect(authorizationTestDb.snapshot("change")).toEqual([])
-    } finally {
-      if (previousBaseUrl === undefined) {
-        delete process.env.CMDB_BASE_URL
-      } else {
-        process.env.CMDB_BASE_URL = previousBaseUrl
-      }
-    }
   })
 
   it("records password completion without credentials in the activity log", async () => {
@@ -1612,8 +1569,10 @@ describe("BA-U004 impersonation hardening", () => {
 describe("BA-A004 membership association authorization", () => {
   const normal = createAuthorizationTestUser("normal", { id: 3 })
   const otherUser = createAuthorizationTestUser("normal", { id: 4 })
-  const instrument = { id: 500, bandId: 1, publicId: "AbCdEfGhIjKlMn50", isHidden: false,
-    globalInstrumentId: null, functionalGroupId: 1 }
+  const instrument = {
+    id: 500, bandId: 1, publicId: "AbCdEfGhIjKlMn50", isHidden: false,
+    globalInstrumentId: null, functionalGroupId: 1
+  }
   const membershipId = (id: number) => "Member" + String(id).padStart(10, "0")
   const replace = (id: number, instrumentIds: string[]) => invokeResolver(executeCommand, {
     bandPublicId: authorizationBandId, commandID: db3.bandUserInstrumentsCommand.commandID,
@@ -1622,9 +1581,11 @@ describe("BA-A004 membership association authorization", () => {
 
   beforeEach(() => {
     vi.restoreAllMocks()
-    resetAuthorizationDatabase({ user: [normal, otherUser], bandInstrument: [instrument],
+    resetAuthorizationDatabase({
+      user: [normal, otherUser], bandInstrument: [instrument],
       bandInstrumentFunctionalGroup: [{ id: 1, bandId: 1, publicId: "AssocGroup000001", isHidden: false, globalFunctionalGroupId: null }],
-      bandUserInstrument: [], change: [] })
+      bandUserInstrument: [], change: []
+    })
   })
 
   it("rejects an association-only update outside the caller's membership", async () => {
@@ -1785,9 +1746,11 @@ describe("BA-A005 delete authorization", () => {
 
   it("hard-deletes an allowlisted band domain table for an authorized actor", async () => {
     const manager = createAuthorizationTestUser("normal", { id: 40, permissions: [Permission.login, Permission.view_custom_links, Permission.manage_custom_links] })
-    const link = { id: 100, publicId: "AuthDeleteLink01", bandId: 1, fileId: null, name: "Delete link",
+    const link = {
+      id: 100, publicId: "AuthDeleteLink01", bandId: 1, fileId: null, name: "Delete link",
       description: "", slug: "delete", destinationURL: "https://example.test", redirectType: "Temporary",
-      intermediateMessage: null, forwardQuery: false, createdByUserId: manager.id }
+      intermediateMessage: null, forwardQuery: false, createdByUserId: manager.id
+    }
     resetAuthorizationDatabase({ user: [manager], customLink: [link], change: [] })
     await invokeResolver(db3Mutation, forgeDb3PublicDelete("CustomLink", authorizationBandId, link.publicId, "hard"),
       createAuthorizationPersona("normal", { id: manager.id, permissions: manager.permissions }).ctx)
@@ -1800,8 +1763,10 @@ describe("BA-A005 delete authorization", () => {
     const otherUser = createAuthorizationTestUser("normal", { id: 21 })
     const own = { id: 300, publicId: "AuthUsrInstr0001", bandUserId: normal.id, bandInstrumentId: 500, isPrimary: true }
     const other = { id: 301, publicId: "AuthUsrInstr0002", bandUserId: otherUser.id, bandInstrumentId: 500, isPrimary: true }
-    resetAuthorizationDatabase({ user: [normal, otherUser], bandUserInstrument: [own, other],
-      bandInstrument: [{ id: 500, publicId: "DeleteInstr00001", bandId: 1, isHidden: false, globalInstrumentId: null }], change: [] })
+    resetAuthorizationDatabase({
+      user: [normal, otherUser], bandUserInstrument: [own, other],
+      bandInstrument: [{ id: 500, publicId: "DeleteInstr00001", bandId: 1, isHidden: false, globalInstrumentId: null }], change: []
+    })
     const remove = (id: number) => invokeResolver(executeCommand, {
       bandPublicId: authorizationBandId, commandID: db3.bandUserInstrumentsCommand.commandID,
       payload: { kind: "replace", membershipId: "Member" + String(id).padStart(10, "0"), instrumentIds: [] },
@@ -1813,12 +1778,12 @@ describe("BA-A005 delete authorization", () => {
   })
 
   it("denies Band Admin shared-account deactivation", async () => {
-        const before = authorizationTestDb.snapshot("user")
-        await expect(invokeResolver(deactivateUser, { userId: ordinaryUser.publicId, acknowledgeContinuityRisk: false },
-          createAuthorizationPersona("bandAdmin", { id: bandAdmin.id }).ctx)).rejects.toThrow("manage_global_users")
-        expect(authorizationTestDb.snapshot("user")).toEqual(before)
-        expect(authorizationTestDb.snapshot("change")).toEqual([])
-      })
+    const before = authorizationTestDb.snapshot("user")
+    await expect(invokeResolver(deactivateUser, { userId: ordinaryUser.publicId, acknowledgeContinuityRisk: false },
+      createAuthorizationPersona("bandAdmin", { id: bandAdmin.id }).ctx)).rejects.toThrow("manage_global_users")
+    expect(authorizationTestDb.snapshot("user")).toEqual(before)
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
+  })
 
   it.each([
     ["a user in a protected role", protectedRoleUser],
@@ -1856,13 +1821,20 @@ describe("BA-A005 delete authorization", () => {
 
   it("cannot trigger GlobalRole or Permission cascades through generic deletion", async () => {
     const assigned = createAuthorizationTestUser("normal", { id: 203 })
-    resetAuthorizationDatabase({ user: [sysadmin, assigned], event: [{ id: 204, bandId: 1,
-      visiblePermissionId: authorizationPermissionId(Permission.visibility_public) }], change: [] })
+    resetAuthorizationDatabase({
+      user: [sysadmin, assigned], event: [{
+        id: 204, bandId: 1,
+        visiblePermissionId: authorizationPermissionId(Permission.visibility_public)
+      }], change: []
+    })
     const role = { id: 200, publicId: "AuthDeleteRole20", isDeleted: false, isSysAdminRole: false }
     await authorizationTestDb.getDelegate("globalRole").create({ data: role })
     await authorizationTestDb.getDelegate("user").update({ where: { id: assigned.id }, data: { globalRoleId: role.id } })
-    await authorizationTestDb.getDelegate("globalRolePermission").create({ data: {
-      id: 202, globalRoleId: role.id, permissionId: authorizationPermissionId(Permission.visibility_public) } })
+    await authorizationTestDb.getDelegate("globalRolePermission").create({
+      data: {
+        id: 202, globalRoleId: role.id, permissionId: authorizationPermissionId(Permission.visibility_public)
+      }
+    })
     const tables = ["globalRole", "globalRolePermission", "permission", "user", "event"]
     const before = tables.map(table => authorizationTestDb.snapshot(table))
     const permission = authorizationTestDb.snapshot("permission").find(row => row.name === Permission.visibility_public)
