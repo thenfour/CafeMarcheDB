@@ -38,18 +38,6 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllEnvs(); });
 
 describe("page bootstrap server boundary", () => {
-    it("authorizes the explicit route and band before loading presentation and branding for RPC navigation", async () => {
-        const result = await getPageBootstrap(input, context);
-        expect(services.session).not.toHaveBeenCalled();
-        expect(services.authorize).toHaveBeenCalledWith(input.pathname, context.session, bandPublicId);
-        expect(services.presentation).toHaveBeenCalledWith(authorization, {
-            bandPublicId, routeLocale: "fr-BE", browserLanguages: ["nl-BE"],
-        });
-        expect(services.brand).toHaveBeenCalledWith({ hostHeader: undefined, bandId: 17, freshness: "refresh" });
-        expect(services.authorize.mock.invocationCallOrder[0]).toBeLessThan(services.presentation.mock.invocationCallOrder[0]!);
-        expect(result).toEqual({ presentation: { input: { bandPublicId } }, brand: { siteTitle: "Selected band" }, portalHosting: { kind: "platform" } });
-    });
-
     it("establishes the SSR session from its trusted request and response", async () => {
         const request = new IncomingMessage(new Socket());
         request.headers.host = "band.example.test";

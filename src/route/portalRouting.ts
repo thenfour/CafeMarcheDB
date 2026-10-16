@@ -139,6 +139,10 @@ export function parsePortalPath(pathname: string): PortalPath {
 // return the relative URL of a band's root.
 // TODO: the band portal root is just another route. use a common route construction.
 function getBandPortalRoot(bandPublicId: BandPublicId, hosting: BandHostingConfig): string {
+    if (hosting.kind === "standalone") {
+        // for single-band hosting, it's more comfy to skip the "/b/1234567812345678" url part.
+        return "";
+    }
     return `/b/${bandPublicId}`;
 }
 
@@ -157,10 +161,12 @@ export function portalHref(path: string, selection: RouteBandAndLocale, hosting:
     }
     const url = new URL(path, "https://cmdb.invalid");
     const parsed = parsePortalPath(url.pathname);
-    // Standalone hosts need an explicit namespace for account/platform pages without band context.
+
     const bandRoot = selection.bandPublicId ? getBandPortalRoot(selection.bandPublicId, hosting)
         : hosting.kind === "standalone" ? "/platform" : "";
+
     const localeRoot = selection.routeLocale ? `/${normalizeLocaleTag(selection.routeLocale)}` : "";
+
     const remainder = parsed.pathname === "/" ? "" : parsed.pathname;
     url.searchParams.delete("bandPublicId");
     url.searchParams.delete("routeLocale");

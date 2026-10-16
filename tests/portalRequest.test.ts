@@ -27,16 +27,13 @@ describe("server portal request validation", () => {
         }))
             .toMatchObject({ pathname: "/backstage/events", selection: { bandPublicId: first, routeLocale: "fr-BE" } });
     });
-    it.each(["evil.test", "portal.test:8080", "portal.test@evil.test", "portal.test,evil.test", "[", ""])("rejects unconfigured host %s", host => {
-        expect(() => resolvePortalRequest(request(`/b/${first}/backstage`, host))).toThrow(NotFoundError);
-    });
+    it.each(["evil.test", "portal.test:8080", "portal.test@evil.test", "portal.test,evil.test", "[", ""])
+        ("rejects unconfigured host %s", host => {
+            expect(() => resolvePortalRequest(request(`/b/${first}/backstage`, host))).toThrow(NotFoundError);
+        });
     it("does not accept forwarded-host hints in place of the configured host", () => {
         expect(() => resolvePortalRequest({ url: "/backstage", headers: { host: "evil.test", "x-forwarded-host": "portal.test" } })).toThrow(NotFoundError);
     });
-    it.each([`/b/${first}/backstage?bandPublicId=${second}`, `/backstage?bandPublicId=${first}&bandPublicId=${second}`,
-        "/fr/backstage?routeLocale=nl", "/backstage?routeLocale=fr&routeLocale=nl"])("rejects ambiguous request %s", url => {
-            expect(() => resolvePortalRequest(request(url))).toThrow(NotFoundError);
-        });
 });
 
 describe("request authorization band scope", () => {

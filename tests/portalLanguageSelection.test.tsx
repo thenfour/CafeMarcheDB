@@ -72,7 +72,7 @@ describe("portal language navigation", () => {
     });
     it("preserves the familiar standalone URL and hides the band picker without reading choices", async () => {
         path = "/fr-BE/backstage/songs?q=brass#results";
-        await render({ kind: "standalone", bandPublicId: band, tenant: "generic" }, <><BandSelection /><PortalLanguageSelection /></>);
+        await render({ kind: "standalone", tenant: "generic" }, <><BandSelection /><PortalLanguageSelection /></>);
         expect(container.querySelector("#dashboard-band")).toBeNull();
         expect(choicesRead).not.toHaveBeenCalled();
         await select("nl-BE");

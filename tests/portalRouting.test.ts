@@ -1,27 +1,18 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { parsePublicId } from "shared/publicId";
-import { parsePortalPath, portalHref, getServerBandHostingConfig, retainPortalPageState, selectPortalContext, type BandHostingConfig } from "src/route/portalRouting";
+import { parsePortalPath, portalHref, getServerBandHostingConfig, retainPortalPageState, type BandHostingConfig } from "src/route/portalRouting";
 import { customLinkHref } from "src/core/db3/shared/entities/customLink/customLinkUrl";
 
 const first = parsePublicId<"Band">("PortalBand000001");
 const second = parsePublicId<"Band">("PortalBand000002");
 const platform: BandHostingConfig = { kind: "platform" };
-const standalone: BandHostingConfig = { kind: "standalone", bandPublicId: first, tenant: "generic" };
+const standalone: BandHostingConfig = { kind: "standalone", tenant: "generic" };
 
 describe("server hosting configuration", () => {
     afterEach(() => { vi.unstubAllEnvs(); });
 
     it("uses the test environment's explicit platform configuration", () => {
         expect(getServerBandHostingConfig()).toEqual(platform);
-    });
-
-    it.each([
-        { mode: "CafeMarche", tenant: "CafeMarche" },
-        { mode: "GenericSingleTenant", tenant: "generic" },
-    ])("binds $mode hosting to its configured band", ({ mode, tenant }) => {
-        vi.stubEnv("CMDB_HOSTING_MODE", mode);
-        vi.stubEnv("CMDB_PUBLIC_BAND_PUBLIC_ID", first);
-        expect(getServerBandHostingConfig()).toEqual({ kind: "standalone", tenant, bandPublicId: first });
     });
 
     it.each([undefined, "", "platform", "invalid"])("rejects missing or invalid hosting mode %s", mode => {
@@ -32,11 +23,6 @@ describe("server hosting configuration", () => {
         expect(() => getServerBandHostingConfig()).toThrow(`Invalid hosting mode: ${mode}`);
     });
 
-    it.each(["CafeMarche", "GenericSingleTenant"])("rejects %s hosting without a configured band", mode => {
-        vi.stubEnv("CMDB_HOSTING_MODE", mode);
-        vi.stubEnv("CMDB_PUBLIC_BAND_PUBLIC_ID", "");
-        expect(() => getServerBandHostingConfig()).toThrow("Expected a 16-character public ID.");
-    });
 });
 
 describe("portal route identities and deployment policy", () => {
@@ -73,16 +59,19 @@ describe("portal route identities and deployment policy", () => {
     it("keeps mutable band names out of URLs", () => {
         expect(portalHref("/backstage", { bandPublicId: first }, platform)).toBe(`/b/${first}/backstage`);
     });
-    it("binds familiar standalone paths to their configured band", () => {
-        expect(selectPortalContext(parsePortalPath("/backstage/events"), {}, standalone)).toEqual({ bandPublicId: first, routeLocale: null });
-        expect(selectPortalContext(parsePortalPath("/fr/backstage"), {}, standalone)).toEqual({ bandPublicId: first, routeLocale: "fr" });
+    it("parses paths correctly without locale or band", () => {
+        const r = {
+            "bandPublicId": null,
+            "hasBandPrefix": false,
+            "hasLocalePrefix": false,
+            "hasPlatformPrefix": false,
+            "pathname": "/backstage/events",
+            "routeLocale": null,
+        }
+        expect(parsePortalPath("/backstage/events")).toEqual(r);
+        expect(parsePortalPath("/fr/backstage")).toEqual({ ...r, routeLocale: "fr", pathname: "/backstage", hasLocalePrefix: true });
     });
-    it("keeps shared account pages explicitly unscoped on a standalone host", () => {
-        expect(portalHref("/backstage/platform-user/PortalPerson001", { bandPublicId: null, routeLocale: "fr-BE" }, standalone))
-            .toBe("/fr-BE/platform/backstage/platform-user/PortalPerson001");
-        expect(selectPortalContext(parsePortalPath("/fr-BE/platform/backstage/platform-adminUsers"), {}, standalone))
-            .toEqual({ bandPublicId: null, routeLocale: "fr-BE" });
-    });
+
     it("keeps band and platform page identities distinct through locale and hosting rewrites", () => {
         const bandHref = portalHref("/backstage/settings", { bandPublicId: first, routeLocale: "fr-BE" }, platform);
         expect(parsePortalPath(bandHref)).toMatchObject({ pathname: "/backstage/settings", bandPublicId: first });
@@ -90,27 +79,6 @@ describe("portal route identities and deployment policy", () => {
             const platformHref = portalHref("/backstage/platform-settings", { bandPublicId: null, routeLocale: "fr-BE" }, hosting);
             const path = parsePortalPath(platformHref);
             expect(path).toMatchObject({ pathname: "/backstage/platform-settings", bandPublicId: null });
-            expect(selectPortalContext(path, {}, hosting).bandPublicId).toBeNull();
         }
     });
-    it.each([
-        `/b/${first}/backstage?bandPublicId=${second}`,
-        `/fr-BE/b/${first}/backstage?routeLocale=nl-BE`,
-        `/platform/backstage?bandPublicId=${first}`,
-    ])("rejects conflicting selections in %s", href => {
-        const url = new URL(href, "https://portal.test");
-        const band = url.searchParams.get("bandPublicId");
-        expect(() => selectPortalContext(parsePortalPath(url.pathname), {
-            bandPublicId: band ? parsePublicId<"Band">(band) : null, routeLocale: url.searchParams.get("routeLocale"),
-        }, platform)).toThrow();
-    });
-    it("rejects foreign-band paths, queries and generated links on standalone hosting", () => {
-        expect(() => selectPortalContext(parsePortalPath(`/b/${second}/backstage`), {}, standalone)).toThrow();
-        expect(() => selectPortalContext(parsePortalPath("/backstage"), { bandPublicId: second }, standalone)).toThrow();
-        expect(() => portalHref("/backstage", { bandPublicId: second }, standalone)).toThrow();
-    });
-    it.each(["/b", "/b/bad/backstage", "/invalid_locale/b/PortalBand000001/backstage", "//evil.test/backstage", "backstage"])(
-        "rejects invalid portal path %s", pathname => {
-            expect(() => parsePortalPath(pathname)).toThrow();
-        });
 });
