@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDashboardContext } from './dashboardContext/DashboardContext';
+import { useCmdbRouter } from '@/src/route/useCmdbRouter';
 
 interface AbcNotationRendererProps {
     notation: string;
@@ -18,9 +18,10 @@ export const AbcNotationRenderer: React.FC<AbcNotationRendererProps> = ({
     style,
     alt = "Music notation",
 }) => {
-    const dashboardContext = useDashboardContext();
+    //const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
     const encodedNotation = encodeURIComponent(notation);
-    const apiUrl = dashboardContext.getAbsoluteUri(`/api/abc/render?notation=${encodedNotation}&width=${width}&scale=${scale}`);
+    const apiUrl = router.getAbsoluteUri(`/api/abc/render?notation=${encodedNotation}&width=${width}&scale=${scale}`);
 
     return (
         <img

@@ -15,6 +15,7 @@ import { UserListItem } from "./UserListItem";
 import { UserOrderByColumnNames, UserOrderByColumnOptions, type UserOrderByColumnOption, type UsersFilterSpec } from "./UserClientBaseTypes";
 import { portalHref } from "src/route/portalRouting";
 import { bandMemberHref } from "./bandMemberLinks";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 interface MemberPreset {
     label: string;
@@ -63,6 +64,7 @@ function memberSort(value: string, canManage: boolean): UserOrderByColumnOption 
 function LoadedMemberDirectory() {
     const dashboard = useDashboardContext();
     const context = useDB3QueryContext();
+    const router = useCmdbRouter();
     const locale = useLocale();
     const canManage = dashboard.isAuthorized(Permission.manage_users);
     const allPreset = { ...all, label: locale.getPlainString("membership.directory.all"), helpText: locale.getPlainString("membership.directory.allDescription") };
@@ -134,7 +136,7 @@ function LoadedMemberDirectory() {
         csvExporter: {
             filename: "users", itemToCSVRow: (member, index) => ({
                 Order: index, "Public ID": member.user.publicId, Name: member.user.name ?? "",
-                URL: bandMemberHref(member.user.publicId, context, dashboard.portalHosting),
+                URL: bandMemberHref(member.user.publicId, context, router.hosting),
             })
         },
         showAdminControls: canManage, className: "usersListContainer",
@@ -150,7 +152,7 @@ function LoadedMemberDirectory() {
         { key: "instruments", label: "Instruments", type: "tags", column: "bandUserInstruments" },
     ];
     return <div className="eventsMainContent searchPage">
-        {dashboard.isAuthorized(Permission.recover_users) && <CMLink href={portalHref("/backstage/recoverMembers", context, dashboard.portalHosting)}>{locale.getPlainString("membership.lifecycle.recoveryTitle")}</CMLink>}
+        {dashboard.isAuthorized(Permission.recover_users) && <CMLink href={portalHref("/backstage/recoverMembers", context, router.hosting)}>{locale.getPlainString("membership.lifecycle.recoveryTitle")}</CMLink>}
         <SearchPageContent config={config} filterHooks={{ tags: tagFilter, role: roleFilter, instruments: instrumentFilter }}
             filterGroupDefinitions={groups} searchPageHook={searchPage} />
     </div>;

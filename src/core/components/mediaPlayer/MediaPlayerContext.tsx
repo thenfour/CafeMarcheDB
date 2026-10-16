@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useState } from "react";
 import type { FilePublicId } from "shared/publicId";
-import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { MediaPlayerContextType, MediaPlayerTrack, MediaPlayerTrackTitle } from "./MediaPlayerTypes";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 const MediaPlayerContext = createContext<MediaPlayerContextType | undefined>(undefined);
 
@@ -12,13 +12,14 @@ export const useMediaPlayer = () => {
 };
 
 export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const dashboardContext = useDashboardContext();
+
     const [playlist, setPlaylistState] = useState<MediaPlayerTrack[]>([]);
     const [currentIndex, setCurrentIndex] = useState<number | undefined>(undefined);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [audioTime, setAudioTime] = useState<number>(0);
     const [audioDuration, setAudioDuration] = useState<number | undefined>(undefined);
     const [pullPlaylistFn, setPullPlaylistFn] = useState<(() => MediaPlayerTrack[]) | undefined>(undefined);
+    const router = useCmdbRouter();
 
     const pause = useCallback(() => setIsPlaying(false), []);
 
@@ -190,7 +191,7 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         if (track.url) return track.url; // If track has a URL, return it
         if (track.file?.externalURI) return track.file.externalURI; // If track has a file with external URI, return it
         if (track.file) {
-            return dashboardContext.routingApi.getURIForFile(track.file); // Use the utility function to get the URI for the file
+            return router.getURIForFile(track.file); // Use the utility function to get the URI for the file
         }
     }, []);
 

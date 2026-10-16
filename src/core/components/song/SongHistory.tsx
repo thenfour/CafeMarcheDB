@@ -1,16 +1,17 @@
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert } from "@mui/material";
 import React from "react";
-import { Permission } from "shared/permissions";
 import { CalendarDate } from "shared/dateTimePolicy";
+import { Permission } from "shared/permissions";
 import type { SongPublicId } from "shared/publicId";
+import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
 import { useLocale } from "src/locale/components/useLocale";
 import type { LocalizedPlainStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
-import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
+import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 import getSongActivityReport from "../../db3/queries/getSongActivityReport";
 import { SongHistoryTimingSchema, type SongHistoryFilter, type SongHistoryTiming } from "../../db3/shared/entities/song/songHistory";
 import { ActivityVis } from "../ActivityVis";
-import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { ChipFilterGroup, FilterControls } from "../search/FilterControl";
 
@@ -25,6 +26,7 @@ const defaultFilter: SongHistoryFilter = { timing: "All past", eventTypeIds: [],
 
 function SongHistoryResults({ song, filterSpec }: SongHistoryProps & { filterSpec: SongHistoryFilter }) {
     const context = useDB3QueryContext();
+    const router = useCmdbRouter();
     const dashboard = useDashboardContext();
     const locale = useLocale();
     const [selectedMonth, setSelectedMonth] = React.useState<string | null>(null);
@@ -58,7 +60,7 @@ function SongHistoryResults({ song, filterSpec }: SongHistoryProps & { filterSpe
             getBucketInfo={bucket => ({ tooltip: <ul>{bucket.items.map(({ item }) => <li key={item.publicId}>{eventLabel(item)}</li>)}</ul> })}
             onBucketClick={bucket => setSelectedMonth(bucket.yearMonthBucketId === selectedMonth ? null : bucket.yearMonthBucketId)} />
         <ul className="songHistoryEvents">{selectedEvents.map(event => <li key={event.publicId}>
-            <a href={dashboard.routingApi.getURIForEvent(event)} target="_blank" rel="noreferrer">{eventLabel(event)}</a>
+            <a href={router.getURIForEvent(event)} target="_blank" rel="noreferrer">{eventLabel(event)}</a>
         </li>)}</ul>
     </>;
 }

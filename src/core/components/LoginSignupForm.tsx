@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { LoginForm } from "src/auth/components/LoginForm";
 import { AppContextMarker } from "./AppContext";
 import { CMLink } from "@/src/route/CMLink";
 import { ActivityFeature } from "./featureReports/activityTracking";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 export const LoginSignup = () => {
     const router = useCmdbRouter();
@@ -26,8 +26,7 @@ export const LoginSignup = () => {
                 <div className="signInBlock login">
                     <LoginForm
                         onSuccess={(_user) => {
-                            //const next = router.query.next ? decodeURIComponent(router.query.next as string) : "/"
-                            return router.push("/backstage");
+                            return router.push(router.href("/backstage"));
                         }}
                     />
                 </div>

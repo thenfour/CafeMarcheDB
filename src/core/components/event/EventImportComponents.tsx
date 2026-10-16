@@ -1,19 +1,20 @@
-import React from "react";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { useQuery } from "@blitzjs/rpc";
+import React from "react";
 import { Permission } from "shared/permissions";
+import { API } from "src/core/db3/clientAPI";
+import * as db3 from "src/core/db3/db3";
+import * as DB3Client from "src/core/db3/DB3Client";
+import getImportEventData from "src/core/db3/queries/getImportEventData";
+import { ZinsertEventArgs, type TGetImportEventDataArgs, type TGetImportEventDataRet } from "src/core/db3/shared/apiTypes";
+import { useLocale } from "src/locale/components/useLocale";
 import { CMButton, EventDateField, NameValuePair } from "../CMCoreComponents2";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { useSnackbar } from "../SnackbarContext";
 import { VisibilityControl } from "../VisibilityControl";
-import { useLocale } from "src/locale/components/useLocale";
-import * as DB3Client from "src/core/db3/DB3Client";
-import * as db3 from "src/core/db3/db3";
-import { API } from "src/core/db3/clientAPI";
-import getImportEventData from "src/core/db3/queries/getImportEventData";
-import { ZinsertEventArgs, type TGetImportEventDataArgs, type TGetImportEventDataRet } from "src/core/db3/shared/apiTypes";
+import { AttendanceChipTooltipContent, AttendanceChipView } from "./AttendanceChipView";
 import { EventTableClientColumns } from "./EventComponentsBase";
 import { EventSegmentClientColumns } from "./EventSegmentComponents";
-import { AttendanceChipTooltipContent, AttendanceChipView } from "./AttendanceChipView";
 
 type SavedImport = Awaited<ReturnType<typeof API.events.newEventMutation.invoke>>;
 // Creation drafts have no persisted identity; their selected references use the dashboard display contract.
@@ -48,16 +49,24 @@ export function EventImportForm({ preview, onSave }: { preview: TGetImportEventD
         visiblePermission: dashboard.permission.getById(preview.event.visiblePermissionId),
     }));
     const [segment, setSegment] = React.useState<SegmentDraft>(() => ({ ...preview.segment, durationMillis: BigInt(preview.segment.durationMillis) }));
-    const eventSpec = DB3Client.defineTableClientSpec({ view: db3.eventEditorView, columns: DB3Client.makeClientColumnSelection(
-        EventTableClientColumns.name, EventTableClientColumns.type, EventTableClientColumns.status,
-        EventTableClientColumns.tags, EventTableClientColumns.expectedAttendanceUserTag, EventTableClientColumns.visiblePermission,
-    ) });
-    const segmentSpec = DB3Client.defineTableClientSpec({ view: db3.eventSegmentEditorView,
-        columns: DB3Client.makeClientColumnSelection(EventSegmentClientColumns.startsAt) });
-    DB3Client.useTableRenderContext({ requestedCaps: DB3Client.xTableClientCaps.None,
-        tableSpec: eventSpec, referenceProvider: dashboard.referenceStore });
-    DB3Client.useTableRenderContext({ requestedCaps: DB3Client.xTableClientCaps.None,
-        tableSpec: segmentSpec, referenceProvider: dashboard.referenceStore });
+    const eventSpec = DB3Client.defineTableClientSpec({
+        view: db3.eventEditorView, columns: DB3Client.makeClientColumnSelection(
+            EventTableClientColumns.name, EventTableClientColumns.type, EventTableClientColumns.status,
+            EventTableClientColumns.tags, EventTableClientColumns.expectedAttendanceUserTag, EventTableClientColumns.visiblePermission,
+        )
+    });
+    const segmentSpec = DB3Client.defineTableClientSpec({
+        view: db3.eventSegmentEditorView,
+        columns: DB3Client.makeClientColumnSelection(EventSegmentClientColumns.startsAt)
+    });
+    DB3Client.useTableRenderContext({
+        requestedCaps: DB3Client.xTableClientCaps.None,
+        tableSpec: eventSpec, referenceProvider: dashboard.referenceStore
+    });
+    DB3Client.useTableRenderContext({
+        requestedCaps: DB3Client.xTableClientCaps.None,
+        tableSpec: segmentSpec, referenceProvider: dashboard.referenceStore
+    });
     const eventValidation = eventSpec.args.table.ValidateAndComputeDiff(event, event, "new");
     const segmentValidation = segmentSpec.args.table.ValidateAndComputeDiff(segment, segment, "new");
     const canSave = dashboard.isAuthorized(Permission.manage_events)
@@ -74,10 +83,12 @@ export function EventImportForm({ preview, onSave }: { preview: TGetImportEventD
             const payload = ZinsertEventArgs.parse({
                 bandPublicId: dashboard.requireBandPublicId(), routeLocale: dashboard.localePreferences.routeLocale,
                 browserLanguages: [...dashboard.localePreferences.browserLanguages],
-                event: { name: event.name, locationDescription: event.locationDescription, typeId: event.type?.publicId ?? null,
+                event: {
+                    name: event.name, locationDescription: event.locationDescription, typeId: event.type?.publicId ?? null,
                     statusId: event.status?.publicId ?? null, tags: event.tags.map(tag => tag.eventTag.publicId),
                     expectedAttendanceUserTagId: event.expectedAttendanceUserTag?.publicId ?? null,
-                    visiblePermissionId: event.visiblePermission?.publicId ?? null },
+                    visiblePermissionId: event.visiblePermission?.publicId ?? null
+                },
                 segment: { ...segment, durationMillis: Number(segment.durationMillis) },
                 responses: preview.responses, songList: preview.songList,
             });
@@ -133,12 +144,15 @@ export function EventImportPreview({ args, onSave }: { args: TGetImportEventData
 
 export function ImportEventsPageContent() {
     const dashboard = useDashboardContext();
+    const router = useCmdbRouter();
     const locale = useLocale();
     const [config, setConfig] = React.useState("y2023");
     const [text, setText] = React.useState(`26 October Rehearsal\npeter + guido + carl\nsmoke and mirrors\nt is proper dat\nzomeravond\nall you need is love\nten dans\npaper spaceships(feat.Pieter maes on e - hangdrum)\nrecordings`);
     const [history, setHistory] = React.useState<SavedImport[]>([]);
-    const args: TGetImportEventDataArgs = { bandPublicId: dashboard.requireBandPublicId(),
-        routeLocale: dashboard.localePreferences.routeLocale, browserLanguages: [...dashboard.localePreferences.browserLanguages], text, config };
+    const args: TGetImportEventDataArgs = {
+        bandPublicId: dashboard.requireBandPublicId(),
+        routeLocale: dashboard.localePreferences.routeLocale, browserLanguages: [...dashboard.localePreferences.browserLanguages], text, config
+    };
     // A new input/context owns a fresh draft; an older preview can never remain saveable.
     const requestKey = JSON.stringify(args);
     return <div className="ImportEventsPageContent"><div className="twocolumns">
@@ -146,7 +160,7 @@ export function ImportEventsPageContent() {
             <textarea className="configTxt" aria-label={locale.getPlainString("eventImport.config")} value={config} onChange={event => setConfig(event.target.value)} />
             <textarea className="eventTxt" aria-label={locale.getPlainString("eventImport.text")} value={text} onChange={event => setText(event.target.value)} />
             <ul className="history">{history.map(saved => <li key={saved.event.publicId}>
-                <a href={dashboard.routingApi.getURIForEvent(saved.event)} target="_blank" rel="noreferrer">
+                <a href={router.getURIForEvent(saved.event)} target="_blank" rel="noreferrer">
                     {saved.event.publicId} / {savedImportDate(saved)} / {saved.event.name}
                 </a>
             </li>)}</ul>

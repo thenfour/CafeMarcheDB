@@ -29,7 +29,6 @@ import { TSongPinnedRecording } from "../../db3/shared/apiTypes";
 import { EventSongListDividerItem } from "../../db3/shared/setlistApi";
 import { ColorPick } from "../color/ColorPick";
 import { gGeneralPaletteList, gLightSwatchColors, gSwatchColors } from "../color/palette";
-import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { AssociationSelect, AssociationValueLink } from "../ItemAssociation";
 import { MediaPlayerTrack } from "../mediaPlayer/MediaPlayerTypes";
 import { SongPlayButton } from "../mediaPlayer/SongPlayButton";
@@ -43,6 +42,7 @@ import { SetlistPlannerLedArray, SetlistPlannerLedDefArray } from "./SetlistPlan
 import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CalculateSetlistPlanStatsForCostCalc, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanStats } from "./SetlistPlanUtilities";
 import { NumberField } from "./SetlistPlanUtilityComponents";
 import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 interface AddSongComponentProps {
     mutator: SetlistPlanMutator;
@@ -226,7 +226,8 @@ type SetlistPlannerMatrixRowProps = {
 
 const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
     const allSongs = useSongsContext().songs;
-    const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
+
     const [showEditDialog, setShowEditDialog] = React.useState(false);
     const [closeMenuProc, setCloseMenuProc] = React.useState<(() => void) | null>(null);
     let songStats = props.stats.songStats.find((x) => x.rowId === props.rowId);
@@ -309,7 +310,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                 <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                     {isDupeWarning && <Tooltip title={`This song occurs ${songOccurrences} times in this plan. Is that right?`}><div className='warnIndicator'>!{songOccurrences}</div></Tooltip>}
                     <Tooltip disableInteractive title={songRow.commentMarkdown ? <Markdown markdown={songRow.commentMarkdown || null} /> : null}>
-                        <a href={dashboardContext.routingApi.getURIForSong(song)} target="_blank" rel="noreferrer" style={{
+                        <a href={router.getURIForSong(song)} target="_blank" rel="noreferrer" style={{
                             //"--song-hash-color": getHashedColor(song.name),
                             color: `var(--song-hash-color)`,
                         } as any}>{song.name}</a>

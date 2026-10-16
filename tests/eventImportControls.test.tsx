@@ -1,4 +1,7 @@
 // @vitest-environment jsdom
+import { createTestRouter } from "./support/routing";
+import { parsePortalPath } from "src/route/portalRouting";
+vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: () => createTestRouter({ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath(`/${dashboard.localePreferences.routeLocale}/b/${dashboard.bandPublicId}/backstage/eventImport`, { kind: "multiBand" }) }) }));
 import React from "react";
 import { act, Simulate } from "react-dom/test-utils";
 import { createRoot, type Root } from "react-dom/client";
@@ -73,7 +76,6 @@ const dashboard = {
     permission: { getById: () => null }, eventAttendance: { getById: (id: string | null) => id === preview.responses[0]!.attendanceId
         ? { publicId: preview.responses[0]!.attendanceId, buttonCaption: "Oui", description: "Available", color: null, iconName: null, strength: 100, isActive: true, sortOrder: 0 }
         : null },
-    routingApi: { getURIForEvent: (event: typeof saved.event) => `/backstage/event/${event.publicId}?bandPublicId=${dashboard.bandPublicId}&routeLocale=${dashboard.localePreferences.routeLocale}` },
 };
 let root: Root;
 let container: HTMLDivElement;
@@ -108,7 +110,7 @@ describe("original import editor workflow", () => {
             event: { ...preview.event, name: "Edited concert" }, segment: { ...preview.segment, startsAt: new Date("2026-10-25T00:00:00Z") },
             responses: preview.responses, songList: preview.songList,
         }));
-        expect(container.querySelector(".history a")?.getAttribute("href")).toContain(`bandPublicId=${band}&routeLocale=fr-BE`);
+        expect(container.querySelector(".history a")?.getAttribute("href")).toContain(`/fr-BE/b/${band}/backstage/event/`);
     });
     it("keeps a failed draft, blocks duplicate pending saves and permits retry", async () => {
         let reject!: (error: Error) => void;

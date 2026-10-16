@@ -9,22 +9,32 @@ import { activityParticipantToken } from "src/core/components/featureReports/ser
 import type { ActivityAuthorizedReferences } from "src/core/components/featureReports/server/activityFacetReferences";
 import type { ActivityAuthorizedDetailReferences } from "src/core/components/featureReports/server/activityDetailReferences";
 
-const input: ActivityDetailInput = { bandPublicId: parsePublicId<"Band">("ActivityBand0001"),
+const input: ActivityDetailInput = {
+    bandPublicId: parsePublicId<"Band">("ActivityBand0001"),
     startDate: new Date("2026-01-01"), endDateExclusive: new Date("2026-02-01"), selectedBucket: "all",
-    filterSpec: { bucketSize: ActivityReportTimeBucketSize.all, excludeYourself: true, excludeSysadmins: true,
-        includeFeatures: [], excludeFeatures: [], contextBeginsWith: null }, facetFilters: emptyActivityFacetFilters(), detail: { facet: "total" } };
-const references: ActivityAuthorizedReferences = { songs: { identities: [], labels: [], items: [] }, events: { identities: [], labels: [], items: [] },
-    wikiPages: { identities: [], labels: [], items: [] }, menuLinks: { identities: [], labels: [], items: [] }, customLinks: { identities: [], labels: [], items: [] } };
-const auxiliary: ActivityAuthorizedDetailReferences = { files: new Map(), segments: new Map(), setlists: new Map(), galleryItems: new Map(),
-    plans: new Map(), creditTypes: new Map(), attendance: new Map(), instruments: new Map() };
-const metadataPolicy = { applicationOrigin: "https://band.test", hosting: { kind: "platform" as const } };
-const rawAction = { id: 1, userId: 42, createdAt: new Date("2026-01-02"), feature: "profile_view", context: "App/profile/PersonPublic001/Alice",
+    filterSpec: {
+        bucketSize: ActivityReportTimeBucketSize.all, excludeYourself: true, excludeSysadmins: true,
+        includeFeatures: [], excludeFeatures: [], contextBeginsWith: null
+    }, facetFilters: emptyActivityFacetFilters(), detail: { facet: "total" }
+};
+const references: ActivityAuthorizedReferences = {
+    songs: { identities: [], labels: [], items: [] }, events: { identities: [], labels: [], items: [] },
+    wikiPages: { identities: [], labels: [], items: [] }, menuLinks: { identities: [], labels: [], items: [] }, customLinks: { identities: [], labels: [], items: [] }
+};
+const auxiliary: ActivityAuthorizedDetailReferences = {
+    files: new Map(), segments: new Map(), setlists: new Map(), galleryItems: new Map(),
+    plans: new Map(), creditTypes: new Map(), attendance: new Map(), instruments: new Map()
+};
+const metadataPolicy = { applicationOrigin: "https://band.test", hosting: { kind: "multiBand" as const } };
+const rawAction = {
+    id: 1, userId: 42, createdAt: new Date("2026-01-02"), feature: "profile_view", context: "App/profile/PersonPublic001/Alice",
     isClient: true, pointerType: "mouse", screenWidth: 1920, screenHeight: 1080, deviceClass: "desktop", browserName: "chrome",
     operatingSystem: "windows", language: "fr", locale: "fr-be", timezone: "Europe/Brussels", songId: 21, eventId: 22,
     wikiPageId: 23, menuLinkId: 24, customLinkId: 25, eventSegmentId: 29, eventSongListId: 30, frontpageGalleryItemId: 31,
     setlistPlanId: 32, songCreditTypeId: 33, bandInstrumentId: 34,
     uri: "https://band.test/backstage/user/867/Alice?email=alice@example.invalid", queryText: "Alice private search",
-    user: { name: "Alice", email: "alice@example.invalid", publicId: "PersonPublic001" }, fileId: 26, bandId: 27, attendanceId: 28 };
+    user: { name: "Alice", email: "alice@example.invalid", publicId: "PersonPublic001" }, fileId: 26, bandId: 27, attendanceId: 28
+};
 
 describe("activity report User identity boundary", () => {
     it("selects only server correlation identities and scalar activity fields, without a person or unchecked reference join", () => {
@@ -67,10 +77,10 @@ describe("activity detail request boundary", () => {
         expect(ActivityDetailInputSchema.safeParse({ ...input, detail: undefined }).success).toBe(false);
     });
     it.each([{ detail: { facet: "users", key: "42" } }, { detail: { facet: "screenSizes", key: "1920x1080" } },
-        { detail: { facet: "songs", key: 21 } }, { detail: { facet: "events", key: "22" } }, { detail: { facet: "total", key: "extra" } },
-        { userId: 42 }, { bandId: 1 }, { timeZone: "UTC" }, { limit: 1000 }, { startDate: input.endDateExclusive },
-        { filterSpec: { ...input.filterSpec, contextBeginsWith: "App/profile/PersonPublic001" } },
-        { detail: { facet: "contexts", key: "App/profile/867/Alice" } },
+    { detail: { facet: "songs", key: 21 } }, { detail: { facet: "events", key: "22" } }, { detail: { facet: "total", key: "extra" } },
+    { userId: 42 }, { bandId: 1 }, { timeZone: "UTC" }, { limit: 1000 }, { startDate: input.endDateExclusive },
+    { filterSpec: { ...input.filterSpec, contextBeginsWith: "App/profile/PersonPublic001" } },
+    { detail: { facet: "contexts", key: "App/profile/867/Alice" } },
     ])("rejects forged scope, unsupported selections and identifying filters: %j", override => {
         expect(ActivityDetailInputSchema.safeParse({ ...input, ...override }).success).toBe(false);
     });

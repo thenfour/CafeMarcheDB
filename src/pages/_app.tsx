@@ -20,16 +20,16 @@ import { themeOptions } from "src/core/theme";
 import { ZodError } from "zod";
 
 import { DbBrandConfig, DefaultDbBrandConfig } from "@/shared/brandConfigBase";
+import { PortalRoutingProvider } from "@/src/route/useCmdbRouter";
 import { invoke, useQueryErrorResetBoundary } from "@blitzjs/rpc";
 import Router from "next/router";
-import getPageBootstrap from "src/auth/queries/getPageBootstrap";
+import getPageBootstrap, { PageBootstrapInput } from "src/auth/queries/getPageBootstrap";
+import { ServerStartupStateContext } from "src/core/components/ServerStartupStateContext";
 import { ConnectionHealthMonitor } from "src/core/connectivity/ConnectionHealthComponents";
 import { isConnectivityError } from "src/core/connectivity/connectionHealth";
 import { PresentationProvider } from "src/locale/components/PresentationProvider";
-import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
-import type { PresentationData } from "src/locale/shared/presentationContext";
-import { PortalRoutingProvider } from "src/route/PortalRoutingProvider";
-import { parsePortalPath, PORTAL_PATH_HEADER, portalHref, type BandHostingConfig } from "src/route/portalRouting";
+import { parseAcceptLanguage } from "src/locale/shared/localePreferences";
+import { deserializePortalPath, replacePortalPathname, type PortalPath } from "src/route/portalRouting";
 import 'src/styles/main.css';
 import '../../public/frontpage.css';
 
@@ -38,10 +38,15 @@ const clientSideEmotionCache = createEmotionCache();
 
 //const theme = createTheme(themeOptions);
 
+type BootstrapData = Awaited<ReturnType<typeof getPageBootstrap>>;
+type RootErrorPresentation = ReturnType<typeof getRootErrorPresentation>;
+
+type AppBootstrap =
+  | { readonly status: "ready"; readonly data: BootstrapData }
+  | ({ readonly status: "error" } & RootErrorPresentation);
+
 interface SharedPageProps {
-  brand?: DbBrandConfig;
-  presentation?: PresentationData;
-  portalHosting?: BandHostingConfig;
+  readonly appBootstrap: AppBootstrap;
 }
 
 export interface MyAppProps extends Omit<AppProps<SharedPageProps>, "Component"> {
@@ -72,8 +77,15 @@ export function getRootErrorPresentation(error: Error & { statusCode?: number })
 }
 
 function RootErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps) {
+  return <RootErrorView presentation={getRootErrorPresentation(error)} resetErrorBoundary={resetErrorBoundary} />;
+}
+
+function RootErrorView({ presentation, resetErrorBoundary }: {
+  readonly presentation: RootErrorPresentation;
+  readonly resetErrorBoundary: () => void;
+}) {
   const brand = useBrand();
-  const { statusCode, title, isConnectivityFailure } = getRootErrorPresentation(error);
+  const { statusCode, title, isConnectivityFailure } = presentation;
   const pageTitle = `${brand.siteTitlePrefix}${statusCode ? `${statusCode}: ` : ""}${title}`;
 
   React.useEffect(() => {
@@ -135,17 +147,15 @@ function getMainPaletteColor(color: PaletteColorOptions | undefined): SimplePale
 
 // in order to emit css from the theme, this must be a CHILD of ThemeProvider.
 function ThemedApp({ Component, pageProps }: Pick<MyAppProps, "Component" | "pageProps">) {
-  // Bootstrap failures render an unscoped error shell; normal pages always carry server hosting.
-  const hosting: BandHostingConfig = pageProps.portalHosting ?? { kind: "platform" };
-  // The server bootstrap already validated the route. Error pages have no selected domain.
-  const presentationInput = pageProps.presentation?.input ?? { bandPublicId: null, routeLocale: null };
+  const state = pageProps.appBootstrap;
+  const bootstrap = state.status === "ready" ? state.data : null;
   const queryErrorResetBoundary = useQueryErrorResetBoundary();
   const getLayout = Component.getLayout || ((page: React.ReactElement) => page)
   // Persist brand across client navigations; only update when a new brand is provided
-  const [brand, setBrand] = React.useState<DbBrandConfig>(pageProps?.brand ?? DefaultDbBrandConfig)
+  const [brand, setBrand] = React.useState<DbBrandConfig>(bootstrap?.brand ?? DefaultDbBrandConfig)
   React.useEffect(() => {
-    if (pageProps?.brand) setBrand(pageProps.brand)
-  }, [pageProps?.brand])
+    if (bootstrap) setBrand(bootstrap.brand)
+  }, [bootstrap?.brand])
   const base = themeOptions;
   const basePrimary = getMainPaletteColor(base.palette?.primary);
   const baseSecondary = getMainPaletteColor(base.palette?.secondary);
@@ -202,20 +212,25 @@ function ThemedApp({ Component, pageProps }: Pick<MyAppProps, "Component" | "pag
         <ConnectionHealthMonitor queryClient={queryClient} />
         <SnackbarProvider>
           <BrandContext.Provider value={brand}>
-            <PortalRoutingProvider hosting={hosting}>
-              <ErrorBoundary FallbackComponent={RootErrorFallback} onReset={queryErrorResetBoundary.reset}>
-                {/* lsmb todo: less intrusive suspense fallback. also is this necessary? the presentationProvider also has a suspense and this might not be needed. */}
-                <React.Suspense fallback={<span role="status">Loading…</span>}>
-                  <PresentationProvider
-                    initial={pageProps.presentation}
-                    bandPublicId={presentationInput.bandPublicId ?? null}
-                    routeLocale={presentationInput.routeLocale ?? null}
-                  >
-                    {getLayout(<Component {...pageProps} />)}
-                  </PresentationProvider>
-                </React.Suspense>
-              </ErrorBoundary>
-            </PortalRoutingProvider>
+            {state.status === "ready" ? <PortalRoutingProvider config={state.data.routing}>
+              <ServerStartupStateContext.Provider value={state.data.serverStartupState}>
+                <ErrorBoundary FallbackComponent={RootErrorFallback} onReset={queryErrorResetBoundary.reset}>
+                  {/* lsmb todo: less intrusive suspense fallback. also is this necessary? the presentationProvider also has a suspense and this might not be needed. */}
+                  <React.Suspense fallback={<span role="status">Loading…</span>}>
+                    <PresentationProvider
+                      initial={state.data.presentation}
+                      bandPublicId={state.data.routing.requestPath.bandPublicId}
+                      routeLocale={state.data.routing.requestPath.routeLocale}
+                    >
+                      {getLayout(<Component {...pageProps} />)}
+                    </PresentationProvider>
+                  </React.Suspense>
+                </ErrorBoundary>
+              </ServerStartupStateContext.Provider>
+            </PortalRoutingProvider> : <RootErrorView
+              presentation={state}
+              resetErrorBoundary={() => { window.location.reload(); }}
+            />}
           </BrandContext.Provider>
         </SnackbarProvider>
       </ThemeProvider>
@@ -235,64 +250,60 @@ export function MyApp({
   );
 }
 
+// Next error rendering has no page bootstrap or guaranteed rewrite metadata.
+function getFrameworkErrorPresentation({ err, pathname }: Pick<AppContext["ctx"], "err" | "pathname">): RootErrorPresentation | null {
+  if (!err && pathname !== "/_error" && pathname !== "/404") {
+    return null;
+  }
+  if (!err) {
+    return {
+      statusCode: pathname === "/404" ? 404 : 500,
+      title: pathname === "/404" ? "This page could not be found" : "An unexpected error occurred",
+      isConnectivityFailure: false,
+    };
+  }
+  const presentation = getRootErrorPresentation(err);
+  return { ...presentation, statusCode: presentation.isConnectivityFailure ? null : err.statusCode ?? 500 };
+}
+
 // withBlitz preserves this hook
 // https://nextjs.org/docs/pages/api-reference/functions/get-initial-props
-// runs on server-side and again on client side (though ... i did not observe that)
 // client-side nav is possible through Router.push / replace.
+// the main point of this hook is to call getPageBootstrap, making that data available to all pages.
 MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<SharedPageProps>> => {
   const { req, res, pathname } = appCtx.ctx;
-  let bootstrap: Awaited<ReturnType<typeof getPageBootstrap>>;
-  try {
-    const presentationInput = pagePresentationInput(appCtx.ctx.query, req?.headers["accept-language"]);
-    const hint = req?.headers[PORTAL_PATH_HEADER]; // the original path as requested. client side doesn't get this and uses asPath.
-
-    // console.log(`[App.getInitialProps] hint: ${hint}`);  // requested raw path, without query params or hash
-    // console.log(`                      ctx : ${appCtx.ctx.asPath}`); // requested raw path with query params
-    // console.log(`                      path : ${pathname}`); // next transformed path
-
-    // todo: is it even necessary to have this fallback logic?
-    // it's actually selecting between raw request paths and next-resolved route patterns, which
-    // makes things confusing.
-    const requestPath = typeof hint === "string" ? hint : appCtx.ctx.asPath ?? pathname;
-    const input = {
-      ...presentationInput,
-      requestPath,
-      pathname,
-    };
-
-    // req missing == client-side navigation
-    bootstrap = req ? await getPageBootstrap(input, appCtx.ctx) : await invoke(getPageBootstrap, input);
-  } //
-  catch (error) {
-
-    console.log(`[MyApp.getInitialProps] error over ${pathname}`, error);
-    if (error instanceof AuthorizationError && res) {
-      res.statusCode = 403;
+  const frameworkError = getFrameworkErrorPresentation(appCtx.ctx);
+  if (frameworkError) {
+    if (res) {
+      res.statusCode = frameworkError.statusCode ?? 503;
       res.setHeader("Cache-Control", "no-store");
-      res.end();
-      return { pageProps: {} };
     }
-
-    // Route bootstrap rejects unavailable selections before page loaders run.
-    const invalidBandInput = error instanceof ZodError && error.issues.some(issue => issue.path[0] === "bandPublicId");
-    if (error instanceof NotFoundError || invalidBandInput || error instanceof RangeError) {
-      if (res) {
-        res.statusCode = 404;
-        res.end();
-      } else {
-        await Router.replace("/404");
-      }
-      return { pageProps: {} };
-    }
-
-    if (!(error instanceof AuthenticationError)) {
+    return { pageProps: { appBootstrap: { status: "error", ...frameworkError } } };
+  }
+  let requestPath: PortalPath | undefined;
+  let bootstrap: BootstrapData;
+  try {
+    requestPath = deserializePortalPath(appCtx.ctx.query);
+    const input: PageBootstrapInput = {
+      pagePattern: pathname,
+      requestPath,
+      browserLanguages: req ? parseAcceptLanguage(req.headers["accept-language"]) : [...navigator.languages],
+    };
+    bootstrap = req ? await getPageBootstrap(input, appCtx.ctx) : await invoke(getPageBootstrap, input);
+  } catch (error) {
+    const statusCode = error instanceof AuthenticationError ? 401
+      : error instanceof AuthorizationError ? 403
+        : error instanceof NotFoundError || error instanceof ZodError || error instanceof RangeError ? 404 : null;
+    if (statusCode === null) {
       throw error;
     }
-
-    // lsmb todo: don't hardcode this; refer to route registry logic.
-    if (pathname !== "/backstage") {
-      const selection = parsePortalPath(new URL(appCtx.ctx.asPath ?? pathname, "https://cmdb.invalid").pathname);
-      const loginPath = portalHref("/backstage", selection, { kind: "platform" });
+    if (res) {
+      res.statusCode = statusCode;
+      res.setHeader("Cache-Control", "no-store");
+    }
+    // /backstage owns the sign-in UI. A failure there must not redirect to itself.
+    if (error instanceof AuthenticationError && pathname !== "/backstage" && requestPath) {
+      const loginPath = replacePortalPathname(requestPath, "/backstage");
       if (res) {
         res.writeHead(302, { Location: loginPath });
         res.end();
@@ -300,18 +311,17 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
         await Router.replace(loginPath);
       }
     }
-    return { pageProps: {} };
-  } // catch
-
-  // Route authorization precedes page loaders on both SSR and client navigation.
-  const appProps: AppInitialProps<SharedPageProps> = await NextApp.getInitialProps(appCtx);
-  return {
-    ...appProps,
-    pageProps: {
-      ...appProps.pageProps,
-      ...bootstrap
-    },
-  };
+    return {
+      pageProps: {
+        appBootstrap: {
+          status: "error", statusCode, isConnectivityFailure: false,
+          title: statusCode === 404 ? "This page could not be found" : getRootErrorPresentation(error).title,
+        }
+      }
+    };
+  }
+  const appProps = await NextApp.getInitialProps(appCtx);
+  return { ...appProps, pageProps: { ...appProps.pageProps, appBootstrap: { status: "ready", data: bootstrap } } };
 };
 
 export default withBlitz(MyApp);

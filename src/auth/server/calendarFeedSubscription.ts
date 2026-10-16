@@ -5,9 +5,8 @@ import { NotFoundError } from "blitz";
 import db from "db";
 import type { BandPublicId } from "shared/publicId";
 import { requireAttendanceRead } from "src/core/db3/server/eventAttendancePolicy";
-import { GetICalRelativeURIForUserUpcomingEvents } from "src/core/db3/shared/apiTypes";
 import { UserForCalBackendArgs } from "src/core/db3/shared/schema/prismArgs";
-import { getServerBandHostingConfig, portalHref } from "src/route/portalRouting";
+import { getICalRelativeURIForUserUpcomingEvents, getServerBandHostingConfig, portalHref } from "src/route/portalRouting";
 import { ServerApi } from "src/server/serverApi";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "./activityLog";
 import { loadAuthorizationForUser } from "./serverAuthorization";
@@ -49,7 +48,7 @@ export const getCalendarFeedSubscriptionInfo = (
     bandPublicId: BandPublicId,
 ): CalendarFeedSubscriptionInfo => {
     const subscriptionUrl = ServerApi.getAbsoluteUri(
-        portalHref(GetICalRelativeURIForUserUpcomingEvents({ calendarFeedToken, bandPublicId }), { bandPublicId }, getServerBandHostingConfig()),
+        portalHref(getICalRelativeURIForUserUpcomingEvents({ calendarFeedToken }), { bandPublicId }, getServerBandHostingConfig()),
     );
     return {
         subscriptionUrl,

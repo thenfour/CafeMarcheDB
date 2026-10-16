@@ -1,52 +1,84 @@
-// server
-
 import { NotFoundError } from "blitz";
 import db from "db";
 import type { IncomingMessage } from "node:http";
+import type { ParsedUrlQuery } from "querystring";
+import { parsePublicId } from "shared/publicId";
 import { withAuthorizationBandScope } from "src/auth/server/requestAuthorizationScope";
-import { getServerBandHostingConfig, parsePortalPath, PORTAL_PATH_HEADER, type BandHostingConfig, type RouteBandAndLocale } from "../portalRouting";
-import { assertPortalHost, portalPublicOrigin } from "./portalConfig";
+import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
+import { deserializePortalPath, getServerBandHostingConfig, PORTAL_PATH_QUERY_PARAM, type BandHostingConfig, type PortalPath } from "../portalRouting";
+import { serverGetBaseUrl } from "./portalConfig";
 
-export type PortalAvailabilityDatabase = Pick<typeof db, "band" | "locale">;
+export type PortalBandDatabase = Pick<typeof db, "band">;
 
 export interface PortalRequest {
     readonly hosting: BandHostingConfig;
-    readonly selection: RouteBandAndLocale;
-    readonly pathname: string;
+    readonly requestPath: PortalPath;
 }
 
-// lsmb todo: this is likely reduceable/removable. `selection` and pathname?
-export function resolvePortalRequest(request: Pick<IncomingMessage, "url" | "headers">, requestedPath?: string): PortalRequest {
-    const hosting = getServerBandHostingConfig();
-    const origin = portalPublicOrigin();
-    assertPortalHost(request.headers.host, origin);
-    const incoming = new URL(request.url ?? "/", origin);
-    const hint = request.headers[PORTAL_PATH_HEADER];
-    const originalPath = requestedPath ?? (typeof hint === "string" ? hint : incoming.pathname);
-    try {
-        const original = new URL(originalPath, origin);
-        if (original.origin !== origin.origin) {
-            throw new RangeError("Expected a local request path.");
+type PortalIncomingRequest = Pick<IncomingMessage, "url" | "headers"> & { readonly query?: ParsedUrlQuery };
+const requests = new WeakMap<PortalIncomingRequest, Promise<PortalRequest>>();
+
+/** Resolve the parameter omitted by single-band URLs, without reparsing the path. */
+export async function resolvePortalPath(path: PortalPath, hosting: BandHostingConfig, database: PortalBandDatabase = db): Promise<PortalPath> {
+    if (!path.hasBandPrefix) {
+        if (path.bandPublicId !== null) {
+            throw new NotFoundError();
         }
-        const path = parsePortalPath(original.pathname);
-        if (["bandPublicId", "routeLocale"].some(key => incoming.searchParams.getAll(key).length > 1)) {
-            throw new RangeError("Ambiguous portal selection.");
+        return path;
+    }
+    if (hosting.kind === "multiBand") {
+        if (!path.bandPublicId) {
+            throw new NotFoundError();
         }
-        return {
-            hosting,
-            selection: path,
-            pathname: path.pathname
-        };
-    } catch {
+        return path;
+    }
+    // todo: consider caching this.
+    const bands = await database.band.findMany({ select: { publicId: true }, take: 2 });
+    if (bands.length !== 1) {
+        throw new Error("Single-band hosting requires exactly one Band in the database.");
+    }
+    const bandPublicId = bands[0]!.publicId;
+    if (path.bandPublicId !== null && path.bandPublicId !== bandPublicId) {
         throw new NotFoundError();
     }
+    return { ...path, bandPublicId: parsePublicId<"Band">(bandPublicId) };
 }
 
-// Wraps an operation in a portal req context. (locale + band)
-export async function withPortalRequest<T>(request: Pick<IncomingMessage, "url" | "headers">, operation: (portal: PortalRequest) => Promise<T>): Promise<T> {
-    const portal = resolvePortalRequest(request);
-    // while we could force standalone to always use the configured singleton band,
-    // it's simpler to just use the requested band. non-expistent bands get rejected anyway.
-    //const boundBand = portal.hosting.kind === "standalone" ? portal.hosting.bandPublicId : portal.selection.bandPublicId ?? null;
-    return withAuthorizationBandScope(portal.selection.bandPublicId ?? null, () => operation(portal));
+function requestPortalPath(request: PortalIncomingRequest): PortalPath {
+    if (request.query) {
+        return deserializePortalPath(request.query);
+    }
+    const url = new URL(request.url ?? "/", serverGetBaseUrl());
+    const values = url.searchParams.getAll(PORTAL_PATH_QUERY_PARAM);
+    return deserializePortalPath({ [PORTAL_PATH_QUERY_PARAM]: values.length === 1 ? values[0] : values });
+}
+
+/** Adapters may already have deserialized Next's query; reuse that value and this request's resolution. */
+export function resolvePortalRequestContext(request: PortalIncomingRequest, path?: PortalPath): Promise<PortalRequest> {
+    const existing = requests.get(request);
+    if (existing) {
+        return existing;
+    }
+    const pending = (async () => {
+        const hosting = getServerBandHostingConfig();
+        const requestPath = await resolvePortalPath(path ?? requestPortalPath(request), hosting);
+        return { hosting, requestPath };
+    })().catch(error => {
+        if (error instanceof RangeError) {
+            throw new NotFoundError();
+        }
+        throw error;
+    });
+    requests.set(request, pending);
+    return pending;
+}
+
+export async function resolvePagePresentationInput(request: PortalIncomingRequest, query: ParsedUrlQuery) {
+    const portal = await resolvePortalRequestContext(request, deserializePortalPath(query));
+    return pagePresentationInput(portal.requestPath, request.headers["accept-language"]);
+}
+
+export async function withPortalRequest<T>(request: PortalIncomingRequest, operation: (portal: PortalRequest) => Promise<T>, path?: PortalPath): Promise<T> {
+    const portal = await resolvePortalRequestContext(request, path);
+    return withAuthorizationBandScope(portal.requestPath.bandPublicId, () => operation(portal));
 }

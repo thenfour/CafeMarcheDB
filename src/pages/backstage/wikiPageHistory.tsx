@@ -1,6 +1,6 @@
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { Alert } from "@mui/material";
 import { useLocale } from "src/locale/components/useLocale";
-import { portalHref } from "src/route/portalRouting";
 import { CMLink } from "@/src/route/CMLink";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
@@ -135,6 +135,7 @@ const RebuildStatsButton = (props: { onChanged: () => void }) => {
 };
 
 const WikiRevisionHistoryPageContent = () => {
+    const cmdbRouter = useCmdbRouter();
     const canonicalWikiPath = (useRouterQuery()["path"] || "") as string;
     const wikiPath = wikiParseCanonicalWikiPath(canonicalWikiPath);
     const dashboardContext = useDashboardContext();
@@ -154,7 +155,7 @@ const WikiRevisionHistoryPageContent = () => {
             void qExtra.refetch();
         }} />}
         <h1>
-            <CMLink href={portalHref(wikiPath.uriRelativeToHost, dashboardContext.memberPresentation, dashboardContext.portalHosting)} rel="noreferrer">{currentRevision.name || pageWithRevisions.slug}</CMLink>
+            <CMLink href={cmdbRouter.href(wikiPath.uriRelativeToHost)} rel="noreferrer">{currentRevision.name || pageWithRevisions.slug}</CMLink>
         </h1>
         <table>
             <thead>

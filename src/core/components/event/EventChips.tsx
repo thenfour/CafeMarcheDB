@@ -16,6 +16,7 @@ import { ColorVariationSpec, StandardVariationSpec } from "../color/palette";
 import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
 import { Permission } from "@/shared/permissions";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 
 export interface EventStatusChipProps {
@@ -64,10 +65,11 @@ export interface EventChipProps {
 
 export const EventChip = ({ renderAsLink = true, ...props }: EventChipProps) => {
     const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
 
     // cancelled events should be shown with a strikethrough
     const status = dashboardContext.eventStatus.getById(props.value.statusId);
-    const href = dashboardContext.isAuthorized(Permission.view_events) ? dashboardContext.routingApi.getURIForEvent(props.value) : undefined;
+    const href = dashboardContext.isAuthorized(Permission.view_events) ? router.getURIForEvent(props.value) : undefined;
 
     return <CMChip
         variation={props.variation}

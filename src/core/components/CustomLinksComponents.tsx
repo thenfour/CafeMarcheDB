@@ -1,3 +1,4 @@
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { gNullValue, TAnyModel } from "@/shared/rootroot";
 import { Tooltip, Typography } from "@mui/material";
 import React from "react";
@@ -20,9 +21,10 @@ import type { LocalizedMarkdownKey, LocalizedPlainStringKey } from "src/locale/s
 import { customLinkHref } from "src/core/db3/shared/entities/customLink/customLinkUrl";
 
 function CustomLinkUrlPreview({ slug }: { readonly slug: string }) {
+    const cmdbRouter = useCmdbRouter();
     const dashboard = useDashboardContext();
     const bandPublicId = dashboard.memberPresentation.bandPublicId;
-    return bandPublicId ? <>{dashboard.getAbsoluteUri(customLinkHref(slug.trim(), bandPublicId, dashboard.portalHosting))}</> : null;
+    return bandPublicId ? <>{cmdbRouter.getAbsoluteUri(customLinkHref(slug.trim(), bandPublicId, cmdbRouter.hosting))}</> : null;
 }
 
 
@@ -110,6 +112,7 @@ interface CustomLinkItemProps {
 
 
 export const CustomLinkItem = (props: CustomLinkItemProps) => {
+    const cmdbRouter = useCmdbRouter();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const recordFeature = useFeatureRecorder();
     const dashboardContext = useDashboardContext();
@@ -157,7 +160,7 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
     const bandPublicId = dashboardContext.memberPresentation.bandPublicId;
     const absoluteLocalURL = props.item.slug === undefined || !bandPublicId
         ? undefined
-        : dashboardContext.getAbsoluteUri(customLinkHref(props.item.slug, bandPublicId, dashboardContext.portalHosting));
+        : cmdbRouter.getAbsoluteUri(customLinkHref(props.item.slug, bandPublicId, cmdbRouter.hosting));
     const destinationURL = props.item.destinationURL;
 
     const clipboardCopy = async (text: string) => {

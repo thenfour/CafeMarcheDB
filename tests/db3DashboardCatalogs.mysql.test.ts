@@ -68,7 +68,7 @@ describe.skipIf(!settingsMysqlTestUrl)("dashboard catalog references on MariaDB"
         return { ...catalogs, localization, settings, currentMembership: null, authorization: auth.toClientContext(),
             permission: [], eventType: [], eventStatus: [], eventTag: [],
             eventAttendance: [], songCreditType: [], dynMenuLinks: [], relevantEventIds: [], hasLimitedAccess: false,
-            serverBaseUri: "https://example.test", serverStartupState: null, bandTimeZone: "Europe/Brussels" };
+            bandTimeZone: "Europe/Brussels" };
     }
 
     it("excludes deleted global permission metadata for members and platform administrators", () =>

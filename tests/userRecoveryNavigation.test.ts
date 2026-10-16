@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { createTestRouter } from "./support/routing";
+import { parsePortalPath } from "src/route/portalRouting";
 
 import React from "react";
 import { act } from "react-dom/test-utils";
@@ -20,7 +22,7 @@ vi.mock("src/core/components/user/UserSignInMethodsButton", () => ({ UserSignInM
 vi.mock("src/core/components/user/MergeUsersButton", () => ({ MergeUsersButton: () => null }));
 vi.mock("src/auth/mutations/setUserSysAdmin", () => ({ default: vi.fn() }));
 vi.mock("@blitzjs/next", () => ({ Routes: { UserSearchPage: () => "/backstage/users" } }));
-vi.mock("next/router", () => ({ useRouter: vi.fn() }));
+vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: vi.fn() }));
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: vi.fn() }));
 vi.mock("src/core/components/user/useUserLifecycleActions", () => ({ useUserLifecycleActions: vi.fn() }));
 vi.mock("src/core/components/SnackbarContext", () => ({ useSnackbar: () => ({ showSuccess: vi.fn(), showError: vi.fn(),
@@ -40,7 +42,7 @@ vi.mock("src/core/components/user/AdminResetPasswordButton", () => ({ AdminReset
 vi.mock("src/core/components/user/ImpersonateUserButton", () => ({ ImpersonateUserButton: () => null }));
 
 import { Permission } from "shared/permissions";
-import { useRouter } from "next/router";
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
 import { useUserLifecycleActions } from "src/core/components/user/useUserLifecycleActions";
 import { DeactivateUserButton, ReactivateUserButton, SetUserSysadminButton } from "src/core/components/user/UserAdminPanel";
@@ -75,7 +77,7 @@ describe("user profile lifecycle navigation", () => {
         const replace = vi.fn();
         const refresh = vi.fn();
         const deactivate = vi.fn().mockResolvedValue(true);
-        vi.mocked(useRouter).mockReturnValue({ replace } as any);
+        vi.mocked(useCmdbRouter).mockReturnValue(createTestRouter({ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/backstage", { kind: "multiBand" }) }, { replace }));
         vi.mocked(useDashboardContext).mockReturnValue({
             portalHosting: { kind: "platform" }, memberPresentation: {},
             currentUser: { publicId: userPublicId(1) },
@@ -90,7 +92,7 @@ describe("user profile lifecycle navigation", () => {
             expect(refresh).toHaveBeenCalledTimes(1);
             expect(replace).not.toHaveBeenCalled();
         } else {
-            expect(replace).toHaveBeenCalledWith("/backstage/users");
+            expect(replace).toHaveBeenCalledWith("/backstage/users", undefined, undefined);
             expect(refresh).not.toHaveBeenCalled();
         }
     });
@@ -99,7 +101,7 @@ describe("user profile lifecycle navigation", () => {
         const replace = vi.fn();
         const refresh = vi.fn();
         vi.spyOn(console, "error").mockImplementation(() => undefined);
-        vi.mocked(useRouter).mockReturnValue({ replace } as any);
+        vi.mocked(useCmdbRouter).mockReturnValue(createTestRouter({ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/backstage", { kind: "multiBand" }) }, { replace }));
         vi.mocked(useDashboardContext).mockReturnValue({ currentUser: { publicId: userPublicId(1) }, isAuthorized: () => false } as any);
         const deactivate = fails ? vi.fn().mockRejectedValue(new Error("Denied")) : vi.fn().mockResolvedValue(false);
         vi.mocked(useUserLifecycleActions).mockReturnValue({ deactivate, reactivate: vi.fn() });

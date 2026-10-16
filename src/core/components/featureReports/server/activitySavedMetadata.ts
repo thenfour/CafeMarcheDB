@@ -35,7 +35,7 @@ function savedApplicationPath(value: string | null, policy: ActivityMetadataPoli
         if (!relative && (!policy.applicationOrigin || url.origin !== new URL(policy.applicationOrigin).origin)) {
             return null;
         }
-        return parsePortalPath(url.pathname).pathname;
+        return parsePortalPath(url.pathname, policy.hosting).internalPathname;
     } catch {
         return null;
     }

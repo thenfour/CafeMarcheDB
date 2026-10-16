@@ -8,17 +8,18 @@ import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-
 import { Coalesce } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
+import { Coord2D, TAnyModel } from "@/shared/rootroot";
+import { CMLink } from "@/src/route/CMLink";
 import { Tooltip } from "@mui/material";
 import { Permission } from "shared/permissions";
-import type { EventPublicId, EventStatusPublicId, EventTypePublicId, InstrumentPublicId, InstrumentFunctionalGroupPublicId } from "shared/publicId";
+import type { EventPublicId, EventStatusPublicId, EventTypePublicId, InstrumentFunctionalGroupPublicId, InstrumentPublicId } from "shared/publicId";
 import { RenderMuiIcon } from "../db3/components/IconMap";
 import { CMChip, CMChipBorderOption, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
-import { CMLink } from "@/src/route/CMLink";
 import { CMTextField } from "./CMTextField";
 import { ColorVariationSpec } from "./color/palette";
-import { ActivityFeature } from "./featureReports/activityTracking";
-import { Coord2D, TAnyModel } from "@/shared/rootroot";
 import { useDashboardContext } from "./dashboardContext/DashboardContext";
+import { ActivityFeature } from "./featureReports/activityTracking";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 // https://github.com/kutlugsahin/react-smooth-dnd/issues/88
 export const ReactSmoothDndContainer = (props: React.PropsWithChildren<any>) => {
@@ -354,6 +355,7 @@ export const EventTextLink = (props: {
     },
     className?: string | undefined,
 }) => {
+    const router = useCmdbRouter();
     const dashboardContext = useDashboardContext();
     const type = dashboardContext.eventType.getById(props.event.typeId);
     const status = dashboardContext.eventStatus.getById(props.event.statusId);
@@ -372,7 +374,7 @@ export const EventTextLink = (props: {
         target="_blank"
         className={`${props.className} EventTextLink`}
         style={{ display: "block", whiteSpace: "nowrap", maxWidth: "150px" }}
-        href={dashboardContext.routingApi.getURIForEvent(props.event)}
+        href={router.getURIForEvent(props.event)}
         trackingFeature={ActivityFeature.link_follow_internal}
     >
         <CMChip

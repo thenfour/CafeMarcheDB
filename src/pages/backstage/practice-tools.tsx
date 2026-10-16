@@ -1,28 +1,28 @@
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { AppContextMarker } from "@/src/core/components/AppContext";
 import { CMSinglePageSurfaceCard } from "@/src/core/components/CMCoreComponents";
 import { CMLink } from "@/src/route/CMLink";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { MetronomePanel } from "@/src/core/components/Metronome";
 //import { TunerCard } from "@/src/core/components/tuner/TunerCard";
 import { BlitzPage } from "@blitzjs/next";
 import HomeIcon from '@mui/icons-material/Home';
 import { Breadcrumbs } from "@mui/material";
-import { portalHref } from "src/route/portalRouting";
 
 
 ////////////////////////////////////////////////////////////////
 export const PracticeToolsBreadcrumbs = () => {
-    const dashboardContext = useDashboardContext();
+    const cmdbRouter = useCmdbRouter();
+
     return <Breadcrumbs aria-label="breadcrumb">
         <CMLink
-            href={portalHref("/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+            href={cmdbRouter.href("/backstage")}
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage
         </CMLink>
         <CMLink
-            href={portalHref("/backstage/practice-tools", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+            href={cmdbRouter.href("/backstage/practice-tools")}
         >
             Practice Tools
         </CMLink>

@@ -1,10 +1,12 @@
+import type { ParsedUrlQuery } from "querystring";
+import { parsePortalPath, PORTAL_PATH_QUERY_PARAM } from "src/route/portalRouting";
 import { AuthenticationError, AuthorizationError } from "blitz";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { parsePublicId } from "shared/publicId";
 
 interface DownloadRequest {
     method: string;
-    query: { bandPublicId?: string | string[]; leafName_slug?: string | string[] };
+    query: ParsedUrlQuery;
 }
 interface DownloadResponse {
     status: (code: number) => DownloadResponse;
@@ -26,6 +28,8 @@ vi.mock("src/core/db3/server/fileDownload", () => ({ ServeAuthorizedFileDownload
 import "src/pages/api/files/download/[...leafName_slug]";
 
 const bandPublicId = parsePublicId<"Band">("DownloadBand0001");
+const path = parsePortalPath(`/b/${bandPublicId}/api/files/download/score.svg`, { kind: "multiBand" });
+const metadata = (selection: unknown) => JSON.stringify({ ...path, bandPublicId: selection });
 const session = {};
 const authorization = {};
 function responseSpies() {
@@ -56,14 +60,14 @@ beforeEach(() => {
 describe("direct band file download HTTP boundary", () => {
     it.each([undefined, "bad", [bandPublicId], [bandPublicId, bandPublicId]])("returns 404 for invalid context %j before authorization or file lookup", async selection => {
         const spies = responseSpies();
-        await invoke({ method: "GET", query: { bandPublicId: selection, leafName_slug: ["score.svg", "title"] } }, spies.response);
+        await invoke({ method: "GET", query: { [PORTAL_PATH_QUERY_PARAM]: metadata(selection), leafName_slug: ["score.svg", "title"] } }, spies.response);
         expect(spies.status).toHaveBeenCalledWith(404);
         expect(mocks.authorize).not.toHaveBeenCalled();
         expect(mocks.serve).not.toHaveBeenCalled();
     });
     it.each(["GET", "HEAD"])("forwards explicit context, the stored leaf and the original %s request", async method => {
         const spies = responseSpies();
-        const request = { method, query: { bandPublicId, leafName_slug: ["score.svg", "display-title"] } };
+        const request = { method, query: { [PORTAL_PATH_QUERY_PARAM]: metadata(bandPublicId), leafName_slug: ["score.svg", "display-title"] } };
         await invoke(request, spies.response);
         expect(mocks.authorize).toHaveBeenCalledWith(session, bandPublicId);
         expect(mocks.serve).toHaveBeenCalledWith(request, spies.response, authorization, "score.svg");
@@ -71,13 +75,13 @@ describe("direct band file download HTTP boundary", () => {
     it.each([new AuthenticationError(), new AuthorizationError()])("conceals unavailable context as 404", async error => {
         mocks.authorize.mockRejectedValue(error);
         const spies = responseSpies();
-        await invoke({ method: "GET", query: { bandPublicId, leafName_slug: "score.svg" } }, spies.response);
+        await invoke({ method: "GET", query: { [PORTAL_PATH_QUERY_PARAM]: metadata(bandPublicId), leafName_slug: "score.svg" } }, spies.response);
         expect(spies.status).toHaveBeenCalledWith(404);
         expect(mocks.serve).not.toHaveBeenCalled();
     });
     it("rejects write methods before authorization and advertises supported methods", async () => {
         const spies = responseSpies();
-        await invoke({ method: "POST", query: { bandPublicId, leafName_slug: "score.svg" } }, spies.response);
+        await invoke({ method: "POST", query: { [PORTAL_PATH_QUERY_PARAM]: metadata(bandPublicId), leafName_slug: "score.svg" } }, spies.response);
         expect(spies.status).toHaveBeenCalledWith(405);
         expect(spies.setHeader).toHaveBeenCalledWith("Allow", "GET, HEAD");
         expect(mocks.authorize).not.toHaveBeenCalled();

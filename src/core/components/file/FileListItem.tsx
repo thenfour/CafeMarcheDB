@@ -1,3 +1,4 @@
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { FolderZip, OndemandVideo } from "@mui/icons-material";
 import { CMChip } from "src/core/components/CMChip";
 import * as db3 from "src/core/db3/db3";
@@ -6,13 +7,13 @@ import { gIconMap } from "../../db3/components/IconMap";
 import { FileClass, GetFileClass } from "../../db3/shared/fileAPI";
 import { InstrumentChip } from "../CMCoreComponents";
 import { StandardVariationSpec } from "../color/palette";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { EventChip } from "../event/EventChips";
 import { Markdown } from "../markdown/Markdown";
 import { GenericSearchListItem } from "../search/SearchListItem";
 import { SongChip } from "../song/SongChip";
 import { WikiPageChip } from "../wiki/WikiPageChip";
 import { FilesFilterSpec } from "./FileClientBaseTypes";
-import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 
 type FileListItemProps = {
@@ -55,6 +56,7 @@ export const FileIcon = ({ file }: { file: db3.FileSearchClient }) => {
 
 export const FileListItem = (props: FileListItemProps) => {
     const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
     // const appContext = useAppContext();
     //const visInfo = dashboardContext.getVisibilityInfo(props.file);
     const uploadedAt = props.file.uploadedAt ? new Date(props.file.uploadedAt) : null;
@@ -64,7 +66,7 @@ export const FileListItem = (props: FileListItemProps) => {
         item={props.file}
         icon={<FileIcon file={props.file} />}
         refetch={props.refetch}
-        href={dashboardContext.routingApi.getURIForFileLandingPage(props.file)}
+        href={router.getURIForFileLandingPage(props.file)}
         title={props.file.fileLeafName || "Restricted file"}
         credits={[
             props.file.description && <Markdown markdown={props.file.description} />,

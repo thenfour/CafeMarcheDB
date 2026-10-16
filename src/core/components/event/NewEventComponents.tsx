@@ -1,9 +1,10 @@
 import { TAnyModel } from "@/shared/rootroot";
-import { useRouter } from "next/router";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
+import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import React from "react";
 import { Permission } from "shared/permissions";
+import type { PermissionPublicId } from "shared/publicId";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -12,14 +13,13 @@ import * as db3 from "src/core/db3/db3";
 import { TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { gIconMap } from "../../db3/components/IconMap";
 import { AppContextMarker } from "../AppContext";
-import { CMDialog } from "../CMDialog";
 import { CMButton } from "../CMCoreComponents2";
+import { CMDialog } from "../CMDialog";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { EventTableClientColumns } from "./EventComponentsBase";
 import { EventSegmentClientColumns } from "./EventSegmentComponents";
-import type { PermissionPublicId } from "shared/publicId";
 
 interface NewEventDialogProps {
     onCancel: () => void;
@@ -34,7 +34,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
 
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
-    const router = useRouter();
+    const router = useCmdbRouter();
 
     // EVENT table bindings
     const eventTableSpec = DB3Client.defineLegacyTableClientSpec({
@@ -142,7 +142,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             showSnackbar({ children: "insert successful", severity: 'success' });
             props.onOK();
 
-            void router.push(dashboardContext.routingApi.getURIForEvent(ret.event));
+            void router.push(router.getURIForEvent(ret.event));
 
         }).catch(err => {
             setGrayed(false);

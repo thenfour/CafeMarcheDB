@@ -1,3 +1,4 @@
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { SelectEnglishNoun } from "shared/lang";
 import { IsNullOrWhitespace } from "shared/utils";
@@ -10,7 +11,6 @@ import { gIconMap } from "src/core/db3/components/IconMap";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { SongsFilterSpec } from "./SongClientBaseTypes";
 import { StandardVariationSpec } from "../color/palette";
-import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import type { SongSearchClient } from "../../db3/shared/entities/song/songViews";
 
 type SongListItemProps = {
@@ -22,8 +22,9 @@ type SongListItemProps = {
 };
 
 export const SongListItem = (props: SongListItemProps) => {
-    const dashboardContext = useDashboardContext();
-    const songData = CalculateSongMetadata(props.song, undefined, dashboardContext);
+
+    const router = useCmdbRouter();
+    const songData = CalculateSongMetadata(props.song, undefined, router);
     const taggedFiles = (props.song.taggedFiles || []).flatMap(association => (
         association.file ? [{ ...association, file: association.file }] : []
     ));

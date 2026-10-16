@@ -1,9 +1,8 @@
 import { getHashedColor } from '@/shared/utils';
 import MarkdownIt from 'markdown-it';
 import { generateQrApiUrl, QrContentConfig, QrHelpers } from '../../db3/shared/qrApi';
-import { markdownAbsoluteUri } from './markdownAbsoluteUri';
 
-export function ReactInlineMarkdownPlugin(md: MarkdownIt) {
+export function ReactInlineMarkdownPlugin(md: MarkdownIt, getAbsoluteUri: (href: string) => string) {
     // Register a custom inline rule that parses {{...}} before linkify
     md.inline.ruler.before('linkify', 'custom_components', function (state, silent) {
         const start = state.pos;
@@ -57,7 +56,7 @@ export function ReactInlineMarkdownPlugin(md: MarkdownIt) {
         const componentName = token.componentName;
         const propsString = token.propsString;
 
-        return processInlineComponent(`{{${token.content}}}`, componentName, propsString);
+        return processInlineComponent(`{{${token.content}}}`, componentName, propsString, getAbsoluteUri);
     };
 
     // Keep the original text rule as fallback (probably won't be needed now)
@@ -70,7 +69,7 @@ export function ReactInlineMarkdownPlugin(md: MarkdownIt) {
         // This should rarely trigger now since the inline rule handles most cases
         output = output.replace(/\{\{(\w+)(:.*?)?\}\}/g, (match, componentName, propsString = '') => {
             console.warn('Fallback text processing triggered for:', match);
-            return processInlineComponent(match, componentName, propsString);
+            return processInlineComponent(match, componentName, propsString, getAbsoluteUri);
         });
 
         return output;
@@ -78,7 +77,7 @@ export function ReactInlineMarkdownPlugin(md: MarkdownIt) {
 }
 
 // Extract the component processing logic to a separate function for reuse
-function processInlineComponent(match: string, componentName: string, propsString: string = ''): string {
+function processInlineComponent(match: string, componentName: string, propsString: string, getAbsoluteUri: (href: string) => string): string {
     if (propsString && propsString.length > 1) {
         propsString = propsString.slice(1).replaceAll("\\}", "}");
     }
@@ -95,7 +94,7 @@ function processInlineComponent(match: string, componentName: string, propsStrin
 
         // Create img element for inline ABC notation
         const img = document.createElement('img');
-        img.src = markdownAbsoluteUri(`/api/abc/render?notation=${encodedNotation}`);
+        img.src = getAbsoluteUri(`/api/abc/render?notation=${encodedNotation}`);
         img.className = 'abc-notation-inline';
         img.alt = `ABC notation: ${abcContent}`;
 
@@ -199,7 +198,7 @@ function processInlineComponent(match: string, componentName: string, propsStrin
                     //type: 'png', // Use PNG for inline display
                     width: 128 // Default inline size
                 },
-                { getAbsoluteUri: markdownAbsoluteUri }
+                getAbsoluteUri
             );
 
             // Create img element for inline QR code

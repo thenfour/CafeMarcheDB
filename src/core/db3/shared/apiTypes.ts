@@ -4,9 +4,9 @@ import { PresentationInputSchema } from "src/locale/shared/presentationInput";
 import { EventRelevanceSearchModeSchema } from "./entities/event/eventRelevanceSearch";
 
 import db, { Prisma } from "db";
-import { z } from "zod";
 import type { BandPublicId } from "shared/publicId";
-import { isPublicId, type EventPublicId, type EventSegmentPublicId, type EventAttendancePublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type FilePublicId, type InstrumentPublicId, type PermissionPublicId, type SongPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId, type UserPublicId } from "shared/publicId";
+import { isPublicId, type EventAttendancePublicId, type EventPublicId, type EventSegmentPublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type FilePublicId, type InstrumentPublicId, type PermissionPublicId, type SongPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserPublicId, type UserTagPublicId } from "shared/publicId";
+import { z } from "zod";
 
 import type { SortDirection, TAnyModel } from "shared/rootroot";
 import { ColorPaletteEntry } from "../../components/color/palette";
@@ -339,12 +339,6 @@ export interface GetFilteredSongsRet {
 // discourages identifiability.
 export function MakeICalEventUid(eventUid: string, userUid: string | null) {
     return `${eventUid}_${userUid || "public"}`;
-}
-
-
-// lsmb todo: use proper routing
-export function GetICalRelativeURIForUserUpcomingEvents(args: { calendarFeedToken: string | null; bandPublicId: BandPublicId }) {
-    return `/api/ical/user/${encodeURIComponent(args.calendarFeedToken || "public")}/upcoming?bandPublicId=${encodeURIComponent(args.bandPublicId)}`;
 }
 
 ///////////////////////////////////////////////////////

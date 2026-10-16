@@ -16,7 +16,7 @@ import { ActivityFeature } from "src/core/components/featureReports/activityTrac
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { readSongDetailPage } from "src/core/db3/server/songDetailPage";
-import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
+import { resolvePagePresentationInput } from "src/route/server/portalRequest";
 import { useLocale } from "src/locale/components/useLocale";
 
 interface PageProps { readonly title: string; readonly songId: SongPublicId }
@@ -24,7 +24,7 @@ interface PageProps { readonly title: string; readonly songId: SongPublicId }
 export const getServerSideProps = gSSP<PageProps>(async ({ params, query, req, ctx }) => {
     const path = params?.id_slug_tab;
     const identity = Array.isArray(path) ? path[0] : undefined;
-    const input = pagePresentationInput(query, req.headers["accept-language"]);
+    const input = await resolvePagePresentationInput(req, query);
     if (!db3.xSong.isIdentity(identity) || !input.bandPublicId) {
         return { notFound: true };
     }

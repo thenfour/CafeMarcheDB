@@ -1,3 +1,4 @@
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import type { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert } from "@mui/material";
@@ -87,11 +88,12 @@ function StatsEventChart({ events, expanded, className }: { readonly events: Eve
 }
 
 function StatsPagePopularSong({ occurrences, expanded }: { readonly occurrences: PopularSongOccurrence[]; readonly expanded: boolean }) {
-    const dashboard = useDashboardContext();
+    const cmdbRouter = useCmdbRouter();
+
     const song = occurrences[0]!;
     const events = occurrences.map(({ songId, songName, eventId, eventName, ...event }) => ({ ...event, publicId: eventId, name: eventName }));
     return <div className="statsPopularSong">
-        <h2><a href={dashboard.routingApi.getURIForSong({ publicId: song.songId, name: song.songName })} rel="noreferrer" target="_blank">{song.songName}</a> ({occurrences.length})</h2>
+        <h2><a href={cmdbRouter.getURIForSong({ publicId: song.songId, name: song.songName })} rel="noreferrer" target="_blank">{song.songName}</a> ({occurrences.length})</h2>
         <StatsEventChart events={events} expanded={expanded} />
     </div>;
 }

@@ -1,3 +1,4 @@
+import { parsePortalPath } from "src/route/portalRouting";
 import { IncomingMessage, ServerResponse } from "http";
 import { Socket } from "net";
 import { AuthenticationError, NotFoundError } from "blitz";
@@ -22,8 +23,8 @@ import getPageBootstrap from "src/auth/queries/getPageBootstrap";
 
 const context = createAuthorizationTestContext(null);
 const bandPublicId = parsePublicId<"Band">("BootstrapBand001");
-const input = { pathname: "/backstage/profile", requestPath: `/fr-BE/b/${bandPublicId}/backstage/profile`, bandPublicId, routeLocale: "fr-BE", browserLanguages: ["nl-BE"] };
-const authorization = { band: { id: 17 } };
+const input = { pagePattern: "/backstage/profile", requestPath: parsePortalPath(`/fr-BE/b/${bandPublicId}/backstage/profile`, { kind: "multiBand" }), browserLanguages: ["nl-BE"] };
+const authorization = { band: { id: 17 }, hasPermission: vi.fn(() => false) };
 beforeEach(() => {
     vi.resetAllMocks();
     vi.stubEnv("CMDB_BASE_URL", "https://band.example.test");
@@ -31,6 +32,7 @@ beforeEach(() => {
     services.availability.mockResolvedValue(undefined);
     services.session.mockResolvedValue(context.session);
     services.authorize.mockResolvedValue(authorization);
+    authorization.hasPermission.mockReturnValue(false);
     services.presentation.mockResolvedValue({ input: { bandPublicId } });
     services.brand.mockResolvedValue({ siteTitle: "Selected band" });
 });
@@ -38,6 +40,20 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllEnvs(); });
 
 describe("page bootstrap server boundary", () => {
+    it("provides public routing configuration without sending diagnostics to non-Sysadmins", async () => {
+        const result = await getPageBootstrap(input, context);
+        expect(result.routing).toEqual({ baseUri: "https://band.example.test", hosting: { kind: "multiBand" }, requestPath: input.requestPath });
+        expect(result.serverStartupState).toBeNull();
+        expect(services.presentation).toHaveBeenCalledWith(authorization, {
+            bandPublicId, routeLocale: "fr-BE", browserLanguages: ["nl-BE"],
+        });
+    });
+    it("provides diagnostics only when the current authorization grants Sysadmin", async () => {
+        authorization.hasPermission.mockReturnValue(true);
+        vi.stubEnv("CMDB_GIT_REVISION", "test-revision");
+        const result = await getPageBootstrap(input, context);
+        expect(result.serverStartupState?.gitRevision).toBe("test-revision");
+    });
     it("establishes the SSR session from its trusted request and response", async () => {
         const request = new IncomingMessage(new Socket());
         request.headers.host = "band.example.test";
@@ -64,7 +80,7 @@ describe("page bootstrap server boundary", () => {
 
     it("propagates unavailable custom-link bands without loading unscoped page data", async () => {
         services.authorize.mockRejectedValue(new NotFoundError());
-        await expect(getPageBootstrap({ ...input, pathname: "/[...customLinkSlug]" }, context)).rejects.toBeInstanceOf(NotFoundError);
+        await expect(getPageBootstrap({ ...input, pagePattern: "/[...customLinkSlug]" }, context)).rejects.toBeInstanceOf(NotFoundError);
         expect(services.authorize).toHaveBeenCalledOnce();
         expect(services.presentation).not.toHaveBeenCalled();
         expect(services.brand).not.toHaveBeenCalled();

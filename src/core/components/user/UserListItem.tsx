@@ -1,30 +1,32 @@
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
+import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
 import type { BandUserSearchClient } from "src/core/db3/db3";
 import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
-import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
+import { useLocale } from "src/locale/components/useLocale";
 import { gIconMap } from "../../db3/components/IconMap";
-import { CMChip, CMChipContainer, CMStandardDBChip, CMDivider } from "../CMChip";
+import { CMChip, CMChipContainer, CMDivider, CMStandardDBChip } from "../CMChip";
 import { StandardVariationSpec } from "../color/palette";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { DateValue } from "../DateTime/DateTimeComponents";
 import { GenericSearchListItem } from "../search/SearchListItem";
-import { useLocale } from "src/locale/components/useLocale";
+import { bandMemberHref } from "./bandMemberLinks";
 import type { UsersFilterSpec } from "./UserClientBaseTypes";
 import { UserIdentityIndicator } from "./UserIdentityIndicator";
-import { bandMemberHref } from "./bandMemberLinks";
 
 export function UserListItem({ user, index, refetch, filterSpec }: {
     readonly user: BandUserSearchClient; readonly index: number;
     readonly refetch: () => void; readonly filterSpec: UsersFilterSpec;
 }) {
     const dashboard = useDashboardContext();
+    const router = useCmdbRouter();
     const context = useDB3QueryContext();
     const locale = useLocale();
     const canManage = dashboard.isAuthorized(Permission.manage_users);
     const joinedAt = user.createdAt;
     return <GenericSearchListItem index={index} item={user} refetch={refetch} icon={gIconMap.Person()}
-        href={bandMemberHref(user.user.publicId, context, dashboard.portalHosting)} title={user.user.name ?? ""}
+        href={bandMemberHref(user.user.publicId, context, router.hosting)} title={user.user.name ?? ""}
         titleExtra={canManage && user.isDeleted && <CMChip color="warning" size="small">Deactivated</CMChip>}
         credits={dashboard.isAuthorized(Permission.view_user_contact_info) ? [user.user.email, user.user.phone] : []}
         bodyContent={<>

@@ -1,10 +1,8 @@
-import { portalHref, retainPortalPageState } from "src/route/portalRouting";
 import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 
 import { TAnyModel } from '@/shared/rootroot';
 import HomeIcon from '@mui/icons-material/Home';
 import { Breadcrumbs, Tooltip } from "@mui/material";
-import { useRouter } from "next/router";
 import React from "react";
 import type { SongTagPublicId } from "shared/publicId";
 import { IsNullOrWhitespace, StringToEnumValue } from 'shared/utils';
@@ -28,6 +26,7 @@ import { CMTab, CMTabPanel } from '../TabPanel';
 import { VisibilityValue } from '../VisibilityControl';
 import { StandardVariationSpec } from '../color/palette';
 import { useDashboardContext, useFeatureRecorder } from '../dashboardContext/DashboardContext';
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { ActivityFeature } from '../featureReports/activityTracking';
 import { Markdown } from '../markdown/Markdown';
 import { Markdown3Editor } from '../markdown/MarkdownControl3';
@@ -74,13 +73,14 @@ export interface SongBreadcrumbProps {
     song: Pick<db3.SongDetailClient, "publicId" | "name">,
 };
 export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
-    const dashboardContext = useDashboardContext();
+
+    const router = useCmdbRouter();
     return <Breadcrumbs aria-label="breadcrumb">
         <CMLink
             // underline="hover"
             // color="inherit"
             // sx={{ display: 'flex', alignItems: 'center' }}
-            href={portalHref("/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+            href={router.href("/backstage")}
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage
@@ -88,7 +88,7 @@ export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
         <CMLink
             // underline="hover"
             // color="inherit"
-            href={portalHref("/backstage/songs", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+            href={router.href("/backstage/songs")}
         //sx={{ display: 'flex', alignItems: 'center' }}
         >
             Songs
@@ -97,7 +97,7 @@ export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
         <CMLink
             // underline="hover"
             // color="inherit"
-            href={dashboardContext.routingApi.getURIForSong(props.song)}
+            href={router.getURIForSong(props.song)}
         // sx={{ display: 'flex', alignItems: 'center' }}
         >
             {props.song.name}
@@ -423,7 +423,6 @@ export interface SongDetailContainerProps {
 
 export const SongDetailContainer = ({ songData, tableClient, editCommands, ...props }: React.PropsWithChildren<SongDetailContainerProps>) => {
     const song = songData.song;
-    //const router = useRouter();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const recordFeature = useFeatureRecorder();
     const isShowingAdminControls = API.other.useIsShowingAdminControls();
@@ -555,7 +554,7 @@ export interface SongDetailArgs {
 
 export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
     const dashboardContext = useDashboardContext();
-    const router = useRouter();
+    const router = useCmdbRouter();
     const editCommands = DB3Client.useCrudViewCommands({
         view: db3.songEditorView,
         tableClient,
@@ -581,10 +580,10 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
     const [selectedTab, setSelectedTab] = React.useState<SongDetailTabSlug>(props.initialTab || ((IsNullOrWhitespace(song.description) && (fileInfo.enrichedFiles.length > 0)) ? SongDetailTabSlug.files : SongDetailTabSlug.info));
 
     // convert index to tab slug
-    const songData = CalculateSongMetadata(song, selectedTab, dashboardContext);
+    const songData = CalculateSongMetadata(song, selectedTab, router);
 
     React.useEffect(() => {
-        void router.replace(retainPortalPageState(songData.songURI, router.asPath), undefined, { shallow: true });
+        void router.replaceCurrentPage(songData.songURI);
     }, [songData.songURI]);
 
     const handleTabChange = (newId: string) => {

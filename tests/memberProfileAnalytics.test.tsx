@@ -1,4 +1,7 @@
 // @vitest-environment jsdom
+import { createTestRouter } from "./support/routing";
+import { parsePortalPath } from "src/route/portalRouting";
+vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: () => createTestRouter({ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath(`/${language}/b/${bandId}/backstage`, { kind: "multiBand" }) }) }));
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { act } from "react-dom/test-utils";

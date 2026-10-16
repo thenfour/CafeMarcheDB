@@ -1,11 +1,12 @@
-import type { ParsedUrlQuery } from "querystring";
+import type { RouteBandAndLocale } from "src/route/portalRouting";
 import { parseAcceptLanguage } from "./localePreferences";
 import { PresentationInputSchema, type PresentationInput } from "./presentationInput";
 
-/** Middleware supplies URL context; bootstrap and transport servers validate its host and scope. */
-export function pagePresentationInput(query: ParsedUrlQuery, acceptLanguage?: string): PresentationInput {
+/** Project resolved routing parameters into presentation preferences. */
+export function pagePresentationInput(selection: RouteBandAndLocale, acceptLanguage?: string): PresentationInput {
     return PresentationInputSchema.parse({
-        bandPublicId: query.bandPublicId, routeLocale: query.routeLocale,
+        bandPublicId: selection.bandPublicId,
+        routeLocale: selection.routeLocale,
         browserLanguages: parseAcceptLanguage(acceptLanguage),
     });
 }

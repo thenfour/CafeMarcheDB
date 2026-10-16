@@ -1,7 +1,7 @@
 import type { SessionContext } from "@blitzjs/auth";
 import { loadAuthorization } from "./serverAuthorization";
 import type { BandPublicId } from "shared/publicId";
-import { CmdbRoutes } from "@/src/route/cmdbRoutes";
+import { CmdbRouteRegistry } from "@/src/route/cmdbRoutes";
 
 export async function loadPageAuthorization(
     pathname: string,
@@ -14,7 +14,7 @@ export async function loadPageAuthorization(
 
     //console.log(`Loading page authorization for pathname: ${pathname}, bandPublicId: ${bandPublicId}`);
 
-    const route = CmdbRoutes.requireRouteByPattern(pathname);
+    const route = CmdbRouteRegistry.requireRouteByPattern(pathname);
 
     const auth = await loadAuthorization(session, bandPublicId);
     auth.requirePermission(route.permission);

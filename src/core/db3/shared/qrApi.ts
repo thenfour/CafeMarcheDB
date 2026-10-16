@@ -1,4 +1,3 @@
-import { DashboardContextDataBase } from "../../components/dashboardContext/dashboardContextTypes";
 
 export type QrCodeErrorCorrectionLevel = 'L' | 'M' | 'Q' | 'H';
 
@@ -75,7 +74,7 @@ export interface QrCodeOptions {
  * @param options - QR code generation options
  * @returns The complete API URL with query parameters
  */
-export function generateQrApiUrl(options: QrCodeOptions, uriContext: Pick<DashboardContextDataBase, 'getAbsoluteUri'>): string {
+export function generateQrApiUrl(options: QrCodeOptions, getAbsoluteUri: (uri: string) => string): string {
     const {
         type = 'svg',
         errorCorrectionLevel = 'M',
@@ -138,7 +137,7 @@ export function generateQrApiUrl(options: QrCodeOptions, uriContext: Pick<Dashbo
     }
 
     // Build URL manually to avoid double-encoding query parameters
-    const baseUrl = uriContext.getAbsoluteUri('/api/qr');
+    const baseUrl = getAbsoluteUri('/api/qr');
     return `${baseUrl}?${params.toString()}`;
 }
 

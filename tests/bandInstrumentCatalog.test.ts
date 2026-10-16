@@ -19,10 +19,8 @@ describe("explicit catalog writes and page selection", () => {
     });
     it("keeps explicit page band and route preferences without inferring a band", () => {
         expect(pagePresentationInput({}, "nl-BE, fr-BE;q=0.8")).toEqual({ browserLanguages: ["nl-BE", "fr-BE"] });
-        expect(pagePresentationInput({ bandPublicId: "aaaaaaaaaaaaaaaa", routeLocale: "fr-FR" })).toMatchObject({
+        expect(pagePresentationInput({ bandPublicId: parsePublicId<"Band">("aaaaaaaaaaaaaaaa"), routeLocale: "fr-FR" })).toMatchObject({
             bandPublicId: parsePublicId<"Band">("aaaaaaaaaaaaaaaa"), routeLocale: "fr-FR",
         });
-        expect(() => pagePresentationInput({ bandPublicId: ["aaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbb"] })).toThrow();
-        expect(() => pagePresentationInput({ bandPublicId: "unknown" })).toThrow();
     });
 });

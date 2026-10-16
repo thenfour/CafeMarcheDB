@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
-import { CmdbRoutes } from "@/src/route/cmdbRoutes";
 import { getDB3CommandHandler } from "src/core/db3/server/db3CommandRegistry";
 import { validateDB3PaginatedQueryRequest } from "src/core/db3/server/db3RequestValidation";
 import { bandMemberRecoveryQuery, bandUserLifecycleCommand, bandUserLifecycleView } from "src/core/db3/shared/entities/user/bandUserLifecycle";

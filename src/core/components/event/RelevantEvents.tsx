@@ -16,9 +16,11 @@ import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
 import { RelevanceClassOverrideIndicator } from "./EventRelevanceOverrideComponents";
 import { EventShortDate } from "./EventShortDate";
 import { CMLink } from "@/src/route/CMLink";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 export const SubtleEventCard = ({ event, dateRange, now }: { event: db3.EventSearchClient, dateRange: DateTimeRange, now: Date }) => {
     const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
     const visibilityClassName = event.visiblePermissionId === undefined
         ? ""
         : dashboardContext.getVisibilityInfo({ visiblePermissionId: event.visiblePermissionId }).className;
@@ -39,7 +41,7 @@ export const SubtleEventCard = ({ event, dateRange, now }: { event: db3.EventSea
 
     return <AppContextMarker eventId={event.publicId}>
         <div className={classes.join(" ")} style={typeStyle.style} >
-            <CMLink trackingFeature={ActivityFeature.link_follow_internal} href={dashboardContext.routingApi.getURIForEvent({ publicId: event.publicId, name: event.name || "" })} className="SubtleEventCardLink">
+            <CMLink trackingFeature={ActivityFeature.link_follow_internal} href={router.getURIForEvent({ publicId: event.publicId, name: event.name || "" })} className="SubtleEventCardLink">
                 <div className="SubtleEventCardTitle">
                     {event.relevanceClassOverride !== undefined && <RelevanceClassOverrideIndicator
                         event={{ relevanceClassOverride: event.relevanceClassOverride }}
@@ -57,7 +59,7 @@ export const SubtleEventCard = ({ event, dateRange, now }: { event: db3.EventSea
                 {!IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && <AppContextMarker name="info inner card"><SearchItemBigCardLink
                     icon={<InfoOutlined />}
                     title="Info"
-                    uri={dashboardContext.routingApi.getURIForEvent({ publicId: event.publicId, name: event.name || "" }, gEventDetailTabSlugIndices.info)}
+                    uri={router.getURIForEvent({ publicId: event.publicId, name: event.name || "" }, gEventDetailTabSlugIndices.info)}
                     eventId={event.publicId}
                 />
                 </AppContextMarker>
@@ -65,7 +67,7 @@ export const SubtleEventCard = ({ event, dateRange, now }: { event: db3.EventSea
                 {(event.songLists?.length || 0) > 0 && <AppContextMarker name="setlist inner card"><SearchItemBigCardLink
                     icon={<LibraryMusic />}
                     title="Setlist"
-                    uri={dashboardContext.routingApi.getURIForEvent({ publicId: event.publicId, name: event.name || "" }, gEventDetailTabSlugIndices.setlists)}
+                    uri={router.getURIForEvent({ publicId: event.publicId, name: event.name || "" }, gEventDetailTabSlugIndices.setlists)}
                     eventId={event.publicId}
                 />
                 </AppContextMarker>
@@ -138,11 +140,6 @@ const RelevantEventsWithDashboardContext = ({
 
     return <div className="RelevantEvents">
         <AppContextMarker name="relevant events">
-            {/* <div className="RelevantEventsHeader">
-            <a href={portalHref("/backstage/events", dashboardContext.memberPresentation, dashboardContext.portalHosting)} rel="noreferrer">
-                Current Events
-            </a>
-        </div> */}
             {highlightedEvent && <div>
                 <AppContextMarker name="highlighted">
                     <EventListItem

@@ -10,11 +10,13 @@ import { useBrand } from "shared/brandConfig";
 import { CoerceToBoolean, IsNullOrWhitespace } from "shared/utils";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { CustomLinkRedirectType } from "src/core/db3/shared/schema/customLinks";
-import { customLinkBand, customLinkClientDestination, customLinkDestination } from "src/core/db3/shared/entities/customLink/customLinkUrl";
+import { customLinkClientDestination, customLinkDestination } from "src/core/db3/shared/entities/customLink/customLinkUrl";
 import { ServeAuthorizedCustomLinkFileDownload } from "src/core/db3/server/fileDownload";
 import { gSSP } from "src/blitz-server";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { CMButton } from "../core/components/CMCoreComponents2";
+import { deserializePortalPath } from "../route/portalRouting";
+import { resolvePortalRequestContext } from "../route/server/portalRequest";
 
 interface CustomLinkPageProps {
     destinationURL?: string;
@@ -23,12 +25,14 @@ interface CustomLinkPageProps {
     forwardQuery?: boolean | null;
 }
 
+// custom link route is basically a site-wide fallback.
+// client-side nav to a custom URL is not supported / not needed because it's just a redirect, usually external.
 export const getServerSideProps = gSSP<CustomLinkPageProps>(async ({ params, req, res, query, ctx }) => {
-    const bandPublicId = customLinkBand(query);
-    if (!bandPublicId) {
+    const { requestPath: reqPath } = await resolvePortalRequestContext(req, deserializePortalPath(query));
+    if (!reqPath.bandPublicId) {
         return { notFound: true };
     }
-    const auth = await loadAuthorization(ctx.session, bandPublicId).catch(error => {
+    const auth = await loadAuthorization(ctx.session, reqPath.bandPublicId).catch(error => {
         if (error instanceof NotFoundError) {
             return null;
         }
@@ -40,6 +44,7 @@ export const getServerSideProps = gSSP<CustomLinkPageProps>(async ({ params, req
     const slugParts = params?.customLinkSlug;
     const slug = Array.isArray(slugParts) ? slugParts.join('/') : slugParts || '';
 
+    // lsmb todo: do not do ad-hoc queries like this!
     const link = await db.customLink.findUnique({
         where: { bandId_slug: { bandId: auth.requireBand().id, slug } },
         include: { file: { select: { publicId: true } } },

@@ -1,15 +1,13 @@
-import { isTenant, portalHref, retainPortalPageState } from "src/route/portalRouting";
+import { isTenant } from "src/route/portalRouting";
 import type { EventPublicId, EventSegmentPublicId } from "shared/publicId";
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import { HostingMode } from '@/shared/brandConfigBase';
 import { EditNote, LibraryMusic } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
 import { Breadcrumbs, Divider, FormControlLabel, Link, ListItemIcon, MenuItem, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
-import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { toSorted } from 'shared/arrayUtils';
 import { isAttendanceGoing, isAttendanceNotGoing } from 'shared/eventAttendance';
@@ -56,6 +54,7 @@ import { CalculateEventDetailMetadata, CalculateEventSearchResultsMetadata, Even
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { RelevanceClassOverrideIndicator, RelevanceClassOverrideMenuItemGroup } from './EventRelevanceOverrideComponents';
 import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from './EventSegmentComponents';
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 // type EventWithTypePayload = Prisma.EventGetPayload<{
 //     include: {
@@ -94,13 +93,14 @@ export interface EventBreadcrumbProps {
     event: Pick<EventDetailEvent, "publicId" | "name">,
 };
 export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
-    const dashboardContext = useDashboardContext();
+
+    const router = useCmdbRouter();
     return <Breadcrumbs aria-label="breadcrumb">
         <CMLink
             //underline="hover"
             //color="inherit"
             //sx={{ display: 'flex', alignItems: 'center' }}
-            href={portalHref("/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+            href={router.href("/backstage")}
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage
@@ -108,7 +108,7 @@ export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
         <CMLink
             //underline="hover"
             //color="inherit"
-            href={portalHref("/backstage/events", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+            href={router.href("/backstage/events")}
         //sx={{ display: 'flex', alignItems: 'center' }}
         >
             Events
@@ -117,7 +117,7 @@ export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
         <CMLink
             //underline="hover"
             //color="inherit"
-            href={dashboardContext.routingApi.getURIForEvent(props.event)}
+            href={router.getURIForEvent(props.event)}
         //sx={{ display: 'flex', alignItems: 'center' }}
         >
             {props.event.name}
@@ -825,6 +825,7 @@ const EventDotMenu = ({ event, showVisibility, refetch, allowRelevanceEditing = 
 }) => {
     const endMenuItemRef = React.useRef<() => void>(() => { });
     const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
     const snackbar = useSnackbar();
 
     const closeMenu = () => {
@@ -844,7 +845,7 @@ const EventDotMenu = ({ event, showVisibility, refetch, allowRelevanceEditing = 
 
 
         <MenuItem onClick={async () => {
-            const uri = dashboardContext.routingApi.getURIForEvent(event);
+            const uri = router.getURIForEvent(event);
             await navigator.clipboard.writeText(uri);
             closeMenu();
             snackbar.showSuccess("Link address copied");
@@ -1060,6 +1061,7 @@ type EventDetailFullTabAreaProps = EventDetailFullProps & {
 
 export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event, tableClient, userMap, ...props }: EventDetailFullTabAreaProps) => {
     const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
 
     const handleTabChange = (_: undefined | React.SyntheticEvent, newValue: string) => {
         props.setSelectedTab(newValue);
@@ -1136,7 +1138,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryIcon={gIconMap.Public()}
             summaryTitle="Frontpage"
             summarySubtitle={<>{eventData.event.frontpageVisible && gCharMap.Checkmark()}</>}
-            enabled={isTenant(dashboardContext.portalHosting, "CafeMarche")}
+            enabled={isTenant(router.hosting, "CafeMarche")}
         >
             <AppContextMarker name="frontpage tab">
                 <EventFrontpageTabContent
@@ -1186,14 +1188,14 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
 
     const [selectedTab, setSelectedTab] = React.useState<string>(props.initialTabIndex || ((IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && (event.songLists?.length > 0)) ? gEventDetailTabSlugIndices.setlists : gEventDetailTabSlugIndices.info));
     const tabSlug = selectedTab;//Object.keys(gEventDetailTabSlugIndices)[selectedTab];
-    const router = useRouter();
+    const router = useCmdbRouter();
     const dashboardContext = useDashboardContext();
 
-    const { eventData, userMap } = CalculateEventDetailMetadata({ event, tabSlug, dashboardContext });
+    const { eventData, userMap } = CalculateEventDetailMetadata({ event, tabSlug, dashboardContext, router });
 
 
     React.useEffect(() => {
-        void router.replace(retainPortalPageState(eventData.eventURI, router.asPath), undefined, { shallow: true });
+        void router.replaceCurrentPage(eventData.eventURI);
     }, [eventData.eventURI]);
 
     //const refetch = tableClient.refetch;
@@ -1271,13 +1273,14 @@ export const EventSearchItemContainer = ({
     ...props
 }: React.PropsWithChildren<EventSearchItemContainerProps>) => {
     const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
     const event = props.event;
 
     const highlightTagIds = props.highlightTagIds || [];
     const highlightStatusIds = props.highlightStatusIds || [];
     const highlightTypeIds = props.highlightTypeIds || [];
 
-    const eventURI = dashboardContext.routingApi.getURIForEvent({ publicId: event.publicId, name: event.name || "" });
+    const eventURI = router.getURIForEvent({ publicId: event.publicId, name: event.name || "" });
     const dateRange = event.dateRange;
     const eventTiming = dateRange?.hitTestDateTime(new Date());
 
@@ -1413,7 +1416,8 @@ export interface EventListItemProps {
 };
 
 export const EventListItem = ({ showTabs = false, showAttendanceControl = true, reducedInfo = false, event, ...props }: EventListItemProps) => {
-    const dashboardContext = useDashboardContext();
+
+    const router = useCmdbRouter();
     const metadata = CalculateEventSearchResultsMetadata({ event });
 
     return <EventSearchItemContainer
@@ -1438,14 +1442,14 @@ export const EventListItem = ({ showTabs = false, showAttendanceControl = true, 
                 {!IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && <SearchItemBigCardLink
                     icon={<EditNote />}
                     title="View info"
-                    uri={dashboardContext.routingApi.getURIForEvent({ publicId: event.publicId, name: event.name || "" }, gEventDetailTabSlugIndices.info)}
+                    uri={router.getURIForEvent({ publicId: event.publicId, name: event.name || "" }, gEventDetailTabSlugIndices.info)}
                     eventId={event.publicId}
                 />
                 }
                 {(event.songLists?.length || 0) > 0 && <SearchItemBigCardLink
                     icon={<LibraryMusic />}
                     title="View setlist"
-                    uri={dashboardContext.routingApi.getURIForEvent({ publicId: event.publicId, name: event.name || "" }, gEventDetailTabSlugIndices.setlists)}
+                    uri={router.getURIForEvent({ publicId: event.publicId, name: event.name || "" }, gEventDetailTabSlugIndices.setlists)}
                     eventId={event.publicId}
                 />
                 }

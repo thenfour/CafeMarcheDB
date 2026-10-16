@@ -1,4 +1,3 @@
-import { portalHref } from "src/route/portalRouting";
 import HomeIcon from '@mui/icons-material/Home';
 import { Breadcrumbs } from "@mui/material";
 import type { UserPublicId } from "shared/publicId";
@@ -14,6 +13,7 @@ import { makeLocalSelectionSource } from "../select/selectionSource";
 import { useDashboardContext } from '../dashboardContext/DashboardContext';
 import { UserChip } from "./userChip";
 import { CMButton } from '../CMCoreComponents2';
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 
 
@@ -63,22 +63,23 @@ export interface UserBreadcrumbProps {
     user: { publicId: UserPublicId; name: string },
 };
 export const UserBreadcrumbs = (props: UserBreadcrumbProps) => {
-    const dashboardContext = useDashboardContext();
+
+    const router = useCmdbRouter();
     return <Breadcrumbs aria-label="breadcrumb">
         <CMLink
-            href={portalHref("/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+            href={router.href("/backstage")}
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage
         </CMLink>
         <CMLink
-            href={portalHref("/backstage/users", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+            href={router.href("/backstage/users")}
         >
             Users
         </CMLink>
 
         <CMLink
-            href={dashboardContext.routingApi.getURIForUser(props.user)}
+            href={router.getURIForUser(props.user)}
         >
             {IsNullOrWhitespace(props.user.name) ? props.user.publicId : props.user.name}
         </CMLink>

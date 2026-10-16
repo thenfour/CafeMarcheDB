@@ -1,3 +1,4 @@
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { SongOrderByColumnNames, SongOrderByColumnOption, SongOrderByColumnOptions, SongsFilterSpec } from "@/src/core/components/song/SongClientBaseTypes";
@@ -52,6 +53,7 @@ function songSortColumn(value: string): SongOrderByColumnOption {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const SongListOuter = () => {
+    const cmdbRouter = useCmdbRouter();
     const dashboardContext = useDashboardContext();
 
     // Individual filter hooks - still needed for the search page hook
@@ -120,7 +122,7 @@ const SongListOuter = () => {
                 Order: index.toString(),
                 ID: song.publicId.toString(),
                 Name: song.name || "",
-                URL: dashboardContext.routingApi.getURIForSong(song),
+                URL: cmdbRouter.getURIForSong(song),
             }),
             filename: "songs"
         },

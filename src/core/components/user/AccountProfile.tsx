@@ -1,6 +1,6 @@
-import React from "react";
+import { CMLink } from "@/src/route/CMLink";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { useQuery } from "@blitzjs/rpc";
-import { useRouter } from "next/router";
 import { Alert, Breadcrumbs, Stack, Typography } from "@mui/material";
 import { Permission } from "shared/permissions";
 import type { UserPublicId } from "shared/publicId";
@@ -11,18 +11,17 @@ import db3queries from "src/core/db3/queries/db3queries";
 import { platformUserEditorView } from "src/core/db3/shared/entities/user/platformUser";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
-import { CMLink } from "@/src/route/CMLink";
+import { portalHref } from "src/route/portalRouting";
 import { CMButtonGroup, KeyValueTable } from "../CMCoreComponents2";
 import { useDashboardContext, useRecordFeatureUse } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { AccountRoleControl } from "./AccountRoleControl";
 import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
 import { UserAdminPanel } from "./UserAdminPanel";
-import { UserIdentityIndicator } from "./UserIdentityIndicator";
-import { UserSignInMethodsButton } from "./UserSignInMethodsButton";
-import { UserProfileFieldsEditor } from "./UserProfileFieldsEditor";
 import { UserMassAnalysisTabContent } from "./UserAnalyticTables";
-import { portalHref } from "src/route/portalRouting";
+import { UserIdentityIndicator } from "./UserIdentityIndicator";
+import { UserProfileFieldsEditor } from "./UserProfileFieldsEditor";
+import { UserSignInMethodsButton } from "./UserSignInMethodsButton";
 
 function LoadedAccountProfile({ personId, mode }: {
     readonly personId: UserPublicId;
@@ -31,7 +30,7 @@ function LoadedAccountProfile({ personId, mode }: {
     const context = useDB3QueryContext();
     const dashboard = useDashboardContext();
     const locale = useLocale();
-    const router = useRouter();
+    const router = useCmdbRouter();
     const command = useDB3Command(platformUserEditorView.crud.operations.update.command, { bandPublicId: null });
     const [result, { refetch }] = useQuery(db3queries, {
         ...context, bandPublicId: null,
@@ -50,7 +49,7 @@ function LoadedAccountProfile({ personId, mode }: {
     const controls = <>
         {user.isDeleted && <Alert severity="warning">{capabilities.mergedIntoUserId
             ? <>{locale.getPlainString("membership.profile.merged")} <CMLink href={portalHref(
-                `/backstage/platform-user/${capabilities.mergedIntoUserId}`, { ...context, bandPublicId: null }, dashboard.portalHosting)}>
+                `/backstage/platform-user/${capabilities.mergedIntoUserId}`, { ...context, bandPublicId: null }, router.hosting)}>
                 {locale.getPlainString("membership.profile.remainingAccount")}</CMLink></>
             : locale.getPlainString("membership.profile.deactivated")}</Alert>}
         <Stack spacing={1} alignItems="flex-start">
@@ -58,7 +57,7 @@ function LoadedAccountProfile({ personId, mode }: {
             <CMButtonGroup>
                 <UserAdminPanel user={user} capabilities={capabilities} refetch={refresh}
                     onDeactivated={mode === "controls" ? () => router.replace(portalHref(
-                        `/backstage/platform-user/${personId}`, { ...context, bandPublicId: null }, dashboard.portalHosting)) : refresh} />
+                        `/backstage/platform-user/${personId}`, { ...context, bandPublicId: null }, router.hosting)) : refresh} />
                 {dashboard.isAuthorized(Permission.sysadmin) && <UserIdentityIndicator user={user} />}
                 {capabilities.canResetPassword && <AdminResetPasswordButton user={user} />}
                 {capabilities.canManageSignInMethods && <UserSignInMethodsButton user={user} onChanged={refresh} />}
@@ -70,7 +69,7 @@ function LoadedAccountProfile({ personId, mode }: {
     }
     return <>
         <Breadcrumbs>
-            <CMLink href={portalHref("/backstage/platform-adminUsers", { ...context, bandPublicId: null }, dashboard.portalHosting)}>
+            <CMLink href={portalHref("/backstage/platform-adminUsers", { ...context, bandPublicId: null }, router.hosting)}>
                 {locale.getPlainString("platformUser.title")}</CMLink>
             <Typography>{user.name}</Typography>
         </Breadcrumbs>

@@ -1,3 +1,4 @@
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { EventOrderByColumnNames, EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from "@/src/core/components/event/EventClientBaseTypes";
@@ -172,6 +173,7 @@ function parseEventSortColumn(column: string): EventOrderByColumnOption {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const EventListOuter = () => {
+    const cmdbRouter = useCmdbRouter();
     const dashboardContext = useDashboardContext();
     const staticFilters = makeStaticFilters(dashboardContext);
     const defaultStaticFilterValue = staticFilters.find(x => x.label === gDefaultStaticFilterName)!;
@@ -292,7 +294,7 @@ const EventListOuter = () => {
                         : "",
                     Location: event.locationDescription || "",
                     LocationURL: event.locationURL || "",
-                    URL: dashboardContext.routingApi.getURIForEvent({ publicId: event.publicId, name: event.name || "" }),
+                    URL: cmdbRouter.getURIForEvent({ publicId: event.publicId, name: event.name || "" }),
                 };
             },
             filename: "events"

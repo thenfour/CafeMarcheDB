@@ -12,14 +12,14 @@ import { queryView } from "src/core/db3/server/db3QueryCore";
 import { bandUserProfileView } from "src/core/db3/shared/entities/user/bandUserProfile";
 import { platformUserEditorView } from "src/core/db3/shared/entities/user/platformUser";
 import { xUserMinimum } from "src/core/db3/shared/schema/user";
-import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
+import { resolvePagePresentationInput } from "src/route/server/portalRequest";
 
 interface PageProps { readonly personId: UserPublicId; readonly profileScope: "band" | "account"; readonly title: string }
 
 export const getServerSideProps = gSSP<PageProps>(async ({ params, query, req, ctx }) => {
     const path = params?.id_slug_tab;
     const identity = Array.isArray(path) ? path[0] : undefined;
-    const input = pagePresentationInput(query, req.headers["accept-language"]);
+    const input = await resolvePagePresentationInput(req, query);
     if (!xUserMinimum.isIdentity(identity)) {
         return { notFound: true };
     }

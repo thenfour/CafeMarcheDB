@@ -1,38 +1,67 @@
 import { NotFoundError } from "blitz";
-import db from "db";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parsePublicId } from "shared/publicId";
 import { assertAuthorizationBandScope, withAuthorizationBandScope } from "src/auth/server/requestAuthorizationScope";
-import { PORTAL_PATH_HEADER } from "src/route/portalRouting";
-import { resolvePortalRequest } from "src/route/server/portalRequest";
+import { parsePortalPath, serializePortalPath, type BandHostingConfig } from "src/route/portalRouting";
+import { resolvePortalPath, resolvePortalRequestContext, withPortalRequest } from "src/route/server/portalRequest";
 
-const reads = vi.hoisted(() => ({ band: vi.fn(), locale: vi.fn() }));
-vi.mock("db", () => ({ default: { band: { findFirst: reads.band }, locale: { findFirst: reads.locale } } }));
+const reads = vi.hoisted(() => ({ bands: vi.fn() }));
+vi.mock("db", () => ({ default: { band: { findMany: reads.bands } } }));
 const first = parsePublicId<"Band">("PortalBand000001");
 const second = parsePublicId<"Band">("PortalBand000002");
+const multi: BandHostingConfig = { kind: "multiBand" };
+const single: BandHostingConfig = { kind: "singleBand", tenant: "generic" };
 beforeEach(() => {
     vi.stubEnv("CMDB_BASE_URL", "https://portal.test");
     vi.stubEnv("CMDB_HOSTING_MODE", "Platform");
-    reads.band.mockReset().mockResolvedValue({ id: 7 });
-    reads.locale.mockReset().mockResolvedValue({ id: 3 });
+    reads.bands.mockReset().mockResolvedValue([{ publicId: first }]);
 });
 afterEach(() => { vi.unstubAllEnvs(); });
-const request = (url: string, host = "portal.test") => ({ url, headers: { host } });
 
-describe("server portal request validation", () => {
-    it("validates rewritten metadata against deployment and original path context", () => {
-        expect(resolvePortalRequest({
-            url: `/backstage/events?bandPublicId=${first}&routeLocale=fr-BE`,
-            headers: { host: "portal.test", [PORTAL_PATH_HEADER]: `/fr-BE/b/${first}/backstage/events` }
-        }))
-            .toMatchObject({ pathname: "/backstage/events", selection: { bandPublicId: first, routeLocale: "fr-BE" } });
+function request(externalPathname: string, hosting: BandHostingConfig) {
+    const path = parsePortalPath(externalPathname, hosting);
+    const query = new URLSearchParams();
+    serializePortalPath(query, path);
+    return { url: `${path.internalPathname}?${query}`, headers: { host: "internal-proxy" } };
+}
+
+describe("server portal request resolution", () => {
+    it("deserializes middleware metadata without interpreting the rewritten pathname again", async () => {
+        const portal = await resolvePortalRequestContext(request(`/fr-BE/b/${first}/backstage/events`, multi));
+        expect(portal.requestPath).toMatchObject({ internalPathname: "/backstage/events", bandPublicId: first, routeLocale: "fr-BE" });
+        expect(reads.bands).not.toHaveBeenCalled();
     });
-    it.each(["evil.test", "portal.test:8080", "portal.test@evil.test", "portal.test,evil.test", "[", ""])
-        ("rejects unconfigured host %s", host => {
-            expect(() => resolvePortalRequest(request(`/b/${first}/backstage`, host))).toThrow(NotFoundError);
+    it("requires serialized metadata at the request boundary", async () => {
+        await expect(resolvePortalRequestContext({ url: `/backstage?bandPublicId=${first}`, headers: {} })).rejects.toThrow();
+    });
+    it("resolves the single database band only for an explicit /b prefix", async () => {
+        vi.stubEnv("CMDB_HOSTING_MODE", "GenericSingleTenant");
+        expect((await resolvePortalRequestContext(request("/fr/b/backstage", single))).requestPath.bandPublicId).toBe(first);
+        expect(reads.bands).toHaveBeenCalledOnce();
+        expect((await resolvePortalRequestContext(request("/fr/backstage", single))).requestPath.bandPublicId).toBeNull();
+        expect(reads.bands).toHaveBeenCalledOnce();
+    });
+    it("reuses a request's resolution across server consumers", async () => {
+        vi.stubEnv("CMDB_HOSTING_MODE", "GenericSingleTenant");
+        const incoming = request("/b/backstage", single);
+        const [one, two] = await Promise.all([resolvePortalRequestContext(incoming), resolvePortalRequestContext(incoming)]);
+        expect(one).toBe(two);
+        expect(reads.bands).toHaveBeenCalledOnce();
+    });
+    it.each([{ bands: [] }, { bands: [{ publicId: first }, { publicId: second }] }])("rejects a single-band database that does not contain exactly one band", async ({ bands }) => {
+        vi.stubEnv("CMDB_HOSTING_MODE", "GenericSingleTenant");
+        reads.bands.mockResolvedValue(bands);
+        await expect(resolvePortalRequestContext(request("/b/backstage", single))).rejects.toThrow("exactly one Band");
+    });
+    it("rejects a supplied single-band ID that differs from the database band", async () => {
+        const path = { ...parsePortalPath("/b/backstage", single), bandPublicId: second };
+        await expect(resolvePortalPath(path, single)).rejects.toBeInstanceOf(NotFoundError);
+    });
+    it("establishes the resolved band constraint before invoking an operation", async () => {
+        vi.stubEnv("CMDB_HOSTING_MODE", "GenericSingleTenant");
+        await withPortalRequest(request("/b/api/rpc/query", single), async () => {
+            expect(() => assertAuthorizationBandScope(second)).toThrow(NotFoundError);
         });
-    it("does not accept forwarded-host hints in place of the configured host", () => {
-        expect(() => resolvePortalRequest({ url: "/backstage", headers: { host: "evil.test", "x-forwarded-host": "portal.test" } })).toThrow(NotFoundError);
     });
 });
 

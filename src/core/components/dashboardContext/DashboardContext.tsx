@@ -19,8 +19,6 @@ import getDashboardData from 'src/auth/queries/getDashboardData';
 import * as db3 from "src/core/db3/db3";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { collectLocalePreferences, type LocalePreferences } from "src/locale/shared/localePreferences";
-import { usePortalHosting } from "src/route/PortalRoutingProvider";
-import type { BandHostingConfig } from "src/route/portalRouting";
 import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
 import { ColorVariationSpec, gAppColors, gGeneralPaletteList } from '../color/palette';
 import { ActivityFeature } from '../featureReports/activityTracking';
@@ -41,12 +39,11 @@ interface ObjectWithVisiblePermission {
 export class DashboardContextData extends DashboardContextDataBase {
     metronomeSilencers: (() => void)[];
 
-
     session: ClientSession | null;
     refetchDashboardData: () => Promise<unknown> = async () => { };
     effectivePermissions: PermissionSet = new PermissionSet([]);
     authorization: CMClientAuthorization = new CMClientAuthorization(null, new PermissionSet([]));
-    authorizationContext: ScopedAuthorizationData | null = null;
+    authorizationContext: ScopedAuthorizationData | null = null; // includes band-level auth info
     localePreferences: LocalePreferences = collectLocalePreferences();
 
     requireBandPublicId(): BandPublicId {
@@ -57,8 +54,8 @@ export class DashboardContextData extends DashboardContextDataBase {
         return bandPublicId;
     }
 
-    constructor(hosting: BandHostingConfig) {
-        super(hosting);
+    constructor() {
+        super();
         this.metronomeSilencers = [];
     }
 
@@ -197,16 +194,14 @@ export class DashboardContextData extends DashboardContextDataBase {
 // Keep the runtime object stable (for example metronome registrations), while
 // a new provider envelope notifies React consumers when query data changes.
 // Outside the dashboard provider this object represents an unscoped platform shell.
-export const DashboardContext = React.createContext({ data: new DashboardContextData({ kind: "platform" }) });
+export const DashboardContext = React.createContext({ data: new DashboardContextData() });
 
 export const useDashboardContext = () => React.useContext(DashboardContext).data;
 
 
 export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{}>) => {
-    const hosting = usePortalHosting();
-    const valueRef = React.useRef(new DashboardContextData(hosting));
-    valueRef.current.portalHosting = hosting;
     const presentation = usePresentation();
+    const valueRef = React.useRef(new DashboardContextData());
     const brand = useBrand();
 
     const [currentUser] = useCurrentUser();
@@ -285,8 +280,6 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         tag => tag.publicId,
     );
     valueRef.current.songCreditType = new TableAccessor(dashboardData.songCreditType);
-    valueRef.current.serverBaseUri = dashboardData.serverBaseUri;
-    valueRef.current.serverStartupState = dashboardData.serverStartupState;
     valueRef.current.relevantEventIds = dashboardData.relevantEventIds;
     valueRef.current.bandTimeZone = dashboardData.bandTimeZone;
 

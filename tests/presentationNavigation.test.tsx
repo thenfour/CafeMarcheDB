@@ -56,6 +56,7 @@ beforeEach(() => {
 afterEach(async () => {
     await act(async () => root.unmount());
     container.remove();
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
 });
 
@@ -119,6 +120,7 @@ describe("presentation navigation through Suspense", () => {
     });
 
     it("uses a fresh snapshot after session grants change", async () => {
+        vi.spyOn(Date, "now").mockReturnValue(1_800_000_000_000);
         await loadPlatform();
         const oldIds = new Set([...reads.values()].map(read => read.input.clientRequestId));
         session = { ...session, permissionNames: ["login", "search_users"] };

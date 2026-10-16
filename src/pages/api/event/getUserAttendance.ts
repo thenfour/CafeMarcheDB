@@ -5,6 +5,7 @@ import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { api } from "src/blitz-server";
 import { readUserEventAttendance } from "src/core/db3/server/eventAttendanceRead";
 import { ZGetUserAttendanceArgs } from "src/core/db3/shared/apiTypes";
+import { applicationQuery } from "src/route/portalRouting";
 
 export default api(async (req, res, ctx: Ctx) => {
     if (req.method !== "GET") {
@@ -13,7 +14,7 @@ export default api(async (req, res, ctx: Ctx) => {
         return;
     }
     try {
-        const args = ZGetUserAttendanceArgs.parse(req.query);
+        const args = ZGetUserAttendanceArgs.parse(applicationQuery(req.query));
         const auth = await loadAuthorization(ctx.session, args.bandPublicId);
         res.status(200).json(await readUserEventAttendance(db, auth, args));
     } catch (error) {

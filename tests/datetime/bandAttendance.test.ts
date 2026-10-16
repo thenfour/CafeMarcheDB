@@ -52,7 +52,7 @@ describe("band lifecycle reaches production attendance", () => {
       durationMillis: Number(event.durationMillis),
       isAllDay: event.isAllDay,
     })
-    const metadata = CalculateEventMetadata(event, dateRange, undefined, context, [participant], null, () => null, () => null)
+    const metadata = CalculateEventMetadata(event, dateRange, undefined, context, { getURIForEvent: () => "https://test/event" }, [participant], null, () => null, () => null)
     expect(metadata.eventTiming).toBe(timing)
     const attendance = CalcEventAttendance({ eventData: metadata, userMap: [participant], dashboardContext: context })
     expect(attendance.eventIsPast).toBe(past)

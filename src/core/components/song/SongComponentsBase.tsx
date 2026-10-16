@@ -3,7 +3,7 @@ import { formatSongLength } from 'shared/time';
 import * as db3 from "src/core/db3/db3";
 import type { SongPublicId } from "shared/publicId";
 import { getFormattedBPM } from '../../db3/clientAPILL';
-import { DashboardContextData } from '../dashboardContext/DashboardContext';
+import type { CmdbRouter } from "src/route/portalRouting";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface SongMetadataSource {
@@ -26,11 +26,11 @@ export type SongWithMetadata = SongMetadata<db3.SongDetailClient>;
 export const CalculateSongMetadata = <TSong extends SongMetadataSource>(
     song: TSong,
     tabSlug: string | undefined | null,
-    dashboardContext: DashboardContextData,
+    router: Pick<CmdbRouter, "getURIForSong">,
 ): SongMetadata<TSong> => {
     return {
         song,
-        songURI: dashboardContext.routingApi.getURIForSong(song, tabSlug || undefined),
+        songURI: router.getURIForSong(song, tabSlug || undefined),
         formattedBPM: (song.startBPM == null && song.endBPM == null) ? null : getFormattedBPM(song),
         formattedLength: song.lengthSeconds == null ? null : formatSongLength(song.lengthSeconds),
     };

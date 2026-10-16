@@ -11,6 +11,8 @@ export async function fetchObjectQuery<TItemType extends QuickSearchItemType>(
 ): Promise<QuickSearchItemMatch<TItemType>[]> {
     const input = QuickSearchInputSchema.parse({ ...presentation, keyword, allowedItemTypes, permissionPolicy });
     const query = new URLSearchParams({ keyword, allowedItemTypes: JSON.stringify(allowedItemTypes), bandPublicId: input.bandPublicId, permissionPolicy });
+
+    // lsmb todo: this should also be in a centralized routine.
     if (input.routeLocale) {
         query.set("routeLocale", input.routeLocale);
     }

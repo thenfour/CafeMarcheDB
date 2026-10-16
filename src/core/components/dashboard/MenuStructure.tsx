@@ -1,8 +1,8 @@
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { groupByMap } from '@/shared/arrayUtils';
 import { MenuCaptionKey } from "@/src/locale/shared/menuStrings";
 import { Box, Collapse, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Typography } from '@mui/material';
 import Link from "next/link";
-import { useRouter } from "next/router";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { gNullValue } from "shared/rootroot";
@@ -10,7 +10,7 @@ import * as db3 from "src/core/db3/db3";
 import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
 import { wikiMakeRelativeURI } from "src/core/wiki/shared/wikiUtils";
 import { useLocale } from "src/locale/components/useLocale";
-import { parsePortalPath, portalHref } from "src/route/portalRouting";
+import { type BandHostingConfig, type PortalPath } from "src/route/portalRouting";
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
 import { AppContextMarker } from "../AppContext";
 import { AdminInspectObject } from '../CMCoreComponents2';
@@ -54,7 +54,7 @@ export interface FlatMenuSection {
 export type FlatMenuItemAndSection = { sectionInfo: FlatMenuSection, item: FlatMenuItemSpec };
 
 // Helper function to convert dynamic menu items to static menu items
-type DynamicMenuPresentation = Pick<DashboardContextData, "permission" | "memberPresentation" | "portalHosting">;
+type DynamicMenuPresentation = Pick<DashboardContextData, "permission">;
 
 export const DynMenuToMenuItem = (item: db3.MenuLinkListClient, dashboardContext: DynamicMenuPresentation): MenuLink | null => {
     let path = "";
@@ -65,7 +65,7 @@ export const DynMenuToMenuItem = (item: db3.MenuLinkListClient, dashboardContext
             path = item.externalURI || "";
             break;
         case "Wiki":
-            path = item.wikiSlug ? portalHref(wikiMakeRelativeURI(item.wikiSlug), dashboardContext.memberPresentation, dashboardContext.portalHosting) : "";
+            path = item.wikiSlug ? wikiMakeRelativeURI(item.wikiSlug) : "";
             break;
     }
 
@@ -84,10 +84,10 @@ export const DynMenuToMenuItem = (item: db3.MenuLinkListClient, dashboardContext
     };
 };
 
-type MenuAuthorization = Pick<DashboardContextData, "portalHosting" | "isAuthorized">;
+type MenuAuthorization = Pick<DashboardContextData, "isAuthorized">;
 
-function IsLinkEnabled(dashboardContext: MenuAuthorization, link: MenuLink): boolean {
-    if (link.enabledForSingleTenant === false && dashboardContext.portalHosting.kind === "standalone") {
+function IsLinkEnabled(dashboardContext: MenuAuthorization, link: MenuLink, hosting: BandHostingConfig): boolean {
+    if (link.enabledForSingleTenant === false && hosting.kind === "singleBand") {
         return false;
     }
     return dashboardContext.isAuthorized(link.permission);
@@ -97,6 +97,7 @@ function IsLinkEnabled(dashboardContext: MenuAuthorization, link: MenuLink): boo
 export const FlattenMenuSections = (
     dashboardContext: MenuAuthorization,
     sections: MenuSection[],
+    hosting: BandHostingConfig,
     //expandedSections: Set<string>
 ): FlatMenuItemAndSection[] => {
     const menuItems: FlatMenuItemAndSection[] = [];
@@ -108,7 +109,7 @@ export const FlattenMenuSections = (
 
         // Check if any items in this section are authorized
         const checkAuthorizedItems = (links: MenuLink[]): boolean => {
-            return links.some(link => IsLinkEnabled(dashboardContext, link));
+            return links.some(link => IsLinkEnabled(dashboardContext, link, hosting));
         };
 
         const hasAuthorizedLinks = section.groups.some(group =>
@@ -165,7 +166,7 @@ export const FlattenMenuSections = (
 
             // Add links from this group
             for (const link of group.links) {
-                if (IsLinkEnabled(dashboardContext, link)) {
+                if (IsLinkEnabled(dashboardContext, link, hosting)) {
                     menuItems.push({
                         sectionInfo: { section: section, className: group.className || section.className },
                         item: {
@@ -183,7 +184,7 @@ export const FlattenMenuSections = (
 
 interface MenuRoute {
     pathname: string;
-    asPath: string;
+    requestPath: Pick<PortalPath, "internalPathname">;
 }
 
 // lsmb todo: this kind of operation should be on a cmdb Router system that
@@ -195,8 +196,8 @@ function MenuItemMatchesRealm(linkPath: string | undefined, linkRealm: NavRealm 
     if (!linkPath?.startsWith("/") || linkPath.startsWith("//")) {
         return false;
     }
-    const path = parsePortalPath(new URL(linkPath, "https://cmdb.invalid").pathname).pathname;
-    const visitedPath = parsePortalPath(new URL(router.asPath, "https://cmdb.invalid").pathname).pathname;
+    const path = new URL(linkPath, "https://cmdb.invalid").pathname;
+    const visitedPath = router.requestPath.internalPathname;
     return router.pathname === path || visitedPath === path;
 }
 
@@ -217,8 +218,8 @@ export interface MenuItemComponentProps {
 
 // Menu item component
 export const MenuItemComponent = (props: MenuItemComponentProps) => {
-    const router = useRouter();
-    const dashboard = useDashboardContext();
+    const router = useCmdbRouter();
+
     const recordFeature = useClientTelemetryEvent();
 
     if (props.item.item.type === "divider") {
@@ -254,7 +255,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
                     {linkItem.openInNewTab ? (
                         <ListItemButton
                             component="a"
-                            href={portalHref(linkItem.path, dashboard.memberPresentation, dashboard.portalHosting)}
+                            href={router.href(linkItem.path)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
@@ -268,7 +269,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
                     ) : (
                         <ListItemButton
                             component={Link}
-                            href={portalHref(linkItem.path, dashboard.memberPresentation, dashboard.portalHosting)}
+                            href={router.href(linkItem.path)}
                             selected={MenuItemMatchesRealm(linkItem.path, linkItem.realm, props.realm, router)}
                             className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
                             onClick={e => {
@@ -292,7 +293,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
             return (
                 <ListItemButton
                     component="a"
-                    href={portalHref(linkItem.path, dashboard.memberPresentation, dashboard.portalHosting)}
+                    href={router.href(linkItem.path)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
@@ -307,7 +308,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
             return (
                 <ListItemButton
                     component={Link}
-                    href={portalHref(linkItem.path, dashboard.memberPresentation, dashboard.portalHosting)}
+                    href={router.href(linkItem.path)}
                     selected={MenuItemMatchesRealm(linkItem.path, linkItem.realm, props.realm, router)}
                     className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
                     onClick={e => {
@@ -418,7 +419,7 @@ interface SideMenuProps {
 
 export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme }: SideMenuProps) => {
     const dashboardContext = useDashboardContext();
-    const router = useRouter();
+    const router = useCmdbRouter();
     const dynamicSections = groupByMap(dashboardContext.dynMenuLinks.items,
         item => item.applicationPage || gNullValue);
     const dynamicSectionsAndGroups = new Map<string, Map<string, db3.MenuLinkListClient[]>>();
@@ -431,7 +432,7 @@ export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme 
         dashboardContext.memberPresentation.bandPublicId ? "band" : "platform");
     const menuSections = AddDynMenuItemsToStatic(staticSections, dynamicSectionsAndGroups, dashboardContext);
 
-    const menuItems = FlattenMenuSections(dashboardContext, menuSections);
+    const menuItems = FlattenMenuSections(dashboardContext, menuSections, router.hosting);
     const currentSection = getCurrentMenuSection(menuItems, navRealm, router);
 
     // Initialize expanded sections with default expanded sections.

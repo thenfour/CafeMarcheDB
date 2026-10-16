@@ -1,20 +1,18 @@
-import type { GetServerSideProps } from "next";
 import { NotFoundError } from "blitz";
 import db from "db";
-import { ZodError } from "zod";
+import type { GetServerSideProps } from "next";
 import type { EnNlFr } from "shared/lang";
-import { HostingMode } from "shared/brandConfigBase";
 import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
 import { CMPublicIndex } from "src/core/components/frontpage/CMFrontpage";
-import { isTenant, portalHref } from "src/route/portalRouting";
-import React from "react";
 import { readPublicFeed } from "src/core/db3/server/publicFeed";
 import { PublicFeedInputSchema, type PublicFeedInput } from "src/core/db3/shared/publicFeedInput";
 import type { PublicFeedResponseSpec } from "src/core/db3/shared/publicTypes";
 import { homepageDisplayLanguage } from "src/locale/shared/authoredTranslations";
 import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
-import { publicFeedBaseURL } from "src/server/publicHomepage";
+import { deserializePortalPath, isTenant, portalHref } from "src/route/portalRouting";
 import { withPortalRequest } from "src/route/server/portalRequest";
+import { ZodError } from "zod";
+import { serverGetBaseUrl } from "../route/server/portalConfig";
 
 interface PublicIndexProps {
     publicFeed: PublicFeedResponseSpec;
@@ -29,11 +27,8 @@ export default function PublicIndex(props: PublicIndexProps) {
 export const getServerSideProps: GetServerSideProps<PublicIndexProps> = async context => {
     context.res.setHeader("Cache-Control", "no-store");
     try {
-        return await withPortalRequest(context.req, async ({ hosting, selection: portalSelection }) => {
-            const presentation = {
-                ...pagePresentationInput(context.query, context.req.headers["accept-language"]),
-                ...portalSelection,
-            };
+        return await withPortalRequest(context.req, async ({ hosting, requestPath: portalSelection }) => {
+            const presentation = pagePresentationInput(portalSelection, context.req.headers["accept-language"]);
             if (isTenant(hosting, "generic")) {
                 return {
                     redirect: {
@@ -47,9 +42,9 @@ export const getServerSideProps: GetServerSideProps<PublicIndexProps> = async co
             }
             const selection = PublicFeedInputSchema.parse(presentation);
             const auth = await loadAuthorizationForUser(null, undefined, selection.bandPublicId);
-            const publicFeed = await readPublicFeed(db, auth, selection, { baseURL: publicFeedBaseURL(), hosting });
+            const publicFeed = await readPublicFeed(db, auth, selection, { baseURL: serverGetBaseUrl(), hosting });
             return { props: { publicFeed, selection, lang: homepageDisplayLanguage(selection) } };
-        });
+        }, deserializePortalPath(context.query));
     } catch (error) {
         if (error instanceof NotFoundError || error instanceof ZodError || error instanceof RangeError) {
             return { notFound: true };

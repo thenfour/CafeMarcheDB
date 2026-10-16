@@ -90,8 +90,8 @@ scope; `BandUserSetting` starts empty. Never expose or duplicate private calenda
 bearer tokens as public settings.
 
 `Dashboard_HostingMode` is removed; configure production with
-`CMDB_HOSTING_MODE=CafeMarche` and set `CMDB_PUBLIC_BAND_PUBLIC_ID` to the migrated
-band's public identity at application cutover. `CMDB_BASE_URL` must match the
+`CMDB_HOSTING_MODE=CafeMarche` with exactly one Band in the database at application cutover. Single-band
+URLs use the `/b` prefix; unprefixed routes remain unscoped. `CMDB_BASE_URL` must match the
 public host. See the [routing contract](00-design%20notes.md#routing-and-later-scope).
 `BandTimeZone` is absent
 from the production manifest, so no timezone setting is invented.

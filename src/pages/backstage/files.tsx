@@ -1,6 +1,6 @@
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { FileOrderByColumnNames, FileOrderByColumnOption, FileOrderByColumnOptions, FilesFilterSpec } from "@/src/core/components/file/FileClientBaseTypes";
 import { FileListItem } from "@/src/core/components/file/FileListItem";
 import { BlitzPage } from "@blitzjs/next";
@@ -64,7 +64,8 @@ function fileSortColumn(value: string): FileOrderByColumnOption {
 }
 
 const FileListOuter = () => {
-    const dashboardContext = useDashboardContext();
+    const cmdbRouter = useCmdbRouter();
+
 
     // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter<FileTagPublicId>({
@@ -154,7 +155,7 @@ const FileListOuter = () => {
                 URL: file.storedLeafName !== undefined
                     && file.fileLeafName !== undefined
                     && file.externalURI !== undefined
-                    ? dashboardContext.routingApi.getURIForFile({
+                    ? cmdbRouter.getURIForFile({
                         storedLeafName: file.storedLeafName,
                         fileLeafName: file.fileLeafName,
                         externalURI: file.externalURI,

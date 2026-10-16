@@ -1,194 +1,140 @@
+// shared; must be able to run server-side.
+// that's one reason this  is here and not in the individual page files
+
 import { removeTrailingSlash } from "@/shared/rootroot";
 import { Permission } from "shared/permissions";
 import { registryFor } from "./routeHelpers";
 
-
-// registry of PAGE routes.
-// note that middleware will be invoked on all of these, plus RPC / dynamic.
-
-// middleware sees routes RAW, with query params, NO hash value, before Next.js transforms them into page routes.
-// MyApp.getInitialProps is only called for pages; it sees transformed next routes, like /backstage/event/[...id_slug_tab]
-//
-// example of visiting:
-// http://localhost:10455/b/LRnHh3DGxoKiKKI7/backstage/event/Zqx_kLufC_3QMdyJ/rehearsal/setlists?param=123#xyzzzz
-
-// [middleware] /b/LRnHh3DGxoKiKKI7/backstage/event/Zqx_kLufC_3QMdyJ/rehearsal/setlists
-// [middleware] Rewriting to : http://localhost:10455/backstage/event/Zqx_kLufC_3QMdyJ/rehearsal/setlists?param=123&bandPublicId=LRnHh3DGxoKiKKI7
-// [MyApp.getInitialProps] /b/LRnHh3DGxoKiKKI7/backstage/event/Zqx_kLufC_3QMdyJ/rehearsal/setlists {bandPublicId: 'LRnHh3DGxoKiKKI7', routeLocale: undefined, browserLanguages: Array(1), requestPath: '/b/LRnHh3DGxoKiKKI7/backstage/event/Zqx_kLufC_3QMdyJ/rehearsal/setlists', pathname: '/backstage/event/[...id_slug_tab]'}
-// [middleware] /_next/static/chunks/webpack.js
-// ...
-// [middleware] /favicon.png
-// [middleware] /api/rpc/getCurrentUser
-// ...
-// [middleware] /api/rpc/db3queries
-// ...
-
-// http://localhost:10455/b/LRnHh3DGxoKiKKI7/backstage/event/Zqx_kLufC_3QMdyJ/rehearsal/setlists?routeLocale=fr
-// transforms to
-// http://localhost:10455/fr/b/LRnHh3DGxoKiKKI7/backstage/event/Zqx_kLufC_3QMdyJ/rehearsal/setlists?routeLocale=fr
-// and internally rewrites to
-// http://localhost:10455/backstage/event/Zqx_kLufC_3QMdyJ/rehearsal/setlists?routeLocale=fr&bandPublicId=LRnHh3DGxoKiKKI7
-
-// IOW, middleware doesn't know the next transformed route (e.g. /backstage/event/[...id_slug_tab])
-// but we still have enough info to map incoming path -> backstage route, we just have to do it a bit manually.
-
-// could be interesting to rewrite to canonical path in the browser nav bar; so far it's not done.
-// http://localhost:10455/b/Ngy4gftLFYeRs-zq/backstage
-// http://localhost:10455/backstage?bandPublicId=Ngy4gftLFYeRs-zq
-// http://localhost:10455/backstage?bandPublicId=Ngy4gftLFYeRs-zq&routeLocale=nl
-
-// so route definitions need to specify enough info to understand how to extract params & map requests
-// in middleware.
-
-// registry entries need to be able to
-// - say "yes that's me" to a  raw incoming request path.
-// - be able to generate a canonical url, given context
-
-
-// /b/LRnHh3DGxoKiKKI7/backstage/event/Zqx_kLufC_3QMdyJ/rehearsal/setlists
-
-// platform
-// band = expects band id
-//type RouteScope = "platform" | "band";
-
-// interface BackstageRouteDefinition {
-//     key: string; // we could use pattern as the key right?
-//     pattern: string; // the next route pattern e.g., /backstage/event/[...id_slug_tab]
-//     caption: string; // todo: localize and describe what this is used for. page title? menu item caption?
-//     permission: Permission;
-
-//     // todo: breadcrumb scope ? if necessary.
-//     scope: RouteScope;
-//     // platform scope - platform vs. band (which requires band id)
-
-//     // An authenticated selection page may be reachable before a band is selected.
-//     // lsmb TODO: we should instead introduce separate routes for platform-level operations, then this goes away.
-//     unscopedPermission?: Permission;
-// }
+// Next owns page matching. This registry maps its patterns to application identities and permissions.
 
 type RouteCommon = {
+    // key is added by registry system.
     readonly nextPattern: string;
     readonly permission: Permission;
+    // params should be dynamic
 };
 
-function route(options: { readonly permission: Permission }) {
-    return <const TPattern extends string>(nextPattern: TPattern) => ({
-        key: nextPattern,
-        nextPattern,
-        permission: options.permission,
+function route<const TPattern extends string>(pattern: TPattern, permission: Permission) {
+    return <const TKey extends string>(key: TKey) => ({
+        key,
+        nextPattern: pattern,
+        permission,
     });
 }
 
 const kRouteRegistry = registryFor<RouteCommon>()({
-    "/": route({ permission: Permission.public }),
-    "/_error": route({ permission: Permission.public }),
-    "/auth/signup": route({ permission: Permission.public }),
-    "/auth/login": route({ permission: Permission.public }),
-    "/auth/forgot-password": route({ permission: Permission.public }),
-    "/404": route({ permission: Permission.public }),
-    "/auth/admin-bootstrap": route({ permission: Permission.public }),
-    "/auth/logout": route({ permission: Permission.public }),
-    "/auth/reset-password": route({ permission: Permission.public }),
-    "/auth/stopImpersonating": route({ permission: Permission.public }),
-    "/[...customLinkSlug]": route({ permission: Permission.public }),
-    "/backstage": route({ permission: Permission.public }),
-    "/backstage/events": route({ permission: Permission.view_events_nonpublic }),
-    "/backstage/event/[...id_slug_tab]": route({ permission: Permission.view_events_nonpublic }),
-    "/backstage/songs": route({ permission: Permission.view_songs }),
-    "/backstage/song/[...id_slug_tab]": route({ permission: Permission.view_songs }),
-    "/backstage/files": route({ permission: Permission.access_file_landing_page }),
-    "/backstage/file/[...id_slug_tab]": route({ permission: Permission.access_file_landing_page }),
-    "/backstage/wikiPages": route({ permission: Permission.search_wiki_pages }),
-    "/backstage/wiki/[...slug]": route({ permission: Permission.view_wiki_pages }),
-    "/backstage/wikiPageHistory": route({ permission: Permission.view_wiki_page_revisions }),
-    "/backstage/users": route({ permission: Permission.search_users }),
-    "/backstage/user/[...id_slug_tab]": route({ permission: Permission.login }),
-    "/backstage/profile": route({ permission: Permission.login }),
-    "/backstage/calendar": route({ permission: Permission.view_events_nonpublic }),
-    "/backstage/setlistPlanner": route({ permission: Permission.setlist_planner_access }),
-    "/backstage/stats": route({ permission: Permission.view_events_reports }),
-    "/backstage/featureReports": route({ permission: Permission.view_feature_reports }),
-    "/backstage/practice-tools": route({ permission: Permission.practice_tools_use }),
-    "/backstage/frontpagegallery": route({ permission: Permission.edit_public_homepage }),
-    "/backstage/frontpageEvents": route({ permission: Permission.edit_public_homepage }),
-    "/backstage/brand": route({ permission: Permission.manage_site_branding }),
-    "/backstage/menuLinks": route({ permission: Permission.customize_menu }),
-    "/backstage/customLinks": route({ permission: Permission.view_custom_links }),
-    "/backstage/editEventTags": route({ permission: Permission.admin_events }),
-    "/backstage/editEventTypes": route({ permission: Permission.manage_global_catalogs }),
-    "/backstage/editEventStatuses": route({ permission: Permission.manage_global_catalogs }),
-    "/backstage/editEventAttendances": route({ permission: Permission.manage_global_catalogs }),
-    "/backstage/editSongTags": route({ permission: Permission.admin_songs }),
-    "/backstage/editSongCreditTypes": route({ permission: Permission.manage_global_catalogs }),
-    "/backstage/editFileTags": route({ permission: Permission.admin_files }),
-    "/backstage/editWikiPageTags": route({ permission: Permission.admin_wiki_pages }),
-    "/backstage/editUserTags": route({ permission: Permission.manage_user_taxonomy }),
-    "/backstage/instruments": route({ permission: Permission.admin_instruments }),
-    "/backstage/instrumentFunctionalGroups": route({ permission: Permission.admin_instruments }),
-    "/backstage/instrument/[slug]": route({ permission: Permission.login }),
-    "/backstage/eventImport": route({ permission: Permission.sysadmin }),
-    "/backstage/editEvents": route({ permission: Permission.admin_events }),
-    "/backstage/editEventSegments": route({ permission: Permission.admin_events }),
-    "/backstage/editSongs": route({ permission: Permission.sysadmin }),
-    "/backstage/editSongCredits": route({ permission: Permission.manage_songs }),
-    "/backstage/userInstruments": route({ permission: Permission.manage_users }),
-    "/backstage/userTags": route({ permission: Permission.manage_users }),
-    "/backstage/userRoles": route({ permission: Permission.assign_user_roles }),
-    "/backstage/recoverMembers": route({ permission: Permission.recover_users }),
-    "/backstage/editFiles": route({ permission: Permission.admin_files }),
-    "/backstage/editFrontpageGalleryItems": route({ permission: Permission.sysadmin }),
-    "/backstage/calendarPreview": route({ permission: Permission.sysadmin }),
-    "/backstage/settings": route({ permission: Permission.login }),
-    "/backstage/roles": route({ permission: Permission.sysadmin }),
-    "/backstage/permissions": route({ permission: Permission.sysadmin }),
-    "/backstage/rolePermissions": route({ permission: Permission.sysadmin }),
-    "/backstage/adminUsers": route({ permission: Permission.manage_global_users }),
-    "/backstage/serverHealth": route({ permission: Permission.sysadmin }),
-    "/backstage/adminLogs": route({ permission: Permission.sysadmin }),
-    "/test/test": route({ permission: Permission.public }),
-    "/backstage/gallery": route({ permission: Permission.sysadmin }),
-    "/backstage/colorEditor2": route({ permission: Permission.sysadmin }),
-    "/backstage/test": route({ permission: Permission.sysadmin }),
-    "/backstage/test/test": route({ permission: Permission.sysadmin }),
-    "/backstage/test/quickSearchTest": route({ permission: Permission.sysadmin }),
-    "/backstage/test/CMSelectTest": route({ permission: Permission.sysadmin }),
-    "/backstage/test/attendance": route({ permission: Permission.sysadmin }),
-    "/backstage/test/date": route({ permission: Permission.sysadmin }),
-    "/backstage/test/dialogs": route({ permission: Permission.sysadmin }),
-    "/backstage/platform-wiki/[...slug]": route({ permission: Permission.login }),
-    "/backstage/platform-wikiPageHistory": route({ permission: Permission.login }),
-    "/backstage/platform-user/[...id_slug_tab]": route({ permission: Permission.manage_global_users }),
-    "/backstage/platform-profile": route({ permission: Permission.login }),
-    "/backstage/platform-featureReports": route({ permission: Permission.login }),
-    "/backstage/platform-menuLinks": route({ permission: Permission.login }),
-    "/backstage/platform-customLinks": route({ permission: Permission.login }),
-    "/backstage/platform-editEventTags": route({ permission: Permission.manage_global_catalogs }),
-    "/backstage/platform-editFileTags": route({ permission: Permission.manage_global_catalogs }),
-    "/backstage/platform-editWikiPageTags": route({ permission: Permission.login }),
-    "/backstage/platform-settings": route({ permission: Permission.login }),
-    "/backstage/platform-roles": route({ permission: Permission.sysadmin }),
-    "/backstage/platform-permissions": route({ permission: Permission.sysadmin }),
-    "/backstage/platform-rolePermissions": route({ permission: Permission.sysadmin }),
-    "/backstage/platform-adminUsers": route({ permission: Permission.manage_global_users }),
+    // root-like
+    "root": route("/", Permission.public),
+    "_error": route("/_error", Permission.public),
+    "auth_signup": route("/auth/signup", Permission.public),
+    "auth_login": route("/auth/login", Permission.public),
+    "auth_forgot-password": route("/auth/forgot-password", Permission.public),
+    "_404": route("/404", Permission.public),
+    "auth_admin-bootstrap": route("/auth/admin-bootstrap", Permission.public),
+    "auth_logout": route("/auth/logout", Permission.public),
+    "auth_resetpassword": route("/auth/reset-password", Permission.public),
+    "auth_stopImpersonating": route("/auth/stopImpersonating", Permission.public),
+
+    "customLink": route("/[...customLinkSlug]", Permission.public),
+
+    "practiceTools": route("/backstage/practice-tools", Permission.practice_tools_use),
+
+    // band-scoped
+    "bandRoot": route("/backstage", Permission.public),
+    "bandEvents": route("/backstage/events", Permission.view_events_nonpublic),
+    "bandEvent": route("/backstage/event/[...id_slug_tab]", Permission.view_events_nonpublic),
+    "bandSongs": route("/backstage/songs", Permission.view_songs),
+    "bandSong": route("/backstage/song/[...id_slug_tab]", Permission.view_songs),
+    "bandFiles": route("/backstage/files", Permission.access_file_landing_page),
+    "bandFile": route("/backstage/file/[...id_slug_tab]", Permission.access_file_landing_page),
+    "bandWikiPages": route("/backstage/wikiPages", Permission.search_wiki_pages),
+    "bandWiki": route("/backstage/wiki/[...slug]", Permission.view_wiki_pages),
+    "bandWikiPageHistory": route("/backstage/wikiPageHistory", Permission.view_wiki_page_revisions),
+    "bandUsers": route("/backstage/users", Permission.search_users),
+    "bandUser": route("/backstage/user/[...id_slug_tab]", Permission.login),
+    "bandProfile": route("/backstage/profile", Permission.login),
+    "bandCalendar": route("/backstage/calendar", Permission.view_events_nonpublic),
+    "bandSetlistPlanner": route("/backstage/setlistPlanner", Permission.setlist_planner_access),
+    "bandStats": route("/backstage/stats", Permission.view_events_reports),
+
+    "bandFeatureReports": route("/backstage/featureReports", Permission.view_feature_reports),
+    "bandFrontpagegallery": route("/backstage/frontpagegallery", Permission.edit_public_homepage),
+    "bandFrontpageEvents": route("/backstage/frontpageEvents", Permission.edit_public_homepage),
+    "bandBrand": route("/backstage/brand", Permission.manage_site_branding),
+    "bandMenuLinks": route("/backstage/menuLinks", Permission.customize_menu),
+    "bandCustomLinks": route("/backstage/customLinks", Permission.view_custom_links),
+    "bandEditEventTags": route("/backstage/editEventTags", Permission.admin_events),
+    "bandEditEventTypes": route("/backstage/editEventTypes", Permission.manage_global_catalogs),
+    "bandEditEventStatuses": route("/backstage/editEventStatuses", Permission.manage_global_catalogs),
+    "bandEditEventAttendances": route("/backstage/editEventAttendances", Permission.manage_global_catalogs),
+    "bandEditSongTags": route("/backstage/editSongTags", Permission.admin_songs),
+    "bandEditSongCreditTypes": route("/backstage/editSongCreditTypes", Permission.manage_global_catalogs),
+    "bandEditFileTags": route("/backstage/editFileTags", Permission.admin_files),
+    "bandEditWikiPageTags": route("/backstage/editWikiPageTags", Permission.admin_wiki_pages),
+    "bandEditUserTags": route("/backstage/editUserTags", Permission.manage_user_taxonomy),
+    "bandInstruments": route("/backstage/instruments", Permission.admin_instruments),
+    "bandInstrumentFunctionalGroups": route("/backstage/instrumentFunctionalGroups", Permission.admin_instruments),
+    "bandInstrument": route("/backstage/instrument/[slug]", Permission.login),
+    "bandEventImport": route("/backstage/eventImport", Permission.sysadmin),
+    "bandEditEvents": route("/backstage/editEvents", Permission.admin_events),
+    "bandEditEventSegments": route("/backstage/editEventSegments", Permission.admin_events),
+    "bandEditSongs": route("/backstage/editSongs", Permission.sysadmin),
+    "bandEditSongCredits": route("/backstage/editSongCredits", Permission.manage_songs),
+    "bandUserInstruments": route("/backstage/userInstruments", Permission.manage_users),
+    "bandUserTags": route("/backstage/userTags", Permission.manage_users),
+    "bandUserRoles": route("/backstage/userRoles", Permission.assign_user_roles),
+    "bandRecoverMembers": route("/backstage/recoverMembers", Permission.recover_users),
+    "bandEditFiles": route("/backstage/editFiles", Permission.admin_files),
+    "bandEditFrontpageGalleryItems": route("/backstage/editFrontpageGalleryItems", Permission.sysadmin),
+    "bandCalendarPreview": route("/backstage/calendarPreview", Permission.sysadmin),
+    "bandSettings": route("/backstage/settings", Permission.login),
+    "bandRoles": route("/backstage/roles", Permission.sysadmin),
+    "bandPermissions": route("/backstage/permissions", Permission.sysadmin),
+    "bandRolePermissions": route("/backstage/rolePermissions", Permission.sysadmin),
+    "bandAdminUsers": route("/backstage/adminUsers", Permission.manage_global_users),
+
+    "serverHealth": route("/backstage/serverHealth", Permission.sysadmin),
+    "adminLogs": route("/backstage/adminLogs", Permission.sysadmin),
+
+    "platformWiki": route("/backstage/platform-wiki/[...slug]", Permission.login),
+    "platformWikiPageHistory": route("/backstage/platform-wikiPageHistory", Permission.login),
+    "platformUser": route("/backstage/platform-user/[...id_slug_tab]", Permission.manage_global_users),
+    "platformProfile": route("/backstage/platform-profile", Permission.login),
+    "platformFeatureReports": route("/backstage/platform-featureReports", Permission.login),
+    "platformMenuLinks": route("/backstage/platform-menuLinks", Permission.login),
+    "platformCustomLinks": route("/backstage/platform-customLinks", Permission.login),
+    "platformEditEventTags": route("/backstage/platform-editEventTags", Permission.manage_global_catalogs),
+    "platformEditFileTags": route("/backstage/platform-editFileTags", Permission.manage_global_catalogs),
+    "platformEditWikiPageTags": route("/backstage/platform-editWikiPageTags", Permission.login),
+    "platformSettings": route("/backstage/platform-settings", Permission.login),
+
+    "platformRoles": route("/backstage/platform-roles", Permission.sysadmin),
+    "platformPermissions": route("/backstage/platform-permissions", Permission.sysadmin),
+    "platformRolePermissions": route("/backstage/platform-rolePermissions", Permission.sysadmin),
+    "platformAdminUsers": route("/backstage/platform-adminUsers", Permission.manage_global_users),
+
+    "testTest": route("/test/test", Permission.public),
+    "devGallery": route("/backstage/gallery", Permission.sysadmin),
+    "devColorEditor2": route("/backstage/colorEditor2", Permission.sysadmin),
+    "devTest": route("/backstage/test", Permission.sysadmin),
+    "devTest_test": route("/backstage/test/test", Permission.sysadmin),
+    "devtestQuickSearchTest": route("/backstage/test/quickSearchTest", Permission.sysadmin),
+    "devtestCMSelectTest": route("/backstage/test/CMSelectTest", Permission.sysadmin),
+    "devtestAttendance": route("/backstage/test/attendance", Permission.sysadmin),
+    "devtestDate": route("/backstage/test/date", Permission.sysadmin),
+    "devtestDialogs": route("/backstage/test/dialogs", Permission.sysadmin),
 });
 
 export type CmdbRouteKey = keyof typeof kRouteRegistry;
 export type CmdbRouteDefinition = (typeof kRouteRegistry)[CmdbRouteKey];
+export type CmdbRoutePattern = (typeof kRouteRegistry)[CmdbRouteKey]["nextPattern"];
+const kRoutePatterns = Object.values(kRouteRegistry).map(entry => entry.nextPattern);
 
 function routeByKey<T extends CmdbRouteKey>(key: T) {
     return kRouteRegistry[key];
 }
 
-function isRouteKey(key: string): key is CmdbRouteKey {
-    return Object.prototype.hasOwnProperty.call(kRouteRegistry, key);
-}
-
-function requireRouteKey(key: string): CmdbRouteKey {
-    if (!isRouteKey(key)) {
-        throw new Error(`Invalid route key: ${key}`);
-    }
-    return key;
-}
+const routesByPattern = new Map<string, CmdbRouteDefinition>(Object.values(kRouteRegistry).map(entry => [entry.nextPattern, entry]));
 
 // must return the actual type of the entry; they can be different shapes.
 // Needed for reverse lookup: "which route am I currently on?"
@@ -197,14 +143,16 @@ function requireRouteKey(key: string): CmdbRouteKey {
 // therefore the return is just the common base.
 function requireRouteByPattern(pattern: string): CmdbRouteDefinition {
     const sanitizedRoute = removeTrailingSlash(pattern) || "/";
-    return kRouteRegistry[requireRouteKey(sanitizedRoute)];
+    const entry = routesByPattern.get(sanitizedRoute);
+    if (!entry) {
+        throw new Error(`Invalid route pattern: ${pattern}`);
+    }
+    return entry;
 }
 
-export const CmdbRoutes = {
-    registry: kRouteRegistry,
-    routes: Object.keys(kRouteRegistry),
-    routeByKey,
-    isRouteKey,
-    requireRouteKey,
+export const CmdbRouteRegistry = {
+    // registry: kRouteRegistry,
+    allPatterns: kRoutePatterns,
     requireRouteByPattern,
+    routeByKey,
 };

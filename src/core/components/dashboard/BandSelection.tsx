@@ -3,13 +3,12 @@
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert, FormControl, InputLabel, Select, Stack } from "@mui/material";
-import { useRouter } from "next/router";
 import { parsePublicId } from "shared/publicId";
 import getAvailableBands from "src/auth/queries/getAvailableBands";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
 import { portalHref } from "src/route/portalRouting";
-import { usePortalHosting } from "src/route/PortalRoutingProvider";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { AvailableBand } from "@/src/auth/server/availableBands";
 
 function selectLocaleForBand(destinationBand: AvailableBand | undefined, routeLocale: string | null | undefined) {
@@ -23,8 +22,7 @@ function selectLocaleForBand(destinationBand: AvailableBand | undefined, routeLo
 }
 
 function PlatformBandSelection() {
-    const hosting = usePortalHosting();
-    const router = useRouter();
+    const router = useCmdbRouter();
     const presentation = usePresentation();
     const locale = useLocale();
     const { bandPublicId: _selected, ...input } = presentation.data?.input ?? {};
@@ -47,7 +45,7 @@ function PlatformBandSelection() {
             const changed = await router.push(portalHref("/backstage", {
                 bandPublicId: value ? parsePublicId<"Band">(value) : null,
                 routeLocale: destinationLocale,
-            }, hosting));
+            }, router.hosting));
             if (!changed) {
                 setFailed(true);
             }
@@ -82,6 +80,6 @@ function PlatformBandSelection() {
 }
 
 export function BandSelection() {
-    const hosting = usePortalHosting();
-    return hosting.kind === "platform" ? <PlatformBandSelection /> : null;
+    const router = useCmdbRouter();
+    return router.hosting.kind === "multiBand" ? <PlatformBandSelection /> : null;
 }

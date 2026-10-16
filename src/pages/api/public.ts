@@ -1,4 +1,5 @@
-import { getServerBandHostingConfig } from "@/src/route/portalRouting";
+import { applicationQuery, getServerBandHostingConfig } from "@/src/route/portalRouting";
+import { serverGetBaseUrl } from "@/src/route/server/portalConfig";
 import { AuthorizationError, NotFoundError, type Ctx } from "blitz";
 import db from "db";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -8,7 +9,6 @@ import { readPublicFeed } from "src/core/db3/server/publicFeed";
 import { PublicFeedInputSchema } from "src/core/db3/shared/publicFeedInput";
 import { collectLocalePreferences, parseAcceptLanguage } from "src/locale/shared/localePreferences";
 import { withPortalRequest } from "src/route/server/portalRequest";
-import { publicFeedBaseURL } from "src/server/publicHomepage";
 import { z, ZodError } from "zod";
 
 export const config = { api: { bodyParser: false } };
@@ -35,14 +35,14 @@ export async function publicFeedHandler(req: NextApiRequest, res: NextApiRespons
         return;
     }
     try {
-        const query = PublicFeedQuerySchema.parse(req.query);
+        const query = PublicFeedQuerySchema.parse(applicationQuery(req.query));
         const input = PublicFeedInputSchema.parse({
             bandPublicId: query.bandPublicId,
             routeLocale: query.routeLocale ?? query.lang,
             browserLanguages: parseAcceptLanguage(req.headers["accept-language"]).slice(0, 32),
         });
         collectLocalePreferences(input); // Validate explicit tags before loading accounts or content.
-        const baseURL = publicFeedBaseURL();
+        const baseURL = serverGetBaseUrl();
         const auth = isCrossOrigin(req, baseURL)
             ? await loadAuthorizationForUser(null, undefined, input.bandPublicId)
             : await loadAuthorization(ctx?.session ?? await getSessionForRequest(req, res), input.bandPublicId);

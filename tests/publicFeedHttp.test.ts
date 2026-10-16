@@ -58,7 +58,7 @@ describe("public publication HTTP boundary", () => {
         expect(mocked.publicAuth).not.toHaveBeenCalled();
         expect(mocked.feed).toHaveBeenCalledWith({}, "member authorization", {
             bandPublicId, routeLocale: "de-DE", browserLanguages: ["fr-CA", "nl-NL"],
-        }, { baseURL: "https://publication.invalid/", hosting: { kind: "platform" } });
+        }, { baseURL: "https://publication.invalid", hosting: { kind: "multiBand" } });
         expect(response.status).toHaveBeenCalledWith(200);
         expect(response.json).toHaveBeenCalledWith({ agenda: [], gallery: [] });
     });

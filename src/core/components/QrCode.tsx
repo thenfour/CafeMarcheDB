@@ -1,12 +1,13 @@
+import { useCmdbRouter } from '@/src/route/useCmdbRouter';
 import { ListItemIcon, MenuItem } from '@mui/material';
 import React, { useState } from 'react';
 import { gIconMap } from '../db3/components/IconMap';
 import { generateQrApiUrl, QrCodeErrorCorrectionLevel, QrContentConfig, QrHelpers } from '../db3/shared/qrApi';
 import { CMSinglePageSurfaceCard } from './CMCoreComponents';
-import { CMDialog, useDialogAfterMenuClose } from './CMDialog';
 import { CMButton, DotMenu } from './CMCoreComponents2';
+import { CMDialog, useDialogAfterMenuClose } from './CMDialog';
+import { useClientTelemetryEvent } from './dashboardContext/DashboardContext';
 import { ActivityFeature } from './featureReports/activityTracking';
-import { useClientTelemetryEvent, useDashboardContext } from './dashboardContext/DashboardContext';
 
 interface QrCodeProps {
     content: QrContentConfig;
@@ -33,9 +34,9 @@ export const QrCode: React.FC<QrCodeProps> = ({
     backgroundColor = '#ffffff',
     width
 }) => {
-    const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
     const options = { content, errorCorrectionLevel, margin, color, backgroundColor, width };
-    const apiUrl = generateQrApiUrl(options, dashboardContext);
+    const apiUrl = generateQrApiUrl(options, router.getAbsoluteUri);
 
     // Generate display text for alt attribute
     const displayText = (content.contentType === 'text' || content.contentType === 'url' ? content.text : `${content.contentType} QR code`);

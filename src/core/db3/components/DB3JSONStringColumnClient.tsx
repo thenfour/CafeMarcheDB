@@ -1,22 +1,22 @@
-import { usePortalHosting } from "src/route/PortalRoutingProvider";
-import React, { Suspense } from "react";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { useQuery } from "@blitzjs/rpc";
-import type { GridRenderCellParams } from "@mui/x-data-grid";
 import { ContentCopy, Launch, Terminal } from "@mui/icons-material";
+import type { GridRenderCellParams } from "@mui/x-data-grid";
+import React, { Suspense } from "react";
+import { parsePublicId } from "shared/publicId";
+import { getHashedColor } from "shared/utils";
+import { CMChip } from "src/core/components/CMChip";
 import { CMButton, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMDialog } from "src/core/components/CMDialog";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { useLocale } from "src/locale/components/useLocale";
-import { getHashedColor } from "shared/utils";
-import { CMChip } from "src/core/components/CMChip";
 import { portalHref } from "src/route/portalRouting";
-import { parsePublicId } from "shared/publicId";
 import { z } from "zod";
 import getAdminLogItemInfo from "../queries/getAdminLogItemInfo";
+import type { AuditValue } from "../shared/audit/auditSnapshot";
+import { AuditReferenceChip, AuditSnapshotViewer } from "./audit/AuditValueViewer";
 import { IColumnClient, type ColumnPresentationArgs, type RenderViewerArgs } from "./DB3ClientCore";
 import { useDB3QueryContext } from "./useDB3Context";
-import { AuditReferenceChip, AuditSnapshotViewer } from "./audit/AuditValueViewer";
-import type { AuditValue } from "../shared/audit/auditSnapshot";
 
 export function AuditJSONToolbar({ value, onExpand }: { value: AuditValue; onExpand: () => void }) {
     const snackbar = useSnackbar();
@@ -67,7 +67,7 @@ export function AuditRecordCell({ changeId, recordId }: { changeId: number; reco
 }
 
 export function ActivityLogUserChip({ user }: { user: { publicId: string; name?: string } | null | undefined }) {
-    const hosting = usePortalHosting();
+    const router = useCmdbRouter();
     const context = useDB3QueryContext();
     const locale = useLocale();
     if (!user) {
@@ -79,7 +79,7 @@ export function ActivityLogUserChip({ user }: { user: { publicId: string; name?:
         <a href={portalHref(`${page}/${user.publicId}`, {
             ...context,
             bandPublicId: context.bandPublicId ? parsePublicId<"Band">(context.bandPublicId) : null
-        }, hosting)}
+        }, router.hosting)}
             target="_blank" rel="noreferrer" style={{ color: getHashedColor(user.publicId) }}>{user.name ?? ""}</a>
     </CMChip>;
 }

@@ -51,8 +51,9 @@ code, not by the presence of those messages.
 The shared test setup explicitly sets `CMDB_HOSTING_MODE=Platform`, independently
 of the shell's deployment configuration. Tests for other hosting modes use
 `vi.stubEnv` and restore overrides with `vi.unstubAllEnvs` in `afterEach`.
-Production configuration still requires a valid hosting mode and, for standalone
-hosting, a valid `CMDB_PUBLIC_BAND_PUBLIC_ID`.
+Production configuration requires a valid hosting mode. Single-band URLs retain
+the `/b` prefix and resolve exactly one Band from the database; no band ID is
+configured in the environment. Unprefixed routes stay unscoped in every hosting mode.
 
 ## Migration reference specifications
 

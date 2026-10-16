@@ -1,4 +1,7 @@
 // @vitest-environment jsdom
+import { createTestRouter } from "./support/routing";
+import { parsePortalPath } from "src/route/portalRouting";
+vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: () => createTestRouter({ baseUri: window.location.origin, hosting: { kind: "multiBand" }, requestPath }) }));
 import React from "react";
 import { createRoot, Root } from "react-dom/client";
 import { act } from "react-dom/test-utils";
@@ -6,19 +9,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { getCmdbWindow } from "src/core/components/dashboardContext/DashboardContext";
 import { parsePublicId } from "shared/publicId";
-import { usePresentation } from "src/locale/components/PresentationProvider";
-import type { PresentationData } from "src/locale/shared/presentationContext";
-vi.mock("src/route/PortalRoutingProvider", () => ({ usePortalHosting: () => ({ kind: "platform" }) }));
-vi.mock("src/locale/components/PresentationProvider", () => ({ usePresentation: vi.fn() }));
 
+let requestPath = parsePortalPath("/backstage", { kind: "multiBand" });
 let root: Root;
 
 beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    requestPath = parsePortalPath("/backstage", { kind: "multiBand" });
     delete getCmdbWindow().cmdbDashboardContext;
     document.body.innerHTML = "<div id='root'></div>";
     root = createRoot(document.getElementById("root")!);
-    vi.mocked(usePresentation).mockReturnValue({ bandPublicId: null, data: null, invalidate: async () => {} });
 });
 
 afterEach(async () => {
@@ -30,10 +30,8 @@ afterEach(async () => {
 
 describe("Markdown on a public custom-link page", () => {
     it("retains the app's portal selection when the public page has no dashboard provider", async () => {
-        const bandPublicId = parsePublicId<"Band">("PublicationBand1");
-        // This renderer only consumes the validated input from the app's presentation snapshot.
-        const data = { input: { bandPublicId, routeLocale: "fr-BE" } } as PresentationData;
-        vi.mocked(usePresentation).mockReturnValue({ bandPublicId, data, invalidate: async () => {} });
+        requestPath = parsePortalPath("/fr-BE/b/PublicationBand1/MyPage", { kind: "multiBand" });
+        // Routing is available without dashboard data.
         await act(async () => root.render(React.createElement(Markdown, { markdown: "[Wiki](/backstage/wiki/welcome)" })));
         expect(document.querySelector(".renderedContent a")?.getAttribute("href"))
             .toBe("/fr-BE/b/PublicationBand1/backstage/wiki/welcome");

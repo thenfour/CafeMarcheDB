@@ -1,28 +1,28 @@
-import { portalHref } from "src/route/portalRouting";
+import { CMLink } from "@/src/route/CMLink";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { useQuery } from "@blitzjs/rpc";
 import React from "react";
-import { isAttendanceGoing } from "shared/eventAttendance";
 import { CalendarDate } from "shared/dateTimePolicy";
 import { eventPresentationTimeZone } from "shared/dateTimePresentation";
+import { isAttendanceGoing } from "shared/eventAttendance";
+import type { UserPublicId } from "shared/publicId";
+import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
+import { memberSongCreditView } from "src/core/db3/shared/entities/song/songViews";
 import { getEventSegmentDateTimeRange } from "src/core/db3/shared/schema/event";
+import getUserCredits from "../../db3/queries/getUserCredits";
 import getUserEventAttendance from "../../db3/queries/getUserEventAttendance";
 import getUserWikiContributions from "../../db3/queries/getUserWikiContributions";
 import { sortEvents } from "../../db3/shared/apiTypes";
 import { CMChip, CMChipContainer } from "../CMChip";
 import { InstrumentChip } from "../CMCoreComponents";
 import { AdminInspectObject, KeyValueTable } from "../CMCoreComponents2";
-import { CMLink } from "@/src/route/CMLink";
 import { CMTable } from "../CMTable";
 import { StandardVariationSpec } from "../color/palette";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { DateValue } from "../DateTime/DateTimeComponents";
 import { AttendanceChip } from "../event/AttendanceChips";
 import { EventChip } from "../event/EventChips";
 import { Markdown } from "../markdown/Markdown";
-import { useDashboardContext } from "../dashboardContext/DashboardContext";
-import type { UserPublicId } from "shared/publicId";
-import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
-import getUserCredits from "../../db3/queries/getUserCredits";
-import { memberSongCreditView } from "src/core/db3/shared/entities/song/songViews";
 import { SongChip } from "../song/SongChip";
 
 type MemberAnalyticsIdentity = { readonly publicId: UserPublicId };
@@ -188,6 +188,7 @@ type UserWikiContributionsTabContentProps = {
 };
 export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabContentProps) => {
     const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
     const [qr] = useQuery(getUserWikiContributions, { bandPublicId: dashboardContext.requireBandPublicId(), userId: props.user.publicId },
         { staleTime: 0, cacheTime: 0, keepPreviousData: false });
 
@@ -218,7 +219,7 @@ export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabC
                     memberName: "slug",
                     allowSort: true,
                     render: (row) => {
-                        return <CMLink href={portalHref(`/backstage/wiki/${row.row.slug}`, dashboardContext.memberPresentation, dashboardContext.portalHosting)}>{row.row.slug}</CMLink>;
+                        return <CMLink href={router.href(`/backstage/wiki/${row.row.slug}`)}>{row.row.slug}</CMLink>;
                     },
                 },
                 {

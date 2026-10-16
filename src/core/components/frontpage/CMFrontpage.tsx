@@ -2,12 +2,12 @@ import { HomepageMain } from "@/src/core/components/frontpage/homepageComponents
 import { useSession } from "@blitzjs/auth";
 import { NoSsr } from "@mui/material";
 import Head from "next/head";
-import { useCmdbRouter } from "src/route/useCmdbRouter";
 import React, { Suspense } from "react";
 import { EnNlFr, LangSelectString } from "shared/lang";
 import GoogleAnalytics from "src/core/components/GoogleAnalytics";
 import type { PublicFeedInput } from "src/core/db3/shared/publicFeedInput";
 import { PublicFeedResponseSpec } from "../../db3/shared/publicTypes";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 interface CMPublicIndexProps {
     publicFeed: PublicFeedResponseSpec;

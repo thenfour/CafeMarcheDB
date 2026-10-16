@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { BandSetting } from "@prisma/client";
-import { HostingMode } from "shared/brandConfigBase";
 import { clearBrandCache, loadDbBrandConfig } from "src/server/brand";
 import { kBandSettingsRegistry } from "src/setting/shared/bandSettingsRegistry";
 

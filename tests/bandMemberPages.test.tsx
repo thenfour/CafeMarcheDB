@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
+import { createTestRouter } from "./support/routing";
+import { parsePortalPath } from "src/route/portalRouting";
+vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: () => createTestRouter({ baseUri: window.location.origin, hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/backstage", { kind: "multiBand" }) }) }));
 import React from "react";
-vi.mock("src/route/PortalRoutingProvider", () => ({ usePortalHosting: () => ({ kind: "platform" }) }));
 import { createRoot, type Root } from "react-dom/client";
-import { act, Simulate } from "react-dom/test-utils";
+import { act } from "react-dom/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
@@ -252,8 +254,8 @@ describe("member directory", () => {
         expect(searchRequests.at(-1)).toMatchObject({ bandPublicId: bandId, routeLocale: "fr-BE", offset: 1 });
         const search = container.querySelector<HTMLInputElement>('input[placeholder="Search"]')!;
         await act(async () => {
-            search.value = "Alice Alpha";
-            Simulate.change(search, { target: search });
+            Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!.call(search, "Alice Alpha");
+            search.dispatchEvent(new window.Event("input", { bubbles: true }));
         });
         expect(searchRequests.at(-1)).toMatchObject({ bandPublicId: bandId, offset: 0, quickFilter: "Alice Alpha" });
     });

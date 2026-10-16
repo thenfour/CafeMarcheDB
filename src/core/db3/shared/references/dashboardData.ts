@@ -1,5 +1,4 @@
 import type { EventPublicId } from "shared/publicId";
-import type { ServerStartInfo } from "shared/serverStateBase";
 import type { ScopedAuthorizationData } from "src/auth/shared/cmAuthorization";
 import type { LocalizationCatalog } from "src/locale/shared/localizationCatalog";
 import { hydrateView, type AnyDB3View, type ClientOf, type DtoOf } from "../core/db3View";
@@ -26,8 +25,6 @@ export interface DashboardDataDto {
     songCreditType: DtoOf<typeof dashboard.songCreditTypeDashboardView>[];
     instrument: DtoOf<typeof dashboard.instrumentDashboardView>[];
     dynMenuLinks: DtoOf<typeof menuLinkListView>[];
-    serverBaseUri: string;
-    serverStartupState: ServerStartInfo | null;
     relevantEventIds: EventPublicId[];
     hasLimitedAccess: boolean;
     bandTimeZone: string;

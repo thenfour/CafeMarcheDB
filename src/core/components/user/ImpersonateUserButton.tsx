@@ -20,7 +20,7 @@ export const ImpersonateUserButton = ({ userId }: { userId: UserPublicId }) => {
         impersonateUserMutation({ userId })
             .then(() => {
                 // navigate to home page
-                void router.push("/backstage");
+                void router.push(router.href("/backstage"));
             })
             .catch((e) => {
                 console.error(e);

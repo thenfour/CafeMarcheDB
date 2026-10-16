@@ -1,15 +1,14 @@
-import { portalHref } from "src/route/portalRouting";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { Article } from "@mui/icons-material";
-import React from "react";
 import { CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
+import * as db3 from "src/core/db3/db3";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
+import { StandardVariationSpec } from "../color/palette";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { DateValue } from "../DateTime/DateTimeComponents";
 import { GenericSearchListItem } from "../search/SearchListItem";
 import { UserChip } from "../user/userChip";
 import { EnrichedVerboseWikiPage, WikiPagesFilterSpec } from "./WikiClientBaseTypes";
-import { StandardVariationSpec } from "../color/palette";
-import { useDashboardContext } from "../dashboardContext/DashboardContext";
-import * as db3 from "src/core/db3/db3";
 
 export interface WikiPageListItemProps {
     index: number;
@@ -22,9 +21,10 @@ export interface WikiPageListItemProps {
 export const WikiPageListItem = (props: WikiPageListItemProps) => {
     const { wikiPage } = props;
     const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
 
-    const wikiUrl = dashboardContext.getAbsoluteUri(portalHref(`/backstage/wiki/${wikiPage.slug}`, dashboardContext.memberPresentation, dashboardContext.portalHosting));
-    const visInfo = dashboardContext.getVisibilityInfo(wikiPage);
+    const wikiUrl = router.getAbsoluteUri(router.href(`/backstage/wiki/${wikiPage.slug}`));
+    //const visInfo = dashboardContext.getVisibilityInfo(wikiPage);
 
     return <GenericSearchListItem<EnrichedVerboseWikiPage>
         index={props.index}

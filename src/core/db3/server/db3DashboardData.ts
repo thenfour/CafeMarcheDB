@@ -1,5 +1,3 @@
-import { Permission } from "shared/permissions";
-import { getClientServerState } from "shared/serverStateBase";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { loadLocalizationCatalog } from "src/locale/server/localization";
 import type { PresentationInput } from "src/locale/shared/presentationInput";
@@ -61,7 +59,6 @@ export function loadDashboardData(
             readDashboardRelevantEvents(context, new Date()),
             hasLimitedDashboardAccess(context),
         ]);
-        const server = getClientServerState(authorization.hasPermission(Permission.sysadmin));
         return {
             ...catalogs,
             ...sharedCatalogs,
@@ -70,8 +67,6 @@ export function loadDashboardData(
             authorization: authorization.toClientContext(),
             localization,
             settings,
-            serverBaseUri: server.baseUri,
-            serverStartupState: server.diagnostics,
             bandTimeZone: authorization.band ? readSettingSnapshot(settings, "band", "dateTime.bandTimeZone") : "Europe/Brussels",
             dynMenuLinks,
             relevantEventIds,

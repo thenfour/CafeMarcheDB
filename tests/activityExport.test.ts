@@ -4,7 +4,7 @@ import { activityRowsToCsv } from "src/core/components/featureReports/server/act
 import { activityCsvRecord, activityExportInput, activityExportRow, parseActivityCsv } from "./support/activityExportFixture";
 
 const source: Parameters<typeof projectActivitySavedMetadata>[0] = { uri: null, queryText: null, feature: "link_follow_internal", context: "App/association", songId: 21, eventId: 22, fileId: 23 };
-const policy = { applicationOrigin: "https://band.test", hosting: { kind: "platform" as const } };
+const policy = { applicationOrigin: "https://band.test", hosting: { kind: "multiBand" as const } };
 const project = (overrides: Partial<typeof source>, row = activityExportRow()) =>
     projectActivitySavedMetadata({ ...source, ...overrides }, row, activityExportInput, policy);
 
@@ -44,9 +44,9 @@ describe("saved activity metadata disclosure", () => {
     it("requires the caller's trusted origin for absolute URLs while relative routes remain usable", () => {
         const row = activityExportRow();
         expect(projectActivitySavedMetadata({ ...source, uri: "https://band.test/backstage/song/21" }, row, activityExportInput,
-            { applicationOrigin: null, hosting: { kind: "platform" } }).uri).toBeNull();
+            { applicationOrigin: null, hosting: { kind: "multiBand" } }).uri).toBeNull();
         expect(projectActivitySavedMetadata({ ...source, uri: "/backstage/song/21" }, row, activityExportInput,
-            { applicationOrigin: null, hosting: { kind: "platform" } }).uri).toContain("/backstage/song/ActivitySong0001");
+            { applicationOrigin: null, hosting: { kind: "multiBand" } }).uri).toContain("/backstage/song/ActivitySong0001");
     });
 
     it.each(["été", " CHANSON ", "Fête", "help/été"])("retains the confirmed association query fragment %s", queryText => {

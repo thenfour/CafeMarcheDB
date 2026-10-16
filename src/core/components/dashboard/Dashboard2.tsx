@@ -1,6 +1,9 @@
+import { useServerStartupState } from "../ServerStartupStateContext";
 import { shouldShowAdminControls } from "@/shared/adminControls";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { IsNullOrWhitespace } from "@/shared/utils";
+import { CmdbRouteRegistry } from "@/src/route/cmdbRoutes";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { useSession } from "@blitzjs/auth";
 import { useMutation } from "@blitzjs/rpc";
 import { QrCode } from "@mui/icons-material";
@@ -14,6 +17,7 @@ import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
+import { PortalLanguageSelection } from "src/route/PortalLanguageSelection";
 import { useBrand } from "../../../../shared/brandConfig";
 import { BandLocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
 import { ConnectionStatusIndicator } from "../../connectivity/ConnectionHealthComponents";
@@ -33,16 +37,13 @@ import { MediaPlayerProvider, useMediaPlayer } from "../mediaPlayer/MediaPlayerC
 import { MessageBoxProvider } from "../MessageBoxContext";
 import { QrCodeDialog } from "../QrCode";
 import { useDialogViewportRect } from "../ResponsiveDialog";
-import { portalHref } from "src/route/portalRouting";
-import { PortalLanguageSelection } from "src/route/PortalLanguageSelection";
+import { MainSiteSearch } from "../search/MainSiteSearch";
 import { ApplicationFrameProvider, useApplicationFrame, useApplicationFrameBackgroundRef } from "./ApplicationFrameContext";
 import { BandSelection } from "./BandSelection";
-import { MainSiteSearch } from "../search/MainSiteSearch";
 import {
     SideMenu
 } from "./MenuStructure";
 import { NavRealm } from "./StaticMenuItems";
-import { CmdbRoutes } from "@/src/route/cmdbRoutes";
 
 const drawerWidth = 260;
 
@@ -59,8 +60,9 @@ const formatVersionLabel = (versionInfo?: ServerStartInfo | null): string => {
 
 const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => void, showQrCode: () => void }) => {
     //const [logoutMutation] = useMutation(logout);
-    const router = useRouter();
+    //const router = useRouter();
     //const [currentUser] = useCurrentUser();
+    const router = useCmdbRouter();
     const sess = useSession();
     const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
     const isShowingAdminControls = shouldShowAdminControls(sess);
@@ -78,7 +80,8 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
         await showAdminControlsMutation.invoke({ showAdminControls });
     };
 
-    const versionLabel = React.useMemo(() => formatVersionLabel(dashboardContext.serverStartupState), [dashboardContext.serverStartupState]);
+    const serverStartupState = useServerStartupState();
+    const versionLabel = formatVersionLabel(serverStartupState);
 
     return <>
         {(sess.impersonatingFromUserId != null) && (
@@ -90,7 +93,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
             {versionLabel && (
                 <MenuItem
                     component={Link}
-                    href={portalHref('/backstage/serverHealth', dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+                    href={router.href('/backstage/serverHealth')}
                     onClick={closeMenu}>
                     <ListItemIcon>{gIconMap.Info()}</ListItemIcon>
                     Version: {versionLabel}
@@ -124,7 +127,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
             <>
                 {dashboardContext.isAuthorized(Permission.view_events_nonpublic) && <MenuItem
                     component={Link}
-                    href={portalHref("/backstage/calendar", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+                    href={router.href("/backstage/calendar")}
                     onClick={closeMenu}
                 >
                     <ListItemIcon>{gIconMap.CalendarMonth()}</ListItemIcon>
@@ -150,7 +153,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
         {dashboardContext.memberPresentation.bandPublicId &&
             <MenuItem
                 component={Link}
-                href={portalHref('/backstage/profile', dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+                href={router.href('/backstage/profile')}
                 onClick={closeMenu}
             >
                 Your profile
@@ -158,7 +161,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
         }
         <MenuItem
             component={Link}
-            href={portalHref('/backstage/platform-profile', dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+            href={router.href('/backstage/platform-profile')}
             onClick={closeMenu}
         >
             Your global profile
@@ -172,7 +175,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
                 context: "AppBarAvatarMenu",
             });
             closeMenu();
-            void router.push(portalHref("/auth/logout", dashboardContext.memberPresentation, dashboardContext.portalHosting));
+            void router.push(router.href("/auth/logout"));
         }}>
             Log out
         </MenuItem>
@@ -182,14 +185,13 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
 };
 
 const AppBarPageQrDialog = ({ open, onClose }: { open: boolean, onClose: () => void }) => {
-    const router = useRouter();
-    const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
 
     return <AppContextMarker name="appBarQrCodeDialog">
         <QrCodeDialog
             open={open}
             onClose={onClose}
-            content={QrHelpers.url(dashboardContext.getAbsoluteUri(router.asPath))}
+            content={QrHelpers.url(router.getAbsoluteUri(router.asPath))}
             title="QR code for this page"
             description={<BandLocalizedMarkdown id={"QrCodeForThisPageDescriptionMarkdown"} />}
         />
@@ -293,18 +295,14 @@ interface PrimarySearchAppBarProps {
 
 const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
     const theme = useTheme();
-    const router = useRouter();
+    const router = useCmdbRouter();
     const dashboardContext = useDashboardContext();
-    //const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
 
     const session = useSession();
-    //let backgroundColor: string | undefined = undefined;
-    // if (session.impersonatingFromUserId != null) {
-    //     backgroundColor = "#844";
-    // }
 
     const brand = useBrand();
-    const versionLabel = React.useMemo(() => formatVersionLabel(dashboardContext.serverStartupState), [dashboardContext.serverStartupState]);
+    const serverStartupState = useServerStartupState();
+    const versionLabel = formatVersionLabel(serverStartupState);
     return (
         <AppBar
             position="static"
@@ -328,7 +326,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                 <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
                     {brand.siteLogoUrl && (
                         <Link
-                            href={portalHref("/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+                            href={router.href("/backstage")}
                             aria-label="Home"
                             style={{ display: 'inline-flex' }}
                         >
@@ -341,7 +339,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                         component="div"
                     >
                         {!IsNullOrWhitespace(brand.siteTitle) && <Link
-                            href={portalHref("/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+                            href={router.href("/backstage")}
                             className={`logo`}
                         >
                             {brand.siteTitle}
@@ -351,7 +349,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
 
                 <Tooltip title="Practice tools">
                     <Link
-                        href={portalHref("/backstage/practice-tools", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+                        href={router.href("/backstage/practice-tools")}
                         aria-label="Practice tools"
                         className="freeButton globalMetronomeButton"
                     >
@@ -363,26 +361,26 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
 
                 <Box sx={{ flexGrow: 1 }} />{/* spacing to separate left from right sides */}
 
-                {dashboardContext.isAuthorized(Permission.sysadmin) && versionLabel && dashboardContext.serverStartupState && (
+                {dashboardContext.isAuthorized(Permission.sysadmin) && versionLabel && serverStartupState && (
                     <Tooltip title={<>
                         <Typography variant="subtitle1">Server version</Typography>
                         {/* display version details breakdown and explanation */}
                         <Box sx={{ mt: 1 }}>
-                            <Typography variant="body2">Tag: {dashboardContext.serverStartupState.versionTag}</Typography>
-                            {dashboardContext.serverStartupState.versionCommitsSinceTag > 0 && (
-                                <Typography variant="body2">Commits since tag: {dashboardContext.serverStartupState.versionCommitsSinceTag}</Typography>)
+                            <Typography variant="body2">Tag: {serverStartupState.versionTag}</Typography>
+                            {serverStartupState.versionCommitsSinceTag > 0 && (
+                                <Typography variant="body2">Commits since tag: {serverStartupState.versionCommitsSinceTag}</Typography>)
                             }
-                            {dashboardContext.serverStartupState.versionIsDirty && (
+                            {serverStartupState.versionIsDirty && (
                                 <Typography variant="body2">With local modifications</Typography>
                             )}
-                            <Typography variant="body2">Git commit date: <DateValue value={dashboardContext.serverStartupState.gitCommitDate}
+                            <Typography variant="body2">Git commit date: <DateValue value={serverStartupState.gitCommitDate}
                                 formattingLocale={dashboardContext.formattingLocale} timeZone={dashboardContext.localTimeZone} /></Typography>
                         </Box>
 
                     </>}>
                         <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', sm: 'inline-flex' }, alignItems: 'center', cursor: 'pointer' }}>
                             <a
-                                href={portalHref("/backstage/serverHealth", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+                                href={router.href("/backstage/serverHealth")}
                                 style={{ color: 'inherit', textDecoration: 'none' }}
                             >
                                 {versionLabel}
@@ -412,7 +410,7 @@ const Dashboard3 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
     const mediaPlayer = useMediaPlayer();
     let forceLogin = false;
 
-    const registeredRoute = CmdbRoutes.requireRouteByPattern(router.pathname);
+    const registeredRoute = CmdbRouteRegistry.requireRouteByPattern(router.pathname);
     const isPageAuthorized = dashboardContext.isAuthorized(registeredRoute.permission);
     if (!isPageAuthorized) {
         // are you even logged in?

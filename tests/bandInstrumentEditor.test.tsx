@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { parsePortalPath } from "src/route/portalRouting";
+
 import React from "react";
 import { act, Simulate } from "react-dom/test-utils";
 import { createRoot, type Root } from "react-dom/client";
@@ -23,19 +25,26 @@ import { InstrumentChip, InstrumentFunctionalGroupChip } from "src/core/componen
 import { SongTagIndicatorContainer } from "src/core/components/SongTagIndicatorContainer";
 import { groupReferenceFixture, instrumentReferenceFixture, songTagReferenceFixture } from "./support/catalogReferenceFixtures";
 import { createDashboardReferenceStore, registerDashboardReferences } from "src/core/db3/shared/references/dashboardReferences";
-import { PortalRoutingProvider } from "src/route/PortalRoutingProvider";
+import { PortalRoutingProvider } from "@/src/route/useCmdbRouter";
 
-vi.mock("@blitzjs/rpc", async () => ({ ...await vi.importActual<typeof import("@blitzjs/rpc")>("@blitzjs/rpc"),
+vi.mock("next/router", () => ({ useRouter: () => ({ pathname: "/backstage", asPath: "/backstage", query: {} }) }));
+
+vi.mock("@blitzjs/rpc", async () => ({
+    ...await vi.importActual<typeof import("@blitzjs/rpc")>("@blitzjs/rpc"),
     useMutation: () => [mutation],
     useQuery: vi.fn(),
 }));
 
 vi.mock("src/core/db3/components/useClientAuth", () => ({ useClientAuth: () => authorization }));
 vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({ getPlainString: (key: LocalizedPlainStringKey) => kStaticLocalizedStringRegistry[key].defaultValue }) }));
-vi.mock("src/locale/components/PresentationProvider", () => ({ usePresentation: () => ({ bandPublicId: "Band000000000001", data: {
-    input: { routeLocale: "en-US", browserLanguages: ["fr-BE"], clientRequestId: "refresh-1" },
-    localization: { availability: { band: ["en-US", "fr-BE"] } },
-} }), invalidatePresentation: vi.fn() }));
+vi.mock("src/locale/components/PresentationProvider", () => ({
+    usePresentation: () => ({
+        bandPublicId: "Band000000000001", data: {
+            input: { routeLocale: "en-US", browserLanguages: ["fr-BE"], clientRequestId: "refresh-1" },
+            localization: { availability: { band: ["en-US", "fr-BE"] } },
+        }
+    }), invalidatePresentation: vi.fn()
+}));
 vi.mock("src/auth/hooks/useCurrentUser", () => ({ useCurrentUser: () => [authorization.user] }));
 vi.mock("src/core/db3/mutations/executeDB3Command", () => ({ default: vi.fn() }));
 vi.mock("src/core/db3/queries/getBandInstrumentCatalog", () => ({ default: vi.fn() }));
@@ -47,18 +56,22 @@ const displayInstrument = instrumentReferenceFixture(parsePublicId<"Instrument">
 const displayTag = { ...songTagReferenceFixture(parsePublicId<"SongTag">("DisplayTag000001")), indicator: "M" };
 const dashboardStore = createDashboardReferenceStore();
 registerDashboardReferences(dashboardStore, { instrumentFunctionalGroup: [displayGroup], instrument: [displayInstrument], songTag: [displayTag] });
-const dashboard = { referenceStore: dashboardStore, instrument: new TableAccessor([displayInstrument]),
+const dashboard = {
+    referenceStore: dashboardStore, instrument: new TableAccessor([displayInstrument]),
     instrumentFunctionalGroup: new TableAccessor([displayGroup]), songTag: new TableAccessor([displayTag]), refreshCachedData: vi.fn(),
-    portalHosting: { kind: "platform" as const }, memberPresentation: { bandPublicId: "Band000000000001", routeLocale: "en-US", browserLanguages: ["fr-BE"] } };
+    portalHosting: { kind: "platform" as const }, memberPresentation: { bandPublicId: "Band000000000001", routeLocale: "en-US", browserLanguages: ["fr-BE"] }
+};
 
 const authorization = new CMClientAuthorization({ id: 1, publicId: parsePublicId<"User">("User000000000001") },
     new PermissionSet([Permission.login, Permission.always_grant, Permission.admin_instruments]));
 const resolution = { value: "Woodwinds", localeTag: "en-US", scope: "global", source: "stored", reason: "exact", requestedTag: "en-US" };
-const group = bandInstrumentGroupView.parseDto({ publicId: "Group00000000001", name: "Woodwinds", description: "Inherited description",
+const group = bandInstrumentGroupView.parseDto({
+    publicId: "Group00000000001", name: "Woodwinds", description: "Inherited description",
     sortOrder: 2, sortOrderOverride: null, sortOrderInheritedValue: 2, color: "blue", colorOverride: null, colorInheritedValue: "blue",
     globalPublicId: "GlobalGroup00001", globalFunctionalGroup: "GlobalGroup00001", isHidden: false,
-    nameStringPublicId: null, descriptionStringPublicId: null, nameResolution: resolution, descriptionResolution: resolution });
-const save = vi.fn(async (_values: unknown) => {});
+    nameStringPublicId: null, descriptionStringPublicId: null, nameResolution: resolution, descriptionResolution: resolution
+});
+const save = vi.fn(async (_values: unknown) => { });
 const mutation = vi.fn(async () => ({ identity: "Group00000000001" }));
 const close = vi.fn();
 const references = new DB3ReferenceStore();
@@ -125,7 +138,7 @@ async function chooseLocale(selector: Element, localeTag: string) {
 
 describe("native DB3 localized catalog editors", () => {
     it("renders detail, instrument/group chips, and tag indicators from shared dashboard references without queries", async () => {
-        await act(async () => root.render(<PortalRoutingProvider hosting={{ kind: "platform" }}>
+        await act(async () => root.render(<PortalRoutingProvider config={{ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/b/Band000000000001/backstage", { kind: "multiBand" }) }}>
             <BandInstrumentCatalog detailPublicId={displayInstrument.publicId} />
             <InstrumentChip value={displayInstrument.publicId} />
             <InstrumentFunctionalGroupChip value={displayGroup.publicId} />

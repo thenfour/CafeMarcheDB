@@ -7,6 +7,8 @@ import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
 // https://developer.chrome.com/blog/web-custom-formats-for-the-async-clipboard-api/
 
 import { TAnyModel } from '@/shared/rootroot';
+import { CMLink } from "@/src/route/CMLink";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { useQuery } from '@blitzjs/rpc';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import { Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Select, Switch, Tooltip } from "@mui/material";
@@ -30,12 +32,11 @@ import { AppContextMarker } from './AppContext';
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
 import { AdminInspectObject, CMButton, CMDialogContentText, CMSmallButton, CMTextarea, NameValuePair } from './CMCoreComponents2';
 import { CMDialog } from './CMDialog';
-import { CMLink } from "@/src/route/CMLink";
 import { CMTextInputBase, SongLengthInput } from './CMTextField';
 import { GetStyleVariablesForColor } from './color/ColorClientUtils';
 import { ColorPick } from './color/ColorPick';
 import { gSwatchColors } from './color/palette';
-import { useDashboardContext, useFeatureRecorder } from './dashboardContext/DashboardContext';
+import { useFeatureRecorder } from './dashboardContext/DashboardContext';
 import type { EventDetailEvent } from './event/EventComponentsBase';
 import { ActivityFeature } from './featureReports/activityTracking';
 import { Markdown } from "./markdown/Markdown";
@@ -320,6 +321,7 @@ export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongList
 
 export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowProps) => {
     const mediaPlayer = useMediaPlayer();
+    const router = useCmdbRouter();
     if (props.value.type === 'divider') {
         if (props.value.isSong) {
             return <EventSongListValueViewerDividerSongRow {...props} />;
@@ -328,7 +330,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             return <EventSongListValueViewerDividerRow {...props} />;
         }
     }
-    const dashboardContext = useDashboardContext();
+
     const song = props.value.type === 'song' ? props.value.song : null;
     const bpmValue = getRowStartBpm(props.value);
     const tempoCellStyle = getBpmBarStyle(bpmValue, props.maxBpm);
@@ -361,7 +363,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             />}</div>
             <div className="td songName">
                 {props.value.type === 'song' && <>
-                    <CMLink target='_blank' rel="noreferrer" href={dashboardContext.routingApi.getURIForSong(props.value.song)} trackingFeature={ActivityFeature.link_follow_internal} >{props.value.song.name}</CMLink>
+                    <CMLink target='_blank' rel="noreferrer" href={router.getURIForSong(props.value.song)} trackingFeature={ActivityFeature.link_follow_internal} >{props.value.song.name}</CMLink>
                     <SongTagIndicatorContainer
                         tagIds={props.value.song.tags.map(tag => tag.bandSongTagId)}
                         allPossibleTags={allTagIds}

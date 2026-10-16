@@ -1,11 +1,9 @@
 
-import { portalHref } from "src/route/portalRouting";
 import { Alert } from "@mui/material";
 import { useLocale } from "src/locale/components/useLocale";
 import { useMutation } from "@blitzjs/rpc";
 import { History, LockOpen } from "@mui/icons-material";
 import { ListItemIcon, MenuItem } from "@mui/material";
-import { useRouter } from "next/router";
 import React from "react";
 import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace } from "shared/utils";
@@ -30,6 +28,7 @@ import { CMSelectNullBehavior } from "../select/CMSingleSelectDialog";
 import UnsavedChangesHandler from "../UnsavedChangesHandler";
 import { VisibilityValue } from "../VisibilityControl";
 import type { PermissionPublicId } from "shared/publicId";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 
 //////////////////////////////////////////////////
@@ -44,9 +43,11 @@ interface WikiTitleControlProps {
 };
 
 const WikiTitleViewer = (props: WikiTitleControlProps) => {
-    const dashboardContext = useDashboardContext();
+
+    const router = useCmdbRouter();
+
     return <a
-        href={dashboardContext.getAbsoluteUri(portalHref(props.wikiPageApi.wikiPath.uriRelativeToHost, dashboardContext.memberPresentation, dashboardContext.portalHosting))}
+        href={router.getAbsoluteUri(router.href(props.wikiPageApi.wikiPath.uriRelativeToHost))}
         rel="noreferrer">
         <span className="WikiTitleView">
             {props.potentiallyEditedTitle}
@@ -351,7 +352,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
     const dashboardContext = useDashboardContext();
     const authorizedForEdit = !props.readonly && dashboardContext.isAuthorized(Permission.edit_wiki_pages);
     const snackbar = useSnackbar();
-    const router = useRouter();
+    const router = useCmdbRouter();
     const endMenuItemRef = React.useRef<() => void>(() => { });
 
     const pageData = props.wikiPageApi.currentPageData;
@@ -372,7 +373,13 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
         </MenuItem>,
         pageExists && dashboardContext.isAuthorized(Permission.view_wiki_page_revisions) &&
         <MenuItem key={"copylink"} onClick={async () => {
-            await snackbar.invokeAsync(async () => navigator.clipboard.writeText(dashboardContext.getAbsoluteUri(portalHref(props.wikiPageApi.wikiPath.uriRelativeToHost, dashboardContext.memberPresentation, dashboardContext.portalHosting))), "Copied link to clipboard");
+            await snackbar.invokeAsync(async () =>
+                navigator.clipboard.writeText(
+                    router.getAbsoluteUri(
+                        router.href(props.wikiPageApi.wikiPath.uriRelativeToHost)
+                    )
+                ),
+                "Copied link to clipboard");
             endMenuItemRef.current();
         }}>
             <ListItemIcon>
@@ -382,7 +389,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
         </MenuItem>,
         pageExists && dashboardContext.isAuthorized(Permission.view_wiki_page_revisions) &&
         <MenuItem key={"viewhistory"} onClick={async () => {
-            void router.push(portalHref(`/backstage/wikiPageHistory?path=${encodeURIComponent(props.wikiPageApi.wikiPath.canonicalWikiPath)}`, dashboardContext.memberPresentation, dashboardContext.portalHosting));
+            void router.push(router.href(`/backstage/wikiPageHistory?path=${encodeURIComponent(props.wikiPageApi.wikiPath.canonicalWikiPath)}`));
             endMenuItemRef.current();
         }}>
             <ListItemIcon>

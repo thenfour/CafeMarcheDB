@@ -6,7 +6,7 @@ import { NavRealm } from "src/core/components/dashboard/StaticMenuItems";
 import { BandInstrumentCatalog } from "src/core/db3/components/BandInstrumentCatalog";
 import { queryView } from "src/core/db3/server/db3QueryCore";
 import { BandInstrumentIdentity, bandInstrumentView } from "src/core/db3/shared/entities/instrument/bandInstrumentContracts";
-import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
+import { resolvePagePresentationInput } from "src/route/server/portalRequest";
 import { useLocale } from "src/locale/components/useLocale";
 
 interface PageProps {
@@ -15,7 +15,7 @@ interface PageProps {
 
 export const getServerSideProps = gSSP<PageProps>(async ({ params, query, req, ctx }) => {
     const identity = BandInstrumentIdentity.safeParse(params?.slug);
-    const input = pagePresentationInput(query, req.headers["accept-language"]);
+    const input = await resolvePagePresentationInput(req, query);
     if (!identity.success || !input.bandPublicId) {
         return { notFound: true };
     }

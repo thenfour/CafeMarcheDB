@@ -1,4 +1,7 @@
 // @vitest-environment jsdom
+import { createTestRouter } from "./support/routing";
+import { parsePortalPath } from "src/route/portalRouting";
+vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: () => createTestRouter({ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath(band ? `/${routeLocale}/b/${band}/backstage/user/${personId}` : `/${routeLocale}/backstage/platform-user/${personId}`, { kind: "multiBand" }) }, { query: { id_slug_tab: [personId, "member", requestedTab] }, push, replace }) }));
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { act, Simulate } from "react-dom/test-utils";
@@ -164,7 +167,7 @@ describe("profile closure interactions", () => {
     });
     it("leaves a deactivated band profile for its account URL while retaining the explicit route locale", async () => {
         permissions = [Permission.login, Permission.manage_global_users]; band = "ProfileBand00001"; await platform("controls");
-        await click("Deactivate account"); expect(replace).toHaveBeenCalledWith(`/fr-BE/backstage/platform-user/${personId}`);
+        await click("Deactivate account"); expect(replace).toHaveBeenCalledWith(`/fr-BE/backstage/platform-user/${personId}`, undefined, undefined);
     });
     it("retains contextual analytic tabs and dedicated impersonation independent of account management", async () => {
         permissions = [Permission.login, Permission.sysadmin]; band = "ProfileBand00001"; requestedTab = "credits";

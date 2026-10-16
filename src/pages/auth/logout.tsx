@@ -1,6 +1,6 @@
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
-import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { useEffect } from 'react';
 import logout from "src/auth/mutations/logout";
 

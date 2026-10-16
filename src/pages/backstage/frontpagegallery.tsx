@@ -1,3 +1,4 @@
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { authoredTranslationContext, resolveAuthoredTranslations } from "src/locale/shared/authoredTranslations";
 
@@ -235,6 +236,7 @@ export interface GalleryItemImageEditControlProps {
     onExitEditMode: () => void;
 };
 export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlProps) => {
+    const cmdbRouter = useCmdbRouter();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const recordFeature = useFeatureRecorder();
     const [updateImageMutation] = useMutation(updateGalleryItemImage);
@@ -323,7 +325,7 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
         caption: resolveAuthoredTranslations({ en: editingValue.caption, nl: editingValue.caption_nl, fr: editingValue.caption_fr },
             authoredTranslationContext({ ...dashboard.memberPresentation, routeLocale: lang },
                 presentationSnapshot.data?.localization.availability.band ?? [])),
-        imageFileUri: dashboard.routingApi.getURIForFile(editingValue.file), storedLeafName: editingValue.file.storedLeafName,
+        imageFileUri: cmdbRouter.getURIForFile(editingValue.file), storedLeafName: editingValue.file.storedLeafName,
         editParams: info.displayParams, customData: editingValue.file.customData,
         displayParams: editingValue.displayParams, mimeType: editingValue.file.mimeType,
     }] };
@@ -401,13 +403,14 @@ export interface GalleryItemImageControlProps {
     setEditMode: (newValue: boolean) => void;
 };
 export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => {
-    const dashboardContext = useDashboardContext();
+    const cmdbRouter = useCmdbRouter();
+
 
     return props.editMode ? (
         <GalleryItemImageEditControl client={props.client} value={props.value} onExitEditMode={() => props.setEditMode(false)} />
     ) : (
         <div className="imageEditControlContainer">
-            <img src={dashboardContext.routingApi.getURIForFile(props.value.file)} style={{ maxWidth: 200, maxHeight: 150 }} />
+            <img src={cmdbRouter.getURIForFile(props.value.file)} style={{ maxWidth: 200, maxHeight: 150 }} />
         </div>
     );
 };

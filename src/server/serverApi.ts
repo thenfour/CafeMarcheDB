@@ -1,9 +1,4 @@
-import { concatenateUrlParts } from "@/shared/rootroot";
+import { serverGetAbsoluteUri } from "src/route/server/portalConfig";
 
-export const ServerApi = {
-    // clients cannot access process.env. For client-side, use the routing API on the dashboardContext.
-    getAbsoluteUri: (relativePath: string) => {
-        return concatenateUrlParts(process.env.CMDB_BASE_URL!, relativePath);
-    },
-
-};
+// Server callers share the same configured public origin as page bootstrap.
+export const ServerApi = { getAbsoluteUri: serverGetAbsoluteUri };

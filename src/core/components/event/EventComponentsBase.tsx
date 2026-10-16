@@ -1,3 +1,5 @@
+import type { CmdbRouter } from "src/route/portalRouting";
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 
 import { DateTimeRange, Timing } from 'shared/time';
 import { getUniqueNegativeID } from 'shared/utils';
@@ -42,6 +44,7 @@ export function CalculateEventMetadata<
     dateRange: DateTimeRange,
     tabSlug: string | undefined,
     dashboardContext: DashboardContextDataBase,
+    router: Pick<CmdbRouter, "getURIForEvent">,
     userMap: EventParticipantList, // unique list of all relevant users.
     expectedAttendanceTag: db3.EventResponses_ExpectedUserTag | null, // unique list of all invited user tags.
     makeMockEventSegmentResponse: fn_makeMockEventSegmentResponse<TEventSegment, TSegmentResponse>,
@@ -59,7 +62,7 @@ export function CalculateEventMetadata<
         makeMockEventSegmentResponse,
         makeMockEventUserResponse,
     });
-    const eventURI = dashboardContext.routingApi.getURIForEvent(event, tabSlug);
+    const eventURI = router.getURIForEvent(event, tabSlug);
 
     return {
         event,
@@ -81,9 +84,10 @@ interface CalculateEventDetailMetadataArgs {
     event: EventDetailEvent,
     tabSlug: string | undefined;
     dashboardContext: DashboardContextData;
+    router: Pick<CmdbRouter, "getURIForEvent">;
 };
 
-export function CalculateEventDetailMetadata({ event, tabSlug, dashboardContext }: CalculateEventDetailMetadataArgs) {
+export function CalculateEventDetailMetadata({ event, tabSlug, dashboardContext, router }: CalculateEventDetailMetadataArgs) {
 
     // - current user
     // - users that appear in event responses
@@ -110,7 +114,7 @@ export function CalculateEventDetailMetadata({ event, tabSlug, dashboardContext 
         startsAtDateTime: event.startsAt,
         durationMillis: Number(event.durationMillis),
         isAllDay: event.isAllDay,
-    }), tabSlug, dashboardContext, userMap, event.expectedAttendanceUserTag,
+    }), tabSlug, dashboardContext, router, userMap, event.expectedAttendanceUserTag,
         (segment, user) => {
             if (!user?.publicId) return null;
             return {
@@ -256,6 +260,7 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
     userMap: EventParticipantList;
 } | null => {
     const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
     const currentUser = db3.eventParticipantFromMembership(dashboardContext.currentMembership);
 
     if (!currentUser
@@ -310,7 +315,7 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
         db3.EventResponses_MinimalEventUserResponse,
         EventSearchMetadataSegment,
         db3.EventResponses_MinimalEventSegmentUserResponse
-    >(metadataEvent, event.dateRange, undefined, dashboardContext,
+    >(metadataEvent, event.dateRange, undefined, dashboardContext, router,
         userMap,
         expectedAttendanceUserTag,
         (segment, user) => { // makeMockEventSegmentResponse

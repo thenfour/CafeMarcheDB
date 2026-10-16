@@ -1,5 +1,6 @@
 import { Permission } from "@/shared/permissions";
 import { getHashedColor } from "@/shared/utils";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { Prisma } from "@prisma/client";
 import type { FilePublicId } from "shared/publicId";
 import * as db3 from "src/core/db3/db3";
@@ -10,8 +11,9 @@ import { Markdown } from "../markdown/Markdown";
 
 /** Public reference navigation requires no storage path or external download target. */
 export const FileReferenceChip = ({ value }: { readonly value: { readonly publicId: FilePublicId; readonly fileLeafName: string } }) => {
-    const dashboard = useDashboardContext();
-    return <CMChip href={dashboard.routingApi.getURIForFileLandingPage({ publicId: value.publicId })}>
+    //const dashboard = useDashboardContext();
+    const router = useCmdbRouter();
+    return <CMChip href={router.getURIForFileLandingPage({ publicId: value.publicId })}>
         <span style={{ color: getHashedColor(value.publicId) }}>{value.fileLeafName}</span>
     </CMChip>;
 };
@@ -30,7 +32,8 @@ export interface FileChipProps {
 
 export const FileChip = (props: FileChipProps) => {
     const dashboardContext = useDashboardContext();
-    const href = dashboardContext.isAuthorized(Permission.view_files) ? dashboardContext.routingApi.getURIForFile(props.value) : undefined;
+    const router = useCmdbRouter();
+    const href = dashboardContext.isAuthorized(Permission.view_files) ? router.getURIForFile(props.value) : undefined;
     return <CMChip
         variation={props.variation}
         size={props.size}

@@ -52,7 +52,10 @@ MyDocument.getInitialProps = async (ctx: DocumentContext) => {
         App: React.ComponentType<React.ComponentProps<AppType> & MyAppProps>
       ) =>
         function EnhanceApp(props: MyAppProps) {
-          language = props.pageProps.presentation?.localization.formattingLocale ?? language;
+          const bootstrap = props.pageProps.appBootstrap;
+          if (bootstrap.status === "ready") {
+            language = bootstrap.data.presentation.localization.formattingLocale;
+          }
           return <App emotionCache={cache} {...props} />;
         },
     });
@@ -78,56 +81,3 @@ MyDocument.getInitialProps = async (ctx: DocumentContext) => {
   };
 };
 
-
-
-
-
-// import React from 'react';
-// import ReactDOM from 'react-dom/client';
-// import Document, { Html, Main, NextScript, Head } from "next/document"
-
-// import { themeOptions } from "src/core/theme"
-// import CssBaseline from "@material-ui/core/CssBaseline";
-// import { createTheme, ThemeProvider } from '@mui/material/styles';
-// import Button from '@mui/material/Button';
-// import ScopedCssBaseline from '@material-ui/core/ScopedCssBaseline/ScopedCssBaseline';
-// //import CssBaseline from "@material-ui/core/CssBaseline";
-// //import { createTheme, ThemeProvider } from '@mui/material/styles';
-
-// //const theme = createTheme(themeOptions);
-
-// const theme = createTheme(themeOptions);
-
-// const themeDark = createTheme({
-//   palette: {
-//     background: {
-//       default: "#222222"
-//     },
-//     text: {
-//       primary: "#ffffff"
-//     }
-//   }
-// });
-
-// class MyDocument extends Document {
-//   // Only uncomment if you need to customize this behaviour
-//   // static async getInitialProps(ctx: DocumentContext) {
-//   //   const initialProps = await Document.getInitialProps(ctx)
-//   //   return {...initialProps}
-//   // }
-
-//   render() {
-//     return (
-//       <Html lang="en">
-//         <Head>
-//         </Head>
-//         <body>
-//           <Main />
-//           <NextScript />
-//         </body>
-//       </Html>
-//     )
-//   }
-// }
-
-// export default MyDocument;

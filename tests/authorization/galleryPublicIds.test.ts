@@ -58,8 +58,10 @@ function resetGalleryEditor(isDeleted = false) {
         bandRolePermission: [...testPublicRolePermissions, Permission.edit_public_homepage].map((name, index) => ({
             id: index + 1, bandRoleId: name === Permission.edit_public_homepage ? 20 : 10, permissionId: permissionId(name),
         })),
-        file: [{ id: 10, publicId: filePublicId(10), bandId: 1, uploadedByUserId: actor.id,
-            externalURI: null, isDeleted: false, visiblePermissionId: permissionId(Permission.visibility_public) }],
+        file: [{
+            id: 10, publicId: filePublicId(10), bandId: 1, uploadedByUserId: actor.id,
+            externalURI: null, isDeleted: false, visiblePermissionId: permissionId(Permission.visibility_public)
+        }],
         frontpageGalleryItem: [galleryRow(20, 0), galleryRow(21, 1, isDeleted), galleryRow(22, 7)].map(row => ({
             ...row, createdByUserId: actor.id, visiblePermissionId: permissionId(Permission.visibility_public),
         })),
@@ -106,7 +108,7 @@ describe("FrontpageGalleryItem public identity", () => {
                 caption_fr: "Concert",
                 displayParams: "{}",
                 file: { publicId: filePublicId(21), storedLeafName: "concert.jpg", customData: null, mimeType: "image/jpeg" },
-            }], { translations: authoredTranslationContext({ routeLocale: "en" }, ["en-US"]), bandPublicId, hosting: { kind: "platform" }, baseURL: "https://test" });
+            }], { translations: authoredTranslationContext({ routeLocale: "en" }, ["en-US"]), bandPublicId, hosting: { kind: "multiBand" }, baseURL: "https://test" });
             expect(feed.gallery[0]?.galleryItemId).toBe(galleryPublicId(20));
         } finally {
             if (previous === undefined) delete process.env.CMDB_BASE_URL;

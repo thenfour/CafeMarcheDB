@@ -1,8 +1,7 @@
 import MarkdownIt from 'markdown-it';
-import { markdownAbsoluteUri } from './markdownAbsoluteUri';
 
 // block only
-export function AbcNotationMarkdownPlugin(md: MarkdownIt) {
+export function AbcNotationMarkdownPlugin(md: MarkdownIt, getAbsoluteUri: (href: string) => string) {
     const defaultCodeBlockRender = md.renderer.rules.fence ||
         ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
 
@@ -15,7 +14,7 @@ export function AbcNotationMarkdownPlugin(md: MarkdownIt) {
             // Encode the ABC content for URL
             const encodedAbc = encodeURIComponent(token.content.trim());
             // Generate the image tag pointing to our ABC rendering API
-            return `<div class="abc-notation-block-container"><img src="${markdownAbsoluteUri(`/api/abc/render`)}?notation=${encodedAbc}" alt="ABC Notation" class="abc-notation-rendered" /></div>`;
+            return `<div class="abc-notation-block-container"><img src="${getAbsoluteUri(`/api/abc/render`)}?notation=${encodedAbc}" alt="ABC Notation" class="abc-notation-rendered" /></div>`;
         }
 
         // For all other code blocks, use the default renderer

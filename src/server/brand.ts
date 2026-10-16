@@ -1,4 +1,4 @@
-import { DbBrandConfig, DefaultDbBrandConfig, HostingMode } from "shared/brandConfigBase";
+import { DbBrandConfig, DefaultDbBrandConfig } from "shared/brandConfigBase";
 import { validateDbBrandConfig } from "shared/brandingValidation";
 import { BandSettingsRegistryKey, kBandSettingsRegistry } from "src/setting/shared/bandSettingsRegistry";
 import { validateSettingValue } from "src/setting/shared/settingsContract";

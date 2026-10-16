@@ -1,4 +1,3 @@
-import { usePortalHosting } from "src/route/PortalRoutingProvider";
 import type { DB3QueryContextInput } from "../../db3/components/useDB3Context";
 import { portalHref } from "src/route/portalRouting";
 import { nanoid } from 'nanoid';
@@ -11,6 +10,7 @@ import { gIconMap } from '../../db3/components/IconMap';
 import { SharedAPI } from '../../db3/shared/sharedAPI';
 import { Markdown } from "../markdown/Markdown";
 import { PublicAgendaItemSpec, PublicFeedResponseSpec, PublicGalleryItemSpec } from '../../db3/shared/publicTypes';
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 const gSettings = {
     backstageURL: `/backstage`,
@@ -565,7 +565,7 @@ export interface HomepageMainProps {
 };
 
 export const HomepageMain = ({ content, className, fullPage, editable, lang, onLangChange, ...props }: HomepageMainProps) => {
-    const hosting = usePortalHosting();
+    const router = useCmdbRouter();
     const [gallery, setGallery] = React.useState<Gallery>(() => new Gallery());
     gallery.setContent(content);
 
@@ -750,7 +750,11 @@ export const HomepageMain = ({ content, className, fullPage, editable, lang, onL
                     <img className="nbrussel" src="/homepage/CMbrusselicon.png" />
                 </div>
 
-                <div className="backstageContainer new"><a href={portalHref(gSettings.backstageURL, props.presentation ?? {}, hosting)}><img src="/homepage/CMbackstage.png"></img></a></div>
+                <div className="backstageContainer new">
+                    <a href={portalHref(gSettings.backstageURL, props.presentation ?? {}, router.hosting)}>
+                        <img src="/homepage/CMbackstage.png"></img>
+                    </a>
+                </div>
             </>
             }
         </div>

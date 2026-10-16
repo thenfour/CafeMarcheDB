@@ -1,5 +1,5 @@
 import { TAnyModel } from "@/shared/rootroot";
-import { useRouter } from "next/router";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import React from "react";
 import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
@@ -12,7 +12,7 @@ import { gIconMap } from "../../db3/components/IconMap";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 export const NewSongButton = () => {
-    const router = useRouter();
+    const router = useCmdbRouter();
     const dashboardContext = useDashboardContext();
 
     if (!dashboardContext.isAuthorized(Permission.manage_songs)) {
@@ -71,7 +71,7 @@ export const NewSongButton = () => {
         // view-bound table client proves the row expected by this CRUD command.
         songCommands.create(obj as db3.ClientOf<typeof db3.songEditorView>).then(async result => {
             showSnackbar({ severity: "success", children: "success" });
-            void router.push(dashboardContext.routingApi.getURIForSong({
+            void router.push(router.getURIForSong({
                 publicId: result.identity,
                 name: obj.name,
             }));

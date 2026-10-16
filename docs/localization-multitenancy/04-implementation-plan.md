@@ -271,19 +271,18 @@ methods/inputs finish before session loading. Wildcard feed CORS enables anonymo
 cross-origin consumption without credentialed access. Protected downloads retain
 their existing authorization and CORS policy. Publication responses are uncached.
 
-For the familiar Caf? March? bare root, explicitly configure:
+For single-band Cafe Marche hosting, explicitly configure:
 
 ```dotenv
 CMDB_HOSTING_MODE=CafeMarche
-CMDB_PUBLIC_BAND_PUBLIC_ID=<the public ID of the published Band>
 CMDB_BASE_URL=https://your-cmdb-host.example
 ```
 
-An explicit `/?bandPublicId=...&routeLocale=fr-BE` overrides that root binding.
-Missing host binding and invalid/absent bands finish with 404 during bootstrap;
-no database-order default band is inferred. Generic hosting redirects directly to
-Backstage and retains supplied band/locale. Next's `/fr` and `/nl` routes remain
-explicit language preferences; language changes preserve band and other query state.
+Single-band hosting requires exactly one Band in the database. Its public
+homepage is at `/b`; locale and band are independent optional route parameters.
+Unprefixed routes remain unscoped. Generic hosting redirects its public entry
+page to Backstage with the same route parameters. Language changes preserve
+band, query parameters, and fragments.
 Set the standalone site's `VITE_PUBLIC_FEED_URI` to
 `https://your-cmdb-host.example/api/public?bandPublicId=<Band.publicId>`; its existing
 language URL builder preserves that band parameter. Credentials remain omitted.
@@ -1374,19 +1373,18 @@ obligation. Native and built two-band verification is recorded below.
 ## Portal routing checkpoint
 
 The [routing contract](00-design%20notes.md#routing-and-later-scope) reuses existing
-page/API owners through middleware rewrites. Platform hosting generates
-`/[locale]/b/<publicBandId>/backstage/...`, with locale optional, and offers an
-explicit band picker. Standalone hosting binds `CMDB_PUBLIC_BAND_PUBLIC_ID` on
-the `CMDB_BASE_URL` host and retains familiar root or `/backstage` URLs without
-a picker. Explicit account/platform links use `/platform/...` on standalone
-hosts; shared account operations remain independent of membership selection.
+page/API owners through middleware rewrites. Multi-band hosting generates
+`/[locale]/b/<publicBandId>/backstage/...` and offers an explicit band picker.
+Single-band hosting generates `/[locale]/b/backstage/...`, resolves exactly one
+database band, and has no picker or manually configured band ID. URLs without
+`/b` are unscoped in either mode; there is no `/platform` prefix.
 
-Server owners validate the configured host, active band and enabled explicit
-language before page/API data. A request scope fences foreign-band payloads,
-including nested bootstrap/account operations, without filling missing domain
-inputs. Fresh membership and permission checks still own authorization. Legacy
-explicit query bookmarks remain readable; contradictory selections fail.
-Middleware replaces routing hints, and forwarded host hints supply no authority.
+Middleware serializes parsed routing metadata in a reserved query parameter.
+Server adapters resolve the single-band parameter once per request and page/API
+owners validate their required parameters and authorization.
+Transport band constraints remain active through nested bootstrap/account
+operations without filling missing domain inputs. Fresh membership and permission
+checks still own authorization. Forwarded host hints supply no authority.
 
 Locale-free URLs retain ordered browser preferences. Language switching preserves
 the page, public identity, tab, filters/query and fragment. The band picker retains

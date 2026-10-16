@@ -1,3 +1,5 @@
+import { CMLink } from "@/src/route/CMLink";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { assert } from "blitz";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
@@ -7,7 +9,10 @@ import { TAnyModel } from "shared/rootroot";
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
+import { LocalizedStringColumnClient } from "src/core/db3/components/DB3CatalogFields";
 import * as db3 from "src/core/db3/db3";
+import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
+import { wikiMakeRelativeURI } from "src/core/wiki/shared/wikiUtils";
 import { gIconMap, RenderMuiIcon } from "../../db3/components/IconMap";
 import { DB3EditRowButton, type DB3EditRowButtonAPI } from '../../db3/components/db3NewObjectDialog';
 import { AppContextMarker } from "../AppContext";
@@ -16,11 +21,6 @@ import { VisibilityValue } from "../VisibilityControl";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { WikiSlugInputWithSearch } from "../wiki/WikiSlugInputWithSearch";
-import { LocalizedStringColumnClient } from "src/core/db3/components/DB3CatalogFields";
-import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
-import { portalHref } from "src/route/portalRouting";
-import { wikiMakeRelativeURI } from "src/core/wiki/shared/wikiUtils";
-import { CMLink } from "@/src/route/CMLink";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -35,6 +35,7 @@ interface MenuLinkItemProps {
 export const MenuLinkItem = (props: MenuLinkItemProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
     const recordFeature = useFeatureRecorder();
 
     const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
@@ -116,7 +117,7 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
 
             {
                 ((props.item.linkType as keyof typeof DynamicMenuLinkType) === "Wiki") &&
-                <CMLink href={portalHref(wikiMakeRelativeURI(props.item.wikiSlug || ""), dashboardContext.memberPresentation, dashboardContext.portalHosting)} target="_blank" rel="noreferrer" className="menuLinkTestLink wikiCMLink">
+                <CMLink href={router.href(wikiMakeRelativeURI(props.item.wikiSlug || ""))} target="_blank" rel="noreferrer" className="menuLinkTestLink wikiCMLink">
                     <div>Test wiki link</div>
                     {gIconMap.Launch()}
                 </CMLink>

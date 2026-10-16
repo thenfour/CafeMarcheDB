@@ -1,7 +1,7 @@
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import React from "react";
 import { Alert } from "@mui/material";
 import { useLocale } from "src/locale/components/useLocale";
-import { portalHref } from "src/route/portalRouting";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
@@ -61,7 +61,8 @@ const gDefaultStaticFilterValue: WikiPagesFilterSpecStatic = {
 const gStaticFilters: WikiPagesFilterSpecStatic[] = []
 
 export const WikiPageListOuter = () => {
-    const dashboardContext = useDashboardContext();
+    const cmdbRouter = useCmdbRouter();
+
 
     // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter<WikiPageTagPublicId>({
@@ -150,7 +151,7 @@ export const WikiPageListOuter = () => {
                     ID: wikiPage.publicId.toString(),
                     Slug: wikiPage.slug,
                     Namespace: wikiPage.namespace || "",
-                    URL: dashboardContext.getAbsoluteUri(portalHref(path.uriRelativeToHost, dashboardContext.memberPresentation, dashboardContext.portalHosting)),
+                    URL: cmdbRouter.getAbsoluteUri(cmdbRouter.href(path.uriRelativeToHost)),
                 }
             }
         },

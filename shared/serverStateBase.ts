@@ -1,5 +1,7 @@
 
 export interface ServerStartInfo {
+    baseUri: string,
+
     startedAt: Date,
     uptimeMS: number,
     gitRevision: string,
@@ -7,13 +9,7 @@ export interface ServerStartInfo {
     versionTag: string,
     versionCommitsSinceTag: number,
     versionIsDirty: boolean,
-    baseUri: string,
 };
-
-export interface ClientServerState {
-    baseUri: string;
-    diagnostics: ServerStartInfo | null;
-}
 
 export const getServerStartState = (): ServerStartInfo => {
     const startedAt = new Date(Number.parseInt(process.env.CMDB_START_TIME || ""));
@@ -27,14 +23,5 @@ export const getServerStartState = (): ServerStartInfo => {
         versionCommitsSinceTag: Number.isFinite(commitsSinceTag) ? commitsSinceTag : 0,
         versionIsDirty: (process.env.CMDB_VERSION_IS_DIRTY || "false") === "true",
         baseUri: process.env.CMDB_BASE_URL!,
-    };
-};
-
-export const getClientServerState = (hasSysadminPermission: boolean): ClientServerState => {
-    const serverState = getServerStartState();
-    return {
-        // The public origin is routing data, not a server diagnostic.
-        baseUri: serverState.baseUri,
-        diagnostics: hasSysadminPermission ? serverState : null,
     };
 };

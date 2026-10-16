@@ -1,4 +1,3 @@
-import { usePortalHosting } from "src/route/PortalRoutingProvider";
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert, Breadcrumbs, Typography } from "@mui/material";
@@ -21,6 +20,7 @@ import { BandUserLifecycleControl } from "./BandUserLifecycle";
 import { portalHref } from "src/route/portalRouting";
 import { UserProfileFieldsEditor } from "./UserProfileFieldsEditor";
 import { UserDetail } from "./UserDetail";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 export function BandMemberProfileEditor({ member, refetch }: {
     readonly member: BandUserProfileDto; readonly refetch: () => Promise<unknown>;
@@ -52,7 +52,7 @@ function MemberProfileRole({ member, refetch }: { readonly member: BandUserProfi
 }
 
 function LoadedMemberProfile({ personId }: { readonly personId: UserPublicId }) {
-    const hosting = usePortalHosting();
+    const router = useCmdbRouter();
     const context = useDB3QueryContext();
     const presentation = usePresentation();
     const locale = useLocale();
@@ -69,7 +69,7 @@ function LoadedMemberProfile({ personId }: { readonly personId: UserPublicId }) 
     const member = bandUserProfileView.parseDto(row);
     return <>
         <Breadcrumbs>
-            {canOpenDirectory && <CMLink href={portalHref("/backstage/users", context, hosting)}>{locale.getPlainString("membership.directory.title")}</CMLink>}
+            {canOpenDirectory && <CMLink href={portalHref("/backstage/users", context, router.hosting)}>{locale.getPlainString("membership.directory.title")}</CMLink>}
             <Typography>{member.user.name}</Typography>
         </Breadcrumbs>
         <div className="EventDetail contentSection event">
@@ -89,11 +89,11 @@ function LoadedMemberProfile({ personId }: { readonly personId: UserPublicId }) 
                 <KeyValueTable data={{
                     ...(member.user.phone !== undefined ? {
                         [locale.getPlainString("membership.profile.phone")]:
-                        <CMChipContainer>{member.user.phone ? <CMChip>{member.user.phone}</CMChip> : <span>—</span>}</CMChipContainer>
+                            <CMChipContainer>{member.user.phone ? <CMChip>{member.user.phone}</CMChip> : <span>—</span>}</CMChipContainer>
                     } : {}),
                     ...(member.user.email !== undefined ? {
                         [locale.getPlainString("membership.profile.email")]:
-                        <CMChipContainer><CMChip>{member.user.email}</CMChip></CMChipContainer>
+                            <CMChipContainer><CMChip>{member.user.email}</CMChip></CMChipContainer>
                     } : {}),
                 }} />
                 <UserDetail person={member.user} />

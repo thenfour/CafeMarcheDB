@@ -1,7 +1,5 @@
 import type { DB3QueryContextInput } from "../../db3/components/useDB3Context";
 import { portalHref } from "src/route/portalRouting";
-import { usePortalHosting } from "src/route/PortalRoutingProvider";
-import { usePresentation } from "src/locale/components/PresentationProvider";
 // <Markdown> = rendered markdown text (simple read only html)
 // <MarkdownEditor> = just the text editor which outputs markdown
 // <MarkdownControl> = full editor with debounced commitment (caller actually commits), displays saving indicator, switch between edit/view
@@ -32,7 +30,7 @@ import { AbcNotationMarkdownPlugin } from './AbcNotationMarkdownPlugin';
 import { CMDBLinkMarkdownPlugin } from './CMDBLinkMarkdownPlugin';
 import { ImageDimensionsMarkdownPlugin } from './ImageDimensionsMarkdownPlugin';
 import { ReactInlineMarkdownPlugin } from './ReactInlineMarkdownPlugin';
-import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -45,12 +43,13 @@ interface MarkdownProps {
     onClick?: () => void,
 }
 export const Markdown = (props: MarkdownProps) => {
-    const hosting = usePortalHosting();
+    const router = useCmdbRouter();
     const [html, setHtml] = React.useState('');
-    const dashboardContext = useDashboardContext();
-    const selected = usePresentation();
-    // Public pages share the app's selection without mounting the dashboard provider.
-    const presentation = props.presentation ?? { bandPublicId: selected.bandPublicId, routeLocale: selected.data?.input.routeLocale };
+
+    const presentation = props.presentation ?? {
+        bandPublicId: router.requestPath.bandPublicId,
+        routeLocale: router.requestPath.routeLocale,
+    };
     const containerRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
@@ -79,10 +78,10 @@ export const Markdown = (props: MarkdownProps) => {
                 // distinguish internal vs. external.
                 const href = tokens[idx].attrs[ihref][1];
                 if (href?.startsWith("/backstage/") || href?.startsWith("/api/files/download/")) {
-                    tokens[idx].attrs[ihref][1] = portalHref(href, presentation, hosting);
+                    tokens[idx].attrs[ihref][1] = portalHref(href, presentation, router.hosting);
                 }
                 if (href) {
-                    const hrefClass = dashboardContext.routingApi.getURLClass(href);
+                    const hrefClass = router.getURLClass(href);
                     switch (hrefClass) {
                         case "external":
                             className = " externalLink opensInNewTab";
@@ -121,14 +120,14 @@ export const Markdown = (props: MarkdownProps) => {
             return defaultRender(tokens, idx, options, env, self);
         };
 
-        md.use(md => ReactInlineMarkdownPlugin(md));
-        md.use(ImageDimensionsMarkdownPlugin, presentation, hosting);
-        md.use(CMDBLinkMarkdownPlugin, presentation, hosting);
-        md.use(md => AbcNotationMarkdownPlugin(md));
+        md.use(md => ReactInlineMarkdownPlugin(md, router.getAbsoluteUri));
+        md.use(ImageDimensionsMarkdownPlugin, presentation, router.hosting);
+        md.use(CMDBLinkMarkdownPlugin, presentation, router.hosting);
+        md.use(md => AbcNotationMarkdownPlugin(md, router.getAbsoluteUri));
 
         setHtml(md.render(props.markdown));
 
-    }, [props.markdown, presentation.bandPublicId, presentation.routeLocale, hosting]);
+    }, [props.markdown, presentation.bandPublicId, presentation.routeLocale, router]);
 
     return <NoSsr>
         {IsNullOrWhitespace(props.markdown) ? null :

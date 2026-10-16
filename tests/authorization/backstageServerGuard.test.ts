@@ -165,7 +165,7 @@ describe("backstage server page guard", () => {
 
     it("keeps contained routes and unregistered pages closed to anonymous visitors", async () => {
         await expect(authorizePageRequest("/backstage/notRegistered", null))
-            .rejects.toThrow("Invalid route key");
+            .rejects.toThrow("Invalid route pattern");
     });
 
     it("keeps import routing protected", async () => {
@@ -188,6 +188,6 @@ describe("backstage server page guard", () => {
         await expect(authorizePageRequest(
             "/backstage/notRegistered",
             actualSysadmin.id,
-        )).rejects.toThrow("Invalid route key");
+        )).rejects.toThrow("Invalid route pattern");
     });
 });

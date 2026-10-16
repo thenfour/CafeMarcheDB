@@ -6,22 +6,6 @@ import { ActivityFeatureAssociations } from "./featureReports/activityTracking";
 // Our context will hold an array of strings that represent the "stack."
 type AppContextDataBase = ActivityFeatureAssociations & {
     stack: string;
-
-    // eventId?: number | undefined,
-    // songId?: number | undefined,
-    // wikiPageId?: number | undefined,
-    // fileId?: number | undefined,
-    // queryText?: string | undefined,
-    // attendanceId?: number | undefined,
-    // eventSegmentId?: number | undefined,
-    // customLinkId?: number | undefined;
-    // eventSongListId?: number | undefined;
-    // frontpageGalleryItemId?: number | undefined;
-    // menuLinkId?: number | undefined;
-    // setlistPlanId?: number | undefined;
-    // songCreditTypeId?: number | undefined;
-    // instrumentId?: number | undefined;
-
 };
 const AppContextData = createContext<AppContextDataBase>({
     stack: "",
@@ -35,15 +19,6 @@ export function useAppContext() {
 
 type Props = ActivityFeatureAssociations & {
     name?: string | undefined,
-
-    // eventId?: number | undefined,
-    // songId?: number | undefined,
-    // wikiPageId?: number | undefined,
-    // fileId?: number | undefined,
-    // queryText?: string | undefined,
-    // attendanceId?: number | undefined,
-    // eventSegmentId?: number | undefined,
-
     children: React.ReactNode
 }
 
@@ -56,14 +31,6 @@ export function AppContextMarker({ name, children, ...associations }: Props) {
             ...parentStack,
             ...associations,
             stack: newStack,
-            //stack: newStack,
-            // eventId: props.eventId || parentStack.eventId,
-            // songId: props.songId || parentStack.songId,
-            // wikiPageId: props.wikiPageId || parentStack.wikiPageId,
-            // fileId: props.fileId || parentStack.fileId,
-            // queryText: props.queryText || parentStack.queryText,
-            // attendanceId: props.attendanceId || parentStack.attendanceId,
-            // eventSegmentId: props.eventSegmentId || parentStack.eventSegmentId,
         };
         return ret;
     }, [parentStack, name, ...Object.values(associations)]);

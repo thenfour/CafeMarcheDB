@@ -31,11 +31,14 @@ describe("member profile and directory contracts", () => {
         expect(dto).toEqual({ publicId: membershipId, user: { publicId: "User000000000001", name: "Alice" } });
     });
     it("validates public catalog predicates with every presentation hint and tokenized names", () => {
-        const query = validateDB3PaginatedQueryRequest(bandMemberDirectoryQuery({ ...filters,
+        const query = validateDB3PaginatedQueryRequest(bandMemberDirectoryQuery({
+            ...filters,
             tagId: "UserTag000000001", instrumentId: "Instrument000001", roleId: "unassigned", page: 2,
         }, context, false));
-        expect(query).toMatchObject({ ...context, skip: 40, take: 20, orderBy: { user: "asc" },
-            filter: { quickFilterValues: ["alice", "van", "damme"], tableParams: { tagId: "UserTag000000001", instrumentId: "Instrument000001", roleId: null } } });
+        expect(query).toMatchObject({
+            ...context, skip: 40, take: 20, orderBy: { user: "asc" },
+            filter: { quickFilterValues: ["alice", "van", "damme"], tableParams: { tagId: "UserTag000000001", instrumentId: "Instrument000001", roleId: null } }
+        });
         expect(() => bandMemberDirectoryQuery({ ...filters, tagId: "123" }, context, false)).toThrow();
     });
     it("selects membership creation-date order only for managers", () => {
@@ -46,6 +49,6 @@ describe("member profile and directory contracts", () => {
         expect(xBandUser.getPrismaOrderBy({ bandRoleId: "desc" })).toEqual([{ bandRoleId: "desc" }, { publicId: "asc" }]);
     });
     it("keeps person identity, band and route locale in profile links", () => {
-        expect(bandMemberHref(parsePublicId<"User">("User000000000001"), context, { kind: "platform" })).toBe("/fr-BE/b/Band000000000001/backstage/user/User000000000001");
+        expect(bandMemberHref(parsePublicId<"User">("User000000000001"), context, { kind: "multiBand" })).toBe("/fr-BE/b/Band000000000001/backstage/user/User000000000001");
     });
 });

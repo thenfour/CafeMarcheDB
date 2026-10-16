@@ -1,6 +1,6 @@
-import { portalHref } from "src/route/portalRouting";
 import { Permission } from "@/shared/permissions";
 import { getHashedColor } from "@/shared/utils";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
 import { CMChip, CMChipSizeOptions } from "../CMChip";
 import { ColorVariationSpec } from "../color/palette";
@@ -20,13 +20,14 @@ export interface WikiPageChipProps {
 
 export const WikiPageChip = (props: WikiPageChipProps) => {
     const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
     const isAuthorized = dashboardContext.isAuthorized(Permission.view_wiki_pages);
     const wikiPath = wikiParseCanonicalWikiPath(props.slug);
 
     return <CMChip
         variation={props.variation}
         size={props.size}
-        href={isAuthorized ? portalHref(wikiPath.uriRelativeToHost, dashboardContext.memberPresentation, dashboardContext.portalHosting) : undefined}
+        href={isAuthorized ? router.href(wikiPath.uriRelativeToHost) : undefined}
         className={props.className}
     >
         {props.startAdornment}

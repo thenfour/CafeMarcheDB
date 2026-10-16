@@ -1,3 +1,4 @@
+import { parsePortalPath, PORTAL_PATH_QUERY_PARAM } from "src/route/portalRouting"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { NotFoundError } from "blitz"
 
@@ -23,6 +24,9 @@ vi.mock("db", async () => {
 })
 
 import { getServerSideProps } from "src/pages/[...customLinkSlug]"
+
+const portalPath = parsePortalPath(`/b/${bandPublicId}/folder/MyPage`, { kind: "multiBand" })
+const serializedPath = JSON.stringify(portalPath)
 
 const directLink = {
   id: 10,
@@ -54,7 +58,7 @@ describe("custom link direct file response", () => {
     // The mocked gSSP handler only uses these request context members.
     const result = await getServerSideProps({
       params: { customLinkSlug: ["MyPage"] },
-      query: { customLinkSlug: ["MyPage"], bandPublicId, theme: "dark" },
+      query: { customLinkSlug: ["MyPage"], [PORTAL_PATH_QUERY_PARAM]: serializedPath, theme: "dark" },
       req,
       res,
       ctx,
@@ -74,7 +78,7 @@ describe("custom link direct file response", () => {
     // The mocked gSSP handler only uses these request context members.
     const result = await getServerSideProps({
       params: { customLinkSlug: ["MyPage"] },
-      query: { bandPublicId },
+      query: { [PORTAL_PATH_QUERY_PARAM]: serializedPath },
       req: { url: "/MyPage", headers: {}, socket: {} },
       res,
       ctx: { session: {} },
@@ -87,19 +91,26 @@ describe("custom link direct file response", () => {
   })
 
   async function visit(query: { bandPublicId?: string | string[]; theme?: string[]; routeLocale?: string } = { bandPublicId }) {
+    const { bandPublicId: selected, routeLocale, ...application } = query
+    const metadata = JSON.stringify({ ...portalPath, bandPublicId: selected ?? null, hasBandPrefix: selected !== undefined, routeLocale: routeLocale ?? null })
     // The mocked gSSP handler only uses these request context members.
     return getServerSideProps({
-      params: { customLinkSlug: ["folder", "MyPage"] }, query: { customLinkSlug: ["folder", "MyPage"], ...query },
+      params: { customLinkSlug: ["folder", "MyPage"] }, query: { customLinkSlug: ["folder", "MyPage"], ...application, [PORTAL_PATH_QUERY_PARAM]: metadata },
       req: { url: "/folder/MyPage", headers: { "user-agent": "browser", referer: "https://source.test" }, socket: { remoteAddress: "127.0.0.1" } },
       res: { statusCode: 200, end: vi.fn() }, ctx: { session: {} },
     } as unknown as Parameters<typeof getServerSideProps>[0])
   }
 
-  it.each([undefined, "", "invalid", [bandPublicId], [bandPublicId, "Band000000000008"]])("returns 404 without a single valid band: %s", async value => {
-    expect(await visit({ bandPublicId: value })).toEqual({ notFound: true })
+  it.each(["", "invalid", [bandPublicId], [bandPublicId, "Band000000000008"]])("rejects invalid serialized band parameters: %s", async value => {
+    await expect(visit({ bandPublicId: value })).rejects.toThrow()
     expect(loadAuth).not.toHaveBeenCalled()
     expect(findLink).not.toHaveBeenCalled()
     expect(createVisit).not.toHaveBeenCalled()
+  })
+
+  it("returns 404 for an unscoped custom link", async () => {
+    expect(await visit({})).toEqual({ notFound: true })
+    expect(loadAuth).not.toHaveBeenCalled()
   })
 
   it("returns 404 for an unknown or deleted band", async () => {

@@ -15,29 +15,35 @@ async function prepare(tx: Prisma.TransactionClient, fixture: SettingsMysqlFixtu
     const c = await prepareEventAttendanceFixture(tx, fixture, [Permission.view_events_nonpublic, Permission.view_files, Permission.visibility_members]);
     const publicVisibility = await tx.permission.findUniqueOrThrow({ where: { name: Permission.visibility_public } });
     const memberVisibility = await tx.permission.findUniqueOrThrow({ where: { name: Permission.visibility_members } });
-    const makeEvent = (bandId: number, title: string, visiblePermissionId: number | null, frontpageVisible = true) => tx.event.create({ data: {
-        publicId: generatePublicId(), bandId, name: "Unpublished internal name", revision: 1, frontpageVisible, visiblePermissionId,
-        frontpageTitle: title, frontpageTitle_fr: "Français " + title, frontpageTitle_nl: "Nederlands " + title,
-        frontpageDetails: "English details", frontpageDetails_fr: null, frontpageDetails_nl: "Nederlandse details",
-        startsAt: new Date("2099-01-01T12:00:00Z"),
-    } });
+    const makeEvent = (bandId: number, title: string, visiblePermissionId: number | null, frontpageVisible = true) => tx.event.create({
+        data: {
+            publicId: generatePublicId(), bandId, name: "Unpublished internal name", revision: 1, frontpageVisible, visiblePermissionId,
+            frontpageTitle: title, frontpageTitle_fr: "Français " + title, frontpageTitle_nl: "Nederlands " + title,
+            frontpageDetails: "English details", frontpageDetails_fr: null, frontpageDetails_nl: "Nederlandse details",
+            startsAt: new Date("2099-01-01T12:00:00Z"),
+        }
+    });
     const published = await makeEvent(c.band.id, "Published", publicVisibility.id);
     const memberEvent = await makeEvent(c.band.id, "Member", memberVisibility.id);
     await makeEvent(c.band.id, "Private", null);
     await makeEvent(c.band.id, "Unlisted", publicVisibility.id, false);
     const other = await makeEvent(fixture.bands[1]!.id, "Other band", publicVisibility.id);
-    const makeFile = (bandId: number, visiblePermissionId: number | null) => tx.file.create({ data: {
-        publicId: generatePublicId(), bandId, uploadedByUserId: fixture.admin.id, uploadedAt: new Date(),
-        fileLeafName: "publication.png", storedLeafName: generatePublicId() + ".png", description: "Unpublished file description",
-        visiblePermissionId, mimeType: "image/png", sizeBytes: 123, customData: JSON.stringify({ imageMetadata: { width: 600, height: 400 } }),
-    } });
+    const makeFile = (bandId: number, visiblePermissionId: number | null) => tx.file.create({
+        data: {
+            publicId: generatePublicId(), bandId, uploadedByUserId: fixture.admin.id, uploadedAt: new Date(),
+            fileLeafName: "publication.png", storedLeafName: generatePublicId() + ".png", description: "Unpublished file description",
+            visiblePermissionId, mimeType: "image/png", sizeBytes: 123, customData: JSON.stringify({ imageMetadata: { width: 600, height: 400 } }),
+        }
+    });
     const source = await makeFile(c.band.id, publicVisibility.id);
     const hiddenSource = await makeFile(c.band.id, null);
     const otherSource = await makeFile(fixture.bands[1]!.id, publicVisibility.id);
-    const makeGallery = (fileId: number, sortOrder: number, visiblePermissionId: number | null) => tx.frontpageGalleryItem.create({ data: {
-        publicId: generatePublicId(), fileId, sortOrder, visiblePermissionId, createdByUserId: fixture.admin.id,
-        caption: "English caption", caption_fr: "", caption_nl: "Nederlands bijschrift", displayParams: "{}",
-    } });
+    const makeGallery = (fileId: number, sortOrder: number, visiblePermissionId: number | null) => tx.frontpageGalleryItem.create({
+        data: {
+            publicId: generatePublicId(), fileId, sortOrder, visiblePermissionId, createdByUserId: fixture.admin.id,
+            caption: "English caption", caption_fr: "", caption_nl: "Nederlands bijschrift", displayParams: "{}",
+        }
+    });
     const gallery = await makeGallery(source.id, 2, publicVisibility.id);
     const earlier = await makeGallery(source.id, 0, publicVisibility.id);
     const memberGallery = await makeGallery(source.id, 3, memberVisibility.id);
@@ -47,7 +53,18 @@ async function prepare(tx: Prisma.TransactionClient, fixture: SettingsMysqlFixtu
     const input: PublicFeedInput = { bandPublicId: c.args.bandPublicId, routeLocale: "fr-BE", browserLanguages: ["nl-NL"] };
     const anonymous = await loadAuthorizationForUser(null, tx, input.bandPublicId);
     const read = async (patch: Partial<PublicFeedInput> = {}, auth = anonymous) => readPublicFeed(
-        await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" }), auth, { ...input, ...patch }, { hosting: { kind: "platform" }, baseURL: "https://publication.invalid" });
+        await bindDB3ReadSnapshot(
+            tx,
+            auth,
+            { isolationLevel: "Serializable" }
+        ),
+        auth,
+        { ...input, ...patch },
+        {
+            hosting: { kind: "multiBand" },
+            baseURL: "https://publication.invalid"
+        }
+    );
     return { ...c, input, anonymous, published, memberEvent, other, source, gallery, earlier, memberGallery, otherGallery, read };
 }
 
@@ -139,8 +156,12 @@ describe.skipIf(!settingsMysqlTestUrl)("public publication on MariaDB", () => {
         const c = await prepare(tx, fixture);
         await tx.event.update({ where: { id: c.published.id }, data: { startsAt: new Date(0) } });
         const visibility = await tx.permission.findUniqueOrThrow({ where: { name: Permission.visibility_public } });
-        await tx.event.create({ data: { publicId: generatePublicId(), bandId: c.band.id, name: "TBD", revision: 1,
-            frontpageVisible: true, frontpageTitle: "TBD", visiblePermissionId: visibility.id } });
+        await tx.event.create({
+            data: {
+                publicId: generatePublicId(), bandId: c.band.id, name: "TBD", revision: 1,
+                frontpageVisible: true, frontpageTitle: "TBD", visiblePermissionId: visibility.id
+            }
+        });
         const feed = await c.read();
         expect(feed.agenda[0]?.startsAt).toBe(0);
         expect(feed.agenda[1]?.startsAt).toBeNull();
@@ -148,11 +169,13 @@ describe.skipIf(!settingsMysqlTestUrl)("public publication on MariaDB", () => {
     it("owns one RepeatableRead root snapshot for both content readers and locale availability", () => run(async (tx, fixture) => {
         const c = await prepare(tx, fixture);
         const policies: string[] = [];
-        const root: DB3ReadRootDatabase = { $transaction: async (work, options) => {
-            policies.push(options.isolationLevel);
-            return work(tx);
-        } };
-        await readPublicFeed(root, c.anonymous, c.input, { hosting: { kind: "platform" }, baseURL: "https://publication.invalid" });
+        const root: DB3ReadRootDatabase = {
+            $transaction: async (work, options) => {
+                policies.push(options.isolationLevel);
+                return work(tx);
+            }
+        };
+        await readPublicFeed(root, c.anonymous, c.input, { hosting: { kind: "multiBand" }, baseURL: "https://publication.invalid" });
         expect(policies).toEqual(["RepeatableRead"]);
     }));
 });

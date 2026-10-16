@@ -1,21 +1,20 @@
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { invoke, useMutation, useQuery } from "@blitzjs/rpc";
 import { Alert } from "@mui/material";
-import { useRouter } from "next/router";
-import { usePortalHosting } from "src/route/PortalRoutingProvider";
-import { portalHref } from "src/route/portalRouting";
 import React from "react";
 import type { UserPublicId } from "shared/publicId";
 import mergeUsers from "src/auth/mutations/mergeUsers";
+import getUserMergeAccountAnalysis from "src/auth/queries/getUserMergeAccountAnalysis";
 import previewUserMerge from "src/auth/queries/previewUserMerge";
 import searchUserMergeCandidates from "src/auth/queries/searchUserMergeCandidates";
-import getUserMergeAccountAnalysis from "src/auth/queries/getUserMergeAccountAnalysis";
-import type { MergeIdentity, MergeReportText, UserMergePreview, UserMergePresentation } from "src/auth/userMergeSchemas";
+import type { MergeIdentity, MergeReportText, UserMergePresentation, UserMergePreview } from "src/auth/userMergeSchemas";
 import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
 import type { UserMassAnalysisResult } from "src/core/db3/shared/getUserMassAnalysisTypes";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
-import { CMDialog } from "../CMDialog";
+import { portalHref } from "src/route/portalRouting";
 import { CMButton, CMUserMgmtButton } from "../CMCoreComponents2";
+import { CMDialog } from "../CMDialog";
 import { CMTable } from "../CMTable";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { DateValue } from "../DateTime/DateTimeComponents";
@@ -63,15 +62,17 @@ export function UserMassAnalysisSummaryCard({ analysis, caption }: { analysis: U
     return <div className="user-mass-analysis-summary-card" style={{ flex: 1, minWidth: 240 }}>
         <h3>{caption}</h3><CMTable rows={rows} columns={[
             { header: "", memberName: "label", render: row => <span>{row.row.label}</span> },
-            { header: "", memberName: "value", render: row => <span>{typeof row.row.value === "number" ? new Intl.NumberFormat(viewer.formattingLocale).format(row.row.value) : row.row.value}</span>,
-                valueBar: { getValue: row => typeof row.value === "number" ? row.value : undefined } },
+            {
+                header: "", memberName: "value", render: row => <span>{typeof row.row.value === "number" ? new Intl.NumberFormat(viewer.formattingLocale).format(row.row.value) : row.row.value}</span>,
+                valueBar: { getValue: row => typeof row.value === "number" ? row.value : undefined }
+            },
         ]} />
     </div>;
 }
 type MergeProfile = { publicId: UserPublicId; name: string };
 function MergeUsersDialog({ user, onClose, input }: { user: MergeProfile; onClose: () => void; input: UserMergePresentation }) {
-    const router = useRouter();
-    const hosting = usePortalHosting();
+    //const router = useRouter();
+    const router = useCmdbRouter();
     const locale = useLocale();
     // The parent remounts on any presentation/actor change. Pin this dialog's request context.
     const [requestInput] = React.useState(input);
@@ -129,7 +130,7 @@ function MergeUsersDialog({ user, onClose, input }: { user: MergeProfile; onClos
             const result = await merge({ ...requestInput, participants, confirmation: preview.confirmation });
             if (live.current) {
                 onClose();
-                await router.push(portalHref("/backstage/platform-user/" + result.mainUserId, requestInput, hosting));
+                await router.push(portalHref("/backstage/platform-user/" + result.mainUserId, requestInput, router.hosting));
             }
         } catch (failure) {
             if (live.current) {

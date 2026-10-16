@@ -5,10 +5,10 @@ import { act } from "react-dom/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parsePublicId } from "shared/publicId";
 import { kStaticLocalizedStringRegistry, type LocalizedPlainStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
-import { PortalRoutingProvider } from "src/route/PortalRoutingProvider";
+import { PortalRoutingProvider } from "@/src/route/useCmdbRouter";
 import { PortalLanguageSelection } from "src/route/PortalLanguageSelection";
 import { BandSelection } from "src/core/components/dashboard/BandSelection";
-import type { BandHostingConfig } from "src/route/portalRouting";
+import { parsePortalPath, type BandHostingConfig } from "src/route/portalRouting";
 
 vi.mock("next/router", () => ({ useRouter: () => ({ asPath: path, push }) }));
 vi.mock("src/locale/components/PresentationProvider", () => ({
@@ -26,7 +26,7 @@ vi.mock("src/locale/components/useLocale", () => ({
 vi.mock("@blitzjs/rpc", () => ({ useQuery: () => { choicesRead(); return [[]]; } }));
 vi.mock("src/auth/queries/getAvailableBands", () => ({ default: vi.fn() }));
 const band = parsePublicId<"Band">("PortalBand000001");
-const push = vi.fn(async (_href: string) => true);
+const push = vi.fn(async (_href: string, _as?: string, _options?: unknown) => true);
 const choicesRead = vi.fn();
 let path: string;
 let root: Root;
@@ -46,7 +46,7 @@ afterEach(async () => {
     vi.unstubAllGlobals();
 });
 async function render(hosting: BandHostingConfig, children = <PortalLanguageSelection />) {
-    await act(async () => root.render(<PortalRoutingProvider hosting={hosting}>{children}</PortalRoutingProvider>));
+    await act(async () => root.render(<PortalRoutingProvider config={{ baseUri: "https://test", hosting, requestPath: { ...parsePortalPath(new URL(path, "https://test").pathname, hosting), bandPublicId: band } }}>{children}</PortalRoutingProvider>));
 }
 async function select(value: string) {
     const input = container.querySelector("select");
@@ -61,26 +61,26 @@ async function select(value: string) {
 
 describe("portal language navigation", () => {
     it("switches the equivalent platform page, retaining identity, tab, query and hash", async () => {
-        await render({ kind: "platform" });
+        await render({ kind: "multiBand" });
         await select("nl-BE");
-        expect(push).toHaveBeenCalledWith(`/nl-BE/b/${band}/backstage/event/PortalEvent0001/rehearsal/attendance?page=2#answer`);
+        expect(push).toHaveBeenCalledWith(`/nl-BE/b/${band}/backstage/event/PortalEvent0001/rehearsal/attendance?page=2#answer`, undefined, undefined);
     });
     it("returns to browser preference order without changing the page or band", async () => {
-        await render({ kind: "platform" });
+        await render({ kind: "multiBand" });
         await select("");
-        expect(push).toHaveBeenCalledWith(`/b/${band}/backstage/event/PortalEvent0001/rehearsal/attendance?page=2#answer`);
+        expect(push).toHaveBeenCalledWith(`/b/${band}/backstage/event/PortalEvent0001/rehearsal/attendance?page=2#answer`, undefined, undefined);
     });
     it("preserves the familiar standalone URL and hides the band picker without reading choices", async () => {
-        path = "/fr-BE/backstage/songs?q=brass#results";
-        await render({ kind: "standalone", tenant: "generic" }, <><BandSelection /><PortalLanguageSelection /></>);
+        path = "/fr-BE/b/backstage/songs?q=brass#results";
+        await render({ kind: "singleBand", tenant: "generic" }, <><BandSelection /><PortalLanguageSelection /></>);
         expect(container.querySelector("#dashboard-band")).toBeNull();
         expect(choicesRead).not.toHaveBeenCalled();
         await select("nl-BE");
-        expect(push).toHaveBeenCalledWith("/nl-BE/backstage/songs?q=brass#results");
+        expect(push).toHaveBeenCalledWith("/nl-BE/b/backstage/songs?q=brass#results", undefined, undefined);
     });
     it("retains the selected language and shows a failed navigation", async () => {
         push.mockResolvedValueOnce(false);
-        await render({ kind: "platform" });
+        await render({ kind: "multiBand" });
         await select("nl-BE");
         expect(container.textContent).toContain("Could not change language");
         expect(container.querySelector("select")?.value).toBe("fr-BE");

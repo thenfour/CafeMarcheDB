@@ -3,6 +3,7 @@
 
 import { useQuery } from "@blitzjs/rpc";
 import React from "react";
+import { nanoid } from "nanoid";
 import { useSession } from "@blitzjs/auth";
 import { queryClient } from "src/blitz-client";
 import getPresentationData from "../queries/getPresentationData";
@@ -11,7 +12,8 @@ import type { BandPublicId } from "shared/publicId";
 import { presentationContextKey, type PresentationData } from "../shared/presentationContext";
 
 function newKey(): string {
-    return `${Date.now().valueOf()}`;
+    // Multiple refreshes or grant changes can happen in the same millisecond; date won't cut it.
+    return nanoid();
 }
 
 interface PresentationContextValue {

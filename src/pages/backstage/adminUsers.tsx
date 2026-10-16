@@ -1,3 +1,4 @@
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 
 import { CMLinkButton } from "@/src/core/components/CMCoreComponents2";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
@@ -27,8 +28,9 @@ const makeDisplayOnlyColumn = <T extends DB3Client.IColumnClient>(column: T): T 
 };
 
 const UserListContent: React.FC<{}> = () => {
+    const cmdbRouter = useCmdbRouter();
     const dashboardContext = useDashboardContext();
-    const hosting = dashboardContext.portalHosting;
+    const hosting = cmdbRouter.hosting;
     const auth = useClientAuth();
     const locale = useLocale();
 
@@ -49,7 +51,7 @@ const UserListContent: React.FC<{}> = () => {
 
     const extraActions = (args: DB3EditGridExtraActionsArgs<db3.ClientOf<typeof db3.platformUserEditorView>>) => {
         const userPayload = args.row;
-        const profileUrl = dashboardContext.routingApi.getURIForUser(userPayload);
+        const profileUrl = cmdbRouter.getURIForUser(userPayload);
         return <div>
             <Suspense><AccountRoleAction userId={userPayload.publicId} onChanged={() => args.refetch()} /></Suspense>
             {auth.hasPermission(Permission.sysadmin) && <AccountAnalysisAction userId={userPayload.publicId} />}

@@ -1,8 +1,8 @@
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { formatFileSize } from "@/shared/rootroot";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { readFileDetailPage } from "src/core/db3/server/fileDetailPage";
-import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
-import { portalHref } from "src/route/portalRouting";
+import { resolvePagePresentationInput } from "src/route/server/portalRequest";
 import { gSSP } from "@/src/blitz-server";
 import { CMChipContainer } from "@/src/core/components/CMChip";
 import { InstrumentChip } from "@/src/core/components/CMCoreComponents";
@@ -44,22 +44,23 @@ export interface FileBreadcrumbProps {
     file: db3.FileDetailClient,
 };
 export const FileBreadcrumbs = (props: FileBreadcrumbProps) => {
-    const dashboardContext = useDashboardContext();
+    const cmdbRouter = useCmdbRouter();
+
     return <Breadcrumbs aria-label="breadcrumb">
         <CMLink
-            href={portalHref("/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+            href={cmdbRouter.href("/backstage")}
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage
         </CMLink>
         <CMLink
-            href={portalHref("/backstage/files", dashboardContext.memberPresentation, dashboardContext.portalHosting)}
+            href={cmdbRouter.href("/backstage/files")}
         >
             Files
         </CMLink>
 
         <CMLink
-            href={dashboardContext.routingApi.getURIForFileLandingPage(props.file)}
+            href={cmdbRouter.getURIForFileLandingPage(props.file)}
         >
             {props.file.fileLeafName}
         </CMLink>
@@ -76,6 +77,7 @@ interface FileDetailProps {
 
 
 const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
+    const cmdbRouter = useCmdbRouter();
     const dashboardContext = useDashboardContext();
     const router = useRouter();
     const visInfo = dashboardContext.getVisibilityInfo({
@@ -135,7 +137,7 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                         // A deleted detail target cannot be refetched. Return to the File list after committing.
                         await deleteFile.invoke({ identity: file.publicId });
                         api.close();
-                        await router.push(portalHref("/backstage/files", dashboardContext.memberPresentation, dashboardContext.portalHosting));
+                        await router.push(cmdbRouter.href("/backstage/files"));
                         await dashboardContext.refreshCachedData();
                     });
                 }}
@@ -224,19 +226,19 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                             ))}
                         </CMChipContainer>) : "",
                     "Frontpage gallery usage": file.frontpageGalleryItems && file.frontpageGalleryItems.length || "",
-                    "Parent File": <>{file.parentFile ? <CMLink href={dashboardContext.routingApi.getURIForFileLandingPage(file.parentFile)}>{file.parentFile.fileLeafName}</CMLink> : ''}</>,
+                    "Parent File": <>{file.parentFile ? <CMLink href={cmdbRouter.getURIForFileLandingPage(file.parentFile)}>{file.parentFile.fileLeafName}</CMLink> : ''}</>,
                     "Child files": <CMChipContainer>
                         {file.childFiles && file.childFiles.length > 0 && (
                             file.childFiles.map((childFile, index) => (
-                                <CMLink key={index} href={dashboardContext.routingApi.getURIForFileLandingPage(childFile)}>{childFile.fileLeafName}</CMLink>
+                                <CMLink key={index} href={cmdbRouter.getURIForFileLandingPage(childFile)}>{childFile.fileLeafName}</CMLink>
                             ))
                         )}
                     </CMChipContainer>,
-                    "Preview File": file.previewFile ? <CMLink href={dashboardContext.routingApi.getURIForFileLandingPage(file.previewFile)}>{file.previewFile.fileLeafName}</CMLink> : '',
+                    "Preview File": file.previewFile ? <CMLink href={cmdbRouter.getURIForFileLandingPage(file.previewFile)}>{file.previewFile.fileLeafName}</CMLink> : '',
                     "Preview for": <CMChipContainer>
                         {file.previewForFile && file.previewForFile.length > 0 && (
                             file.previewForFile.map((previewForFile, index) => (
-                                <CMLink key={index} href={dashboardContext.routingApi.getURIForFileLandingPage(previewForFile)}>{previewForFile.fileLeafName}</CMLink>
+                                <CMLink key={index} href={cmdbRouter.getURIForFileLandingPage(previewForFile)}>{previewForFile.fileLeafName}</CMLink>
                             ))
                         )}
                     </CMChipContainer>,
@@ -325,7 +327,7 @@ interface PageProps {
 export const getServerSideProps = gSSP<PageProps>(async ({ params, query, req, ctx }) => {
     const path = params?.id_slug_tab;
     const identity = Array.isArray(path) ? path[0] : undefined;
-    const input = pagePresentationInput(query, req.headers["accept-language"]);
+    const input = await resolvePagePresentationInput(req, query);
     if (!db3.xFile.isIdentity(identity) || !input.bandPublicId) {
         return { notFound: true };
     }

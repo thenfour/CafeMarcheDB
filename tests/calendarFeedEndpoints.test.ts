@@ -1,3 +1,4 @@
+import { parsePortalPath, PORTAL_PATH_QUERY_PARAM } from "src/route/portalRouting";
 import { AuthenticationError, AuthorizationError, NotFoundError } from "blitz";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CalendarFeedNotFoundError } from "src/auth/server/calendarFeedSubscription";
@@ -23,7 +24,8 @@ function response() {
 // Blitz is replaced above; this boundary uses only these HTTP members.
 const handler = upcoming as unknown as (req: { method: string; query: object }, res: ReturnType<typeof response>) => Promise<void>;
 const token = "a".repeat(64);
-const query = { calendarFeedToken: token, bandPublicId: calendarBandPublicId };
+const path = parsePortalPath(`/b/${calendarBandPublicId}/api/ical/user/${token}/upcoming`, { kind: "multiBand" });
+const query = { calendarFeedToken: token, [PORTAL_PATH_QUERY_PARAM]: JSON.stringify(path) };
 
 describe("band-scoped private calendar HTTP boundary", () => {
     beforeEach(() => { vi.resetAllMocks(); });
@@ -47,8 +49,8 @@ describe("band-scoped private calendar HTTP boundary", () => {
 
     it.each([
         { calendarFeedToken: token },
-        { ...query, bandPublicId: [calendarBandPublicId] },
-        { ...query, bandPublicId: "123" },
+        { ...query, [PORTAL_PATH_QUERY_PARAM]: ["ambiguous"] },
+        { ...query, [PORTAL_PATH_QUERY_PARAM]: JSON.stringify({ ...path, bandPublicId: "123" }) },
         { ...query, calendarFeedToken: [token] },
         { ...query, calendarFeedToken: "public" },
         { ...query, calendarFeedToken: "bad" },

@@ -15,10 +15,11 @@ import * as db3 from "../db3/db3";
 import { useDashboardContext } from "./dashboardContext/DashboardContext";
 
 import CMButtonStyle from "./CMButton.module.css";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 export const AbsoluteUriText = (props: { relativeUri: string }) => {
-    const dashboardContext = useDashboardContext();
-    return <>{dashboardContext.getAbsoluteUri(props.relativeUri)}</>;
+    const router = useCmdbRouter();
+    return <>{router.getAbsoluteUri(props.relativeUri)}</>;
 };
 
 

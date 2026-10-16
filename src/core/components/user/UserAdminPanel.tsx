@@ -2,19 +2,18 @@ import { useMutation } from "@blitzjs/rpc";
 import {
     Tooltip
 } from "@mui/material";
-import { useRouter } from "next/router";
-import { portalHref } from "src/route/portalRouting";
 import React from "react";
 import { Permission } from "shared/permissions";
 import setUserSysAdmin from "src/auth/mutations/setUserSysAdmin";
+import type { UserClientPayload } from "src/core/db3/shared/schema/prismArgs";
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { CMButton, CMUserMgmtButton } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { useSnackbar } from "../SnackbarContext";
 import { ImpersonateUserButton } from "./ImpersonateUserButton";
-import type { UserClientPayload } from "src/core/db3/shared/schema/prismArgs";
-import { useUserLifecycleActions } from "./useUserLifecycleActions";
 import { MergeUsersButton } from "./MergeUsersButton";
+import { useUserLifecycleActions } from "./useUserLifecycleActions";
 
 
 type UserMgmtCaps = {
@@ -47,7 +46,7 @@ export const DeactivateUserButton = ({ capabilities, user, onOK }: DeactivateUse
     const snackbar = useSnackbar();
     const lifecycle = useUserLifecycleActions();
     const dashboardContext = useDashboardContext();
-    const router = useRouter();
+    const router = useCmdbRouter();
     const [pending, setPending] = React.useState(false);
     const inFlight = React.useRef(false);
 
@@ -68,10 +67,10 @@ export const DeactivateUserButton = ({ capabilities, user, onOK }: DeactivateUse
                         }
                         snackbar.showSuccess("User deactivated");
                         if (dashboardContext.currentUser?.publicId === user.publicId) {
-                            window.location.assign(portalHref("/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting));
+                            window.location.assign(router.href("/backstage"));
                         } else if (!dashboardContext.isAuthorized(Permission.manage_global_users)) {
-                            await router.replace(portalHref(dashboardContext.isAuthorized(Permission.search_users)
-                                ? "/backstage/users" : "/backstage", dashboardContext.memberPresentation, dashboardContext.portalHosting));
+                            await router.replace(router.href(dashboardContext.isAuthorized(Permission.search_users)
+                                ? "/backstage/users" : "/backstage"));
                         } else {
                             await onOK?.();
                         }

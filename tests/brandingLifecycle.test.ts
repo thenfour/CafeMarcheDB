@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { parsePortalPath } from "src/route/portalRouting"
 import React from "react"
 import { act } from "react-dom/test-utils"
 import { createRoot, Root } from "react-dom/client"
@@ -165,6 +166,7 @@ describe("application branding lifecycle", () => {
         contrastText: "#ffffff",
       },
     }
+    const bootstrap = { status: "ready", data: { brand, routing: { baseUri: "https://brand.test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath("/backstage", { kind: "multiBand" }) }, serverStartupState: null } };
     let renderedBrandTitle: string | undefined
 
     const CaptureBrand = () => {
@@ -178,7 +180,7 @@ describe("application branding lifecycle", () => {
     await act(async () => {
       mountedRoot.render(React.createElement(MyApp as any, {
         Component: CaptureBrand,
-        pageProps: { brand },
+        pageProps: { appBootstrap: bootstrap },
       }))
     })
     expect(renderedBrandTitle).toBe("Persistent Band")
@@ -186,7 +188,7 @@ describe("application branding lifecycle", () => {
     await act(async () => {
       mountedRoot.render(React.createElement(MyApp as any, {
         Component: ThrowPage,
-        pageProps: {},
+        pageProps: { appBootstrap: { status: "error", statusCode: 500, title: "page failed", isConnectivityFailure: false } },
       }))
     })
     expect(container.textContent).toContain("Persistent Band")
@@ -195,7 +197,7 @@ describe("application branding lifecycle", () => {
     await act(async () => {
       mountedRoot.render(React.createElement(MyApp as any, {
         Component: CaptureBrand,
-        pageProps: {},
+        pageProps: { appBootstrap: bootstrap },
       }))
       blitz.__resetTestErrorBoundaries()
     })

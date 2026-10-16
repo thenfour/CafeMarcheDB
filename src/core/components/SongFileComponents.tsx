@@ -37,6 +37,7 @@ import { MediaPlayerEventContextPayload, MediaPlayerSongContextPayload } from '.
 import { SongChip } from './song/SongChip';
 import { UserChip } from './user/userChip';
 import { WikiPageChip } from './wiki/WikiPageChip';
+import { useCmdbRouter } from '@/src/route/useCmdbRouter';
 
 
 type SongDetailFile = NonNullable<
@@ -163,7 +164,8 @@ export const UnpinSongRecordingMenuItem = (props: Omit<PinSongRecordingMenuItemP
 
 
 export const FileExternalLink = ({ file, highlight }: { file: DetailFile, highlight?: boolean }) => {
-    const dashboardContext = useDashboardContext();
+
+    const router = useCmdbRouter();
     const filenameClass = highlight ? "filename highlight" : "filename";
     const fileName = file.fileLeafName || "Restricted file";
     const storedLeafName = file.storedLeafName;
@@ -173,7 +175,7 @@ export const FileExternalLink = ({ file, highlight }: { file: DetailFile, highli
         if (!storedLeafName) {
             return <div className={filenameClass}>{smartTruncate(fileName)}</div>;
         }
-        href = dashboardContext.routingApi.getURIForFile({
+        href = router.getURIForFile({
             storedLeafName,
             fileLeafName: file.fileLeafName || "",
             externalURI: null,
@@ -215,6 +217,7 @@ interface FileViewerProps {
 export const FileValueViewer = (props: FileViewerProps) => {
     const endMenuItemRef = React.useRef<() => void>(() => { });
     const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
     const snackbar = useSnackbar();
     const file = props.value;
     const tags = file.tags ?? [];
@@ -244,7 +247,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
 
     const variation = StandardVariationSpec.Weak;
     const uri = file.externalURI || (file.storedLeafName
-        ? dashboardContext.routingApi.getURIForFile({
+        ? router.getURIForFile({
             storedLeafName: file.storedLeafName,
             fileLeafName: file.fileLeafName || "",
             externalURI: null,
@@ -316,7 +319,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
                     {dashboardContext.isAuthorized(Permission.access_file_landing_page) &&
                         <MenuItem>
                             <ListItemIcon>{gIconMap.Link()}</ListItemIcon>
-                            <CMLink href={dashboardContext.routingApi.getURIForFileLandingPage(file)}>Visit file landing page</CMLink>
+                            <CMLink href={router.getURIForFileLandingPage(file)}>Visit file landing page</CMLink>
                         </MenuItem>
                     }
                 </DotMenu>

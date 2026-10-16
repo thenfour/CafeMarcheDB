@@ -1,3 +1,5 @@
+import { useServerStartupState } from "src/core/components/ServerStartupStateContext";
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { formatEventDateRange } from "shared/dateTimePresentation";
 import { CMTable, CMTableSlot } from "@/src/core/components/CMTable";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
@@ -13,6 +15,7 @@ import getServerHealth from "src/core/db3/queries/getServerHealth";
 import { GetServerHealthResult, ServerHealthFileResult, TableStatsQueryRow } from "src/core/db3/shared/apiTypes";
 
 const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerHealthResult }) => {
+    const cmdbRouter = useCmdbRouter();
     const dashboardContext = useDashboardContext();
     const totalSize = serverHealthResults.uploads.files.reduce((sum, f) => sum + f.size, 0);
 
@@ -41,7 +44,7 @@ const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerH
             {
                 memberName: "uploadedByUserId", render: args => {
                     return args.row.uploadedByUserId
-                        ? <a href={dashboardContext.routingApi.getURIForUser({ publicId: args.row.uploadedByUserId })}>{args.row.uploadedByUserId}</a>
+                        ? <a href={cmdbRouter.getURIForUser({ publicId: args.row.uploadedByUserId })}>{args.row.uploadedByUserId}</a>
                         : null;
                 }
             },
@@ -52,7 +55,7 @@ const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerH
                     if (args.slot === CMTableSlot.Footer) {
                         return args.row.fileName;
                     }
-                    return <a href={!args.row.fileName ? undefined : dashboardContext.routingApi.getURIForFile({
+                    return <a href={!args.row.fileName ? undefined : cmdbRouter.getURIForFile({
                         fileLeafName: args.row.leafName || "?",
                         storedLeafName: args.row.fileName,
                         externalURI: args.row.externalURI || null,
@@ -151,8 +154,8 @@ enum TabId {
 
 
 const MainContent = () => {
-    const dashboardContext = useDashboardContext();
-    const serverStartupState = dashboardContext.serverStartupState;
+
+    const serverStartupState = useServerStartupState();
     const [tabId, setTabId] = React.useState<TabId>(TabId.Database);
     const [serverHealthResults, serverHealthQueryResult] = useQuery(getServerHealth, {});
     //console.log(serverHealthResults.env);

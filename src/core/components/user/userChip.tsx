@@ -9,6 +9,7 @@ import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import type { UserPublicId } from "shared/publicId";
 import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
 import { bandMemberHref } from "./bandMemberLinks";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 
 export interface UserChipBaseProps {
@@ -37,12 +38,13 @@ type QueriedUserChipProps = UserChipBaseProps & {
 
 const ValuedUserChip = (props: ValuedUserChipProps) => {
     const dashboardContext = useDashboardContext();
+    const router = useCmdbRouter();
     const context = useDB3QueryContext();
 
     const userId = props.value?.publicId || null;
     const canViewProfile = dashboardContext.isAuthorized(Permission.view_users_basic_info) || dashboardContext.currentUser?.publicId === userId;
     const userURI = userId && context.bandPublicId && canViewProfile
-        ? bandMemberHref(userId, context, dashboardContext.portalHosting) : undefined;
+        ? bandMemberHref(userId, context, router.hosting) : undefined;
 
     const clickHandler = props.onClick;
 

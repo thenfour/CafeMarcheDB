@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 import { instrumentationSetup } from "./setup/instrumentation-setup";
 import { getServerBandHostingConfig } from "./route/portalRouting";
+import { requireValidBaseUrl } from "./route/server/portalConfig";
 
 type GitVersionInfo = {
     versionTag: string;
@@ -29,9 +30,7 @@ const readGitVersionInfo = (): GitVersionInfo => {
 
 function validateEnv() {
     getServerBandHostingConfig(); // assumes throws if invalid
-    if (!process.env.CMDB_BASE_URL) {
-        throw new Error("CMDB_BASE_URL is not set in the environment.");
-    }
+    requireValidBaseUrl();
 }
 
 export async function registerNodeInstrumentation() {

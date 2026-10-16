@@ -1,7 +1,8 @@
+import { useCmdbRouter } from "@/src/route/useCmdbRouter"
 import { BlitzPage } from "@blitzjs/next"
 import { useMutation } from "@blitzjs/rpc"
 import { Button } from "@mui/base"
-import { useCmdbRouter } from "src/route/useCmdbRouter"
+import { useRouter } from "next/router"
 import React from "react"
 import resetPassword from "src/auth/mutations/resetPassword"
 import { ResetPassword } from "src/auth/schemas"
@@ -16,8 +17,9 @@ interface Result {
 }
 
 const ResetPasswordPage: BlitzPage = () => {
-  const router = useCmdbRouter()
-  const token = router.query.token?.toString()
+  const router = useCmdbRouter();
+  const nextRouter = useRouter();
+  const token = nextRouter.query.token?.toString()
   const [resetPasswordMutation, mutationInfo] = useMutation(resetPassword);
   const [password, setPassword] = React.useState("");
   const [passwordConfirmation, setPasswordConfirmation] = React.useState("");
