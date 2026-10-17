@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { GlobalCatalogContext } from "src/core/db3/components/GlobalCatalogContext";
 import { useLocale } from "src/locale/components/useLocale";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
@@ -39,4 +40,5 @@ const EditEventTypesPage: BlitzPage = () => {
     )
 }
 
+defineCmdbPage("bandEditEventTypes", EditEventTypesPage);
 export default EditEventTypesPage;

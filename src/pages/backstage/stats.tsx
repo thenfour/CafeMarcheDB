@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 import type { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
@@ -166,4 +167,5 @@ const StatsPage: BlitzPage = () => {
     const locale = useLocale();
     return <DashboardLayout title={locale.getPlainString("eventStatistics.title")}><MainContent /></DashboardLayout>;
 };
+defineCmdbPage("bandStats", StatsPage);
 export default StatsPage;

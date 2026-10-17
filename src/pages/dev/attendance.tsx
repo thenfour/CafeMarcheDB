@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import { makeServerSidePermissionGuard } from "src/auth/server/serverPageAuthorization";
@@ -8,5 +9,6 @@ const AttendanceTestPage: BlitzPage = () => <DashboardLayout title="Attendance s
     <AttendanceScenarioPage />
 </DashboardLayout>;
 
+defineCmdbPage("devtestAttendance", AttendanceTestPage);
 export default AttendanceTestPage;
 export const getServerSideProps = makeServerSidePermissionGuard(Permission.sysadmin);

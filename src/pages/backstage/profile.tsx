@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import type { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
@@ -39,4 +40,5 @@ const ProfilePage: BlitzPage = () => {
         <Suspense><ProfileContent /></Suspense>
     </DashboardLayout>;
 };
+defineCmdbPage("bandProfile", ProfilePage);
 export default ProfilePage;

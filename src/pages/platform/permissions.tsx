@@ -1,5 +1,9 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import Page from "../backstage/permissions";
 
-export default function PlatformPermissionsPage() {
+function PlatformPermissionsPage() {
     return <Page />;
 }
+
+defineCmdbPage("platformPermissions", PlatformPermissionsPage);
+export default PlatformPermissionsPage;

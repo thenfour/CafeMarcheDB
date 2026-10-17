@@ -4,6 +4,7 @@ import { Permission, getPermissionDefinition } from "shared/permissions";
 import { SiteBrandingSettingsSchema, siteBrandingSettingByField } from "shared/siteBranding";
 import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
 import { loadPageAuthorization } from "src/auth/server/pageRequestAuthorization";
+import { CmdbRouteRegistry } from "src/route/cmdbRoutes";
 import getPresentationData from "src/locale/queries/getPresentationData";
 import { clearBrandCache } from "src/server/brand";
 import { loadSettingsSnapshot } from "src/setting/server/settings";
@@ -51,15 +52,15 @@ function expectNoSettingWrites(): void {
 describe("BA-C001 and BA-C002 registered setting authorization", () => {
     it("admits an active account to typed settings while preserving the page and per-key boundaries", async () => {
         const ctx = settingsTestContext();
-        const auth = await loadPageAuthorization("/backstage/settings", ctx.session, firstSettingsBand);
+        const auth = await loadPageAuthorization(CmdbRouteRegistry.routeByKey("bandSettings"), ctx.session, firstSettingsBand);
         expect(auth.hasPermission(Permission.sysadmin)).toBe(false);
         expect((await loadSettingsSnapshot(settingsTestDatabase, auth)).user["calendar.showDeclinedEvents"]?.capabilities.canEdit).toBe(true);
         expect((await loadSettingsSnapshot(settingsTestDatabase, auth)).global["global.dev.textPalette"]).toBeUndefined();
         setSettingsBandPermissions([Permission.manage_band_settings]);
-        const scheduler = await loadPageAuthorization("/backstage/settings", settingsTestContext().session, firstSettingsBand);
+        const scheduler = await loadPageAuthorization(CmdbRouteRegistry.routeByKey("bandSettings"), settingsTestContext().session, firstSettingsBand);
         expect((await loadSettingsSnapshot(settingsTestDatabase, scheduler)).band["dateTime.bandTimeZone"]?.capabilities.canEdit).toBe(true);
-        await expect(loadPageAuthorization("/backstage/brand", settingsTestContext().session, firstSettingsBand)).rejects.toThrow();
-        await expect(loadPageAuthorization("/backstage/settings", settingsTestContext(null).session, firstSettingsBand)).rejects.toThrow();
+        await expect(loadPageAuthorization(CmdbRouteRegistry.routeByKey("bandBrand"), settingsTestContext().session, firstSettingsBand)).rejects.toThrow();
+        await expect(loadPageAuthorization(CmdbRouteRegistry.routeByKey("bandSettings"), settingsTestContext(null).session, firstSettingsBand)).rejects.toThrow();
     });
     it("registers branding as a delegable band capability", () => {
         expect(getPermissionDefinition(Permission.manage_site_branding)).toMatchObject({

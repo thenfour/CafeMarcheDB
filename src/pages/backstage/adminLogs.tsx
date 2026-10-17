@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
@@ -65,7 +66,10 @@ export function AuditLogContent() {
     </>;
 }
 
-export default function AdminLogsPage() {
+function AdminLogsPage() {
     const locale = useLocale();
     return <DashboardLayout title={locale.getPlainString("auditLog.title")}><AuditLogContent /></DashboardLayout>;
 }
+
+defineCmdbPage("adminLogs", AdminLogsPage);
+export default AdminLogsPage;

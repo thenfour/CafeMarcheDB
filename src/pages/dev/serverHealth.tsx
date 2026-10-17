@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { useServerStartupState } from "src/core/components/ServerStartupStateContext";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { formatEventDateRange } from "shared/dateTimePresentation";
@@ -204,4 +205,5 @@ const ServerHealthPage: BlitzPage = () => {
     )
 }
 
+defineCmdbPage("serverHealth", ServerHealthPage);
 export default ServerHealthPage;

@@ -1,5 +1,9 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import Page from "../backstage/adminUsers";
 
-export default function PlatformAdminUsersPage() {
+function PlatformAdminUsersPage() {
     return <Page />;
 }
+
+defineCmdbPage("platformAdminUsers", PlatformAdminUsersPage);
+export default PlatformAdminUsersPage;

@@ -1,7 +1,11 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 // site root.
 
 import PlatformPublicIndex, { PlatformPublicIndexProps } from "../core/components/frontpage/PlatformPublicIndex";
 
-export default function PublicIndex(props: PlatformPublicIndexProps) {
+function PublicIndex(props: PlatformPublicIndexProps) {
     return <PlatformPublicIndex {...props} />;
 }
+
+defineCmdbPage("root", PublicIndex);
+export default PublicIndex;

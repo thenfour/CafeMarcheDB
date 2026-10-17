@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { BlitzPage } from "@blitzjs/next";
@@ -45,4 +46,5 @@ const EditEventAttendancesPage: BlitzPage = () => {
     )
 }
 
+defineCmdbPage("bandEditEventAttendances", EditEventAttendancesPage);
 export default EditEventAttendancesPage;

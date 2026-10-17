@@ -1,5 +1,9 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import Page from "../backstage/customLinks";
 
-export default function PlatformCustomLinksPage() {
+function PlatformCustomLinksPage() {
     return <Page />;
 }
+
+defineCmdbPage("platformCustomLinks", PlatformCustomLinksPage);
+export default PlatformCustomLinksPage;

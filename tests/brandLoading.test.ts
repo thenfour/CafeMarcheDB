@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { BandSetting } from "@prisma/client";
 import { clearBrandCache, loadDbBrandConfig } from "src/server/brand";
 import { kBandSettingsRegistry } from "src/setting/shared/bandSettingsRegistry";
+import { DefaultDbBrandConfig, PlatformDbBrandConfig } from "shared/brandConfigBase";
+import { validateDbBrandConfig } from "shared/brandingValidation";
+
+type BrandLoadingInput = Parameters<typeof loadDbBrandConfig>[0];
 
 const mocks = vi.hoisted(() => ({ findMany: vi.fn() }));
 vi.mock("db", () => ({ default: { bandSetting: { findMany: mocks.findMany } } }));
@@ -20,9 +24,49 @@ function validRows(overrides: Partial<Record<keyof typeof kBandSettingsRegistry,
 
 beforeEach(() => { mocks.findMany.mockReset(); clearBrandCache(); });
 
+describe("platform brand loading", () => {
+    it.each([null, 1, 2])("uses static platform branding without querying band %s", async bandId => {
+        mocks.findMany.mockRejectedValue(new Error("database unavailable"));
+        for (const freshness of ["cached", "refresh"] satisfies BrandLoadingInput["freshness"][]) {
+            const result = await loadDbBrandConfig({ hostHeader: "platform.example", bandId, freshness, pageTheming: "platform" });
+            expect(result).toBe(PlatformDbBrandConfig);
+        }
+        expect(mocks.findMany).not.toHaveBeenCalled();
+        expect(validateDbBrandConfig(PlatformDbBrandConfig)).toEqual(PlatformDbBrandConfig);
+        expect(PlatformDbBrandConfig).not.toBe(DefaultDbBrandConfig);
+        expect(PlatformDbBrandConfig.theme).not.toBe(DefaultDbBrandConfig.theme);
+    });
+
+    it("keeps platform branding independent of a populated or invalidated band cache", async () => {
+        const scope = { hostHeader: "mixed-theming.example", bandId: 1, freshness: "cached" } satisfies Omit<BrandLoadingInput, "pageTheming">;
+        mocks.findMany.mockResolvedValueOnce(validRows());
+        const band = await loadDbBrandConfig({ ...scope, pageTheming: "band" });
+        expect(band.siteTitle).toBe("Example Band");
+        expect(await loadDbBrandConfig({ ...scope, pageTheming: "platform" })).toBe(PlatformDbBrandConfig);
+        expect(await loadDbBrandConfig({ ...scope, pageTheming: "band" })).toBe(band);
+        expect(mocks.findMany).toHaveBeenCalledOnce();
+
+        clearBrandCache(scope.hostHeader);
+        mocks.findMany.mockResolvedValueOnce(validRows({ "siteCustomization.title": "Updated band" }));
+        expect(await loadDbBrandConfig({ ...scope, pageTheming: "platform" })).toBe(PlatformDbBrandConfig);
+        expect((await loadDbBrandConfig({ ...scope, pageTheming: "band" })).siteTitle).toBe("Updated band");
+        expect(mocks.findMany).toHaveBeenCalledTimes(2);
+    });
+});
+
 describe("band brand loading", () => {
+    it("retains band defaults when no band identity is available", async () => {
+        const result = await loadDbBrandConfig({ bandId: null, freshness: "refresh", pageTheming: "band" });
+        expect(result).toMatchObject({
+            siteTitle: DefaultDbBrandConfig.siteTitle,
+            siteTitlePrefix: DefaultDbBrandConfig.siteTitlePrefix,
+            siteFaviconUrl: DefaultDbBrandConfig.siteFaviconUrl,
+            theme: DefaultDbBrandConfig.theme,
+        });
+        expect(mocks.findMany).not.toHaveBeenCalled();
+    });
     it("publishes optional primary text color, clears it, and uses the theme when its row is absent", async () => {
-        const scope = { hostHeader: "optional-text.example", bandId: 1 };
+        const scope = { hostHeader: "optional-text.example", bandId: 1, pageTheming: "band" } satisfies Omit<BrandLoadingInput, "freshness">;
         mocks.findMany.mockResolvedValueOnce(validRows({ "siteCustomization.themeColors.textPrimary": "#123456" }));
         expect((await loadDbBrandConfig({ ...scope, freshness: "refresh" })).theme?.textPrimary).toBe("#123456");
         mocks.findMany.mockResolvedValueOnce(validRows({ "siteCustomization.themeColors.textPrimary": "" }));
@@ -35,7 +79,7 @@ describe("band brand loading", () => {
         const now = vi.spyOn(Date, "now").mockReturnValue(100_000);
         try {
             mocks.findMany.mockResolvedValueOnce(validRows({ "siteCustomization.themeColors.textPrimary": "rgb(12, 34, 56)" }));
-            const scope = { hostHeader: "expired-brand.example", bandId: 1, freshness: "cached" as const };
+            const scope = { hostHeader: "expired-brand.example", bandId: 1, freshness: "cached", pageTheming: "band" } satisfies BrandLoadingInput;
             const initial = await loadDbBrandConfig(scope);
             expect(await loadDbBrandConfig(scope)).toEqual(initial);
             expect(mocks.findMany).toHaveBeenCalledOnce();
@@ -52,26 +96,26 @@ describe("band brand loading", () => {
         const errorLog = vi.spyOn(console, "error").mockImplementation(() => { });
         try {
             mocks.findMany.mockResolvedValueOnce(validRows()).mockResolvedValueOnce(validRows({ "siteCustomization.title": "Second band", "siteCustomization.logoUrl": "/second-logo.png" }));
-            const first = await loadDbBrandConfig({ hostHeader: "shared.example", bandId: 1, freshness: "cached" });
-            const second = await loadDbBrandConfig({ hostHeader: "shared.example", bandId: 2, freshness: "cached" });
+            const first = await loadDbBrandConfig({ hostHeader: "shared.example", bandId: 1, freshness: "cached", pageTheming: "band" });
+            const second = await loadDbBrandConfig({ hostHeader: "shared.example", bandId: 2, freshness: "cached", pageTheming: "band" });
             expect(second.siteTitle).toBe("Second band");
             expect(first.siteLogoUrl).toBe("/example-logo.svg");
             expect(second.siteLogoUrl).toBe("/second-logo.png");
             clearBrandCache();
             mocks.findMany.mockRejectedValue(new Error("database unavailable"));
-            expect(await loadDbBrandConfig({ hostHeader: "shared.example", bandId: 1, freshness: "cached" })).toEqual(first);
-            expect(await loadDbBrandConfig({ hostHeader: "shared.example", bandId: 2, freshness: "cached" })).toEqual(second);
+            expect(await loadDbBrandConfig({ hostHeader: "shared.example", bandId: 1, freshness: "cached", pageTheming: "band" })).toEqual(first);
+            expect(await loadDbBrandConfig({ hostHeader: "shared.example", bandId: 2, freshness: "cached", pageTheming: "band" })).toEqual(second);
         } finally { errorLog.mockRestore(); }
     });
     it("refreshes invalidated settings and preserves intentional empty titles", async () => {
         mocks.findMany.mockResolvedValueOnce(validRows());
-        await loadDbBrandConfig({ hostHeader: "brand-update.example", bandId: 1, freshness: "cached" });
+        await loadDbBrandConfig({ hostHeader: "brand-update.example", bandId: 1, freshness: "cached", pageTheming: "band" });
         clearBrandCache("brand-update.example");
         mocks.findMany.mockResolvedValueOnce(validRows({ "siteCustomization.title": "", "siteCustomization.logoUrl": "" }));
-        expect(await loadDbBrandConfig({ hostHeader: "brand-update.example", bandId: 1, freshness: "cached" })).toMatchObject({ siteTitle: "", siteLogoUrl: "" });
+        expect(await loadDbBrandConfig({ hostHeader: "brand-update.example", bandId: 1, freshness: "cached", pageTheming: "band" })).toMatchObject({ siteTitle: "", siteLogoUrl: "" });
     });
     it("refreshes committed identity and image URLs even when another server bundle still has a valid cache", async () => {
-        const scope = { hostHeader: "brand-publication.example", bandId: 1 };
+        const scope = { hostHeader: "brand-publication.example", bandId: 1, pageTheming: "band" } satisfies Omit<BrandLoadingInput, "freshness">;
         mocks.findMany.mockResolvedValueOnce(validRows());
         const initial = await loadDbBrandConfig({ ...scope, freshness: "cached" });
         expect(await loadDbBrandConfig({ ...scope, freshness: "cached" })).toEqual(initial);
@@ -92,12 +136,12 @@ describe("band brand loading", () => {
         const errorLog = vi.spyOn(console, "error").mockImplementation(() => { });
         try {
             mocks.findMany.mockResolvedValueOnce(validRows());
-            const initial = await loadDbBrandConfig({ hostHeader: "invalid-refresh.example", bandId: 1, freshness: "cached" });
+            const initial = await loadDbBrandConfig({ hostHeader: "invalid-refresh.example", bandId: 1, freshness: "cached", pageTheming: "band" });
             clearBrandCache();
             mocks.findMany.mockResolvedValueOnce(validRows({ "siteCustomization.themeColors.primaryMain": "not a color" }));
-            expect(await loadDbBrandConfig({ hostHeader: "invalid-refresh.example", bandId: 1, freshness: "cached" })).toEqual(initial);
+            expect(await loadDbBrandConfig({ hostHeader: "invalid-refresh.example", bandId: 1, freshness: "cached", pageTheming: "band" })).toEqual(initial);
             mocks.findMany.mockRejectedValueOnce(new Error("database unavailable"));
-            await expect(loadDbBrandConfig({ hostHeader: "initial-failure.example", bandId: 1, freshness: "cached" })).rejects.toThrow("database unavailable");
+            await expect(loadDbBrandConfig({ hostHeader: "initial-failure.example", bandId: 1, freshness: "cached", pageTheming: "band" })).rejects.toThrow("database unavailable");
         } finally { errorLog.mockRestore(); }
     });
 });

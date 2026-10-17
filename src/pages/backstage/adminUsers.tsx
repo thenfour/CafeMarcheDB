@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 
 import { CMLinkButton } from "@/src/core/components/CMCoreComponents2";
@@ -89,4 +90,5 @@ const UserListPage: BlitzPage = () => {
     );
 };
 
+defineCmdbPage("bandAdminUsers", UserListPage);
 export default UserListPage;

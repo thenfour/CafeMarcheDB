@@ -1,5 +1,9 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import Page from "../backstage/editEventTags";
 
-export default function PlatformEditEventTagsPage() {
+function PlatformEditEventTagsPage() {
     return <Page />;
 }
+
+defineCmdbPage("platformEditEventTags", PlatformEditEventTagsPage);
+export default PlatformEditEventTagsPage;

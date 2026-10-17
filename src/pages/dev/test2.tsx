@@ -1,9 +1,13 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import React from "react";
 import { DeferredDomainPage } from "src/core/components/DeferredDomainPage";
 
-export default function RecoveryPage_test() {
+function RecoveryPage_test() {
     return <DeferredDomainPage feature="developerExamples" />;
 }
+
+defineCmdbPage("devTest", RecoveryPage_test);
+export default RecoveryPage_test;
 
 // MIGRATION_RESTORE: developer-examples
 // Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/test.tsx:1-272

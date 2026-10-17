@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { BandTimeZoneSchema, CalendarDate, getBandDateTimeFields } from "@/shared/dateTimePolicy";
 import { DateTimeRange, DateTimeRangeSpec, createAllDayRange, gMillisecondsPerDay } from "@/shared/time";
 import { DateTimeRangeControl, DayControl } from "@/src/core/components/DateTime/DateTimeRangeControl";
@@ -178,5 +179,6 @@ const DateTestPage: BlitzPage = () => <DashboardLayout title="Date and timezone 
     <NoSsr><DateTestPageCtrl /></NoSsr>
 </DashboardLayout>;
 
+defineCmdbPage("devtestDate", DateTestPage);
 export default DateTestPage;
 export const getServerSideProps = makeServerSidePermissionGuard(Permission.sysadmin);

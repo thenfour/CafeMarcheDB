@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import type { BlitzPage } from "@blitzjs/next";
 import { gSSP } from "src/blitz-server";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
@@ -43,4 +44,5 @@ const InstrumentPage: BlitzPage<PageProps> = ({ publicId }) => {
     </DashboardLayout>;
 };
 
+defineCmdbPage("bandInstrument", InstrumentPage);
 export default InstrumentPage;

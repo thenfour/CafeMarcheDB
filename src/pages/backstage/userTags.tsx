@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import React from "react";
 import type { BlitzPage } from "@blitzjs/next";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
@@ -8,4 +9,5 @@ const UserTagsPage: BlitzPage = () => {
     const locale = useLocale();
     return <DashboardLayout title={locale.getPlainString("membership.tags.title")}><MemberTagsControl /></DashboardLayout>;
 };
+defineCmdbPage("bandUserTags", UserTagsPage);
 export default UserTagsPage;

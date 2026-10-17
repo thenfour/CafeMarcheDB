@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
@@ -22,4 +23,5 @@ const LogoutPage: BlitzPage = () => {
     return (<>logging you out...</>);
 }
 
+defineCmdbPage("auth_logout", LogoutPage);
 export default LogoutPage;

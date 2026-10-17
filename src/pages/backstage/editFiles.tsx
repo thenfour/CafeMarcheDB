@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { FileTableClientColumns } from "src/core/components/file/FileComponentsBase";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
@@ -48,4 +49,5 @@ const EditFilesPage: BlitzPage = () => {
     )
 }
 
+defineCmdbPage("bandEditFiles", EditFilesPage);
 export default EditFilesPage;

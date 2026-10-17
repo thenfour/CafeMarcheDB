@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { makeServerSidePermissionGuard } from "src/auth/server/serverPageAuthorization";
 import type { BlitzPage } from "@blitzjs/next";
 import React from "react";
@@ -57,5 +58,6 @@ export const QuickSearchExplorer = () => {
 };
 
 const QuickSearchTestPage: BlitzPage = () => <DashboardLayout title="QuickSearchTestPage"><QuickSearchExplorer /></DashboardLayout>;
+defineCmdbPage("devtestQuickSearchTest", QuickSearchTestPage);
 export default QuickSearchTestPage;
 export const getServerSideProps = makeServerSidePermissionGuard(Permission.sysadmin);

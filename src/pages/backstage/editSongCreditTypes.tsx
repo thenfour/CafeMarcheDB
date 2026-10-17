@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { GlobalCatalogContext } from "src/core/db3/components/GlobalCatalogContext";
 import { useLocale } from "src/locale/components/useLocale";
 
@@ -38,4 +39,5 @@ const EditSongCreditTypesPage: BlitzPage = () => {
     )
 }
 
+defineCmdbPage("bandEditSongCreditTypes", EditSongCreditTypesPage);
 export default EditSongCreditTypesPage;

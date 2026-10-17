@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { MenuLinkList } from "@/src/core/components/dashboard/MenuLinkComponents";
 import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
@@ -31,4 +32,5 @@ const MenuLinksPage: BlitzPage = () => {
     );
 }
 
+defineCmdbPage("bandMenuLinks", MenuLinksPage);
 export default MenuLinksPage;

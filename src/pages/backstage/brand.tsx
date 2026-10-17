@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import type { BlitzPage } from "@blitzjs/next";
 import React from "react";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
@@ -18,4 +19,5 @@ const BrandPage: BlitzPage = () => {
     </DashboardLayout>;
 };
 
+defineCmdbPage("bandBrand", BrandPage);
 export default BrandPage;

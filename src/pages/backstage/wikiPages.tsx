@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 import React from "react";
 import { Alert } from "@mui/material";
@@ -213,4 +214,5 @@ const WikiPagesPage: BlitzPage = () => {
     )
 }
 
+defineCmdbPage("bandWikiPages", WikiPagesPage);
 export default WikiPagesPage;

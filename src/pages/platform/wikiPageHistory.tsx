@@ -1,5 +1,9 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import Page from "../backstage/wikiPageHistory";
 
-export default function PlatformWikiPageHistoryPage() {
+function PlatformWikiPageHistoryPage() {
     return <Page />;
 }
+
+defineCmdbPage("platformWikiPageHistory", PlatformWikiPageHistoryPage);
+export default PlatformWikiPageHistoryPage;

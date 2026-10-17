@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 // todo
 // split into:
 // - SetlistPlannerComponents
@@ -1617,4 +1618,5 @@ const SetlistPlannerPage: BlitzPage = (props) => {
     )
 }
 
+defineCmdbPage("bandSetlistPlanner", SetlistPlannerPage);
 export default SetlistPlannerPage;

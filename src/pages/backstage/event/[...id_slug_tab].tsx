@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import React, { Suspense } from "react";
 import type { BlitzPage } from "@blitzjs/next";
 import { useRouter } from "next/router";
@@ -88,4 +89,5 @@ const EventDetailScope = ({ eventId }: Pick<PageProps, "eventId">) => {
     const dashboard = useDashboardContext();
     return <EventDetailContent key={`${dashboard.authorizationContext?.bandPublicId}:${eventId}`} eventId={eventId} />;
 };
+defineCmdbPage("bandEvent", EventDetailPage);
 export default EventDetailPage;

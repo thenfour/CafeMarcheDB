@@ -1,10 +1,11 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import Head from "next/head"
 import { ErrorComponent } from "@blitzjs/next"
 
 // ------------------------------------------------------
 // This page is rendered if a route match is not found
 // ------------------------------------------------------
-export default function Page404() {
+function Page404() {
   const statusCode = 404
   const title = "This page could not be found"
   const pageTitle = `${statusCode}: ${title}`
@@ -17,3 +18,6 @@ export default function Page404() {
     </>
   )
 }
+
+defineCmdbPage("_404", Page404);
+export default Page404;

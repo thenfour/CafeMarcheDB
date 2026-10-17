@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { formatFileSize } from "@/shared/rootroot";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
@@ -353,4 +354,5 @@ const FileDetailPage: BlitzPage = (x: PageProps) => {
     );
 };
 
+defineCmdbPage("bandFile", FileDetailPage);
 export default FileDetailPage;

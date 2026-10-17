@@ -30,6 +30,9 @@ import { isConnectivityError } from "src/core/connectivity/connectionHealth";
 import { PresentationProvider } from "src/locale/components/PresentationProvider";
 import { parseAcceptLanguage } from "src/locale/shared/localePreferences";
 import { deserializePortalPath, replacePortalPathname, type PortalPath } from "src/route/portalRouting";
+import { requirePageRouteKey } from "src/route/cmdbPage";
+import { CmdbRouteRegistry } from "src/route/cmdbRoutes";
+import { PageRouteProvider } from "src/route/usePageRoute";
 import 'src/styles/main.css';
 import '../../public/frontpage.css';
 import { DashboardContextProvider } from "../core/components/dashboardContext/DashboardContext";
@@ -214,22 +217,24 @@ function ThemedApp({ Component, pageProps }: Pick<MyAppProps, "Component" | "pag
         <SnackbarProvider>
           <BrandContext.Provider value={brand}>
             {state.status === "ready" ? <PortalRoutingProvider config={state.data.routing}>
-              <ServerStartupStateContext.Provider value={state.data.serverStartupState}>
-                <ErrorBoundary FallbackComponent={RootErrorFallback} onReset={queryErrorResetBoundary.reset}>
-                  {/* lsmb todo: less intrusive suspense fallback. also is this necessary? the presentationProvider also has a suspense and this might not be needed. */}
-                  <React.Suspense fallback={<span role="status">Loading…</span>}>
-                    <PresentationProvider
-                      initial={state.data.presentation}
-                      bandPublicId={state.data.routing.requestPath.bandPublicId}
-                      routeLocale={state.data.routing.requestPath.routeLocale}
-                    >
-                      <DashboardContextProvider>
-                        {getLayout(<Component {...pageProps} />)}
-                      </DashboardContextProvider>
-                    </PresentationProvider>
-                  </React.Suspense>
-                </ErrorBoundary>
-              </ServerStartupStateContext.Provider>
+              <PageRouteProvider routeKey={state.data.routeKey}>
+                <ServerStartupStateContext.Provider value={state.data.serverStartupState}>
+                  <ErrorBoundary FallbackComponent={RootErrorFallback} onReset={queryErrorResetBoundary.reset}>
+                    {/* lsmb todo: less intrusive suspense fallback. also is this necessary? the presentationProvider also has a suspense and this might not be needed. */}
+                    <React.Suspense fallback={<span role="status">Loading…</span>}>
+                      <PresentationProvider
+                        initial={state.data.presentation}
+                        bandPublicId={state.data.routing.requestPath.bandPublicId}
+                        routeLocale={state.data.routing.requestPath.routeLocale}
+                      >
+                        <DashboardContextProvider>
+                          {getLayout(<Component {...pageProps} />)}
+                        </DashboardContextProvider>
+                      </PresentationProvider>
+                    </React.Suspense>
+                  </ErrorBoundary>
+                </ServerStartupStateContext.Provider>
+              </PageRouteProvider>
             </PortalRoutingProvider> : <RootErrorView
               presentation={state}
               resetErrorBoundary={() => { window.location.reload(); }}
@@ -274,7 +279,7 @@ function getFrameworkErrorPresentation({ err, pathname }: Pick<AppContext["ctx"]
 // client-side nav is possible through Router.push / replace.
 // the main point of this hook is to call getPageBootstrap, making that data available to all pages.
 MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<SharedPageProps>> => {
-  const { req, res, pathname } = appCtx.ctx;
+  const { req, res } = appCtx.ctx;
   const frameworkError = getFrameworkErrorPresentation(appCtx.ctx);
   if (frameworkError) {
     if (res) {
@@ -283,12 +288,13 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
     }
     return { pageProps: { appBootstrap: { status: "error", ...frameworkError } } };
   }
+  const routeKey = requirePageRouteKey(appCtx.Component);
   let requestPath: PortalPath | undefined;
   let bootstrap: BootstrapData;
   try {
     requestPath = deserializePortalPath(appCtx.ctx.query);
     const input: PageBootstrapInput = {
-      pagePattern: pathname,
+      routeKey,
       requestPath,
       browserLanguages: req ? parseAcceptLanguage(req.headers["accept-language"]) : [...navigator.languages],
     };
@@ -305,9 +311,9 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
       res.setHeader("Cache-Control", "no-store");
     }
     // Each dashboard root owns its sign-in UI; it must not redirect to itself.
-    const loginPattern = requestPath?.hasBandPrefix ? "/backstage" : "/platform";
-    if (error instanceof AuthenticationError && pathname !== loginPattern && requestPath) {
-      const loginPath = replacePortalPathname(requestPath, loginPattern);
+    const loginRoute = CmdbRouteRegistry.routeByKey(requestPath?.hasBandPrefix ? "bandRoot" : "platformRoot");
+    if (error instanceof AuthenticationError && routeKey !== loginRoute.key && requestPath) {
+      const loginPath = replacePortalPathname(requestPath, loginRoute.nextPattern);
       if (res) {
         res.writeHead(302, { Location: loginPath });
         res.end();

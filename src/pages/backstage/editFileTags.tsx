@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import type { BlitzPage } from "@blitzjs/next";
 import { Alert } from "@mui/material";
@@ -58,4 +59,5 @@ const EditFileTagsPage: BlitzPage = () => {
     const presentation = usePresentation();
     return <DashboardLayout title={locale.getPlainString(presentation.bandPublicId ? "catalog.fileTags" : "catalog.globalFileTags")}><FileTagCatalogContent /></DashboardLayout>;
 };
+defineCmdbPage("bandEditFileTags", EditFileTagsPage);
 export default EditFileTagsPage;

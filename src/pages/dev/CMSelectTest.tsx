@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { makeServerSidePermissionGuard } from "@/src/auth/server/serverPageAuthorization";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
@@ -114,5 +115,6 @@ export const SelectionExamples = () => {
 };
 
 const CMSelectTestPage: BlitzPage = () => <DashboardLayout title="Picker examples"><SelectionExamples /></DashboardLayout>;
+defineCmdbPage("devtestCMSelectTest", CMSelectTestPage);
 export default CMSelectTestPage;
 export const getServerSideProps = makeServerSidePermissionGuard(Permission.sysadmin);

@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { makeServerSidePermissionGuard } from "@/src/auth/server/serverPageAuthorization";
 import { CMDialog, useDialogAfterMenuClose } from "@/src/core/components/CMDialog";
 import { CMButton } from "@/src/core/components/CMCoreComponents2";
@@ -253,5 +254,6 @@ const DialogUxTestPage: BlitzPage = () => <DashboardLayout title="Dialog UX test
     <DialogUxExamples />
 </DashboardLayout>;
 
+defineCmdbPage("devtestDialogs", DialogUxTestPage);
 export default DialogUxTestPage;
 export const getServerSideProps = makeServerSidePermissionGuard(Permission.sysadmin);

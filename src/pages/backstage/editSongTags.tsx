@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import type { BlitzPage } from "@blitzjs/next";
 import { Alert } from "@mui/material";
@@ -46,4 +47,5 @@ const EditSongTagsPage: BlitzPage = () => {
     const locale = useLocale();
     return <DashboardLayout title={locale.getPlainString("catalog.songTags")}><MainContent /></DashboardLayout>;
 };
+defineCmdbPage("bandEditSongTags", EditSongTagsPage);
 export default EditSongTagsPage;

@@ -14,7 +14,8 @@ import type { PresentationInput } from "../shared/presentationInput";
 // ... then you'd be right to wonder why we have both "presentation" and "dashboard context". Exactly.
 // A single snapshot keeps locale availability, strings, settings, and grants consistent.
 export async function loadPresentationData(auth: CMServerAuthorization, input: PresentationInput): Promise<PresentationData> {
-    return db.$transaction(async (tx: Prisma.TransactionClient) => {
+    const start = Date.now();
+    const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
         const freshAuth = await auth.refresh(tx);
         const [localization, settings] = await Promise.all([
             loadLocalizationCatalog(tx, freshAuth, input),
@@ -25,6 +26,8 @@ export async function loadPresentationData(auth: CMServerAuthorization, input: P
             authorization: freshAuth.toClientContext(),
             localization,
             settings,
+            queryExecutionTimeMs: Date.now() - start,
         };
     }, { isolationLevel: "RepeatableRead" });
+    return result;
 }

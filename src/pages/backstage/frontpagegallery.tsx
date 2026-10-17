@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { authoredTranslationContext, resolveAuthoredTranslations } from "src/locale/shared/authoredTranslations";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
@@ -581,4 +582,5 @@ const EditFrontpageGalleryPage: BlitzPage = () => {
     )
 }
 
+defineCmdbPage("bandFrontpagegallery", EditFrontpageGalleryPage);
 export default EditFrontpageGalleryPage;

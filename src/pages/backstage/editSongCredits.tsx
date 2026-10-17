@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import React from "react";
 import { Alert } from "@mui/material";
 import { useRouter } from "next/router";
@@ -38,4 +39,5 @@ const EditSongCreditsPage: BlitzPage = () => {
     const locale = useLocale();
     return <DashboardLayout title={locale.getPlainString("songCredits.title")}><MainContent /></DashboardLayout>;
 };
+defineCmdbPage("bandEditSongCredits", EditSongCreditsPage);
 export default EditSongCreditsPage;

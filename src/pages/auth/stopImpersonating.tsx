@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { useSession } from "@blitzjs/auth"
 import { BlitzPage } from "@blitzjs/next"
 import { useMutation } from "@blitzjs/rpc"
@@ -31,6 +32,7 @@ const StopImpersonatingPage: BlitzPage = () => {
     </Suspense>;
 }
 
-export default StopImpersonatingPage
+defineCmdbPage("auth_stopImpersonating", StopImpersonatingPage);
+export default StopImpersonatingPage;
 
 

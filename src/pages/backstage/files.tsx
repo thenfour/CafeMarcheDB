@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
@@ -215,4 +216,5 @@ const FilesPage: BlitzPage = () => {
     )
 }
 
+defineCmdbPage("bandFiles", FilesPage);
 export default FilesPage;

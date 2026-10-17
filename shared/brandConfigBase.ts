@@ -27,6 +27,7 @@ export type DbBrandConfig = {
     theme?: ThemeBrand;
 };
 
+// Missing band settings use these defaults; platform branding has its own identity.
 export const DefaultDbBrandConfig: DbBrandConfig = {
     siteTitle: "Backstage",
     siteTitlePrefix: "BS: ",
@@ -39,5 +40,20 @@ export const DefaultDbBrandConfig: DbBrandConfig = {
         backgroundPaper: "#ffffff",
         // textPrimary omitted to let MUI compute suitable contrast
         contrastText: "#ede331",
+    },
+};
+
+export const PlatformDbBrandConfig: DbBrandConfig = {
+    siteTitle: "CMDB",
+    siteTitlePrefix: "CMDB: ",
+    siteFaviconUrl: "/favicon.png",
+    siteLogoUrl: undefined,
+    theme: {
+        primaryMain: "#26364a",
+        secondaryMain: "#536878",
+        backgroundDefault: "#f4f6f8",
+        backgroundPaper: "#ffffff",
+        textPrimary: "#17212f",
+        contrastText: "#ffffff",
     },
 };

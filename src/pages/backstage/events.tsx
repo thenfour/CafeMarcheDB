@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
@@ -377,4 +378,5 @@ const SearchEventsPage: BlitzPage = () => {
     )
 }
 
+defineCmdbPage("bandEvents", SearchEventsPage);
 export default SearchEventsPage;

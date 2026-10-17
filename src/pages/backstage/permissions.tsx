@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { BlitzPage } from "@blitzjs/next";
@@ -62,4 +63,5 @@ const PermissionsListPage: BlitzPage = () => {
     );
 };
 
+defineCmdbPage("bandPermissions", PermissionsListPage);
 export default PermissionsListPage;

@@ -1,5 +1,9 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import Page from "../backstage/editWikiPageTags";
 
-export default function PlatformEditWikiPageTagsPage() {
+function PlatformEditWikiPageTagsPage() {
     return <Page />;
 }
+
+defineCmdbPage("platformEditWikiPageTags", PlatformEditWikiPageTagsPage);
+export default PlatformEditWikiPageTagsPage;

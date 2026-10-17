@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import React, { Suspense } from "react";
 import type { BlitzPage } from "@blitzjs/next";
 import { useRouter } from "next/router";
@@ -85,4 +86,5 @@ const SongDetailPage: BlitzPage<PageProps> = ({ title, songId }) => {
         </AppContextMarker>
     </DashboardLayout>;
 };
+defineCmdbPage("bandSong", SongDetailPage);
 export default SongDetailPage;

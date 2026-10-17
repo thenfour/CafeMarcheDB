@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { Alert, FormControlLabel } from "@mui/material";
 import { ArrowUpward, Clear } from "@mui/icons-material";
 import React from "react";
@@ -119,7 +120,7 @@ function GeneralFeatureStatsReport({ bandPublicId, timeZone }: { readonly bandPu
     </div>;
 }
 
-export default function FeatureReportsPage() {
+function FeatureReportsPage() {
     const presentation = usePresentation();
     const locale = useLocale();
     const authorization = presentation.data?.authorization;
@@ -133,3 +134,6 @@ export default function FeatureReportsPage() {
                     bandPublicId={bandPublicId} timeZone={timeZone} />}
     </DashboardLayout>;
 }
+
+defineCmdbPage("bandFeatureReports", FeatureReportsPage);
+export default FeatureReportsPage;

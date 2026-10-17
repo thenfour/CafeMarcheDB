@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter"
 import { BlitzPage } from "@blitzjs/next"
 import { useMutation } from "@blitzjs/rpc"
@@ -95,4 +96,5 @@ const ResetPasswordPage: BlitzPage = () => {
 
 ResetPasswordPage.getLayout = (page) => <Layout title="Reset Your Password">{page}</Layout>
 
-export default ResetPasswordPage
+defineCmdbPage("auth_resetpassword", ResetPasswordPage);
+export default ResetPasswordPage;

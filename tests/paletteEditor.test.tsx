@@ -51,6 +51,7 @@ function fixture(value = "#ffffff", canEdit = true): ReturnType<typeof usePresen
         resolveString({ preferences, availability, registeredDefault: definition.defaultValue, globalValues: [], bandValues: [] }),
     ])) as LocalizationCatalog["strings"];
     return { bandPublicId: bandA, invalidate, data: {
+        queryExecutionTimeMs: 0,
         input, authorization: { bandPublicId: bandA, userPublicId: parsePublicId<"User">("User000000000001"),
             bandUserPublicId: null, effectivePermissionNames: [] },
         localization: { bandPublicId: bandA, preferences, availability, strings, formattingLocale: "en-US", cacheKey: "palette", payloadBytes: 0 },

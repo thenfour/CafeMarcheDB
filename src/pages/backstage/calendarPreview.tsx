@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { CMTable } from "@/src/core/components/CMTable";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
@@ -132,4 +133,5 @@ const CalendarPreviewPage: BlitzPage = () => {
     )
 }
 
+defineCmdbPage("bandCalendarPreview", CalendarPreviewPage);
 export default CalendarPreviewPage;

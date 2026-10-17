@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 
 import { ColorBlenderParamsBundle } from "@/src/core/components/color/ColorBlender";
 import { ColorBlender, FindClosestColorMatch, PaletteEntryEditor, SwatchTempPalette, UserPaletteGrid } from "@/src/core/components/color/ColorPageUtils";
@@ -347,5 +348,6 @@ const ColorEdit2Page: BlitzPage = () => {
     )
 }
 
+defineCmdbPage("devColorEditor2", ColorEdit2Page);
 export default ColorEdit2Page;
 

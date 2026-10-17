@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import type { BlitzPage } from "@blitzjs/next";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
@@ -17,4 +18,5 @@ const SettingsPage: BlitzPage = () => {
     </DashboardLayout>;
 };
 
+defineCmdbPage("bandSettings", SettingsPage);
 export default SettingsPage;

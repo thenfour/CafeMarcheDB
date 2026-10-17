@@ -7,18 +7,21 @@ import { registryFor } from "./routeHelpers";
 
 // Next owns page matching. This registry maps its patterns to application identities and permissions.
 
+type Theming = "platform" | "band";
+
 type RouteCommon = {
     // key is added by registry system.
     readonly nextPattern: string;
     readonly permission: Permission;
-    // params should be dynamic
+    readonly theming: Theming;
 };
 
-function route<const TPattern extends string>(pattern: TPattern, permission: Permission) {
+function route<const TPattern extends string>(pattern: TPattern, permission: Permission, theming: Theming = "platform") {
     return <const TKey extends string>(key: TKey) => ({
         key,
         nextPattern: pattern,
         permission,
+        theming,
     });
 }
 
@@ -36,65 +39,64 @@ const kRouteRegistry = registryFor<RouteCommon>()({
     "auth_resetpassword": route("/auth/reset-password", Permission.public),
     "auth_stopImpersonating": route("/auth/stopImpersonating", Permission.public),
 
-    "customLink": route("/backstage/[...customLinkSlug]", Permission.public),
-
-    "practiceTools": route("/backstage/practice-tools", Permission.practice_tools_use),
-
     // band-scoped
-    "bandRoot": route("/backstage", Permission.public),
-    "bandEvents": route("/backstage/events", Permission.view_events_nonpublic),
-    "bandEvent": route("/backstage/event/[...id_slug_tab]", Permission.view_events_nonpublic),
-    "bandSongs": route("/backstage/songs", Permission.view_songs),
-    "bandSong": route("/backstage/song/[...id_slug_tab]", Permission.view_songs),
-    "bandFiles": route("/backstage/files", Permission.access_file_landing_page),
-    "bandFile": route("/backstage/file/[...id_slug_tab]", Permission.access_file_landing_page),
-    "bandWikiPages": route("/backstage/wikiPages", Permission.search_wiki_pages),
-    "bandWiki": route("/backstage/wiki/[...slug]", Permission.view_wiki_pages),
-    "bandWikiPageHistory": route("/backstage/wikiPageHistory", Permission.view_wiki_page_revisions),
-    "bandUsers": route("/backstage/users", Permission.search_users),
-    "bandUser": route("/backstage/user/[...id_slug_tab]", Permission.login),
-    "bandProfile": route("/backstage/profile", Permission.login),
-    "bandCalendar": route("/backstage/calendar", Permission.view_events_nonpublic),
-    "bandSetlistPlanner": route("/backstage/setlistPlanner", Permission.setlist_planner_access),
-    "bandStats": route("/backstage/stats", Permission.view_events_reports),
+    "customLink": route("/backstage/[...customLinkSlug]", Permission.public, "band"),
+    "practiceTools": route("/backstage/practice-tools", Permission.practice_tools_use, "band"),
 
-    "bandFeatureReports": route("/backstage/featureReports", Permission.view_feature_reports),
-    "bandFrontpagegallery": route("/backstage/frontpagegallery", Permission.edit_public_homepage),
-    "bandFrontpageEvents": route("/backstage/frontpageEvents", Permission.edit_public_homepage),
-    "bandBrand": route("/backstage/brand", Permission.manage_site_branding),
-    "bandMenuLinks": route("/backstage/menuLinks", Permission.customize_menu),
-    "bandCustomLinks": route("/backstage/customLinks", Permission.view_custom_links),
-    "bandEditEventTags": route("/backstage/editEventTags", Permission.admin_events),
-    "bandEditEventTypes": route("/backstage/editEventTypes", Permission.manage_global_catalogs),
-    "bandEditEventStatuses": route("/backstage/editEventStatuses", Permission.manage_global_catalogs),
-    "bandEditEventAttendances": route("/backstage/editEventAttendances", Permission.manage_global_catalogs),
-    "bandEditSongTags": route("/backstage/editSongTags", Permission.admin_songs),
-    "bandEditSongCreditTypes": route("/backstage/editSongCreditTypes", Permission.manage_global_catalogs),
-    "bandEditFileTags": route("/backstage/editFileTags", Permission.admin_files),
-    "bandEditWikiPageTags": route("/backstage/editWikiPageTags", Permission.admin_wiki_pages),
-    "bandEditUserTags": route("/backstage/editUserTags", Permission.manage_user_taxonomy),
-    "bandInstruments": route("/backstage/instruments", Permission.admin_instruments),
-    "bandInstrumentFunctionalGroups": route("/backstage/instrumentFunctionalGroups", Permission.admin_instruments),
-    "bandInstrument": route("/backstage/instrument/[slug]", Permission.login),
-    "bandEventImport": route("/backstage/eventImport", Permission.sysadmin),
-    "bandEditEvents": route("/backstage/editEvents", Permission.admin_events),
-    "bandEditEventSegments": route("/backstage/editEventSegments", Permission.admin_events),
-    "bandEditSongs": route("/backstage/editSongs", Permission.sysadmin),
-    "bandEditSongCredits": route("/backstage/editSongCredits", Permission.manage_songs),
-    "bandUserInstruments": route("/backstage/userInstruments", Permission.manage_users),
-    "bandUserTags": route("/backstage/userTags", Permission.manage_users),
-    "bandUserRoles": route("/backstage/userRoles", Permission.assign_user_roles),
-    "bandRecoverMembers": route("/backstage/recoverMembers", Permission.recover_users),
-    "bandEditFiles": route("/backstage/editFiles", Permission.admin_files),
-    "bandEditFrontpageGalleryItems": route("/backstage/editFrontpageGalleryItems", Permission.sysadmin),
-    "bandCalendarPreview": route("/backstage/calendarPreview", Permission.sysadmin),
-    "bandSettings": route("/backstage/settings", Permission.login),
-    "bandRoles": route("/backstage/roles", Permission.sysadmin),
-    "bandPermissions": route("/backstage/permissions", Permission.sysadmin),
-    "bandRolePermissions": route("/backstage/rolePermissions", Permission.sysadmin),
-    "bandAdminUsers": route("/backstage/adminUsers", Permission.manage_global_users),
+    "bandRoot": route("/backstage", Permission.public, "band"),
+    "bandEvents": route("/backstage/events", Permission.view_events_nonpublic, "band"),
+    "bandEvent": route("/backstage/event/[...id_slug_tab]", Permission.view_events_nonpublic, "band"),
+    "bandSongs": route("/backstage/songs", Permission.view_songs, "band"),
+    "bandSong": route("/backstage/song/[...id_slug_tab]", Permission.view_songs, "band"),
+    "bandFiles": route("/backstage/files", Permission.access_file_landing_page, "band"),
+    "bandFile": route("/backstage/file/[...id_slug_tab]", Permission.access_file_landing_page, "band"),
+    "bandWikiPages": route("/backstage/wikiPages", Permission.search_wiki_pages, "band"),
+    "bandWiki": route("/backstage/wiki/[...slug]", Permission.view_wiki_pages, "band"),
+    "bandWikiPageHistory": route("/backstage/wikiPageHistory", Permission.view_wiki_page_revisions, "band"),
+    "bandUsers": route("/backstage/users", Permission.search_users, "band"),
+    "bandUser": route("/backstage/user/[...id_slug_tab]", Permission.login, "band"),
+    "bandProfile": route("/backstage/profile", Permission.login, "band"),
+    "bandCalendar": route("/backstage/calendar", Permission.view_events_nonpublic, "band"),
+    "bandSetlistPlanner": route("/backstage/setlistPlanner", Permission.setlist_planner_access, "band"),
+    "bandStats": route("/backstage/stats", Permission.view_events_reports, "band"),
 
-    "serverHealth": route("/dev/serverHealth", Permission.sysadmin),
+    "bandFeatureReports": route("/backstage/featureReports", Permission.view_feature_reports, "band"),
+    "bandFrontpagegallery": route("/backstage/frontpagegallery", Permission.edit_public_homepage, "band"),
+    "bandFrontpageEvents": route("/backstage/frontpageEvents", Permission.edit_public_homepage, "band"),
+    "bandBrand": route("/backstage/brand", Permission.manage_site_branding, "band"),
+    "bandMenuLinks": route("/backstage/menuLinks", Permission.customize_menu, "band"),
+    "bandCustomLinks": route("/backstage/customLinks", Permission.view_custom_links, "band"),
+    "bandEditEventTags": route("/backstage/editEventTags", Permission.admin_events, "band"),
+    "bandEditEventTypes": route("/backstage/editEventTypes", Permission.manage_global_catalogs, "band"),
+    "bandEditEventStatuses": route("/backstage/editEventStatuses", Permission.manage_global_catalogs, "band"),
+    "bandEditEventAttendances": route("/backstage/editEventAttendances", Permission.manage_global_catalogs, "band"),
+    "bandEditSongTags": route("/backstage/editSongTags", Permission.admin_songs, "band"),
+    "bandEditSongCreditTypes": route("/backstage/editSongCreditTypes", Permission.manage_global_catalogs, "band"),
+    "bandEditFileTags": route("/backstage/editFileTags", Permission.admin_files, "band"),
+    "bandEditWikiPageTags": route("/backstage/editWikiPageTags", Permission.admin_wiki_pages, "band"),
+    "bandEditUserTags": route("/backstage/editUserTags", Permission.manage_user_taxonomy, "band"),
+    "bandInstruments": route("/backstage/instruments", Permission.admin_instruments, "band"),
+    "bandInstrumentFunctionalGroups": route("/backstage/instrumentFunctionalGroups", Permission.admin_instruments, "band"),
+    "bandInstrument": route("/backstage/instrument/[slug]", Permission.login, "band"),
+    "bandEventImport": route("/backstage/eventImport", Permission.sysadmin, "band"),
+    "bandEditEvents": route("/backstage/editEvents", Permission.admin_events, "band"),
+    "bandEditEventSegments": route("/backstage/editEventSegments", Permission.admin_events, "band"),
+    "bandEditSongs": route("/backstage/editSongs", Permission.sysadmin, "band"),
+    "bandEditSongCredits": route("/backstage/editSongCredits", Permission.manage_songs, "band"),
+    "bandUserInstruments": route("/backstage/userInstruments", Permission.manage_users, "band"),
+    "bandUserTags": route("/backstage/userTags", Permission.manage_users, "band"),
+    "bandUserRoles": route("/backstage/userRoles", Permission.assign_user_roles, "band"),
+    "bandRecoverMembers": route("/backstage/recoverMembers", Permission.recover_users, "band"),
+    "bandEditFiles": route("/backstage/editFiles", Permission.admin_files, "band"),
+    "bandEditFrontpageGalleryItems": route("/backstage/editFrontpageGalleryItems", Permission.sysadmin, "band"),
+    "bandCalendarPreview": route("/backstage/calendarPreview", Permission.sysadmin, "band"),
+    "bandSettings": route("/backstage/settings", Permission.login, "band"),
+    "bandRoles": route("/backstage/roles", Permission.sysadmin, "band"),
+    "bandPermissions": route("/backstage/permissions", Permission.sysadmin, "band"),
+    "bandRolePermissions": route("/backstage/rolePermissions", Permission.sysadmin, "band"),
+    "bandAdminUsers": route("/backstage/adminUsers", Permission.manage_global_users, "band"),
+
+    // global / platform / dev
     "adminLogs": route("/backstage/adminLogs", Permission.sysadmin),
 
     "platformWiki": route("/platform/wiki/[...slug]", Permission.login),
@@ -114,6 +116,7 @@ const kRouteRegistry = registryFor<RouteCommon>()({
     "platformRolePermissions": route("/platform/rolePermissions", Permission.sysadmin),
     "platformAdminUsers": route("/platform/adminUsers", Permission.manage_global_users),
 
+    "serverHealth": route("/dev/serverHealth", Permission.sysadmin),
     "devGallery": route("/dev/gallery", Permission.sysadmin),
     "devColorEditor2": route("/dev/colorEditor2", Permission.sysadmin),
     "devTest": route("/dev/test2", Permission.sysadmin),
@@ -132,6 +135,10 @@ const kRoutePatterns = Object.values(kRouteRegistry).map(entry => entry.nextPatt
 
 function routeByKey<T extends CmdbRouteKey>(key: T) {
     return kRouteRegistry[key];
+}
+
+function isRouteKey(key: unknown): key is CmdbRouteKey {
+    return typeof key === "string" && Object.prototype.hasOwnProperty.call(kRouteRegistry, key);
 }
 
 const routesByPattern = new Map<string, CmdbRouteDefinition>(Object.values(kRouteRegistry).map(entry => [entry.nextPattern, entry]));
@@ -153,6 +160,7 @@ function requireRouteByPattern(pattern: string): CmdbRouteDefinition {
 export const CmdbRouteRegistry = {
     // registry: kRouteRegistry,
     allPatterns: kRoutePatterns,
+    isRouteKey,
     requireRouteByPattern,
     routeByKey,
 };

@@ -8,6 +8,7 @@ export interface PresentationData {
     readonly authorization: ScopedAuthorizationData;
     readonly localization: LocalizationCatalog;
     readonly settings: SettingsSnapshot;
+    readonly queryExecutionTimeMs: number;
 }
 
 /** Entire preference lists partition caches, even when formatting resolves to the same locale. */

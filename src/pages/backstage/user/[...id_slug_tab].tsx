@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import React, { Suspense } from "react";
 import type { BlitzPage } from "@blitzjs/next";
 import type { UserPublicId } from "shared/publicId";
@@ -52,4 +53,5 @@ const UserDetailPage: BlitzPage<PageProps> = ({ personId, profileScope, title })
         <Suspense>{profileScope === "band" ? <BandMemberProfile personId={personId} /> : <AccountProfilePageContent personId={personId} />}</Suspense>
     </DashboardLayout>;
 };
+defineCmdbPage("bandUser", UserDetailPage);
 export default UserDetailPage;

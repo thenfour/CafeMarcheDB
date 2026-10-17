@@ -1,9 +1,13 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import React from "react";
 import { DeferredDomainPage } from "src/core/components/DeferredDomainPage";
 
-export default function RecoveryPage_gallery() {
+function RecoveryPage_gallery() {
     return <DeferredDomainPage feature="developerExamples" />;
 }
+
+defineCmdbPage("devGallery", RecoveryPage_gallery);
+export default RecoveryPage_gallery;
 
 // MIGRATION_RESTORE: developer-examples
 // Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/gallery.tsx:1-474

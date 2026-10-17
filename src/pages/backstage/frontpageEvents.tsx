@@ -1,6 +1,10 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import React from "react";
 import { DeferredDomainPage } from "src/core/components/DeferredDomainPage";
 
-export default function RecoveryPage_frontpageEvents() {
+function RecoveryPage_frontpageEvents() {
     return <DeferredDomainPage feature="eventWorkflows" />;
 }
+
+defineCmdbPage("bandFrontpageEvents", RecoveryPage_frontpageEvents);
+export default RecoveryPage_frontpageEvents;

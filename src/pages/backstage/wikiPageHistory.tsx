@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { Alert } from "@mui/material";
 import { useLocale } from "src/locale/components/useLocale";
@@ -279,4 +280,5 @@ const WikiPageHistoryPage: BlitzPage = () => (
     </DashboardLayout>
 );
 
+defineCmdbPage("bandWikiPageHistory", WikiPageHistoryPage);
 export default WikiPageHistoryPage;

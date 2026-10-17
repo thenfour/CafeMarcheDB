@@ -1,4 +1,4 @@
-import { DbBrandConfig, DefaultDbBrandConfig } from "shared/brandConfigBase";
+import { DbBrandConfig, DefaultDbBrandConfig, PlatformDbBrandConfig } from "shared/brandConfigBase";
 import { validateDbBrandConfig } from "shared/brandingValidation";
 import { BandSettingsRegistryKey, kBandSettingsRegistry } from "src/setting/shared/bandSettingsRegistry";
 import { validateSettingValue } from "src/setting/shared/settingsContract";
@@ -9,12 +9,16 @@ const cache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 10_000;
 const normalizeHost = (host?: string | null): string => host?.toLowerCase() ?? "default";
 
-// Only a trusted resolved ID can select a band's branding. Host/path resolution follows in phase 5.
-export async function loadDbBrandConfig({ hostHeader, bandId: selectedBandId, freshness }: {
+// Only a trusted resolved ID can select a band's branding.
+export async function loadDbBrandConfig({ hostHeader, bandId: selectedBandId, freshness, pageTheming }: {
     readonly hostHeader?: string | null;
     readonly bandId: number | null;
     readonly freshness: "cached" | "refresh";
+    readonly pageTheming: "band" | "platform";
 }): Promise<DbBrandConfig> {
+    if (pageTheming === "platform") {
+        return PlatformDbBrandConfig;
+    }
     const cacheKey = `${selectedBandId ?? "platform"}/${normalizeHost(hostHeader)}`;
     const hit = cache.get(cacheKey);
     if (freshness === "cached" && hit && hit.expiresAt > Date.now()) {

@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import React from "react";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
 import { galleryColumnSelection } from "src/core/components/file/GalleryColumns";
@@ -7,7 +8,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 
-export default function EditFrontpageGalleryItemsPage() {
+function EditFrontpageGalleryItemsPage() {
     const context = useDB3QueryContext();
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.frontpageGalleryItemEditorView,
@@ -22,3 +23,6 @@ export default function EditFrontpageGalleryItemsPage() {
         />
     </DashboardLayout>;
 }
+
+defineCmdbPage("bandEditFrontpageGalleryItems", EditFrontpageGalleryItemsPage);
+export default EditFrontpageGalleryItemsPage;

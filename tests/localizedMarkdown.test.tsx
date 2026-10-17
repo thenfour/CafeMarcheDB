@@ -64,6 +64,7 @@ function fixture(bandPublicId = bands[0]!, routeLocale = "fr-BE"): ReturnType<ty
     ])) as LocalizationCatalog["strings"];
     return {
         bandPublicId, invalidate, data: {
+            queryExecutionTimeMs: 0,
             input, localization: {
                 bandPublicId, preferences, availability,
                 strings, formattingLocale: routeLocale, cacheKey: routeLocale, payloadBytes: 0

@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { BlitzPage } from "@blitzjs/next";
 import { NotFoundError } from "blitz";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
@@ -168,4 +169,5 @@ const CustomURLSlug: BlitzPage<CustomLinkPageProps> = (props) => {
     </NoSsr>;
 };
 
+defineCmdbPage("customLink", CustomURLSlug);
 export default CustomURLSlug;

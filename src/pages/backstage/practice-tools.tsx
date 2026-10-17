@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 // even though there is nothing band-specific about practice tools, we keep it  under the band scope,
 // to allow bands to brand the page, or in the future there may be customization.
 // or adding features based on subscription, which is band-specific etc...
@@ -50,4 +51,5 @@ const PracticeToolsPage: BlitzPage = () => {
     );
 };
 
+defineCmdbPage("practiceTools", PracticeToolsPage);
 export default PracticeToolsPage;

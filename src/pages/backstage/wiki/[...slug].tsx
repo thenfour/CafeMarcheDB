@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { BlitzPage } from "@blitzjs/next";
 import db from "db";
 import { Suspense } from "react";
@@ -91,4 +92,5 @@ const WikiPage: BlitzPage<PageProps> = (x) => {
     )
 }
 
+defineCmdbPage("bandWiki", WikiPage);
 export default WikiPage;

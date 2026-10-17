@@ -1,6 +1,10 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import React from "react";
 import { DeferredDomainPage } from "src/core/components/DeferredDomainPage";
 
-export default function RecoveryPage_editSongs() {
+function RecoveryPage_editSongs() {
     return <DeferredDomainPage feature="songWorkflows" />;
 }
+
+defineCmdbPage("bandEditSongs", RecoveryPage_editSongs);
+export default RecoveryPage_editSongs;

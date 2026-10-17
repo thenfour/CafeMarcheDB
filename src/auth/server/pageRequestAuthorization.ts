@@ -1,12 +1,12 @@
 import type { SessionContext } from "@blitzjs/auth";
 import { loadAuthorization } from "./serverAuthorization";
 import type { BandPublicId } from "shared/publicId";
-import { CmdbRouteRegistry } from "@/src/route/cmdbRoutes";
+import { CmdbRouteRegistry, type CmdbRouteDefinition } from "src/route/cmdbRoutes";
 import { NotFoundError } from "blitz";
 import { isBandPagePathname } from "src/route/portalRouting";
 
 export async function loadPageAuthorization(
-    pathname: string,
+    route: CmdbRouteDefinition,
     session: SessionContext,
     bandPublicId?: BandPublicId,
 ) {
@@ -14,9 +14,6 @@ export async function loadPageAuthorization(
     // non-logged in users have explicit access to the homepage and public pages via
     // route metadata, not baked into code.
 
-    //console.log(`Loading page authorization for pathname: ${pathname}, bandPublicId: ${bandPublicId}`);
-
-    const route = CmdbRouteRegistry.requireRouteByPattern(pathname);
     if (isBandPagePathname(route.nextPattern) !== Boolean(bandPublicId)) {
         throw new NotFoundError();
     }
@@ -27,12 +24,12 @@ export async function loadPageAuthorization(
 }
 
 
-// simple wrapper but with different intention; here it's only for validation, not loading.
-// so it doesn't have a return value; it simply throws if authorization fails.
+/** Authorize callers that already have a Next page pattern, without returning its context. */
 export async function authorizePageRequest(
-    pathname: string,
+    nextPattern: string,
     session: SessionContext,
     bandPublicId?: BandPublicId,
 ): Promise<void> {
-    await loadPageAuthorization(pathname, session, bandPublicId);
+    const route = CmdbRouteRegistry.requireRouteByPattern(nextPattern);
+    await loadPageAuthorization(route, session, bandPublicId);
 }

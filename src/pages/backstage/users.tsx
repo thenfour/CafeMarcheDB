@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import type { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
@@ -15,4 +16,5 @@ const UserSearchPage: BlitzPage = () => {
         </Suspense>
     </DashboardLayout>;
 };
+defineCmdbPage("bandUsers", UserSearchPage);
 export default UserSearchPage;

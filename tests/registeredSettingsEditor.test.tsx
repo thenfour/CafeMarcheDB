@@ -47,6 +47,7 @@ function fixture(bandPublicId = bandA, userPublicId = parsePublicId<"User">("Use
         resolveString({ preferences, availability, registeredDefault: definition.defaultValue, globalValues: [], bandValues: [] }),
     ])) as LocalizationCatalog["strings"];
     return { bandPublicId, invalidate, data: {
+        queryExecutionTimeMs: 0,
         input, authorization: { bandPublicId, userPublicId,
             bandUserPublicId: parsePublicId<"BandUser">("Member0000000001"), effectivePermissionNames: [] },
         localization: { bandPublicId, preferences, availability, strings, formattingLocale: "en-US", cacheKey: "settings", payloadBytes: 0 },

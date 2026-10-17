@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
@@ -40,4 +41,5 @@ const CustomLinksPage: BlitzPage = () => {
     );
 }
 
+defineCmdbPage("bandCustomLinks", CustomLinksPage);
 export default CustomLinksPage;

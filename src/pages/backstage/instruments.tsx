@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import type { BlitzPage } from "@blitzjs/next";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
 import { BandInstrumentCatalog } from "src/core/db3/components/BandInstrumentCatalog";
@@ -11,4 +12,5 @@ const InstrumentListPage: BlitzPage = () => {
         <BandInstrumentCatalog />
     </DashboardLayout>;
 };
+defineCmdbPage("bandInstruments", InstrumentListPage);
 export default InstrumentListPage;

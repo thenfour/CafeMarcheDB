@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import Head from "next/head";
@@ -96,4 +97,5 @@ const AdminBootstrapPage: BlitzPage = () => <>
     </Suspense>
 </>;
 
+defineCmdbPage("auth_admin-bootstrap", AdminBootstrapPage);
 export default AdminBootstrapPage;

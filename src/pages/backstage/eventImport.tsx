@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import React from "react";
 import type { BlitzPage } from "@blitzjs/next";
 import { Alert } from "@mui/material";
@@ -22,4 +23,5 @@ const ImportEventsPage: BlitzPage = () => {
         <ImportContent />
     </DashboardLayout>;
 };
+defineCmdbPage("bandEventImport", ImportEventsPage);
 export default ImportEventsPage;

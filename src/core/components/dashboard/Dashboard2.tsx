@@ -1,7 +1,7 @@
 import { shouldShowAdminControls } from "@/shared/adminControls";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { IsNullOrWhitespace } from "@/shared/utils";
-import { CmdbRouteRegistry } from "@/src/route/cmdbRoutes";
+import { usePageRoute } from "src/route/usePageRoute";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { useSession } from "@blitzjs/auth";
 import { useMutation } from "@blitzjs/rpc";
@@ -11,7 +11,6 @@ import MoreIcon from '@mui/icons-material/MoreVert';
 import { AppBar, Avatar, Box, Divider, IconButton, ListItemIcon, Menu, MenuItem, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import { useTheme } from "@mui/material/styles";
 import Link from "next/link";
-import { useRouter } from "next/router";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
@@ -406,11 +405,10 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
 const Dashboard3 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?: NavRealm; }>) => {
     const dashboardContext = useDashboardContext();
     const applicationFrame = useApplicationFrame();
-    const router = useRouter();
     const mediaPlayer = useMediaPlayer();
     let forceLogin = false;
 
-    const registeredRoute = CmdbRouteRegistry.requireRouteByPattern(router.pathname);
+    const registeredRoute = usePageRoute();
     const isPageAuthorized = dashboardContext.isAuthorized(registeredRoute.permission);
     if (!isPageAuthorized) {
         // are you even logged in?

@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout"
 import { useCmdbRouter } from "@/src/route/useCmdbRouter"
 import { BlitzPage } from "@blitzjs/next"
@@ -22,4 +23,5 @@ const SignupPage: BlitzPage = () => {
   )
 }
 
-export default SignupPage
+defineCmdbPage("auth_signup", SignupPage);
+export default SignupPage;

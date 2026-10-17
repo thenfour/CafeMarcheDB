@@ -1,3 +1,4 @@
+import { defineCmdbPage } from "src/route/cmdbPage";
 // band dashboard.
 
 import { useCmdbRouter } from "src/route/useCmdbRouter";
@@ -53,4 +54,5 @@ const Home: BlitzPage = () => {
   </DashboardLayout>;
 };
 
+defineCmdbPage("bandRoot", Home);
 export default Home;
