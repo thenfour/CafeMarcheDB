@@ -28,7 +28,8 @@ export interface SelectionChoiceProps<T> extends Pick<ChoiceControlProps, "selec
 
 export function getSelectionChipProps<T>(choice: SelectionChoiceProps<T>): Pick<CMChipProps, "variation" | "choice"> {
     return {
-        variation: { ...StandardVariationSpec.Strong, selected: choice.selected, enabled: !choice.disabled },
+        // Actions keep the summary appearance; checked styling belongs to selection choices.
+        variation: { ...StandardVariationSpec.Strong, selected: choice.interaction?.kind !== "action" && choice.selected, enabled: !choice.disabled },
         choice: { label: choice.label, interaction: choice.interaction },
     };
 }

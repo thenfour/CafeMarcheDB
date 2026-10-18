@@ -1,6 +1,7 @@
 import { Box } from "@mui/material";
 import React from "react";
 import { CMChipContainer } from "../CMChip";
+import { ChoiceControl, ChoiceInteraction } from "../ChoiceControl";
 import { SelectionPicker, SelectionQueryStatus } from "./SelectionPicker";
 import { SelectionValue, SelectionValueList } from "./SelectionOptions";
 import { SelectionSource, selectionText } from "./selectionSource";
@@ -8,6 +9,7 @@ import { SelectionSource, selectionText } from "./selectionSource";
 export enum CMSelectDisplayStyle {
     CustomButtonWithDialog = "CustomButtonWithDialog",
     SelectedWithDialog = "SelectedWithDialog",
+    SelectedAsDialogTrigger = "SelectedAsDialogTrigger",
     AllWithDialog = "AllWithDialog",
     AllWithInlineEditing = "AllWithInlineEditing",
 }
@@ -49,7 +51,17 @@ export interface SelectionFieldProps<T> {
 export function SelectionField<T>(props: SelectionFieldProps<T>) {
     const [open, setOpen] = React.useState(false);
     const groupName = React.useId();
+    const fieldRef = React.useRef<HTMLDivElement>(null);
+    const wasOpen = React.useRef(false);
     const style = props.displayStyle || CMSelectDisplayStyle.AllWithInlineEditing;
+    const valuesOpenDialog = style === CMSelectDisplayStyle.SelectedAsDialogTrigger;
+    React.useEffect(() => {
+        // A changed selection can remove the button to which the dialog restores focus.
+        if (wasOpen.current && !open && valuesOpenDialog && !props.readonly && document.activeElement === document.body) {
+            fieldRef.current?.querySelector<HTMLElement>('button:not(:disabled), [href], [tabindex="0"]')?.focus();
+        }
+        wasOpen.current = open;
+    }, [open, valuesOpenDialog, props.readonly]);
     const showAll = style === CMSelectDisplayStyle.AllWithDialog || style === CMSelectDisplayStyle.AllWithInlineEditing;
     const query = props.source.useOptions("", showAll);
     const openDialog = () => {
@@ -61,7 +73,8 @@ export function SelectionField<T>(props: SelectionFieldProps<T>) {
     const inline = style === CMSelectDisplayStyle.AllWithInlineEditing;
     const items = showAll ? query.items : props.value;
     const buttonText = props.editButtonChildren || (props.value.length ? "Edit" : "Select");
-    const edit = !props.readonly && <SelectionEditButton onClick={openDialog} label={`${selectionText(buttonText) || "Edit"} ${selectionText(props.dialogTitle) || "selection"}`}>{buttonText}</SelectionEditButton>;
+    const edit = !props.readonly && !valuesOpenDialog && <SelectionEditButton onClick={openDialog} label={`${selectionText(buttonText) || "Edit"} ${selectionText(props.dialogTitle) || "selection"}`}>{buttonText}</SelectionEditButton>;
+    const dialogInteraction: ChoiceInteraction = { kind: "action", onActivate: openDialog, hasPopup: "dialog", expanded: open };
     const disabled = !!props.readonly || !!query.isPreviousData || !!query.isLoading;
     const activate = (item: T) => {
         if (disabled || !inline) {
@@ -86,6 +99,7 @@ export function SelectionField<T>(props: SelectionFieldProps<T>) {
                     disabled,
                     label: props.source.getLabel(item),
                     interaction: inline ? {
+                        kind: "selection",
                         selectionMode: props.multiple ? "multiple" : "single",
                         name: groupName,
                         value: String(props.source.getKey(item)),
@@ -105,9 +119,24 @@ export function SelectionField<T>(props: SelectionFieldProps<T>) {
             {edit}
         </SelectionValueList>
     </>;
-    return <Box className={props.className} sx={{ minWidth: 0 }}>
+    const selectedDisplay = valuesOpenDialog && !props.readonly ? <SelectionFieldFrame>
+        {props.value.map(item => <SelectionValue key={props.source.getKey(item)}>
+            {props.source.renderChoice({
+                item,
+                selected: true,
+                disabled: false,
+                label: `Edit ${props.source.getLabel(item)}`,
+                interaction: dialogInteraction,
+            })}
+        </SelectionValue>)}
+        {props.value.length === 0 && <ChoiceControl
+            selected={false} disabled={false} label={`Select ${selectionText(props.dialogTitle) || "options"}`}
+            interaction={dialogInteraction} className="CMTextButton freeButton interactable"
+        >Select…</ChoiceControl>}
+    </SelectionFieldFrame> : selectedValues;
+    return <Box ref={fieldRef} className={props.className} sx={{ minWidth: 0 }}>
         {style === CMSelectDisplayStyle.CustomButtonWithDialog ? props.customRender?.(openDialog)
-            : showAll ? choices : selectedValues}
+            : showAll ? choices : selectedDisplay}
         {showAll && <SelectionQueryStatus query={query} />}
         {open && !props.readonly && <SelectionPicker source={props.source} value={props.value} multiple={props.multiple}
             title={props.dialogTitle || (props.multiple ? "Select options" : "Select an option")} description={props.dialogDescription}

@@ -50,6 +50,140 @@ const singleDialog = (props: object = {}) => React.createElement(CMSingleSelectD
 });
 
 describe("public picker APIs", () => {
+    it("uses a selected value as the only dialog trigger and loads options on opening", async () => {
+        const getOptions = vi.fn(numberOptions.getOptions);
+        await render(React.createElement(CMSingleSelect<number>, {
+            ...numberOptions, getOptions, value: 0, onChange, displayStyle: CMSelectDisplayStyle.SelectedAsDialogTrigger,
+        }));
+        const trigger = button("Edit 0");
+        expect(document.querySelectorAll("button")).toHaveLength(1);
+        expect(document.querySelectorAll(".CMChip")).toHaveLength(1);
+        expect(trigger.classList.contains("selected")).toBe(false);
+        expect(trigger.type).toBe("button");
+        expect(trigger.getAttribute("aria-haspopup")).toBe("dialog");
+        expect(trigger.getAttribute("aria-expanded")).toBe("false");
+        expect(document.querySelector("input")).toBeNull();
+        expect(getOptions).not.toHaveBeenCalled();
+        await click(trigger);
+        expect(trigger.getAttribute("aria-expanded")).toBe("true");
+        expect(getOptions).toHaveBeenCalledTimes(1);
+        expect(onChange).not.toHaveBeenCalled();
+        await click(button("1"));
+        expect(onChange).toHaveBeenCalledWith(1);
+        expect(document.querySelector('[role="dialog"]')).toBeNull();
+    });
+
+    it("opens the complete multi-selection from any selected value and preserves draft behavior", async () => {
+        await render(React.createElement(CMMultiSelect<number>, {
+            ...numberOptions, value: [0, 2], onChange, displayStyle: CMSelectDisplayStyle.SelectedAsDialogTrigger,
+        }));
+        expect(document.querySelectorAll(".CMChip")).toHaveLength(2);
+        expect(document.querySelectorAll("button")).toHaveLength(2);
+        for (const value of [0, 2]) {
+            await click(button(`Edit ${value}`));
+            expect(checkbox("0").checked).toBe(true);
+            expect(checkbox("2").checked).toBe(true);
+            expect(checkbox("1").checked).toBe(false);
+            await click(checkbox("1"));
+            expect(onChange).not.toHaveBeenCalled();
+            await click(button("Cancel"));
+            expect(onChange).not.toHaveBeenCalled();
+        }
+        await click(button("Edit 2"));
+        expect(checkbox("1").checked).toBe(false);
+        await click(checkbox("1"));
+        await click(button("Apply"));
+        expect(onChange).toHaveBeenCalledWith([0, 2, 1]);
+    });
+
+    it("provides an empty multi-selection trigger and returns to it after clearing", async () => {
+        const Field = () => {
+            const [value, setValue] = React.useState<number[]>([]);
+            return React.createElement(CMMultiSelect<number>, {
+                ...numberOptions, value, onChange: setValue, dialogTitle: "Numbers", displayStyle: CMSelectDisplayStyle.SelectedAsDialogTrigger,
+            });
+        };
+        await render(React.createElement(Field));
+        expect(button("Select Numbers").textContent).toBe("Select…");
+        button("Select Numbers").focus();
+        await click(button("Select Numbers"));
+        await click(checkbox("1"));
+        await click(button("Apply"));
+        expect(button("Select Numbers")).toBeUndefined();
+        expect(document.activeElement).toBe(button("Edit 1"));
+        await click(button("Edit 1"));
+        await click(checkbox("1"));
+        await click(button("Apply"));
+        expect(button("Select Numbers")).toBeDefined();
+        expect(document.activeElement).toBe(button("Select Numbers"));
+    });
+
+    it("returns focus to the replacement trigger after accepting a different single value", async () => {
+        const Field = () => {
+            const [value, setValue] = React.useState(0);
+            return React.createElement(CMSingleSelect<number>, {
+                ...numberOptions, value, onChange: setValue, displayStyle: CMSelectDisplayStyle.SelectedAsDialogTrigger,
+            });
+        };
+        await render(React.createElement(Field));
+        button("Edit 0").focus();
+        await click(button("Edit 0"));
+        await click(button("1"));
+        expect(button("Edit 0")).toBeUndefined();
+        expect(document.activeElement).toBe(button("Edit 1"));
+    });
+
+    it("provides an empty required single-value trigger", async () => {
+        const source = makeLocalSelectionSource({ items: [0, 1], getKey: (item: number) => item, getLabel: String, renderValue: String });
+        await render(React.createElement(SelectionField<number>, {
+            source, value: [], onChange, displayStyle: CMSelectDisplayStyle.SelectedAsDialogTrigger,
+        }));
+        await click(button("Select options"));
+        await click(button("0"));
+        expect(onChange).toHaveBeenCalledWith([0]);
+    });
+
+    it.each([CMSelectNullBehavior.AllowNull, CMSelectNullBehavior.AllowUndefined])("opens the picker from an explicit empty value with %s", async nullBehavior => {
+        const shared = { ...numberOptions, onChange, displayStyle: CMSelectDisplayStyle.SelectedAsDialogTrigger };
+        const field = nullBehavior === CMSelectNullBehavior.AllowNull
+            ? React.createElement(CMSingleSelect<number>, { ...shared, value: null, nullBehavior })
+            : React.createElement(CMSingleSelect<number>, { ...shared, value: undefined, nullBehavior: CMSelectNullBehavior.AllowUndefined });
+        await render(field);
+        expect(button("Select options")).toBeUndefined();
+        await click(button("Edit None"));
+        expect(button("None").getAttribute("aria-current")).toBe("true");
+        await click(button("1"));
+        expect(onChange).toHaveBeenCalledWith(1);
+    });
+
+    it.each([{ value: [0] }, { value: [] }])("keeps readonly value triggers passive for %j", async ({ value }) => {
+        const getOptions = vi.fn(numberOptions.getOptions);
+        await render(React.createElement(CMMultiSelect<number>, {
+            ...numberOptions, getOptions, value, onChange, readonly: true, displayStyle: CMSelectDisplayStyle.SelectedAsDialogTrigger,
+        }));
+        expect(document.querySelector("button, input, [tabindex]")).toBeNull();
+        const content = document.querySelector<HTMLElement>(".CMChipContainer")!;
+        await click(content);
+        expect(document.querySelector('[role="dialog"]')).toBeNull();
+        expect(getOptions).not.toHaveBeenCalled();
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("supplies custom renderers with an action and the selected item state", async () => {
+        const renderChoice = vi.fn((choice: SelectionChoiceProps<number>) => React.createElement("button", {
+            type: "button", onClick: choice.interaction?.onActivate,
+        }, `Custom ${choice.item}`));
+        await render(React.createElement(CMSingleSelect<number>, {
+            ...numberOptions, renderChoice, value: 0, onChange, displayStyle: CMSelectDisplayStyle.SelectedAsDialogTrigger,
+        }));
+        expect(renderChoice.mock.calls[0]![0]).toMatchObject({
+            item: 0, selected: true, disabled: false,
+            interaction: { kind: "action", hasPopup: "dialog", expanded: false },
+        });
+        await click(button("Custom 0"));
+        expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+    });
+
     it("keeps zero selected and accepts it without requiring Apply", async () => {
         await render(singleDialog());
         expect(button("0").getAttribute("aria-current")).toBe("true");
@@ -264,7 +398,7 @@ describe("public picker APIs", () => {
 });
 
 describe("DB3 picker adapters", () => {
-    it("renders DB3 inline choices with schema labels, colors and selection state", async () => {
+    it("renders DB3 inline and value-trigger choices with schema labels and selection state", async () => {
         const instrument = { publicId: "Instrument000001", name: "Trumpet" };
         const other = { publicId: "Instrument000002", name: "Flute" };
         // This adapter test only needs the schema's identity and display metadata.
@@ -284,6 +418,15 @@ describe("DB3 picker adapters", () => {
         expect(flute.closest(".CMChip.notselected")).not.toBeNull();
         expect(document.querySelector(".MuiRadio-root")).toBeNull();
         await click(flute.labels![0]!);
+        expect(onChange).toHaveBeenCalledWith(other);
+        onChange.mockClear();
+        await render(React.createElement(DB3SingleSelect<typeof instrument>, {
+            schema, value: instrument, onChange, allowInsertFromString: false,
+            nullBehavior: CMSelectNullBehavior.AllowNull, displayStyle: CMSelectDisplayStyle.SelectedAsDialogTrigger,
+        }));
+        expect(document.querySelectorAll(".CMChip")).toHaveLength(1);
+        await click(button("Edit Trumpet"));
+        await click(button("Flute"));
         expect(onChange).toHaveBeenCalledWith(other);
     });
 

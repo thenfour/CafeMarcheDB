@@ -221,6 +221,22 @@ input.CMTextInputBase.titleText {
     white-space: nowrap;
 }
 
+.CMChoiceAction {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    text-align: inherit;
+    cursor: pointer;
+}
+
+.CMChoiceAction:disabled {
+    cursor: default;
+}
+
 label.CMChoice {
     cursor: pointer;
 }
@@ -229,7 +245,7 @@ label.CMChoice.disabled {
     cursor: default;
 }
 
-.CMChoice.selected:not(.CMChip) {
+.CMChoice.selected:not(:where(.CMChip, .CMChoiceAction)) {
     outline: 2px solid currentColor;
 }
 
