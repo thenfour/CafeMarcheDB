@@ -35,7 +35,6 @@ export const dashboardStrings = {
     "dashboard.band.select": label("Select a band"),
     "dashboard.language.select": label("Language"),
     "dashboard.language.browser": label("Browser languages"),
-    "dashboard.language.failed": label("Could not change language. Try again."),
     "dashboard.band.platform": label("Account and platform"),
     "dashboard.band.unnamed": label("Unnamed band"),
     "dashboard.band.unavailable": label("Selected band is unavailable to this account"),

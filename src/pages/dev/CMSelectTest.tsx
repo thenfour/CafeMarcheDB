@@ -87,15 +87,15 @@ export const SelectionExamples = () => {
             </Example>
             <Example title="Asynchronous choices" description="Simulated network delay, search, and a recoverable loading error." value={person?.name}>
                 <CMSingleSelect {...shared} getOptions={getPeople} getOptionInfo={getPersonInfo} renderOption={renderPerson} value={person} onChange={setPerson} nullBehavior={CMSelectNullBehavior.AllowUndefined} dialogTitle="Choose a person" />
-                <CMButton size="small" onClick={() => { failNext.current = true; }} disabled={readonly} sx={{ mt: 1 }}>Fail the next load</CMButton>
+                <CMButton onClick={() => { failNext.current = true; }} disabled={readonly}>Fail the next load</CMButton>
             </Example>
             <Example title="Confirm a single choice" description="Radio buttons let you review a choice before pressing Apply." value={confirmed}>
-                <CMButton variant="outlined" disabled={readonly} onClick={() => setConfirmOpen(true)}>Review choice: {confirmed}</CMButton>
+                <CMButton disabled={readonly} onClick={() => setConfirmOpen(true)}>Review choice: {confirmed}</CMButton>
                 {confirmOpen && <CMSingleSelectDialog {...numberOptions} chipSize={chipSize} chipShape={chipShape} value={confirmed} closeOnSelect={false} title="Confirm your number" description="Choose one number, then apply your change." onCancel={() => setConfirmOpen(false)} onOK={value => { setConfirmed(value); setConfirmOpen(false); }} />}
             </Example>
             <Example title="Custom trigger" description="A caller can supply its own opener while using the same picker." value={single}>
                 <CMSingleSelect {...shared} {...numberOptions} value={single} onChange={setSingle} displayStyle={CMSelectDisplayStyle.CustomButtonWithDialog} dialogTitle="Choose a number"
-                    customRender={open => <CMButton variant="outlined" disabled={readonly} onClick={open}>Choose number: {single}</CMButton>} />
+                    customRender={open => <CMButton disabled={readonly} onClick={open}>Choose number: {single}</CMButton>} />
             </Example>
             <Example title="Instrument" description="DB3 supplies the available instruments, labels, and colors." value={instrument?.name || null}>
                 <DB3SingleSelect {...shared} schema={db3.xInstrument} value={instrument} onChange={setInstrument} nullBehavior={CMSelectNullBehavior.AllowNull} dialogTitle="Choose an instrument" />

@@ -1,3 +1,5 @@
+// THIS IS FOR  CAFEMARCHE ONLY because it assumes en-fr-nl language codes..
+
 import { IsNullOrWhitespace } from "./utils";
 
 

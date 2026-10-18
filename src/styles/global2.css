@@ -2795,3 +2795,22 @@ nav a:hover {
     line-height: 1.4;
     opacity: 0.8;
 }
+
+
+/* ---------------------------------- */
+.language-chip {
+    text-transform: uppercase;
+}
+
+.alert-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #f80;
+}
+
+.alert-indicator svg {
+    --size: 18px;
+    width: var(--size);
+    height: var(--size);
+}
