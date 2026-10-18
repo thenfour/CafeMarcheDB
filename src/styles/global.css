@@ -57,12 +57,24 @@ header .headerIndicatorBar {
 
 header .headerIndicatorBar.impersonating {
   background: none;
+  position: relative;
   background-color: #c44;
 }
 
 .cmdb_env_development .logo {
   /* background-color: #444; */
   text-decoration: line-through;
+}
+
+/* adding a small dog-ear effect. */
+.platformTheming header:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-left: 48px solid var(--secondary-color);
+  border-bottom: 48px solid transparent;
+  opacity: 50%;
 }
 
 /* 

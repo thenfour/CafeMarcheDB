@@ -390,6 +390,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
 
                 {(session.userId != null) && <>
                     <ConnectionStatusIndicator />
+                    <PortalLanguageSelection />
                     <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
                         <AppBarUserIcon_Desktop />
                     </Box>
@@ -526,8 +527,8 @@ const Dashboard3 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
 
                             <React.Suspense>
                                 {forceLogin ? <LoginSignup /> : <>
-                                    {dashboardContext.currentUser && <BandSelection />}
-                                    <PortalLanguageSelection />
+                                    {/* {dashboardContext.currentUser && <BandSelection /> } */}
+
                                     {children}
                                 </>}
                             </React.Suspense>
@@ -574,10 +575,11 @@ const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
     }, []);
 
     const theme = useTheme();
+    const route = usePageRoute();
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
 
     return (
-        <Box className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} cmdb_env_${process.env.NODE_ENV}`}>
+        <Box className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} cmdb_env_${process.env.NODE_ENV} ${route.theming === "platform" ? "platformTheming" : "bandTheming"}`}>
             <ApplicationFrameProvider>
                 <AppContextMarker name="bs">
                     <ConfirmProvider>
