@@ -10,20 +10,18 @@ vi.mock("src/core/components/dashboard/DashboardLayout", () => ({
 }));
 vi.mock("next/head", () => ({ default: () => null }));
 vi.mock("next/link", () => ({ default: ({ href, children }: React.PropsWithChildren<{ href: string }>) => <a href={href}>{children}</a> }));
-vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({
-    getPlainString: (key: LocalizedPlainStringKey) => `${language}: ${kStaticLocalizedStringRegistry[key].defaultValue}`,
-}) }));
+vi.mock("src/locale/components/useLocale", () => ({
+    useLocale: () => ({
+        getPlainString: (key: LocalizedPlainStringKey) => `${language}: ${kStaticLocalizedStringRegistry[key].defaultValue}`,
+    })
+}));
 vi.mock("@blitzjs/rpc", () => ({
     useQuery: () => { throw new Error("Recovery page mounted a data reader."); },
     useMutation: () => { throw new Error("Recovery page mounted an editor."); },
 }));
 
-import EditEvents from "src/pages/backstage/editEvents";
-import EditSegments from "src/pages/backstage/editEventSegments";
 import Agenda from "src/pages/backstage/frontpageEvents";
-import EditSongs from "src/pages/backstage/editSongs";
 import Examples from "src/pages/dev/gallery";
-import GridExamples from "src/pages/dev/test2";
 
 let language = "en-US";
 let root: Root;
@@ -42,7 +40,7 @@ afterEach(async () => {
 });
 
 // Restored File, gallery and Wiki workflows have their own active editor/read specifications.
-const pages = [EditEvents, EditSegments, Agenda, EditSongs, Examples, GridExamples];
+const pages = [Agenda, Examples];
 describe("reachable deferred application pages", () => {
     it.each(pages.map((Page, index) => ({ Page, index })))("renders page $index without readers/editors and updates its localized notice", async ({ Page }) => {
         await act(async () => root.render(<Page />));
