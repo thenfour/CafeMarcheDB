@@ -21,6 +21,7 @@ import { SelectionPicker } from "src/core/components/select/SelectionPicker";
 import { SelectionEditButton, SelectionFieldFrame } from "src/core/components/select/SelectionField";
 import { CMSelectNullBehavior, SelectionSource, singleSelectionValue, withNullSelection } from "src/core/components/select/selectionSource";
 import { SelectionValue } from "src/core/components/select/SelectionOptions";
+import { ChoiceControl } from "src/core/components/ChoiceControl";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
 import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -577,6 +578,7 @@ export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props
         getKey: item => item[foreignSchema.clientIdMember],
         getLabel: props.spec.getSelectionLabel,
         renderValue: item => props.spec.args.renderAsChip!({ value: item, colorVariant: StandardVariationSpec.Strong }),
+        renderChoice: choice => <ChoiceControl {...choice}>{props.spec.args.renderAsChip!({ value: choice.item, colorVariant: { ...StandardVariationSpec.Strong, selected: choice.selected, enabled: !choice.disabled } })}</ChoiceControl>,
         renderOption: (item, selected) => props.spec.args.renderAsListItem!({}, item, selected),
         matchesText: (item, text) => foreignSchema.doesItemExactlyMatchText(item, text),
         useOptions(filterText) {

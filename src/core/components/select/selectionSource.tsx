@@ -2,6 +2,7 @@ import React from "react";
 import { CMChip, CMChipProps, CMChipShapeOptions, CMChipSizeOptions } from "../CMChip";
 import { StandardVariationSpec } from "../color/palette";
 import { SplitQuickFilter } from "@/shared/quickFilter";
+import { ChoiceControl, ChoiceControlProps } from "../ChoiceControl";
 
 export enum CMSelectNullBehavior {
     NonNullable = "NonNullable",
@@ -21,12 +22,15 @@ export interface SelectionQuery<T> {
     creationControls?: React.ReactNode;
 }
 
-// passed to renderValue/renderOption
-type SelectionSourceRenderProps<T> = {
+export interface SelectionChoiceProps<T> extends Pick<ChoiceControlProps, "selected" | "disabled" | "label" | "interaction"> {
     readonly item: T;
-    readonly selected: boolean;
-    readonly key: React.Key;
-    readonly onSelect: () => void;
+}
+
+export function getSelectionChipProps<T>(choice: SelectionChoiceProps<T>): Pick<CMChipProps, "variation" | "choice"> {
+    return {
+        variation: { ...StandardVariationSpec.Strong, selected: choice.selected, enabled: !choice.disabled },
+        choice: { label: choice.label, interaction: choice.interaction },
+    };
 }
 
 // Query hooks stay in the adapter. The picker owns interaction, never database rules.
@@ -35,6 +39,7 @@ export interface SelectionSource<T> {
     getKey: (item: T) => React.Key;
     getLabel: (item: T) => string;  // useful at  very least for filtering
     renderValue: (item: T) => React.ReactNode;
+    renderChoice: (props: SelectionChoiceProps<T>) => React.ReactNode;
     renderOption?: (item: T, selected: boolean) => React.ReactNode;
     matchesText?: (item: T, text: string) => boolean;
 }
@@ -45,9 +50,14 @@ function filterSelectionItems<T>(items: T[], getLabel: (item: T) => string, filt
 }
 
 // Already-loaded choices can keep their domain rendering without another chip wrapper.
-export function makeLocalSelectionSource<T>({ items, ...source }: Omit<SelectionSource<T>, "useOptions"> & { items: T[] }): SelectionSource<T> {
+export function makeLocalSelectionSource<T>({ items, renderChoice, ...source }: Omit<SelectionSource<T>, "useOptions" | "renderChoice"> & {
+    items: T[];
+    renderChoice?: SelectionSource<T>["renderChoice"];
+}): SelectionSource<T> {
     return {
         ...source,
+        // Local content uses a native choice control unless the caller supplies a complete item renderer.
+        renderChoice: renderChoice ?? (choice => <ChoiceControl {...choice}>{source.renderValue(choice.item)}</ChoiceControl>),
         useOptions: filterText => ({ items: filterSelectionItems(items, source.getLabel, filterText), refetch: () => { } }),
     };
 }
@@ -63,6 +73,7 @@ export interface AsyncSelectionProps<T> {
     getOptions: (args: { quickFilter: string | undefined }) => Promise<T[]> | T[];
     getOptionInfo: (item: T) => SelectionItemInfo;
     renderOption: (item: T) => React.ReactNode;
+    renderChoice?: (props: SelectionChoiceProps<T>) => React.ReactNode;
     chipSize?: CMChipSizeOptions;
     chipShape?: CMChipShapeOptions;
     allowInsertFromString?: boolean;
@@ -107,6 +118,10 @@ export function makeAsyncSelectionSource<T>(props: AsyncSelectionProps<T>): Sele
             const info = props.getOptionInfo(item);
             return <CMChip size={props.chipSize || "small"} shape={props.chipShape || "rectangle"} color={info.color} tooltip={info.tooltip} variation={StandardVariationSpec.Strong}>{props.renderOption(item)}</CMChip>;
         },
+        renderChoice: props.renderChoice ?? (choice => {
+            const info = props.getOptionInfo(choice.item);
+            return <CMChip size={props.chipSize || "small"} shape={props.chipShape || "rectangle"} color={info.color} tooltip={info.tooltip} {...getSelectionChipProps(choice)}>{props.renderOption(choice.item)}</CMChip>;
+        }),
         matchesText: props.doesItemExactlyMatchText || ((item, text) => getLabel(item).trim().toLocaleLowerCase() === text.toLocaleLowerCase()),
         useOptions(filterText, enabled) {
             const query = useAsyncSelectionOptions(props.getOptions, filterText, enabled);
@@ -119,13 +134,19 @@ export function makeAsyncSelectionSource<T>(props: AsyncSelectionProps<T>): Sele
     };
 }
 
-export function withNullSelection<T>(source: SelectionSource<T>, nullBehavior: CMSelectNullBehavior | undefined, renderNull?: () => React.ReactNode, nullLabel = "None"): SelectionSource<T | null | undefined> {
+export function withNullSelection<T>(source: SelectionSource<T>, nullBehavior: CMSelectNullBehavior | undefined, renderNull?: () => React.ReactNode, nullLabel = "None", chipAppearance?: Pick<AsyncSelectionProps<T>, "chipSize" | "chipShape">): SelectionSource<T | null | undefined> {
     const nullable = nullBehavior === CMSelectNullBehavior.AllowNull || nullBehavior === CMSelectNullBehavior.AllowUndefined;
     const empty = nullBehavior === CMSelectNullBehavior.AllowNull ? null : undefined;
     return {
         getKey: item => item == null ? "null" : `item:${source.getKey(item)}`,
         getLabel: item => item == null ? selectionText(renderNull?.()) || nullLabel : source.getLabel(item),
         renderValue: item => item == null ? renderNull?.() || nullLabel : source.renderValue(item),
+        renderChoice: choice => {
+            if (choice.item == null) {
+                return <CMChip size={chipAppearance?.chipSize || "small"} shape={chipAppearance?.chipShape || "rectangle"} {...getSelectionChipProps(choice)}>{renderNull?.() || nullLabel}</CMChip>;
+            }
+            return source.renderChoice({ ...choice, item: choice.item });
+        },
         renderOption: (item, selected) => item == null ? renderNull?.() || nullLabel : source.renderOption?.(item, selected) || source.renderValue(item),
         matchesText: (item, text) => item != null && !!source.matchesText?.(item, text),
         useOptions(filterText, enabled) {

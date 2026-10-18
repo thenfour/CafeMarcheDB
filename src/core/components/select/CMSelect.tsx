@@ -1,7 +1,7 @@
 import React from "react";
 import { CMChipShapeOptions, CMChipSizeOptions } from "../CMChip";
 import { CMSelectDisplayStyle, SelectionField } from "./SelectionField";
-import { CMSelectNullBehavior, SelectionItemInfo, makeAsyncSelectionSource, singleSelectionValue, withNullSelection } from "./selectionSource";
+import { CMSelectNullBehavior, SelectionChoiceProps, SelectionItemInfo, makeAsyncSelectionSource, singleSelectionValue, withNullSelection } from "./selectionSource";
 export { CMSelectDisplayStyle } from "./SelectionField";
 type Tnull = null | undefined;
 type ItemInfo = SelectionItemInfo;
@@ -12,6 +12,7 @@ interface CMMultiSelectProps<Toption> {
     onChange: (options: Toption[]) => void;
     getOptionInfo: (item: Toption) => ItemInfo;
     renderOption: (item: Toption) => React.ReactNode;
+    renderChoice?: (props: SelectionChoiceProps<Toption>) => React.ReactNode;
     customRender?: (onClick: () => void) => React.ReactNode; // for display style custom
 
     chipSize?: CMChipSizeOptions | undefined;
@@ -45,6 +46,7 @@ interface CMSingleSelectBaseProps<Toption> {
     value: Toption | Tnull;
     onChange: (option: Toption | Tnull) => void;
     renderOption: (item: Toption) => React.ReactNode;
+    renderChoice?: (props: SelectionChoiceProps<Toption>) => React.ReactNode;
     renderNullOption?: () => React.ReactNode;
     customRender?: (onClick: () => void) => React.ReactNode; // for display style custom
     getOptionInfo: (item: Toption) => ItemInfo;
@@ -91,7 +93,7 @@ type CMSingleSelectProps<Toption> =
     | CMSingleSelectPropsAllowingUndefined<Toption>;
 
 export const CMSingleSelect = <Toption,>(props: CMSingleSelectProps<Toption>) => {
-    const source = withNullSelection(makeAsyncSelectionSource(props), props.nullBehavior, props.renderNullOption);
+    const source = withNullSelection(makeAsyncSelectionSource(props), props.nullBehavior, props.renderNullOption, "None", props);
     const onChange = props.onChange as (value: Toption | Tnull) => void;
     return <SelectionField
         {...props}

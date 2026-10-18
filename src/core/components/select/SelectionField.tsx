@@ -1,4 +1,4 @@
-import { Box, Checkbox, Radio, RadioGroup } from "@mui/material";
+import { Box } from "@mui/material";
 import React from "react";
 import { CMChipContainer } from "../CMChip";
 import { SelectionPicker, SelectionQueryStatus } from "./SelectionPicker";
@@ -48,54 +48,66 @@ export interface SelectionFieldProps<T> {
 
 export function SelectionField<T>(props: SelectionFieldProps<T>) {
     const [open, setOpen] = React.useState(false);
+    const groupName = React.useId();
     const style = props.displayStyle || CMSelectDisplayStyle.AllWithInlineEditing;
     const showAll = style === CMSelectDisplayStyle.AllWithDialog || style === CMSelectDisplayStyle.AllWithInlineEditing;
     const query = props.source.useOptions("", showAll);
-    const openDialog = () => { if (!props.readonly) setOpen(true); };
+    const openDialog = () => {
+        if (!props.readonly) {
+            setOpen(true);
+        }
+    };
     const selectedKeys = new Set(props.value.map(props.source.getKey));
     const inline = style === CMSelectDisplayStyle.AllWithInlineEditing;
     const items = showAll ? query.items : props.value;
     const buttonText = props.editButtonChildren || (props.value.length ? "Edit" : "Select");
     const edit = !props.readonly && <SelectionEditButton onClick={openDialog} label={`${selectionText(buttonText) || "Edit"} ${selectionText(props.dialogTitle) || "selection"}`}>{buttonText}</SelectionEditButton>;
-    const values = inline ? <>
-        {items.map(item => {
-            const selected = selectedKeys.has(props.source.getKey(item));
-            const choose = () => {
-                if (props.readonly) return;
-                props.onChange(props.multiple ? selected ? props.value.filter(value => props.source.getKey(value) !== props.source.getKey(item)) : [...props.value, item] : [item]);
-            };
-            // using adjascent MUI checkboxes / radios.
-            return (
-                <Box
-                    component="label"
-                    key={props.source.getKey(item)}
-                    sx={{ display: "inline-flex", alignItems: "center", minWidth: 0, "&:focus-within": { outline: "2px solid", outlineColor: "primary.main" } }}
-                >
-                    {props.multiple ? <Checkbox size="small" checked={selected} disabled={props.readonly || query.isPreviousData} onChange={choose} inputProps={{ "aria-label": props.source.getLabel(item) }} />
-                        : <Radio size="small" value={String(props.source.getKey(item))} checked={selected} disabled={props.readonly || query.isPreviousData} onChange={choose} inputProps={{ "aria-label": props.source.getLabel(item) }} />}
-                    <SelectionValue>{props.source.renderValue(item)}</SelectionValue>
-                </Box>);
-
-            // todo: use per-item selection state rather than checkboxes/radios
-        })}
-        {edit}
-    </> : <>
+    const disabled = !!props.readonly || !!query.isPreviousData || !!query.isLoading;
+    const activate = (item: T) => {
+        if (disabled || !inline) {
+            return;
+        }
+        const key = props.source.getKey(item);
+        const selected = selectedKeys.has(key);
+        if (!props.multiple) {
+            if (!selected) {
+                props.onChange([item]);
+            }
+            return;
+        }
+        props.onChange(selected ? props.value.filter(value => props.source.getKey(value) !== key) : [...props.value, item]);
+    };
+    const choices = showAll ? <Box role={inline && !props.multiple ? "radiogroup" : "group"} aria-label={selectionText(props.dialogTitle) || "Available options"}>
+        <SelectionFieldFrame>
+            {items.map(item => <SelectionValue key={props.source.getKey(item)}>
+                {props.source.renderChoice({
+                    item,
+                    selected: selectedKeys.has(props.source.getKey(item)),
+                    disabled,
+                    label: props.source.getLabel(item),
+                    interaction: inline ? {
+                        selectionMode: props.multiple ? "multiple" : "single",
+                        name: groupName,
+                        value: String(props.source.getKey(item)),
+                        onActivate: () => activate(item),
+                    } : null,
+                })}
+            </SelectionValue>)}
+            {edit}
+        </SelectionFieldFrame>
+    </Box> : null;
+    const selectedValues = <>
         <SelectionValueList
             value={items}
             getKey={props.source.getKey}
             getLabel={props.source.getLabel}
-            renderValue={item => (
-                <Box
-                    sx={{ opacity: showAll && !selectedKeys.has(props.source.getKey(item)) ? 0.55 : 1 }}
-                >
-                    {props.source.renderValue(item)}
-                </Box>)}>
+            renderValue={props.source.renderValue}>
             {edit}
         </SelectionValueList>
     </>;
     return <Box className={props.className} sx={{ minWidth: 0 }}>
         {style === CMSelectDisplayStyle.CustomButtonWithDialog ? props.customRender?.(openDialog)
-            : inline ? (!props.multiple ? <RadioGroup row aria-label={selectionText(props.dialogTitle) || "Choose one option"}><SelectionFieldFrame>{values}</SelectionFieldFrame></RadioGroup> : <SelectionFieldFrame>{values}</SelectionFieldFrame>) : values}
+            : showAll ? choices : selectedValues}
         {showAll && <SelectionQueryStatus query={query} />}
         {open && !props.readonly && <SelectionPicker source={props.source} value={props.value} multiple={props.multiple}
             title={props.dialogTitle || (props.multiple ? "Select options" : "Select an option")} description={props.dialogDescription}

@@ -204,6 +204,47 @@ input.CMTextInputBase.titleText {
     display: flex;
 }
 
+.CMChoice {
+    position: relative;
+    width: max-content;
+    max-width: 100%;
+}
+
+.CMChoiceInput {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+label.CMChoice {
+    cursor: pointer;
+}
+
+label.CMChoice.disabled {
+    cursor: default;
+}
+
+.CMChoice.selected:not(.CMChip) {
+    outline: 2px solid currentColor;
+}
+
+.CMChoice.disabled:not(.CMChip) {
+    opacity: 0.6;
+}
+
+.CMChoice:focus-within {
+    outline: 1px solid #1976d2;
+}
+
+.CMChoice.selected:focus-within {
+    outline: 3px solid #1976d2;
+}
+
 .CMChip.big {
     padding: 2px;
     border-radius: 19px;

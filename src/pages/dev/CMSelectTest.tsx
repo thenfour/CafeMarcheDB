@@ -74,7 +74,7 @@ export const SelectionExamples = () => {
             <Example title="One choice" description="Selecting a value accepts it immediately. Zero is a valid choice." value={single}>
                 <CMSingleSelect {...shared} {...numberOptions} value={single} onChange={setSingle} dialogTitle="Choose a number" />
             </Example>
-            <Example title="Multiple choices" description="Checkboxes edit a draft. Apply keeps it; Cancel discards it." value={multi}>
+            <Example title="Multiple choices" description="Inline chips toggle immediately. In the dialog, Apply keeps the draft and Cancel discards it." value={multi}>
                 <CMMultiSelect {...shared} {...numberOptions} value={multi} onChange={setMulti} dialogTitle="Choose numbers" />
             </Example>
             <Example title="Optional choice" description="An explicit None option clears the value to null." value={nullable}>

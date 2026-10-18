@@ -18,6 +18,7 @@ import { SelectionEditButton, SelectionFieldFrame } from 'src/core/components/se
 import { SelectionValueList } from 'src/core/components/select/SelectionOptions';
 import { SelectionPicker } from 'src/core/components/select/SelectionPicker';
 import { SelectionSource } from 'src/core/components/select/selectionSource';
+import { ChoiceControl } from 'src/core/components/ChoiceControl';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { useLocale } from "src/locale/components/useLocale";
 import type { GlobalSettingKey } from "src/setting/shared/globalSettingsRegistry";
@@ -73,6 +74,7 @@ function DB3SelectTagsDialogInner<TAssociation extends TAnyModel>(props: DB3Sele
         getKey: item => item[props.spec.associationForeignIDMember],
         getLabel: props.spec.getSelectionLabel,
         renderValue: item => props.spec.args.renderAsChip!({ value: item, colorVariant: StandardVariationSpec.Strong }),
+        renderChoice: choice => <ChoiceControl {...choice}>{props.spec.args.renderAsChip!({ value: choice.item, colorVariant: { ...StandardVariationSpec.Strong, selected: choice.selected, enabled: !choice.disabled } })}</ChoiceControl>,
         renderOption: (item, selected) => props.spec.args.renderAsListItem!({}, item, selected),
         matchesText: (item, text) => props.spec.typedSchemaColumn.getAssociationTableShema().doesItemExactlyMatchText(item, text),
         useOptions(filterText) {

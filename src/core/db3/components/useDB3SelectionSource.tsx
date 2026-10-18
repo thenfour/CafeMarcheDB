@@ -6,7 +6,7 @@ import { SplitQuickFilter } from "shared/quickFilter";
 import { CMChip, CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMChip";
 import { StandardVariationSpec } from "src/core/components/color/palette";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
-import { SelectionSource } from "src/core/components/select/selectionSource";
+import { getSelectionChipProps, SelectionChoiceProps, SelectionSource } from "src/core/components/select/selectionSource";
 import * as db3 from "../db3";
 import { fetchUnsuspended } from "./DB3ClientCore";
 import { useCrudViewCreate } from "./useCrudViewCreate";
@@ -16,6 +16,7 @@ interface DB3SelectionSourceProps<T> {
     schema: db3.xTable;
     view?: db3.AnyDB3CrudView;
     renderOption?: (item: T) => React.ReactNode;
+    renderChoice?: (props: SelectionChoiceProps<T>) => React.ReactNode;
     chipSize?: CMChipSizeOptions;
     chipShape?: CMChipShapeOptions;
     allowInsertFromString?: boolean;
@@ -46,6 +47,10 @@ export function useDB3SelectionSource<T extends TAnyModel>(props: DB3SelectionSo
             const info = props.schema.getRowInfo(item);
             return <CMChip size={props.chipSize || "small"} shape={props.chipShape || "rectangle"} color={info.color} tooltip={info.tooltip} variation={StandardVariationSpec.Strong}>{props.renderOption ? props.renderOption(item) : info.name}</CMChip>;
         },
+        renderChoice: props.renderChoice ?? (choice => {
+            const info = props.schema.getRowInfo(choice.item);
+            return <CMChip size={props.chipSize || "small"} shape={props.chipShape || "rectangle"} color={info.color} tooltip={info.tooltip} {...getSelectionChipProps(choice)}>{props.renderOption ? props.renderOption(choice.item) : info.name}</CMChip>;
+        }),
         useOptions(filterText, enabled) {
             const auth = useClientAuth();
             const dashboard = useDashboardContext();

@@ -1,7 +1,7 @@
 import React from "react";
 import { CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMChip";
 import { CMSelectDisplayStyle, SelectionField } from "src/core/components/select/SelectionField";
-import { CMSelectNullBehavior, singleSelectionValue, withNullSelection } from "src/core/components/select/selectionSource";
+import { CMSelectNullBehavior, SelectionChoiceProps, singleSelectionValue, withNullSelection } from "src/core/components/select/selectionSource";
 import { TAnyModel } from "@/shared/rootroot";
 import * as db3 from "../db3";
 import { useDB3SelectionSource } from "./useDB3SelectionSource";
@@ -15,6 +15,7 @@ interface Db3SingleSelectBaseProps<Toption extends TAnyModel> {
     onChange: (optionIds: Toption | Tnull) => void;
 
     renderOption?: ((item: Toption) => React.ReactNode) | undefined;
+    renderChoice?: (props: SelectionChoiceProps<Toption>) => React.ReactNode;
     customRender?: (onClick: () => void) => React.ReactNode; // for display style custom
 
     chipSize?: CMChipSizeOptions | undefined;
@@ -56,7 +57,7 @@ type Db3SingleSelectProps<Toption extends TAnyModel> =
     | Db3SingleSelectPropsAllowingUndefined<Toption>;
 
 export const DB3SingleSelect = <Toption extends TAnyModel,>(props: Db3SingleSelectProps<Toption>) => {
-    const source = withNullSelection(useDB3SelectionSource(props), props.nullBehavior);
+    const source = withNullSelection(useDB3SelectionSource(props), props.nullBehavior, undefined, "None", props);
     const onChange = props.onChange as (value: Toption | Tnull) => void;
     return <SelectionField {...props} source={source} value={singleSelectionValue(props.value, props.nullBehavior)}
         onChange={values => onChange(values[0])} className="CMSingleSelect" />;
@@ -69,6 +70,7 @@ interface DB3MultiSelectProps<Toption extends TAnyModel> {
     value: Toption[];
     onChange: (optionIds: Toption[]) => void;
     renderOption?: ((item: Toption) => React.ReactNode) | undefined;
+    renderChoice?: (props: SelectionChoiceProps<Toption>) => React.ReactNode;
     customRender?: (onClick: () => void) => React.ReactNode; // for display style custom
 
     chipSize?: CMChipSizeOptions | undefined;

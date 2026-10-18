@@ -13,6 +13,7 @@ import { gIconMap, RenderMuiIcon } from "../db3/components/IconMap";
 import { CMLink } from "@/src/route/CMLink";
 import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "./color/palette";
 import { GetStyleVariablesForColor } from "./color/ColorClientUtils";
+import { ChoiceControl, ChoiceControlProps } from "./ChoiceControl";
 
 // but it means having a lot of color variations:
 // - main / contrast
@@ -39,6 +40,7 @@ export interface CMChipProps {
 
     onDelete?: () => void;
     onClick?: () => void;
+    choice?: Pick<ChoiceControlProps, "label" | "interaction">;
 };
 
 
@@ -54,7 +56,7 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
         shape,
         variant.enabled ? "enabled" : "disabled",
         variant.selected ? "selected" : "notselected",
-        ((props.onClick) && variant.enabled) ? "interactable" : "noninteractable",
+        ((props.onClick || props.choice?.interaction) && variant.enabled) ? "interactable" : "noninteractable",
     ];
     if (props.className) {
         wrapperClasses.push(props.className);
@@ -71,17 +73,19 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
 
     const computedStyle: React.CSSProperties = { ...style.style, ...props.style };
 
-    let chipNode = <div className={wrapperClasses.join(" ")} style={computedStyle} onClick={props.onClick}>
-        <div className={chipClasses.join(" ")}>
-            <div className='content'>
-                {props.onDelete && <span className="CMChipDeleteButton interactable" onClick={props.onDelete}>{gIconMap.Cancel()}</span>}
-                {props.children}
-            </div>
+    const content = <div className={chipClasses.join(" ")}>
+        <div className='content'>
+            {props.onDelete && <span className="CMChipDeleteButton interactable" onClick={variant.enabled ? props.onDelete : undefined}>{gIconMap.Cancel()}</span>}
+            {props.children}
         </div>
-    </div >;
+    </div>;
+    const onClick = variant.enabled ? props.onClick : undefined;
+    let chipNode = props.choice
+        ? <ChoiceControl {...props.choice} selected={variant.selected} disabled={!variant.enabled} className={wrapperClasses.join(" ")} style={computedStyle}>{content}</ChoiceControl>
+        : <div className={wrapperClasses.join(" ")} style={computedStyle} onClick={onClick}>{content}</div>;
 
     if (!IsNullOrWhitespace(props.href)) {
-        chipNode = <div className={wrapperClasses.join(" ")} style={computedStyle} onClick={props.onClick}>
+        chipNode = <div className={wrapperClasses.join(" ")} style={computedStyle}>
             <CMLink href={props.href || ""}>{chipNode}</CMLink>
         </div>;
     }

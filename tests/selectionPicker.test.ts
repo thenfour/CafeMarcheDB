@@ -19,6 +19,10 @@ import { DB3SingleSelect } from "src/core/db3/components/db3Select";
 import { DB3MultiSelectDialog } from "src/core/db3/components/db3SelectDialog";
 import { fetchUnsuspended } from "src/core/db3/components/DB3ClientCore";
 import { useCrudViewCreate } from "src/core/db3/components/useCrudViewCreate";
+import { SelectionField } from "src/core/components/select/SelectionField";
+import { makeLocalSelectionSource, SelectionChoiceProps } from "src/core/components/select/selectionSource";
+import { CMChip } from "src/core/components/CMChip";
+import { StandardVariationSpec } from "src/core/components/color/palette";
 
 const numberOptions = StringArrayOptionsProvider([0, 1, 2]);
 let root: Root;
@@ -149,6 +153,94 @@ describe("public picker APIs", () => {
         expect(document.querySelector('[role="dialog"]')).toBeNull();
     });
 
+    it("lets the whole chip toggle a controlled multi-selection without visible MUI controls", async () => {
+        const Field = () => {
+            const [value, setValue] = React.useState([0]);
+            return React.createElement(CMMultiSelect<number>, { ...numberOptions, value, onChange: setValue, displayStyle: CMSelectDisplayStyle.AllWithInlineEditing });
+        };
+        await render(React.createElement(Field));
+        expect(document.querySelector('.MuiCheckbox-root, .MuiRadio-root')).toBeNull();
+        expect(checkbox("0").closest(".CMChip")?.classList.contains("selected")).toBe(true);
+        await click(checkbox("1").labels![0]!);
+        expect(checkbox("0").checked).toBe(true);
+        expect(checkbox("1").checked).toBe(true);
+        expect(checkbox("1").closest(".CMChip")?.classList.contains("selected")).toBe(true);
+        await click(checkbox("0").labels![0]!);
+        expect(checkbox("0").checked).toBe(false);
+        expect(checkbox("1").checked).toBe(true);
+    });
+
+    it.each([CMSelectNullBehavior.AllowNull, CMSelectNullBehavior.AllowUndefined])("renders an interactive empty choice for %s", async nullBehavior => {
+        await render(React.createElement(CMSingleSelect<number>, {
+            ...numberOptions, value: 1, onChange, nullBehavior, chipSize: "big", chipShape: "rounded",
+            displayStyle: CMSelectDisplayStyle.AllWithInlineEditing,
+        }));
+        const empty = document.querySelector<HTMLInputElement>('input[type=radio][aria-label="None"]')!;
+        expect(empty.closest(".CMChip.big.rounded")).not.toBeNull();
+        const one = document.querySelector<HTMLInputElement>('input[type=radio][aria-label="1"]')!;
+        expect(empty.name).toBe(one.name);
+        await click(empty.labels![0]!);
+        expect(onChange).toHaveBeenCalledTimes(1);
+        expect(onChange).toHaveBeenCalledWith(nullBehavior === CMSelectNullBehavior.AllowNull ? null : undefined);
+    });
+
+    it("passes selection to display-only chips and retains the dialog's controls", async () => {
+        await render(React.createElement(CMMultiSelect<number>, {
+            ...numberOptions, value: [0], onChange, displayStyle: CMSelectDisplayStyle.AllWithDialog, dialogTitle: "Numbers",
+        }));
+        expect(document.querySelectorAll(".CMChip.selected")).toHaveLength(1);
+        expect(document.querySelector(".CMChip.selected")?.textContent).toBe("0");
+        expect(document.querySelectorAll(".CMChip.notselected")).toHaveLength(2);
+        expect(document.querySelector("input")).toBeNull();
+        await click(document.querySelector<HTMLElement>(".CMChip.notselected")!);
+        expect(onChange).not.toHaveBeenCalled();
+        await click(button("Edit Numbers"));
+        expect(checkbox("0").checked).toBe(true);
+        expect(document.querySelector(".MuiCheckbox-root")).not.toBeNull();
+    });
+
+    it("allows a caller to render a complete choice instead of a chip", async () => {
+        const renderChoice = (choice: SelectionChoiceProps<number>) => React.createElement("button", {
+            type: "button", "aria-label": choice.label, "aria-pressed": choice.selected,
+            disabled: choice.disabled, onClick: choice.interaction?.onActivate,
+        }, `Custom ${choice.item}`);
+        await render(React.createElement(CMMultiSelect<number>, {
+            ...numberOptions, renderChoice, value: [0], onChange, displayStyle: CMSelectDisplayStyle.AllWithInlineEditing,
+        }));
+        expect(button("0").getAttribute("aria-pressed")).toBe("true");
+        expect(document.querySelector(".CMChip, input")).toBeNull();
+        await click(button("1"));
+        expect(onChange).toHaveBeenCalledWith([0, 1]);
+    });
+
+    it.each(["readonly", "previousData", "loading"])("guards activation at the field boundary when %s", async reason => {
+        const source = makeLocalSelectionSource({ items: [0, 1], getKey: (item: number) => item, getLabel: String, renderValue: String });
+        source.useOptions = () => ({ items: [0, 1], isPreviousData: reason === "previousData", isLoading: reason === "loading", refetch: vi.fn() });
+        const renderChoice = vi.fn(source.renderChoice);
+        source.renderChoice = renderChoice;
+        await render(React.createElement(SelectionField<number>, {
+            source, value: [0], onChange, readonly: reason === "readonly", displayStyle: CMSelectDisplayStyle.AllWithInlineEditing,
+        }));
+        const input = document.querySelector<HTMLInputElement>('input[aria-label="1"]')!;
+        expect(input.disabled).toBe(true);
+        await click(input.labels![0]!);
+        // Even a custom renderer that ignores disabled cannot commit a change.
+        await act(async () => renderChoice.mock.calls.at(-1)![0].interaction!.onActivate());
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("disables the native chip control and ordinary click callback", async () => {
+        await render(React.createElement(CMMultiSelect<number>, {
+            ...numberOptions, value: [0], onChange, readonly: true, displayStyle: CMSelectDisplayStyle.AllWithInlineEditing,
+        }));
+        expect(checkbox("0").closest(".CMChip.disabled.selected")).not.toBeNull();
+        await click(checkbox("1").labels![0]!);
+        expect(onChange).not.toHaveBeenCalled();
+        await render(React.createElement(CMChip, { variation: StandardVariationSpec.StrongDisabled, onClick: onChange }, "Disabled"));
+        await click(document.querySelector<HTMLElement>(".CMChip")!);
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
     it("creates an async option once, using trimmed input, and keeps it in the multi-select draft", async () => {
         let resolveCreate!: (value: string) => void;
         const create = vi.fn(() => new Promise<string>(resolve => { resolveCreate = resolve; }));
@@ -172,6 +264,29 @@ describe("public picker APIs", () => {
 });
 
 describe("DB3 picker adapters", () => {
+    it("renders DB3 inline choices with schema labels, colors and selection state", async () => {
+        const instrument = { publicId: "Instrument000001", name: "Trumpet" };
+        const other = { publicId: "Instrument000002", name: "Flute" };
+        // This adapter test only needs the schema's identity and display metadata.
+        const schema = {
+            getRowInfo: (item: typeof instrument) => ({ pk: item.publicId, name: item.name, color: "gold" }),
+            doesItemExactlyMatchText: (item: typeof instrument, text: string) => item.name === text,
+        } as any;
+        // The query mock supplies only the state consumed by the selection source.
+        vi.mocked(fetchUnsuspended).mockReturnValue({ items: [instrument, other], refetch: vi.fn(), queryResult: {} } as any);
+        await render(React.createElement(DB3SingleSelect<typeof instrument>, {
+            schema, value: instrument, onChange, allowInsertFromString: false,
+            nullBehavior: CMSelectNullBehavior.AllowNull, displayStyle: CMSelectDisplayStyle.AllWithInlineEditing,
+        }));
+        const trumpet = document.querySelector<HTMLInputElement>('input[aria-label="Trumpet"]')!;
+        const flute = document.querySelector<HTMLInputElement>('input[aria-label="Flute"]')!;
+        expect(trumpet.closest(".CMChip.selected")).not.toBeNull();
+        expect(flute.closest(".CMChip.notselected")).not.toBeNull();
+        expect(document.querySelector(".MuiRadio-root")).toBeNull();
+        await click(flute.labels![0]!);
+        expect(onChange).toHaveBeenCalledWith(other);
+    });
+
     it("uses schema labels and permissions with the same field, search and creation UI", async () => {
         const instrument = { id: 1, name: "Trumpet" };
         const created = { id: 2, name: "Flute" };
