@@ -26,7 +26,6 @@ export interface DashboardDataDto {
     instrument: DtoOf<typeof dashboard.instrumentDashboardView>[];
     dynMenuLinks: DtoOf<typeof menuLinkListView>[];
     relevantEventIds: EventPublicId[];
-    hasLimitedAccess: boolean;
     bandTimeZone: string;
     settings: SettingsDto;
 }

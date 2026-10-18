@@ -37,6 +37,9 @@ export function createLocaleApi(catalog: LocalizationCatalog | null, refetch: ()
     }
     return {
         getStringDetail,
+
+        // even though you can use this for general chrome text, try to use <Localized /> because it will add
+        // necessary features for localization editing.
         getPlainString<K extends LocalizedPlainStringKey>(key: K, ...args: StaticStringArguments<K>): string {
             if (kStaticLocalizedStringRegistry[key].format !== "plain") throw new Error(`Expected a plain-text key: ${key}`);
             const detail = requireText(key);

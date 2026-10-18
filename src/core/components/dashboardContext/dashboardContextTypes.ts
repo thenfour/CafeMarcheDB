@@ -36,7 +36,6 @@ export abstract class DashboardContextDataBase {
 
     currentUser: CurrentAccount | null;
     currentMembership: EventParticipantDto | null = null;
-    hasLimitedAccess = false;
 
     localTimeZone: string;
 

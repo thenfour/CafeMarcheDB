@@ -1,5 +1,6 @@
-import { defineCmdbPage } from "src/route/cmdbPage";
 // band dashboard.
+
+import { defineCmdbPage } from "src/route/cmdbPage";
 
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 import type { BlitzPage } from "@blitzjs/next";
@@ -9,7 +10,7 @@ import { CMLink } from "@/src/route/CMLink";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
 import { useLocale } from "src/locale/components/useLocale";
-import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown, Localized } from "src/setting/client/components/SettingMarkdown";
 import { Permission } from "shared/permissions";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { PermissionBoundary } from "src/core/components/CMCoreComponents";
@@ -20,23 +21,29 @@ import { BigEventCalendar } from "src/core/components/EventCalendar";
 export function HomeContent() {
   const cmdbRouter = useCmdbRouter();
   const dashboard = useDashboardContext();
-  const locale = useLocale();
+  //const locale = useLocale();
   const member = dashboard.currentMembership;
   const bandPublicId = dashboard.memberPresentation.bandPublicId;
   return <AppContextMarker name="backstage home"><Stack spacing={2}>
-    {dashboard.currentUser && dashboard.hasLimitedAccess && <Alert severity="info">
-      {locale.getPlainString("dashboard.account.limited")}
+
+    {dashboard.currentUser && dashboard.isAuthorized(Permission.member_access) && <Alert severity="info">
+      <Localized id="dashboard.account.limited" />
     </Alert>}
-    {!dashboard.memberPresentation.bandPublicId && <Alert severity="info">{locale.getPlainString("dashboard.band.required")}</Alert>}
+
+    {!dashboard.memberPresentation.bandPublicId && <Alert severity="info"><Localized id="dashboard.band.required" /></Alert>}
+
     {member && member.bandUserInstruments.length === 0 && <Alert severity="info">
-      {locale.getPlainString("dashboard.instruments.missing")}{" "}
-      <CMLink href={cmdbRouter.href("/backstage/profile")}>{locale.getPlainString("dashboard.profile")}</CMLink>
+      <Localized id="dashboard.instruments.missing" />{" "}
+      <CMLink href={cmdbRouter.href("/backstage/profile")}>,<Localized id="dashboard.profile" /></CMLink>
     </Alert>}
+
     <div className="DashboardHeader"><BandLocalizedMarkdown id="BackstageFrontpageHeaderMarkdown" /></div>
+
     {bandPublicId && dashboard.currentUser && <PermissionBoundary permission={Permission.view_wiki_pages}>
       <WikiStandaloneControl canonicalWikiPath="special/announcements"
         className="contentSection announcementMarkdown" floatingHeader={true} />
     </PermissionBoundary>}
+
     {bandPublicId && <PermissionBoundary permission={Permission.view_events_nonpublic}>
       <React.Suspense fallback={<div className="lds-dual-ring" />}>
         <RelevantEvents />

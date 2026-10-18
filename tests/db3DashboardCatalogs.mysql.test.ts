@@ -25,13 +25,19 @@ describe.skipIf(!settingsMysqlTestUrl)("dashboard catalog references on MariaDB"
         loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(fixture.bands[index]!.publicId));
 
     async function seedCatalog(tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture) {
-        const member = await tx.bandUser.findUniqueOrThrow({ where: { bandId_userId: {
-            bandId: fixture.bands[0]!.id, userId: fixture.user.id,
-        } } });
+        const member = await tx.bandUser.findUniqueOrThrow({
+            where: {
+                bandId_userId: {
+                    bandId: fixture.bands[0]!.id, userId: fixture.user.id,
+                }
+            }
+        });
         const permissions = await tx.permission.findMany({ where: { name: { in: [Permission.admin_instruments, Permission.admin_songs] } } });
-        await tx.bandRolePermission.createMany({ data: permissions.map(permission => ({
-            publicId: generatePublicId(), bandRoleId: member.bandRoleId!, permissionId: permission.id,
-        })), skipDuplicates: true });
+        await tx.bandRolePermission.createMany({
+            data: permissions.map(permission => ({
+                publicId: generatePublicId(), bandRoleId: member.bandRoleId!, permissionId: permission.id,
+            })), skipDuplicates: true
+        });
         const auth = await authorize(tx, fixture);
         const text = (value: string) => ({ kind: "set", localeTag: "en-US", stringPublicId: null, value });
         const group = await executeCatalogCrud(tx, auth, bandInstrumentGroupView, {
@@ -49,10 +55,12 @@ describe.skipIf(!settingsMysqlTestUrl)("dashboard catalog references on MariaDB"
             tx.bandSongTag.findUniqueOrThrow({ where: { publicId: String(tag.identity) } }),
         ]);
         for (const [index, entry] of ownedNames.entries()) {
-            await tx.bandDynamicLocalizedStringValue.create({ data: {
-                publicId: generatePublicId(), stringId: entry.nameId!, bandId: fixture.bands[0]!.id,
-                localeId: fixture.frenchId, indexedValue: ["Cuivres", "Trompette", "Spectacle"][index]!,
-            } });
+            await tx.bandDynamicLocalizedStringValue.create({
+                data: {
+                    publicId: generatePublicId(), stringId: entry.nameId!, bandId: fixture.bands[0]!.id,
+                    localeId: fixture.frenchId, indexedValue: ["Cuivres", "Trompette", "Spectacle"][index]!,
+                }
+            });
         }
         return { auth, group, instrument, tag, member };
     }
@@ -65,10 +73,12 @@ describe.skipIf(!settingsMysqlTestUrl)("dashboard catalog references on MariaDB"
             loadSettingsSnapshot(tx, auth),
         ]);
         // Other dashboard resources are unrelated to these catalog/reference contracts.
-        return { ...catalogs, localization, settings, currentMembership: null, authorization: auth.toClientContext(),
+        return {
+            ...catalogs, localization, settings, currentMembership: null, authorization: auth.toClientContext(),
             permission: [], eventType: [], eventStatus: [], eventTag: [],
-            eventAttendance: [], songCreditType: [], dynMenuLinks: [], relevantEventIds: [], hasLimitedAccess: false,
-            bandTimeZone: "Europe/Brussels" };
+            eventAttendance: [], songCreditType: [], dynMenuLinks: [], relevantEventIds: [],
+            bandTimeZone: "Europe/Brussels"
+        };
     }
 
     it("excludes deleted global permission metadata for members and platform administrators", () =>

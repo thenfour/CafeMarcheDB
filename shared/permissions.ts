@@ -79,24 +79,27 @@ const visibilityPresentation = (
 const permissionRegistry = [
   definePermission(
     "always_grant",
-    //"access",
     "public",
     "Authorization sentinel granted to every visitor.",
     0
   ),
   definePermission(
     "public",
-    //"access",
     "public",
     "Functionality available without a user account.",
     10
   ),
   definePermission(
     "login",
-    //"access",
     "account",
     "Functionality available to any authenticated user.",
     20
+  ),
+  definePermission(
+    "member_access",
+    "band",
+    "Access to member-only functionality for the active band.",
+    25
   ),
 
   definePermission(

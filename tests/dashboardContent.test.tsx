@@ -63,7 +63,6 @@ const dashboard = {
     permission: new TableAccessor([permission]),
     memberPresentation,
     currentUser: authenticatedPerson(),
-    hasLimitedAccess: false,
     currentMembership: { bandUserInstruments: [] },
     isAuthorized: (value: Permission | string) => grants.has(value),
 };
@@ -86,7 +85,6 @@ beforeEach(() => {
     grants.clear(); grants.add(Permission.visibility_members); grants.add(Permission.view_wiki_pages); grants.add(Permission.view_events_nonpublic);
     dashboard.memberPresentation = { bandPublicId: band, routeLocale: "fr-BE" };
     dashboard.currentUser = { id: 1 }; dashboard.currentMembership = { bandUserInstruments: [] };
-    dashboard.hasLimitedAccess = false;
     container = document.createElement("div"); document.body.appendChild(container); root = createRoot(container);
 });
 afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
@@ -161,16 +159,5 @@ describe("dashboard announcements and navigation", () => {
         await act(async () => root.render(<HomeContent />));
         expect(container.querySelector(".announcementMarkdown")).toBeNull();
         expect(container.textContent).toContain(kStaticLocalizedStringRegistry["dashboard.band.required"].defaultValue);
-    });
-    it("retains the original limited-access warning only for the fresh authenticated dashboard state", async () => {
-        dashboard.hasLimitedAccess = true;
-        await act(async () => root.render(<HomeContent />));
-        expect(container.textContent).toContain(kStaticLocalizedStringRegistry["dashboard.account.limited"].defaultValue);
-        dashboard.hasLimitedAccess = false;
-        await act(async () => root.render(<HomeContent />));
-        expect(container.textContent).not.toContain(kStaticLocalizedStringRegistry["dashboard.account.limited"].defaultValue);
-        dashboard.hasLimitedAccess = true; dashboard.currentUser = null;
-        await act(async () => root.render(<HomeContent />));
-        expect(container.textContent).not.toContain(kStaticLocalizedStringRegistry["dashboard.account.limited"].defaultValue);
     });
 });

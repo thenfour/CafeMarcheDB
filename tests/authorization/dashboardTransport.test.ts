@@ -18,15 +18,25 @@ async function seedDashboard(tx: Prisma.TransactionClient, fixture: SettingsMysq
     const bandId = fixture.bands[0]!.id;
     const bandPublicId = parsePublicId<"Band">(fixture.bands[0]!.publicId);
     const auth = await loadAuthorizationForUser(fixture.user, tx, bandPublicId);
-    const name = (indexedValue: string) => tx.dynamicLocalizedString.create({ data: { publicId: generatePublicId(), values: { create: {
-        publicId: generatePublicId(), localeId: fixture.englishId, indexedValue,
-    } } } });
+    const name = (indexedValue: string) => tx.dynamicLocalizedString.create({
+        data: {
+            publicId: generatePublicId(), values: {
+                create: {
+                    publicId: generatePublicId(), localeId: fixture.englishId, indexedValue,
+                }
+            }
+        }
+    });
     const group = await tx.bandInstrumentFunctionalGroup.create({ data: { publicId: generatePublicId(), bandId, color: "orange", nameId: (await name("Brass")).id } });
     const instrument = await tx.bandInstrument.create({ data: { publicId: generatePublicId(), bandId, functionalGroupId: group.id, nameId: (await name("Trumpet")).id } });
     const permission = await tx.permission.findUniqueOrThrow({ where: { name: Permission.visibility_members } });
-    const menu = await tx.menuLink.create({ data: { publicId: generatePublicId(), bandId, captionId: (await name("Scores")).id,
-        groupName: "scores", groupCssClass: "", itemCssClass: "", linkType: "ExternalURL", externalURI: "https://example.test/scores",
-        createdByUserId: fixture.user.id, visiblePermissionId: permission.id } });
+    const menu = await tx.menuLink.create({
+        data: {
+            publicId: generatePublicId(), bandId, captionId: (await name("Scores")).id,
+            groupName: "scores", groupCssClass: "", itemCssClass: "", linkType: "ExternalURL", externalURI: "https://example.test/scores",
+            createdByUserId: fixture.user.id, visiblePermissionId: permission.id
+        }
+    });
     const read = async () => loadDashboardData(await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" }), auth, { bandPublicId, routeLocale: "en-US" });
     return { group, instrument, permission, menu, read };
 }
@@ -91,7 +101,6 @@ describe.skipIf(!settingsMysqlTestUrl)("dashboard transport boundary on migrated
         expect(refreshed.instrument).toEqual([]);
         expect(refreshed.dynMenuLinks).toEqual([]);
         // The migrated role designation is a server-derived notice; role administration stays separate.
-        expect(refreshed.hasLimitedAccess).toBe(true);
         expect(refreshed).not.toHaveProperty("role");
     }));
 });

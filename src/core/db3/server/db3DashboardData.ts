@@ -8,7 +8,6 @@ import { menuLinkListView } from "../shared/entities/menuLink/menuLinkViews";
 import { eventParticipantView } from "../shared/entities/user/eventParticipant";
 import type { DashboardDataDto } from "../shared/references/dashboardData";
 import { permissionDashboardView } from "../shared/references/dashboardReferences";
-import { hasLimitedDashboardAccess } from "./dashboardAccountNotice";
 import { readDashboardRelevantEvents } from "./dashboardEvents";
 import { loadDashboardCatalogs, loadSharedCatalogs } from "./db3DashboardCatalogs";
 import { queryView } from "./db3QueryCore";
@@ -48,7 +47,7 @@ export function loadDashboardData(
 ): Promise<DashboardDataDto> {
     return executeDB3Read(database, authorization, async context => {
         const { database: transaction, authorization } = context;
-        const [localization, settings, permissions, catalogs, sharedCatalogs, currentMembership, dynMenuLinks, relevantEventIds, hasLimitedAccess] = await Promise.all([
+        const [localization, settings, permissions, catalogs, sharedCatalogs, currentMembership, dynMenuLinks, relevantEventIds] = await Promise.all([
             loadLocalizationCatalog(transaction, authorization, input),
             loadSettingsSnapshot(transaction, authorization),
             queryView({ view: permissionDashboardView, ...input, filter: {}, cmdbQueryContext: "dashboard permissions" }, authorization, context),
@@ -57,7 +56,6 @@ export function loadDashboardData(
             loadCurrentMembership(context, input),
             loadDashboardMenuLinks(context, input),
             readDashboardRelevantEvents(context, new Date()),
-            hasLimitedDashboardAccess(context),
         ]);
         return {
             ...catalogs,
@@ -70,7 +68,6 @@ export function loadDashboardData(
             bandTimeZone: authorization.band ? readSettingSnapshot(settings, "band", "dateTime.bandTimeZone") : "Europe/Brussels",
             dynMenuLinks,
             relevantEventIds,
-            hasLimitedAccess,
         };
     });
 }
