@@ -1,5 +1,5 @@
 import { Permission } from "shared/permissions";
-import { getServerStartState } from "shared/serverStateBase";
+import { getServerStartState, serializeServerStartInfo } from "shared/serverStateBase";
 import type { Ctx } from "blitz";
 import type { NextPageContext } from "next";
 import { z } from "zod";
@@ -55,7 +55,7 @@ export default async function getPageBootstrap(input: PageBootstrapInput, contex
             routeKey: route.key,
             brand,
             routing: { baseUri: serverGetBaseUrl(), hosting, requestPath },
-            serverStartupState: auth.hasPermission(Permission.sysadmin) ? getServerStartState() : null,
+            serverStartupState: auth.hasPermission(Permission.sysadmin) ? serializeServerStartInfo(getServerStartState()) : null,
         };
     });
 }

@@ -11,6 +11,31 @@ export interface ServerStartInfo {
     versionIsDirty: boolean,
 };
 
+// Page props and RPC share this JSON-safe transport contract.
+export type ServerStartInfoDto = Omit<ServerStartInfo, "startedAt" | "gitCommitDate"> & {
+    startedAt: string;
+    gitCommitDate: string;
+};
+
+export function serializeServerStartInfo(info: ServerStartInfo): ServerStartInfoDto {
+    return {
+        ...info,
+        startedAt: info.startedAt.toISOString(),
+        gitCommitDate: info.gitCommitDate.toISOString(),
+    };
+}
+
+export function hydrateServerStartInfo(dto: ServerStartInfoDto | null): ServerStartInfo | null {
+    if (dto === null) {
+        return null;
+    }
+    return {
+        ...dto,
+        startedAt: new Date(dto.startedAt),
+        gitCommitDate: new Date(dto.gitCommitDate),
+    };
+}
+
 export const getServerStartState = (): ServerStartInfo => {
     const startedAt = new Date(Number.parseInt(process.env.CMDB_START_TIME || ""));
     const commitsSinceTag = Number.parseInt(process.env.CMDB_VERSION_COMMITS_SINCE_TAG || "0", 10);

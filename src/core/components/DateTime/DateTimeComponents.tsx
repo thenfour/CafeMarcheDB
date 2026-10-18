@@ -1,4 +1,5 @@
 import { Tooltip } from "@mui/material";
+import { assert } from "blitz";
 import React from "react";
 import { CalendarDate } from "shared/dateTimePolicy";
 import { getRelativeCalendarTiming } from "shared/time";
@@ -36,6 +37,8 @@ export const DateValue = (props: DateValueProps) => {
     if (!props.value) {
         return <span className={`DateValue null ${props.className}`} style={props.style}>--</span>;
     }
+
+    assert(typeof props.value === "object" && props.value instanceof Date, `DateValue needs a Date; received ${typeof props.value}`);
 
     const rel = getRelativeCalendarTiming(
         CalendarDate.fromInstant({ value: now, timeZone: props.timeZone }),

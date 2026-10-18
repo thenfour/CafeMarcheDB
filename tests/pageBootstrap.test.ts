@@ -31,6 +31,8 @@ beforeEach(() => {
     vi.resetAllMocks();
     vi.stubEnv("CMDB_BASE_URL", "https://band.example.test");
     vi.stubEnv("CMDB_HOSTING_MODE", "Platform");
+    vi.stubEnv("CMDB_START_TIME", String(Date.parse("2026-10-18T10:00:00.000Z")));
+    vi.stubEnv("CMDB_GIT_COMMIT_DATE", "2026-10-17T12:30:00.000Z");
     services.availability.mockResolvedValue(undefined);
     services.session.mockResolvedValue(context.session);
     services.authorize.mockResolvedValue(authorization);
@@ -55,6 +57,9 @@ describe("page bootstrap server boundary", () => {
         vi.stubEnv("CMDB_GIT_REVISION", "test-revision");
         const result = await getPageBootstrap(input, context);
         expect(result.serverStartupState?.gitRevision).toBe("test-revision");
+        expect(result.serverStartupState?.startedAt).toBe("2026-10-18T10:00:00.000Z");
+        expect(result.serverStartupState?.gitCommitDate).toBe("2026-10-17T12:30:00.000Z");
+        expect(JSON.parse(JSON.stringify(result))).toEqual(result);
     });
     it("loads platform branding without band context on ordinary platform pages", async () => {
         services.authorize.mockResolvedValue({ ...authorization, band: null });

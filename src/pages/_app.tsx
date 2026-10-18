@@ -24,7 +24,7 @@ import { PortalRoutingProvider } from "@/src/route/useCmdbRouter";
 import { invoke, useQueryErrorResetBoundary } from "@blitzjs/rpc";
 import Router from "next/router";
 import getPageBootstrap, { PageBootstrapInput } from "src/auth/queries/getPageBootstrap";
-import { ServerStartupStateContext } from "src/core/components/ServerStartupStateContext";
+import { ServerStartupStateProvider } from "src/core/components/ServerStartupStateContext";
 import { ConnectionHealthMonitor } from "src/core/connectivity/ConnectionHealthComponents";
 import { isConnectivityError } from "src/core/connectivity/connectionHealth";
 import { PresentationProvider } from "src/locale/components/PresentationProvider";
@@ -218,7 +218,7 @@ function ThemedApp({ Component, pageProps }: Pick<MyAppProps, "Component" | "pag
           <BrandContext.Provider value={brand}>
             {state.status === "ready" ? <PortalRoutingProvider config={state.data.routing}>
               <PageRouteProvider routeKey={state.data.routeKey}>
-                <ServerStartupStateContext.Provider value={state.data.serverStartupState}>
+                <ServerStartupStateProvider value={state.data.serverStartupState}>
                   <ErrorBoundary FallbackComponent={RootErrorFallback} onReset={queryErrorResetBoundary.reset}>
                     {/* lsmb todo: less intrusive suspense fallback. also is this necessary? the presentationProvider also has a suspense and this might not be needed. */}
                     <React.Suspense fallback={<span role="status">Loading…</span>}>
@@ -233,7 +233,7 @@ function ThemedApp({ Component, pageProps }: Pick<MyAppProps, "Component" | "pag
                       </PresentationProvider>
                     </React.Suspense>
                   </ErrorBoundary>
-                </ServerStartupStateContext.Provider>
+                </ServerStartupStateProvider>
               </PageRouteProvider>
             </PortalRoutingProvider> : <RootErrorView
               presentation={state}

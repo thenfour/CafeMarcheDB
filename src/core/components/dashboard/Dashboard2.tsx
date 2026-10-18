@@ -302,6 +302,9 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
     const brand = useBrand();
     const serverStartupState = useServerStartupState();
     const versionLabel = formatVersionLabel(serverStartupState);
+
+    console.log(serverStartupState);
+
     return (
         <AppBar
             position="static"
