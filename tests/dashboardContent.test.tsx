@@ -14,6 +14,14 @@ import { TableAccessor } from "shared/rootroot";
 import { menuLinkListView, type MenuLinkListClient } from "src/core/db3/shared/entities/menuLink/menuLinkViews";
 import { createDashboardReferenceStore, registerDashboardReferences, permissionDashboardView } from "src/core/db3/shared/references/dashboardReferences";
 import { kStaticLocalizedStringRegistry, type LocalizedPlainStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
+import { BrandContext } from "shared/brandConfig";
+import { DefaultDbBrandConfig } from "shared/brandConfigBase";
+import { createTheme } from "@mui/material/styles";
+import type { BandPresentation } from "src/locale/shared/presentationContext";
+
+vi.mock("src/locale/components/PresentationProvider", () => ({
+    usePresentation: () => ({ data: { band: selectedBand } }),
+}));
 
 vi.mock("next/router", () => ({ useRouter: () => ({ pathname: "/backstage", requestPath: { internalPathname: "/backstage" } }) }));
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({
@@ -40,15 +48,17 @@ vi.mock("src/setting/client/components/SettingMarkdown", () => ({
 }));
 vi.mock("src/locale/components/useLocale", () => ({
     useLocale: () => ({
-        getPlainString: (key: LocalizedPlainStringKey) => kStaticLocalizedStringRegistry[key].defaultValue,
+        getPlainString: (key: LocalizedPlainStringKey, parameters?: { bandName: string }) =>
+            kStaticLocalizedStringRegistry[key].defaultValue.replace("{bandName}", parameters?.bandName ?? ""),
     })
 }));
-import { AddDynMenuItemsToStatic, DynMenuToMenuItem, FlattenMenuSections, getCurrentMenuSection } from "src/core/components/dashboard/MenuStructure";
+import { AddDynMenuItemsToStatic, DynMenuToMenuItem, FlattenMenuSections, getCurrentMenuSection, SideMenu } from "src/core/components/dashboard/MenuStructure";
 import { NavRealm, type MenuSection } from "src/core/components/dashboard/StaticMenuItems";
 import { HomeContent } from "src/pages/backstage/index";
 
 const band = parsePublicId<"Band">("DashboardBand001");
 const otherBand = parsePublicId<"Band">("DashboardBand002");
+let selectedBand: BandPresentation | null;
 const permission = permissionDashboardView.hydrate(permissionDashboardView.parseDto({
     publicId: parsePublicId<"Permission">("DashboardPerm001"), name: Permission.visibility_members,
     description: "Members", sortOrder: 1, color: null, isVisibility: true,
@@ -64,6 +74,7 @@ function authenticatedPerson(): { id: number } | null {
 }
 const hosting = { kind: "multiBand" } as const;
 const dashboard = {
+    dynMenuLinks: new TableAccessor<MenuLinkListClient>([]),
     permission: new TableAccessor([permission]),
     memberPresentation,
     currentUser: authenticatedPerson(),
@@ -89,12 +100,42 @@ beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     grants.clear(); grants.add(Permission.visibility_members); grants.add(Permission.view_wiki_pages); grants.add(Permission.view_events_nonpublic);
     dashboard.memberPresentation = { bandPublicId: band, routeLocale: "fr-BE" };
+    selectedBand = { publicId: band, name: "River Band" };
     dashboard.currentUser = { id: 1 }; dashboard.currentMembership = { bandUserInstruments: [] };
     container = document.createElement("div"); document.body.appendChild(container); root = createRoot(container);
 });
 afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
 
 describe("dashboard announcements and navigation", () => {
+    it.each(["Different website title", ""])("uses the localized band name in menu captions with site title %j", async siteTitle => {
+        grants.add(Permission.login);
+        const theme = createTheme();
+        const renderMenu = () => act(async () => root.render(
+            <BrandContext.Provider value={{ ...DefaultDbBrandConfig, siteTitle }}>
+                <SideMenu open onClose={() => { }} variant="permanent" drawerWidth={260} theme={theme} />
+            </BrandContext.Provider>,
+        ));
+        await renderMenu();
+        expect(container.textContent).toContain("Your River Band Profile");
+        expect(container.textContent).toContain("Your CMDB profile");
+        selectedBand = { publicId: band, name: "Groupe Rivière" };
+        await renderMenu();
+        expect(container.textContent).toContain("Your Groupe Rivière Profile");
+        expect(container.textContent).not.toContain("Your River Band Profile");
+        selectedBand = { publicId: otherBand, name: "Brass Collective" };
+        dashboard.memberPresentation.bandPublicId = otherBand;
+        await renderMenu();
+        expect(container.textContent).toContain("Your Brass Collective Profile");
+        selectedBand = { publicId: otherBand, name: null };
+        await renderMenu();
+        expect(container.textContent).toContain("Your Unnamed band Profile");
+        selectedBand = null;
+        dashboard.memberPresentation.bandPublicId = null;
+        await renderMenu();
+        expect(container.textContent).toContain("Your CMDB profile");
+        expect(container.textContent).not.toContain("Your Unnamed band Profile");
+    });
+
     it("retains nested Wiki paths, contextual band/locale, authored blank captions and external URLs", () => {
         const link = DynMenuToMenuItem(menu(), dashboard)!;
         expect(link.path).toBe("/backstage/wiki/special/announcements");

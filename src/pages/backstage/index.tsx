@@ -3,25 +3,27 @@ import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 
 import { defineCmdbPage } from "src/route/cmdbPage";
 
-import { useCmdbRouter } from "src/route/useCmdbRouter";
-import type { BlitzPage } from "@blitzjs/next";
-import React from "react";
-import { Alert, Stack } from "@mui/material";
+import { usePresentation } from "@/src/locale/components/PresentationProvider";
 import { CMLink } from "@/src/route/CMLink";
-import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
-import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
-import { useLocale } from "src/locale/components/useLocale";
-import { BandLocalizedMarkdown, Localized } from "src/setting/client/components/SettingMarkdown";
+import type { BlitzPage } from "@blitzjs/next";
+import { Alert, Stack } from "@mui/material";
+import React from "react";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { PermissionBoundary } from "src/core/components/CMCoreComponents";
-import { WikiStandaloneControl } from "src/core/components/wiki/WikiStandaloneComponents";
+import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
 import { RelevantEvents } from "src/core/components/event/RelevantEvents";
 import { BigEventCalendar } from "src/core/components/EventCalendar";
+import { WikiStandaloneControl } from "src/core/components/wiki/WikiStandaloneComponents";
+import { useLocale } from "src/locale/components/useLocale";
+import { useCmdbRouter } from "src/route/useCmdbRouter";
+import { BandLocalizedMarkdown, Localized } from "src/setting/client/components/SettingMarkdown";
 
 export function HomeContent() {
   const cmdbRouter = useCmdbRouter();
   const dashboard = useDashboardContext();
-  //const locale = useLocale();
+  const presentation = usePresentation();
+  const bandName = presentation.data?.band?.name || "";
   const member = dashboard.currentMembership;
   const bandPublicId = dashboard.memberPresentation.bandPublicId;
   return <AppContextMarker name="backstage home"><Stack spacing={2}>
@@ -34,7 +36,9 @@ export function HomeContent() {
 
     {member && member.bandUserInstruments.length === 0 && <Alert severity="info">
       <Localized id="dashboard.instruments.missing" />{" "}
-      <CMLink href={cmdbRouter.href("/backstage/profile")}>,<Localized id="dashboard.profile" /></CMLink>
+      <CMLink href={cmdbRouter.href("/backstage/profile")}>
+        <Localized id="menu.profile" parameters={{ bandName }} />
+      </CMLink>
     </Alert>}
 
     <div className="DashboardHeader"><BandLocalizedMarkdown id="BackstageFrontpageHeaderMarkdown" /></div>

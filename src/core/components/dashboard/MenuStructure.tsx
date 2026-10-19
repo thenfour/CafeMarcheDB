@@ -1,17 +1,18 @@
-import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { groupByMap } from '@/shared/arrayUtils';
 import { MenuCaptionKey } from "@/src/locale/shared/menuStrings";
 import { Box, Collapse, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Typography } from '@mui/material';
 import Link from "next/link";
 import * as React from 'react';
 import { isPermission, Permission } from "shared/permissions";
-import type { PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import { gNullValue } from "shared/rootroot";
+import type { PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import * as db3 from "src/core/db3/db3";
 import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
 import { wikiPageInternalHref } from "src/core/wiki/shared/wikiUtils";
+import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
 import { type BandHostingConfig, type PortalPath } from "src/route/portalRouting";
+import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
 import { AppContextMarker } from "../AppContext";
 import { AdminInspectObject } from '../CMCoreComponents2';
@@ -429,7 +430,9 @@ export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme 
     }
 
     const locale = useLocale();
-    const staticSections = resolveStaticMenuSections(key => locale.getPlainString(key),
+    const band = usePresentation().data?.band;
+    const bandName = band?.name ?? "";
+    const staticSections = resolveStaticMenuSections(key => locale.getPlainString(key, { bandName }),
         dashboardContext.memberPresentation.bandPublicId ? "band" : "platform");
     const menuSections = AddDynMenuItemsToStatic(staticSections, dynamicSectionsAndGroups, dashboardContext);
 

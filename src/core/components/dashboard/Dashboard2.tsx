@@ -1,8 +1,6 @@
-import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { shouldShowAdminControls } from "@/shared/adminControls";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { IsNullOrWhitespace } from "@/shared/utils";
-import { usePageRoute } from "src/route/usePageRoute";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { useSession } from "@blitzjs/auth";
 import { useMutation } from "@blitzjs/rpc";
@@ -16,9 +14,12 @@ import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
+import { usePresentation } from "src/locale/components/PresentationProvider";
 import { PortalLanguageSelection } from "src/route/PortalLanguageSelection";
+import { usePageRoute } from "src/route/usePageRoute";
 import { useBrand } from "../../../../shared/brandConfig";
-import { BandLocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
+import { BandLocalizedMarkdown, Localized } from "../../../setting/client/components/SettingMarkdown";
 import { ConnectionStatusIndicator } from "../../connectivity/ConnectionHealthComponents";
 import { API } from "../../db3/clientAPI";
 import { gIconMap } from "../../db3/components/IconMap";
@@ -39,11 +40,11 @@ import { useDialogViewportRect } from "../ResponsiveDialog";
 import { MainSiteSearch } from "../search/MainSiteSearch";
 import { useServerStartupState } from "../ServerStartupStateContext";
 import { ApplicationFrameProvider, useApplicationFrame, useApplicationFrameBackgroundRef } from "./ApplicationFrameContext";
+import { BandMenuItems } from "./BandMenuItems";
 import {
     SideMenu
 } from "./MenuStructure";
 import { NavRealm } from "./StaticMenuItems";
-import { BandMenuItems } from "./BandMenuItems";
 
 const drawerWidth = 260;
 
@@ -63,6 +64,8 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
     //const router = useRouter();
     //const [currentUser] = useCurrentUser();
     const router = useCmdbRouter();
+    const band = usePresentation().data?.band;
+    const bandName = band?.name || "";
     const sess = useSession();
     const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
     const isShowingAdminControls = shouldShowAdminControls(sess);
@@ -160,7 +163,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
                 href={router.href('/backstage/profile')}
                 onClick={closeMenu}
             >
-                Your profile
+                <Localized id="menu.profile" parameters={{ bandName }} />
             </MenuItem>
         }
         <MenuItem

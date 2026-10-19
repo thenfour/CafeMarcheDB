@@ -1,7 +1,7 @@
-import React from "react";
 import { useQuery } from "@blitzjs/rpc";
-import { Alert, ListSubheader, MenuItem } from "@mui/material";
+import { Alert, MenuItem } from "@mui/material";
 import Link from "next/link";
+import React from "react";
 import getAvailableBands from "src/auth/queries/getAvailableBands";
 import type { AvailableBand } from "src/auth/shared/availableBands";
 import { usePresentation } from "src/locale/components/PresentationProvider";
@@ -69,9 +69,6 @@ function PlatformBandMenuItems({ onNavigate }: { onNavigate?: () => void }) {
             onClick={event => { void navigate(event, platformHref); }}>
             {locale.getPlainString("dashboard.band.platform")}
         </MenuItem>
-        {selected && !bands.some(band => band.publicId === selected) && <MenuItem disabled>
-            {locale.getPlainString("dashboard.band.unavailable")}
-        </MenuItem>}
         {bands.map(band => {
             const href = router.href("/backstage", {
                 bandPublicId: band.publicId,

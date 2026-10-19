@@ -48,6 +48,7 @@ function dataFor(input: PresentationInput): PresentationData {
     ])) as LocalizationCatalog["strings"];
     return {
         queryExecutionTimeMs: 0,
+        band: band ? { publicId: band, name: band } : null,
         input, authorization: { bandPublicId: band, userPublicId: sessionUserId ? parsePublicId<"User">("User000000000042") : null,
             bandUserPublicId: null, effectivePermissionNames: [] },
         localization: { bandPublicId: band, preferences, availability, strings, formattingLocale: selectFormattingLocale(preferences), cacheKey: "fixture", payloadBytes: 1 },

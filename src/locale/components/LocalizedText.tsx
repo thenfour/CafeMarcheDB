@@ -1,10 +1,8 @@
-import React from "react";
 import { Markdown } from "src/core/components/markdown/Markdown";
-import type { LocalizedMarkdownKey, LocalizedPlainStringKey, StaticStringParameters } from "../shared/staticLocalizedStringRegistry";
+import type { LocalizedMarkdownKey, LocalizedPlainStringKey, StaticStringParameterProps, StaticStringParameters } from "../shared/staticLocalizedStringRegistry";
 import { useLocale } from "./useLocale";
 
-type TextProps<K extends LocalizedPlainStringKey> = { stringKey: K } &
-    ([StaticStringParameters<K>] extends [never] ? { parameters?: never } : { parameters: StaticStringParameters<K> });
+type TextProps<K extends LocalizedPlainStringKey> = { stringKey: K } & StaticStringParameterProps<K>;
 
 export function LocalizedText<K extends LocalizedPlainStringKey>(props: TextProps<K>) {
     const locale = useLocale();

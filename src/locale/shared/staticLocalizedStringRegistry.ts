@@ -1,23 +1,23 @@
-import { menuStrings } from "./menuStrings";
-import { z } from "zod";
-import { markdownStaticString, plainStaticString } from "./staticLocalizedStringRegistryHelpers";
 import { freezeRegistry } from "@/src/setting/shared/registryHelpers";
-import { instrumentStrings } from "./instrumentStrings";
-import { catalogStrings } from "./catalogStrings";
-import { membershipStrings } from "./membershipStrings";
-import { dashboardStrings } from "./dashboardStrings";
-import { db3FieldStrings } from "./db3FieldStrings";
-import { settingsEditorStrings } from "./settingsEditorStrings";
-import { eventCatalogStrings } from "./eventCatalogStrings";
-import { songWorkflowStrings } from "./songWorkflowStrings";
-import { eventStatisticsStrings } from "./eventStatisticsStrings";
-import { markdownReferenceStrings } from "./markdownReferenceStrings";
-import { localizedMarkdownStrings } from "./localizedMarkdownStrings";
-import { activityReportStrings } from "./activityReportStrings";
-import { roleAdministrationStrings } from "./roleAdministrationStrings";
+import { z } from "zod";
 import { accountAnalysisStrings } from "./accountAnalysisStrings";
 import { accountMergeStaticStrings } from "./accountMergeStrings";
+import { activityReportStrings } from "./activityReportStrings";
 import { auditLogStrings } from "./auditLogStrings";
+import { catalogStrings } from "./catalogStrings";
+import { dashboardStrings } from "./dashboardStrings";
+import { db3FieldStrings } from "./db3FieldStrings";
+import { eventCatalogStrings } from "./eventCatalogStrings";
+import { eventStatisticsStrings } from "./eventStatisticsStrings";
+import { instrumentStrings } from "./instrumentStrings";
+import { localizedMarkdownStrings } from "./localizedMarkdownStrings";
+import { markdownReferenceStrings } from "./markdownReferenceStrings";
+import { membershipStrings } from "./membershipStrings";
+import { menuStrings } from "./menuStrings";
+import { roleAdministrationStrings } from "./roleAdministrationStrings";
+import { settingsEditorStrings } from "./settingsEditorStrings";
+import { songWorkflowStrings } from "./songWorkflowStrings";
+import { markdownStaticString, plainStaticString } from "./staticLocalizedStringRegistryHelpers";
 
 function defaultMarkdownStaticString() {
     return markdownStaticString({
@@ -178,11 +178,14 @@ export type LocalizedPlainStringKey = KeysWithFormat<"plain">;
 
 type ParameterValue<T> = T extends "number" ? number : T extends "date" ? Date : string;
 
-export type StaticStringParameters<K extends LocalizedPlainStringKey> =
+export type StaticStringParameters<K extends StaticLocalizedStringKey> =
     typeof kStaticLocalizedStringRegistry[K] extends { readonly parameters: readonly (infer P)[] }
     ? { [Parameter in P as Parameter extends { key: infer Name extends string } ? Name : never]:
         ParameterValue<Parameter extends { type: infer T } ? T : never> }
     : never;
+
+export type StaticStringParameterProps<K extends StaticLocalizedStringKey> =
+    [StaticStringParameters<K>] extends [never] ? { parameters?: never } : { parameters: StaticStringParameters<K> };
 
 export type StaticStringArguments<K extends LocalizedPlainStringKey> =
     [StaticStringParameters<K>] extends [never] ? [] : [parameters: StaticStringParameters<K>];

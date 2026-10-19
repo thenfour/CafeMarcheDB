@@ -11,7 +11,8 @@ import { BandLocalizedMarkdown, LocalizedMarkdown } from "src/locale/components/
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { createLocaleApi, type LocalizationCatalog } from "src/locale/shared/localizationCatalog";
 import { collectLocalePreferences } from "src/locale/shared/localePreferences";
-import { kStaticLocalizedStringRegistry } from "src/locale/shared/staticLocalizedStringRegistry";
+import { kStaticLocalizedStringRegistry, type StaticLocalizedStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
+import { Localized } from "src/setting/client/components/SettingMarkdown";
 import { resolveString } from "src/locale/shared/stringResolution";
 import type { StaticStringEditorData, StaticStringTarget } from "src/locale/shared/staticStringEdit";
 
@@ -65,6 +66,7 @@ function fixture(bandPublicId = bands[0]!, routeLocale = "fr-BE"): ReturnType<ty
     return {
         bandPublicId, invalidate, data: {
             queryExecutionTimeMs: 0,
+            band: { publicId: bandPublicId, name: "Test band" },
             input, localization: {
                 bandPublicId, preferences, availability,
                 strings, formattingLocale: routeLocale, cacheKey: routeLocale, payloadBytes: 0
@@ -113,6 +115,87 @@ beforeEach(() => {
 });
 afterEach(async () => {
     await act(async () => root.unmount()); container.remove(); vi.unstubAllGlobals();
+});
+
+function translatedText(id: StaticLocalizedStringKey, value: string | null) {
+    const data = presentation.data!;
+    presentation = { ...presentation, data: {
+        ...data, localization: { ...data.localization, strings: {
+            ...data.localization.strings, [id]: { ...data.localization.strings[id], value },
+        } },
+    } };
+}
+
+describe("registered localized text", () => {
+    it("interpolates required parameters in fragments and styled wrappers", async () => {
+        await render(<Localized id="menu.profile" parameters={{ bandName: "River Band" }} />);
+        expect(container.textContent).toBe("Your River Band Profile");
+        await render(<Localized id="menu.profile" parameters={{ bandName: "Brass Collective" }}
+            component="span" className="profile-caption" style={{ fontWeight: 700 }} />);
+        const span = container.querySelector("span.profile-caption");
+        expect(span?.textContent).toBe("Your Brass Collective Profile");
+        expect(span?.getAttribute("style")).toContain("font-weight: 700");
+    });
+    it("formats plural messages using the current formatting locale", async () => {
+        await render(<Localized id="common.items.count" parameters={{ count: 1 }} />);
+        expect(container.textContent).toBe("1 item");
+        await render(<Localized id="common.items.count" parameters={{ count: 1234 }} />);
+        expect(container.textContent).toBe(`${new Intl.NumberFormat("fr-BE").format(1234)} items`);
+    });
+    it("renders parameter values as literal text and supports parameterless keys", async () => {
+        await render(<Localized id="menu.profile" parameters={{ bandName: "<b>{band}</b>" }} />);
+        expect(container.textContent).toBe("Your <b>{band}</b> Profile");
+        expect(container.querySelector("b")).toBeNull();
+        await render(<Localized id="common.action.ok" />);
+        expect(container.textContent).toBe("OK");
+    });
+    it.each([
+        { value: null, fallbackWhen: "null", expected: "Fallback {literal}" },
+        { value: "", fallbackWhen: "null", expected: "" },
+        { value: "  ", fallbackWhen: "emptyString", expected: "Fallback {literal}" },
+        { value: null, fallbackWhen: "nullOrEmptyString", expected: "Fallback {literal}" },
+        { value: "", fallbackWhen: "nullOrEmptyString", expected: "Fallback {literal}" },
+    ] satisfies Array<{ value: string | null; fallbackWhen: "null" | "emptyString" | "nullOrEmptyString"; expected: string }>)
+        ("preserves fallback behavior for $value with $fallbackWhen", async ({ value, fallbackWhen, expected }) => {
+            translatedText("menu.profile", value);
+            await render(<Localized id="menu.profile" parameters={{ bandName: "River Band" }}
+                fallbackWhen={fallbackWhen} fallbackPlainString="Fallback {literal}" />);
+            expect(container.textContent).toBe(expected);
+        });
+    it("returns no content for a missing translation without a fallback", async () => {
+        translatedText("menu.profile", null);
+        await render(<Localized id="menu.profile" parameters={{ bandName: "River Band" }} />);
+        expect(container.childElementCount).toBe(0);
+    });
+    it("preserves Markdown rendering and raw Markdown in a custom wrapper", async () => {
+        await render(<Localized id="GlobalWikiPage_Markdown" />);
+        expect(container.querySelector("[data-markdown]")?.textContent).toBe("Inherited help");
+        translatedText("GlobalWikiPage_Markdown", "**Help**");
+        await render(<Localized id="GlobalWikiPage_Markdown" component="article" className="help" />);
+        expect(container.querySelector("article.help")?.textContent).toBe("**Help**");
+        expect(container.querySelector("[data-markdown]")).toBeNull();
+    });
+    it("requires the registry's exact parameters at compile time", () => {
+        if (false) {
+            // @ts-expect-error The profile caption requires bandName.
+            <Localized id="menu.profile" />;
+            // @ts-expect-error The registered bandName parameter is a string.
+            <Localized id="menu.profile" parameters={{ bandName: 42 }} />;
+            // @ts-expect-error Unknown parameters do not satisfy the profile caption.
+            <Localized id="menu.profile" parameters={{ count: 2 }} />;
+            // @ts-expect-error Parameterless strings reject parameters.
+            <Localized id="common.action.ok" parameters={{ bandName: "River Band" }} />;
+            // @ts-expect-error Markdown does not accept interpolation parameters.
+            <Localized id="GlobalWikiPage_Markdown" parameters={{ bandName: "River Band" }} />;
+            const id = Date.now() ? "menu.profile" : "common.action.ok";
+            // @ts-expect-error A key that may need parameters must be narrowed first.
+            <Localized id={id} />;
+            const locale = createLocaleApi(null);
+            // @ts-expect-error Direct formatting also requires bandName.
+            locale.getPlainString("menu.profile");
+        }
+        expect(true).toBe(true);
+    });
 });
 
 describe("localized Markdown edit workflow", () => {

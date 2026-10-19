@@ -27,7 +27,7 @@ export const membershipStrings = {
     "membership.profile.refreshFailed": label("Profile saved. Reload this page to show the latest values."),
     "membership.profile.notFound": label("This person has no available membership in the selected band."),
     "membership.profile.accountNotFound": label("This account is unavailable."),
-    "membership.profile.ownTitle": label("Your profile"),
+    "membership.profile.ownTitle": label("Your profile"), // title for the user profile page (/platform/profile and /b/__LU8aGJ7NPVEkRG/profile)
     "membership.profile.preferences": label("Preferences"),
     "membership.profile.accountTitle": label("Account profile"),
     "membership.profile.deactivated": label("This account is deactivated. Its band memberships and credentials are retained."),

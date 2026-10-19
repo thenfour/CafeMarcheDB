@@ -1,12 +1,10 @@
-import { Avatar, Box, Typography } from "@mui/material";
 import CheckIcon from "@mui/icons-material/Check";
+import { Avatar, Box, Typography } from "@mui/material";
 import type { BandIdentity } from "src/core/shared/bandIdentity";
-import { useLocale } from "src/locale/components/useLocale";
 
 /** A band's visual identity; callers supply any link or menu behavior. */
 export function BandBadge({ band, selected = false }: { band: BandIdentity; selected?: boolean }) {
-    const locale = useLocale();
-    const name = band.name ?? locale.getPlainString("dashboard.band.unnamed");
+    const name = band.name ?? "";
     const initials = name.trim().split(/\s+/).slice(0, 2).map(word => word[0]).join("").toLocaleUpperCase();
 
     return <Box component="span" className="BandBadge" sx={{

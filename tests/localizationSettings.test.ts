@@ -67,6 +67,21 @@ async function writeCommands(commands: SettingCommand[], bandPublicId: typeof ba
 }
 
 describe("authorized catalog delivery", () => {
+    it("formats static menu captions with the current band name, including translated captions", async () => {
+        await database.bandStaticLocalizedStringValue.create({ data: {
+            publicId: "Value000000000006", bandId: 1, localeId: 2,
+            stringKey: "menu.events", indexedValue: "Concerts de {bandName}", blobValue: null,
+        } });
+        const auth = await loadAuthorizationForUser(user, database, bandA);
+        const catalog = await loadLocalizationCatalog(database, auth, { routeLocale: "fr-BE" });
+        const locale = createLocaleApi(catalog);
+        const parameters = { bandName: "Café Marché" };
+        expect(locale.getPlainString("menu.profile", parameters)).toBe("Your Café Marché Profile");
+        expect(locale.getPlainString("menu.events", parameters)).toBe("Concerts de Café Marché");
+        expect(locale.getPlainString("menu.platform-profile", parameters)).toBe("Your CMDB profile");
+        expect(locale.getPlainString("menu.profile", { bandName: "Second band" })).toBe("Your Second band Profile");
+    });
+
     it("delivers a complete synchronous catalog and shares per-string policy with batched dynamic values", async () => {
         const auth = await loadAuthorizationForUser(user, database, bandA);
         const input = { browserLanguages: ["nl-BE"] };
@@ -201,6 +216,27 @@ describe("four independent settings hives", () => {
 });
 
 describe("RPC settings boundaries", () => {
+    it.each(["A different backstage title", ""])("delivers localized band identity independently of site title %j", async siteTitle => {
+        await database.band.update({ where: { id: 1 }, data: { nameId: 101 } });
+        await database.band.update({ where: { id: 2 }, data: { nameId: 102 } });
+        await database.bandDynamicLocalizedStringValue.createMany({ data: [
+            { publicId: "BandName00000001", bandId: 1, stringId: 101, localeId: 1, indexedValue: "River Band", blobValue: null },
+            { publicId: "BandName00000002", bandId: 1, stringId: 101, localeId: 2, indexedValue: "Groupe Rivière", blobValue: null },
+            { publicId: "BandName00000003", bandId: 2, stringId: 102, localeId: 1, indexedValue: "Brass Collective", blobValue: null },
+        ] });
+        await writeCommands([command("band", "siteCustomization.title", siteTitle)]);
+        const ctx = createAuthorizationTestContext(createAuthorizationTestUser("normal", { id: user.id }));
+        const french = await invokeResolver(getPresentationData, { bandPublicId: bandA, routeLocale: "fr-BE" }, ctx);
+        expect(french.band).toEqual({ publicId: bandA, name: "Groupe Rivière" });
+        expect(french.settings.band["siteCustomization.title"]?.value).toBe(siteTitle);
+        const english = await invokeResolver(getPresentationData, { bandPublicId: bandA, routeLocale: "en-US" }, ctx);
+        expect(english.band).toEqual({ publicId: bandA, name: "River Band" });
+        const other = await invokeResolver(getPresentationData, { bandPublicId: bandB, routeLocale: "en-US" }, ctx);
+        expect(other.band).toEqual({ publicId: bandB, name: "Brass Collective" });
+        const platform = await invokeResolver(getPresentationData, {}, ctx);
+        expect(platform.band).toBeNull();
+    });
+
     it("resolves the supplied band ID and validates its grants", async () => {
         // The harness uses a complete account fixture only to construct session identity.
         const ctx = createAuthorizationTestContext(createAuthorizationTestUser("normal", { id: user.id }));

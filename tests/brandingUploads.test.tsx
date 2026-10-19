@@ -60,6 +60,7 @@ function fixture(bandPublicId = bands[0]!, userPublicId = parsePublicId<"User">(
     ])) as LocalizationCatalog["strings"];
     return { bandPublicId, invalidate, data: { input,
         queryExecutionTimeMs: 0,
+        band: { publicId: bandPublicId, name: "Test band" },
         authorization: { bandPublicId, userPublicId, bandUserPublicId: parsePublicId<"BandUser">("BrandMember00001"),
             effectivePermissionNames: [Permission.upload_files, Permission.manage_site_branding] },
         localization: { bandPublicId, preferences, availability, strings, formattingLocale: routeLocale, cacheKey: routeLocale, payloadBytes: 0 },

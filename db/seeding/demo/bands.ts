@@ -1,7 +1,7 @@
 import type { BandFileTag, BandInstrument, BandUser, Prisma, User } from "@prisma/client";
+import type { DemoCatalogs } from "./catalogs";
 import { demoChoice, demoDateBetween, demoDaysAgo, type DemoLocale } from "./config";
 import { createDemoString, type DemoContext } from "./context";
-import type { DemoCatalogs } from "./catalogs";
 
 export async function createDemoPerson(c: DemoContext, key: string, name: string, email: string,
     hashedPassword: string, globalRoleId: number) {
@@ -168,7 +168,6 @@ export type DemoBand = Awaited<ReturnType<typeof seedDemoBand>>;
 const shellTranslations: ReadonlyArray<{ key: string; values: Partial<{ [L in DemoLocale]: string }> }> = [
     { key: "dashboard.title", values: { "fr-BE": "Accueil", "nl-BE": "Startpagina" } },
     { key: "dashboard.band.platform", values: { "fr-BE": "Compte et plateforme", "nl-BE": "Account en platform" } },
-    { key: "dashboard.profile", values: { "fr-BE": "Votre profil", "nl-BE": "Je profiel" } },
 ];
 
 export async function seedDemoShellTranslations(c: DemoContext): Promise<void> {

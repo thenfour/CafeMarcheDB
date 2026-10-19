@@ -1,7 +1,7 @@
 import React from "react";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { useLocale } from "src/locale/components/useLocale";
-import { type StaticLocalizedStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
+import { kStaticLocalizedStringRegistry, type StaticLocalizedStringKey, type StaticStringParameterProps } from "src/locale/shared/staticLocalizedStringRegistry";
 export { BandLocalizedMarkdown, LocalizedMarkdown } from "src/locale/components/LocalizedMarkdown";
 
 const resolveStringWithFallback = (str: string | null, fallbackWhen: "null" | "emptyString" | "nullOrEmptyString", fallback: string | null) => {
@@ -9,13 +9,12 @@ const resolveStringWithFallback = (str: string | null, fallbackWhen: "null" | "e
     const empty = str !== null && str.trim() === "";
     if (fallback !== undefined && (fallbackWhen === "null" && missing
         || fallbackWhen === "emptyString" && empty || fallbackWhen === "nullOrEmptyString" && (missing || empty))) {
-        return fallback;
+        return { text: fallback, isFallback: true };
     }
-    return str;
+    return { text: str, isFallback: false };
 };
 
-interface LocalizedProps {
-    id: StaticLocalizedStringKey;
+interface LocalizedPresentationProps {
     fallbackWhen?: "null" | "emptyString" | "nullOrEmptyString";
     fallbackPlainString?: string | null;
 
@@ -26,31 +25,27 @@ interface LocalizedProps {
     className?: string | null;
 }
 
-export const Localized = ({ id, style, className, fallbackWhen = "null", fallbackPlainString = null, component = null }: LocalizedProps) => {
+type LocalizedProps = LocalizedPresentationProps & {
+    [K in StaticLocalizedStringKey]: { id: K } & StaticStringParameterProps<K>;
+}[StaticLocalizedStringKey];
+
+export function Localized({ id, parameters, style, className, fallbackWhen = "null", fallbackPlainString = null, component = null }: LocalizedProps) {
     const locale = useLocale();
-    const str = locale.getString(id);
-    const text = resolveStringWithFallback(str.value, fallbackWhen, fallbackPlainString);
+    const detail = locale.getStringDetail(id);
+    const { text, isFallback } = resolveStringWithFallback(detail.value, fallbackWhen, fallbackPlainString);
     if (text === null) {
         return null;
     }
-
-    if (component === null) { // use react.fragment.
-        if (str.format === "plain") {
-            return <>{text}</>;
-        }
-        if (str.format === "markdown") {
-            return <Markdown markdown={text} />;
-        }
-        throw new Error(`Unsupported string format on key ${id}: ${str.format}`);
+    const format = kStaticLocalizedStringRegistry[id].format;
+    // Props enforce the key/parameter pair; TS cannot narrow it through registry metadata.
+    const getPlainString = locale.getPlainString as (key: StaticLocalizedStringKey, parameters: LocalizedProps["parameters"]) => string;
+    const content = format === "plain" && !isFallback ? getPlainString(id, parameters) : text;
+    if (component !== null) {
+        const Component = component;
+        return <Component style={style} className={className}>{content}</Component>;
     }
-
-    const Component = component;
-
-    if (str.format === "plain") {
-        return <Component style={style} className={className}>{text}</Component>;
+    if (format === "markdown") {
+        return <Markdown markdown={content} />;
     }
-    if (str.format === "markdown") {
-        return <Component style={style} className={className}>{text}</Component>;
-    }
-    throw new Error(`Unsupported string format on key ${id}: ${str.format}`);
-};
+    return <>{content}</>;
+}

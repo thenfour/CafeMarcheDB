@@ -2,7 +2,12 @@ import { z } from "zod";
 import { plainStaticString } from "./staticLocalizedStringRegistryHelpers";
 
 function caption(defaultValue: string) {
-    return plainStaticString({ defaultValue, description: "Static navigation menu caption", schema: z.string() });
+    return plainStaticString({
+        defaultValue,
+        description: "Static nav menu caption",
+        schema: z.string(),
+        parameters: [{ key: "bandName", description: "Band name", type: "string" }],
+    });
 }
 
 export const menuStrings = {
@@ -11,8 +16,8 @@ export const menuStrings = {
     "menu.events": caption("Events"),
     "menu.songs": caption("Songs"),
     "menu.setlistPlanner": caption("Setlist Planner"),
-    "menu.profile": caption("Your Profile"),
-    "menu.platform-profile": caption("Your Profile"),
+    "menu.profile": caption("Your {bandName} Profile"),
+    "menu.platform-profile": caption("Your CMDB profile"),
     "menu.calendar": caption("Calendar subscription"),
     "menu.files": caption("File search"),
     "menu.wikiPages": caption("Wiki search"),
