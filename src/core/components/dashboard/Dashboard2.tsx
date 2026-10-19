@@ -528,8 +528,6 @@ const Dashboard3 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
 
                             <React.Suspense>
                                 {forceLogin ? <LoginSignup /> : <>
-                                    {/* {dashboardContext.currentUser && <BandSelection /> } */}
-
                                     {children}
                                 </>}
                             </React.Suspense>

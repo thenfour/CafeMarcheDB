@@ -1,10 +1,15 @@
+import type { BlitzPage } from "@blitzjs/next";
+import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
+import { LoginSignup } from "src/core/components/LoginSignupForm";
 import { defineCmdbPage } from "src/route/cmdbPage";
-// this page is not used. login functions are done when visiting any page and you're not logged in.
 
-
-const LoginPage = () => {
-  return <>not implemented</>;
-}
+const LoginPage: BlitzPage = () => {
+  return (
+    <DashboardLayout title="Login" disableLoginRedirect>
+      <LoginSignup />
+    </DashboardLayout>
+  );
+};
 
 defineCmdbPage("auth_login", LoginPage);
 export default LoginPage;

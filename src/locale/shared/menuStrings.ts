@@ -6,6 +6,7 @@ function caption(defaultValue: string) {
 }
 
 export const menuStrings = {
+    "menu.platformHome": caption("Platform Home"),
     "menu.home": caption("Home"),
     "menu.events": caption("Events"),
     "menu.songs": caption("Songs"),

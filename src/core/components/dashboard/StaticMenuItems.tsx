@@ -48,6 +48,7 @@ export interface MenuLink {
     enabledForSingleTenant?: boolean; // default true
 }
 
+// dashboards are band-scoped or platform-scoped
 export type MenuContext = "band" | "platform";
 
 export interface StaticMenuLink extends Omit<MenuLink, "linkCaption" | "routeKey"> {
@@ -92,8 +93,32 @@ export interface StaticMenuSection extends Omit<MenuSection, "groups"> {
 // Menu context controls navigation only; pages validate their own parameters.
 export const gMenuSections: StaticMenuSection[] = [
     {
+        name: "CMDB",
+        className: "platform_scope",
+        expandedByDefault: true,
+        groups: [
+            {
+                links: [
+                    // should appear on both band- and platform-scoped dashboards
+                    pageLink("platformRoot", "menu.platformHome", "platform", { renderIcon: () => <HomeIcon /> }),
+                    pageLink("platformRoot", "menu.platformHome", "band", { renderIcon: () => <HomeIcon /> }),
+
+                    // should appear on both band- and platform-scoped dashboards
+                    pageLink("platformProfile", "menu.platform-profile", "platform", { renderIcon: () => <PersonIcon /> }),
+                    pageLink("platformProfile", "menu.platform-profile", "band", { renderIcon: () => <PersonIcon /> }),
+
+                    pageLink("platformFeatureReports", "menu.platform-featureReports", "platform", { renderIcon: () => <PieChart /> }),
+
+                    // hmm need to think about menu links & custom links at  platform-level... do we really support this?
+                    pageLink("platformMenuLinks", "menu.platform-menuLinks", "platform", { renderIcon: () => <FeaturedPlayList /> }),
+                    pageLink("platformCustomLinks", "menu.platform-customLinks", "platform", { renderIcon: gIconMap.Link }),
+                ]
+            }
+        ]
+    },
+    {
         name: "Backstage",
-        className: "backstage",
+        className: "band_scope backstage",
         expandedByDefault: true,
         groups: [
             {
@@ -103,7 +128,6 @@ export const gMenuSections: StaticMenuSection[] = [
                     pageLink("bandSongs", "menu.songs", "band", { realm: NavRealm.songs, renderIcon: () => <MusicNoteOutlinedIcon /> }),
                     pageLink("bandSetlistPlanner", "menu.setlistPlanner", "band", { renderIcon: () => <AudioFileOutlined /> }),
                     pageLink("bandProfile", "menu.profile", "band", { renderIcon: () => <PersonIcon /> }),
-                    pageLink("platformProfile", "menu.platform-profile", "platform", { renderIcon: () => <PersonIcon /> }),
                     pageLink("bandCalendar", "menu.calendar", "band", { renderIcon: () => <CalendarMonthOutlinedIcon /> }),
                 ]
             }
@@ -119,7 +143,6 @@ export const gMenuSections: StaticMenuSection[] = [
                     pageLink("bandUsers", "menu.users", "band", { realm: NavRealm.users, renderIcon: gIconMap.Person }),
                     pageLink("bandStats", "menu.stats", "band", { renderIcon: gIconMap.Equalizer }),
                     pageLink("bandFeatureReports", "menu.featureReports", "band", { renderIcon: () => <PieChart /> }),
-                    pageLink("platformFeatureReports", "menu.platform-featureReports", "platform", { renderIcon: () => <PieChart /> }),
                 ]
             }
         ]
@@ -144,9 +167,7 @@ export const gMenuSections: StaticMenuSection[] = [
             {
                 links: [
                     pageLink("bandMenuLinks", "menu.menuLinks", "band", { renderIcon: () => <FeaturedPlayList /> }),
-                    pageLink("platformMenuLinks", "menu.platform-menuLinks", "platform", { renderIcon: () => <FeaturedPlayList /> }),
                     pageLink("bandCustomLinks", "menu.customLinks", "band", { renderIcon: gIconMap.Link }),
-                    pageLink("platformCustomLinks", "menu.platform-customLinks", "platform", { renderIcon: gIconMap.Link }),
                     pageLink("bandBrand", "menu.brand", "band", { renderIcon: () => <SettingsIcon /> }),
                 ]
             },
@@ -154,44 +175,57 @@ export const gMenuSections: StaticMenuSection[] = [
                 links: [
 
                     pageLink("bandEditEventTags", "menu.editEventTags", "band", { renderIcon: () => gIconMap.Tag() }),
-
-                    pageLink("platformEditEventTags", "menu.platform-editEventTags", "platform", { renderIcon: () => gIconMap.Tag() }),
                     pageLink("bandEditEventTypes", "menu.editEventTypes", "band", { renderIcon: () => <SettingsIcon /> }),
                     pageLink("bandEditEventStatuses", "menu.editEventStatuses", "band", { renderIcon: () => <SettingsIcon /> }),
                     pageLink("bandEditEventAttendances", "menu.editEventAttendances", "band", { renderIcon: () => <SettingsIcon /> }),
-                ]
-            },
-            {
-                links: [
-
                     pageLink("bandEditSongTags", "menu.editSongTags", "band", { renderIcon: () => gIconMap.Tag() }),
                     pageLink("bandEditSongCreditTypes", "menu.editSongCreditTypes", "band", { renderIcon: () => <MusicNoteIcon /> }),
-                ]
-            },
-            {
-                links: [
                     pageLink("bandEditFileTags", "menu.editFileTags", "band", { renderIcon: gIconMap.Tag }),
-                    pageLink("platformEditFileTags", "menu.platform-editFileTags", "platform", { renderIcon: gIconMap.Tag }),
-                ]
-            },
-            {
-                links: [
                     pageLink("bandEditWikiPageTags", "menu.editWikiPageTags", "band", { renderIcon: () => gIconMap.Tag() }),
-                    pageLink("platformEditWikiPageTags", "menu.platform-editWikiPageTags", "platform", { renderIcon: () => gIconMap.Tag() }),
-                ]
-            },
-            {
-                links: [
                     pageLink("bandEditUserTags", "menu.editUserTags", "band", { renderIcon: () => gIconMap.Tag() }),
                 ]
             },
             {
                 links: [
                     pageLink("bandSettings", "menu.settings", "band", { renderIcon: () => <SettingsIcon /> }),
-                    pageLink("platformSettings", "menu.platform-settings", "platform", { renderIcon: () => <SettingsIcon /> }),
 
                 ]
             },
+        ]
+    },
+    {
+        name: "CMDB Catalogs",
+        className: "platform_scope",
+        groups: [
+            {
+                links: [
+                    pageLink("platformEditEventTags", "menu.platform-editEventTags", "platform", { renderIcon: () => gIconMap.Tag() }),
+                    pageLink("platformEditFileTags", "menu.platform-editFileTags", "platform", { renderIcon: gIconMap.Tag }),
+                    pageLink("platformEditWikiPageTags", "menu.platform-editWikiPageTags", "platform", { renderIcon: () => gIconMap.Tag() }),
+                    pageLink("platformSettings", "menu.platform-settings", "platform", { renderIcon: () => <SettingsIcon /> }),
+                    pageLink("platformAdminUsers", "menu.platform-adminUsers", "platform", { renderIcon: () => <PersonIcon /> }),
+                    pageLink("platformRoles", "menu.platform-roles", "platform", { renderIcon: () => <SecurityIcon /> }),
+                    pageLink("platformPermissions", "menu.platform-permissions", "platform", { renderIcon: () => <SecurityIcon /> }),
+                    pageLink("platformRolePermissions", "menu.platform-rolePermissions", "platform", { renderIcon: () => <SecurityIcon /> }),
+                ]
+            }
+        ]
+    },
+    {
+        name: "Developer pages",
+        className: "admin ",
+        groups: [
+            {
+                links: [
+                    pageLink("bandCalendarPreview", "menu.calendarPreview", "band", { renderIcon: () => gIconMap.CalendarMonth() }),
+                    pageLink("devGallery", "menu.gallery", "platform", { renderIcon: () => <CollectionsIcon /> }),
+                    pageLink("devtestAttendance", "menu.attendanceTest", "platform", { renderIcon: () => <BackHand /> }),
+                    pageLink("devtestDate", "menu.dateTest", "platform", { renderIcon: gIconMap.CalendarMonth }),
+                    pageLink("devtestDialogs", "menu.dialogTest", "platform", { renderIcon: () => <Monitor /> }),
+                    pageLink("devtestCMSelectTest", "menu.selectTest", "platform", { renderIcon: () => <List /> }),
+                    pageLink("devColorEditor2", "menu.colorEditor", "platform", { renderIcon: () => <Palette /> }),
+                ]
+            }
         ]
     },
     {
@@ -201,15 +235,7 @@ export const gMenuSections: StaticMenuSection[] = [
             {
                 links: [
                     pageLink("bandEventImport", "menu.eventImport", "band", { renderIcon: gIconMap.CalendarMonth }),
-
                     pageLink("serverHealth", "menu.serverHealth", "platform", { renderIcon: () => <SettingsIcon /> }),
-                    pageLink("bandCalendarPreview", "menu.calendarPreview", "band", { renderIcon: () => gIconMap.CalendarMonth() }),
-                    pageLink("devGallery", "menu.gallery", "platform", { renderIcon: () => <CollectionsIcon /> }),
-                    pageLink("devtestAttendance", "menu.attendanceTest", "platform", { renderIcon: () => <BackHand /> }),
-                    pageLink("devtestDate", "menu.dateTest", "platform", { renderIcon: gIconMap.CalendarMonth }),
-                    pageLink("devtestDialogs", "menu.dialogTest", "platform", { renderIcon: () => <Monitor /> }),
-                    pageLink("devtestCMSelectTest", "menu.selectTest", "platform", { renderIcon: () => <List /> }),
-                    pageLink("devColorEditor2", "menu.colorEditor", "platform", { renderIcon: () => <Palette /> }),
                 ]
             },
         ]
@@ -222,11 +248,8 @@ export const gMenuSections: StaticMenuSection[] = [
                 className: "admin users",
                 links: [
                     pageLink("bandRoles", "menu.roles", "band", { renderIcon: () => <SecurityIcon /> }),
-                    pageLink("platformRoles", "menu.platform-roles", "platform", { renderIcon: () => <SecurityIcon /> }),
                     pageLink("bandPermissions", "menu.permissions", "band", { renderIcon: () => <SecurityIcon /> }),
-                    pageLink("platformPermissions", "menu.platform-permissions", "platform", { renderIcon: () => <SecurityIcon /> }),
                     pageLink("bandRolePermissions", "menu.rolePermissions", "band", { renderIcon: () => <SecurityIcon /> }),
-                    pageLink("platformRolePermissions", "menu.platform-rolePermissions", "platform", { renderIcon: () => <SecurityIcon /> }),
                 ]
             },
         ]
@@ -251,7 +274,6 @@ export const gMenuSections: StaticMenuSection[] = [
             {
                 links: [
                     pageLink("bandAdminUsers", "menu.adminUsers", "band", { renderIcon: () => <PersonIcon /> }),
-                    pageLink("platformAdminUsers", "menu.platform-adminUsers", "platform", { renderIcon: () => <PersonIcon /> }),
                     pageLink("bandEditSongCredits", "menu.editSongCredits", "band", { renderIcon: () => <MusicNoteIcon /> }),
                     pageLink("bandUserInstruments", "menu.userInstruments", "band", { renderIcon: () => <MusicNoteIcon /> }),
                     pageLink("bandUserTags", "menu.userTags", "band", { renderIcon: () => <PersonIcon /> }),
