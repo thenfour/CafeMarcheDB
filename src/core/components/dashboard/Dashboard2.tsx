@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { shouldShowAdminControls } from "@/shared/adminControls";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { IsNullOrWhitespace } from "@/shared/utils";
@@ -38,7 +39,6 @@ import { useDialogViewportRect } from "../ResponsiveDialog";
 import { MainSiteSearch } from "../search/MainSiteSearch";
 import { useServerStartupState } from "../ServerStartupStateContext";
 import { ApplicationFrameProvider, useApplicationFrame, useApplicationFrameBackgroundRef } from "./ApplicationFrameContext";
-import { BandSelection } from "./BandSelection";
 import {
     SideMenu
 } from "./MenuStructure";
@@ -124,7 +124,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
 
         {currentUser &&
             <>
-                {dashboardContext.memberPresentation.bandPublicId && dashboardContext.isAuthorized(Permission.view_events_nonpublic) && <MenuItem
+                {dashboardContext.memberPresentation.bandPublicId && dashboardContext.isAuthorized(BandPermission.view_events_nonpublic) && <MenuItem
                     component={Link}
                     href={router.href("/backstage/calendar")}
                     onClick={closeMenu}

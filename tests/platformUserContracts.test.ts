@@ -5,7 +5,7 @@ import { CmdbRouteRegistry } from "@/src/route/cmdbRoutes";
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
 import * as db3 from "src/core/db3/db3";
 import { authorizeAndProjectViewDto } from "src/core/db3/server/db3QueryCore";
-import { testServerAuthorization } from "./support/serverAuthorization";
+import { testBandAuthorization, testServerAuthorization } from "./support/serverAuthorization";
 
 const person = {
     id: 10, publicId: parsePublicId<"User">("PlatformUser0001"), name: "Shared person",
@@ -16,7 +16,8 @@ const authorize = (actorId: number, ...permissions: Permission[]) => testServerA
     { id: actorId }, new ServerPermissionSet(permissions.map((name, index) => ({ id: index + 1, name }))),
 );
 const platform = authorize(1, Permission.login, Permission.manage_global_users);
-const bandManager = authorize(20, Permission.login, Permission.manage_users, Permission.view_users_basic_info, Permission.view_user_contact_info);
+const bandManager = testBandAuthorization({ id: 20 }, authorize(20, Permission.login,
+    Permission.manage_users, Permission.view_users_basic_info, Permission.view_user_contact_info).effectivePermissions);
 
 describe("platform account maintenance contract", () => {
     it("uses the platform capability on the page and table, including for the account owner", () => {

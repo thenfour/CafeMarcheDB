@@ -1,7 +1,7 @@
 import { LocalizedStringFormat, type Prisma, type PrismaClient } from "@prisma/client";
 import { DefaultRolePermissionAssignments, DefaultRoles } from "../../shared/defaultRolePermissionAssignments";
-import { getPermissionDatabaseMetadata, gPermissionRegistry } from "../../shared/permissions";
-import { assertValidSysadminRole } from "../auth/server/sessionInvalidation";
+import { getPermissionDatabaseMetadata, getPermissionDefinition, gPermissionRegistry } from "../../shared/permissions";
+import { assertValidRoleConfiguration } from "../auth/server/sessionInvalidation";
 import { generatePublicId } from "../server/publicId";
 
 async function createEnglishString(
@@ -43,10 +43,14 @@ async function ensureLocales(database: Prisma.TransactionClient): Promise<number
             });
         }
         if (definition.ietfTag === "en-US") {
-            if (locale.isDeleted) throw new Error("The English fallback locale must be active.");
+            if (locale.isDeleted) {
+                throw new Error("The English fallback locale must be active.");
+            }
             englishId = locale.id;
         }
-        if (englishId === null) throw new Error("English must be initialized before localized seed values.");
+        if (englishId === null) {
+            throw new Error("English must be initialized before localized seed values.");
+        }
         await database.dynamicLocalizedStringValue.upsert({
             where: { localeId_stringId: { localeId: englishId, stringId: locale.nameId } },
             create: {
@@ -56,7 +60,9 @@ async function ensureLocales(database: Prisma.TransactionClient): Promise<number
             update: {},
         });
     }
-    if (englishId === null) throw new Error("English locale initialization failed.");
+    if (englishId === null) {
+        throw new Error("English locale initialization failed.");
+    }
     return englishId;
 }
 
@@ -85,7 +91,9 @@ async function synchronizePermissions(database: Prisma.TransactionClient, englis
 
 async function seedRolesForFreshInstall(database: Prisma.TransactionClient, englishId: number): Promise<void> {
     const [globalCount, bandCount] = await Promise.all([database.globalRole.count(), database.bandRole.count()]);
-    if (globalCount || bandCount) return;
+    if (globalCount || bandCount) {
+        return;
+    }
     const roles = new Map<string, { kind: "global" | "band"; id: number }>();
     for (const definition of DefaultRoles) {
         const nameId = await createEnglishString(database, englishId, LocalizedStringFormat.PlainText, definition.name);
@@ -96,9 +104,9 @@ async function seedRolesForFreshInstall(database: Prisma.TransactionClient, engl
             nameId, descriptionId, sortOrder: definition.sortOrder, color: definition.color,
             isPublicRole: definition.isPublicRole, isRoleForNewUsers: definition.isRoleForNewUsers,
         };
-        if (definition.isSysAdminRole) {
+        if (definition.scope === "global") {
             const role = await database.globalRole.create({ data: {
-                ...metadata, publicId: generatePublicId<"GlobalRole">(), isSysAdminRole: true,
+                ...metadata, publicId: generatePublicId<"GlobalRole">(), isSysAdminRole: definition.isSysAdminRole,
             } });
             roles.set(definition.name, { kind: "global", id: role.id });
         } else {
@@ -112,7 +120,12 @@ async function seedRolesForFreshInstall(database: Prisma.TransactionClient, engl
     for (const [roleName, permissionName] of DefaultRolePermissionAssignments) {
         const role = roles.get(roleName);
         const permissionId = permissions.get(permissionName);
-        if (!role || permissionId === undefined) throw new Error(`Unknown seed role/permission: ${roleName}/${permissionName}`);
+        if (!role || permissionId === undefined) {
+            throw new Error(`Unknown seed role/permission: ${roleName}/${permissionName}`);
+        }
+        if (getPermissionDefinition(permissionName).scope !== role.kind) {
+            throw new Error(`Seed role and permission scopes differ: ${roleName}/${permissionName}`);
+        }
         if (role.kind === "global") {
             globalGrants.push({ publicId: generatePublicId<"GlobalRolePermission">(), globalRoleId: role.id, permissionId });
         } else {
@@ -130,6 +143,6 @@ export async function initializeAccessControl(database: Pick<PrismaClient, "$tra
         const englishId = await ensureLocales(transaction);
         await synchronizePermissions(transaction, englishId);
         await seedRolesForFreshInstall(transaction, englishId);
-        await assertValidSysadminRole(transaction);
+        await assertValidRoleConfiguration(transaction);
     }, { isolationLevel: "Serializable", timeout: 30_000 });
 }

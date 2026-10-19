@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import type { Prisma } from "@prisma/client";
 import { Permission } from "shared/permissions";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
@@ -14,7 +15,7 @@ async function readOptInChoices(database: LocalizationDatabase & Pick<Prisma.Tra
     "bandInstrument" | "bandInstrumentFunctionalGroup" | "globalInstrument" | "globalInstrumentFunctionalGroup">,
     auth: CMServerAuthorization, preferences: LocalePreferenceInput,
 ): Promise<BandInstrumentOptInChoices> {
-    if (!auth.hasPermission(Permission.admin_instruments)) {
+    if (!auth.hasPermission(BandPermission.admin_instruments)) {
         return { globalGroups: [], globalInstruments: [] };
     }
     const bandId = auth.requireBand().id;

@@ -12,7 +12,7 @@ export type RoleDesignationValue = typeof RoleDesignation[keyof typeof RoleDesig
 export const SetRoleDesignationInput = z.discriminatedUnion("scope", [
     z.object({
         scope: z.literal("global"),
-        designation: z.literal(RoleDesignation.sysadmin),
+        designation: z.enum([RoleDesignation.sysadmin, RoleDesignation.newUsers, RoleDesignation.public]),
         roleId: z.custom<GlobalRolePublicId>(isPublicId)
     }).strict(),
     z.object({

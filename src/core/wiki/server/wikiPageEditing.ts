@@ -1,6 +1,6 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { AuthorizationError } from "blitz";
 import { Prisma } from "db";
-import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "src/auth/server/activityLog";
 import type { CMServerAuthorizationWithUser } from "src/auth/server/serverAuthorization";
@@ -13,7 +13,7 @@ import { requireWikiAccess } from "./wikiAuthorization";
 import { findReadableWikiPage, findWikiDescriptionEvent, projectWikiPage } from "./wikiPageAccess";
 
 export async function acquireWikiLock(context: DB3ReadContext, args: TAcquireLockOnWikiPageArgs): Promise<GetWikiPageUpdatabilityResult> {
-    const auth = requireWikiAccess(context, Permission.edit_wiki_pages);
+    const auth = requireWikiAccess(context, BandPermission.edit_wiki_pages);
     const currentUser = auth.user;
     const dbt = context.database;
     await findWikiDescriptionEvent(context, args.canonicalWikiPath);
@@ -240,7 +240,7 @@ const saveLockedPage = async (
 };
 
 export async function saveWikiPage(context: DB3ReadContext, args: TUpdateWikiPageArgs): Promise<GetWikiPageUpdatabilityResult> {
-    const auth = requireWikiAccess(context, Permission.edit_wiki_pages);
+    const auth = requireWikiAccess(context, BandPermission.edit_wiki_pages);
     await findWikiDescriptionEvent(context, args.canonicalWikiPath);
     const row = await findReadableWikiPage(context, args.canonicalWikiPath);
     if (!row) {

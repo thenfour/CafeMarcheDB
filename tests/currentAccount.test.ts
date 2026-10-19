@@ -6,6 +6,7 @@ vi.mock("src/auth/server/serverAuthorization", () => ({ loadAuthorization }));
 
 import getCurrentUser from "src/auth/queries/getCurrentUser";
 import { createAuthorizationTestContext } from "./authorization/support/authorizationFixtures";
+import { Permission } from "shared/permissions";
 
 const account = {
     id: 42, publicId: "Account000000001", name: "Alice", email: "alice@test.invalid", phone: null,
@@ -17,12 +18,22 @@ beforeEach(() => { vi.clearAllMocks(); });
 
 describe("current account bootstrap", () => {
     it("returns only shared account fields, without credentials, grants or band assignments", async () => {
-        loadAuthorization.mockResolvedValue({ user: account });
+        loadAuthorization.mockResolvedValue({ user: account, hasPermission: () => false });
         expect(await getCurrentUser(null, createAuthorizationTestContext(null))).toEqual({
             id: account.id, publicId: account.publicId, name: account.name, email: account.email,
             phone: null, createdAt: account.createdAt, cssClass: null, isSysAdmin: false,
         });
         expect(loadAuthorization).toHaveBeenCalledWith(expect.anything());
+    });
+
+    it.each([
+        { stored: false, effective: true },
+        { stored: true, effective: false },
+    ])("displays effective administrator authority instead of stored flag $stored", async ({ stored, effective }) => {
+        const hasPermission = vi.fn((permission: Permission) => permission === Permission.sysadmin && effective);
+        loadAuthorization.mockResolvedValue({ user: { ...account, isSysAdmin: stored }, hasPermission });
+        expect(await getCurrentUser(null, createAuthorizationTestContext(null))).toMatchObject({ isSysAdmin: effective });
+        expect(hasPermission).toHaveBeenCalledWith(Permission.sysadmin);
     });
 
     it("returns no account when fresh authorization rejects its identity", async () => {

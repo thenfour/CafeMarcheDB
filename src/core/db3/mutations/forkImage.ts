@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { resolver } from "@blitzjs/rpc";
 import type { Ctx } from "blitz";
 import db from "db";
@@ -12,7 +13,7 @@ export default resolver.pipe(
     resolver.zod(ForkImageParamsSchema),
     async (args, ctx: Ctx) => {
         const authorization = await loadAuthorization(ctx.session, args.bandPublicId);
-        authorization.requireUser().requirePermission(Permission.upload_files);
+        authorization.requireUser().requirePermission(BandPermission.upload_files);
         return forkImage(db, authorization, args, requireFileStorageDirectory());
     },
 );

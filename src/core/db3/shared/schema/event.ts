@@ -1,44 +1,43 @@
-import type { InstrumentDashboardClient } from "../entities/instrument/instrumentViews";
-import { xEventResponseMembership } from "../entities/event/eventResponseMembership";
-import { xBandUserTag } from "../entities/user/bandUserTagViews";
-import { xBandInstrument } from "../entities/instrument/bandInstrumentContracts";
+import { BandPermission, kGlobalVisibilityPermissionPolicy } from "src/auth/shared/bandPermissionPolicy";
 import { serverOwnedField } from "../columnTypes/inherited";
-import type { EventParticipant } from "../entities/user/eventParticipant";
-import { xBandEventTag } from "../entities/event/eventTagCatalogs";
 import { localizedText } from "../columnTypes/localizedString";
-// TODO: permissions for actions like these needs to be done in a different way.
-// for example i should be able to edit my own posts but not others. etc.
-// or think about the concept of user blocking, or not being able to see responses of certain kinds of events or people. todo...
+import { xEventResponseMembership } from "../entities/event/eventResponseMembership";
+import { xBandEventTag } from "../entities/event/eventTagCatalogs";
+import { xBandInstrument } from "../entities/instrument/bandInstrumentContracts";
+import type { InstrumentDashboardClient } from "../entities/instrument/instrumentViews";
+import { xBandUserTag } from "../entities/user/bandUserTagViews";
+import type { EventParticipant } from "../entities/user/eventParticipant";
 
 import { TAnyModel } from "@/shared/rootroot";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { Prisma } from "db";
-import { z } from "zod";
 import { assertIsNumberArray, assertIsStringArray } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
-import { DateTimeRange } from "shared/time";
-import { CoalesceBool, smartTruncate } from "shared/utils";
 import type {
+    BandUserPublicId,
+    EventAttendancePublicId,
     EventPublicId,
     EventSegmentPublicId,
-    EventUserResponsePublicId,
     EventSegmentUserResponsePublicId,
-    EventAttendancePublicId,
+    EventSongListDividerPublicId,
     EventSongListPublicId,
     EventSongListSongPublicId,
-    EventSongListDividerPublicId,
     EventStatusPublicId,
     EventTagAssignmentPublicId,
-    EventTypePublicId,
     EventTagPublicId,
-    SongPublicId,
-    BandUserPublicId,
+    EventTypePublicId,
+    EventUserResponsePublicId,
     InstrumentPublicId,
+    SongPublicId,
 } from "shared/publicId";
+import { DateTimeRange } from "shared/time";
+import { CoalesceBool, smartTruncate } from "shared/utils";
+import { z } from "zod";
 import { type CMDBTableFilterModel } from "../apiTypes";
 import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeTitleField } from "../columnTypes/genericString";
 import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
+import { xEventAttendance, xEventStatus, xEventType } from "../entities/event/eventCatalogs";
 import {
     EventArgs,
     EventNaturalOrderBy, type EventPayload, type EventPayloadClient,
@@ -50,57 +49,56 @@ import {
     EventTypeSignificance, EventUserResponseArgs, EventUserResponseNaturalOrderBy,
     type EventUserResponsePayload,
 } from "./prismArgs";
-import { MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField } from "./user";
-import { xEventType, xEventStatus, xEventAttendance } from "../entities/event/eventCatalogs";
 import { xSong } from "./song";
+import { MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField } from "./user";
 import { xWikiPage } from "./wiki";
 
-export { xEventType, xEventStatus, xEventAttendance } from "../entities/event/eventCatalogs";
+export { xEventAttendance, xEventStatus, xEventType } from "../entities/event/eventCatalogs";
 
 
 export const xEventAuthMap_UserResponse = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_events_nonpublic,
-    PostQuery: Permission.view_events_nonpublic,
-    PreMutateAsOwner: Permission.respond_to_events,
-    PreMutate: Permission.change_others_event_responses,
+    PostQueryAsOwner: BandPermission.view_events_nonpublic,
+    PostQuery: BandPermission.view_events_nonpublic,
+    PreMutateAsOwner: BandPermission.respond_to_events,
+    PreMutate: BandPermission.change_others_event_responses,
     // Generic inserts accept an arbitrary userId, so only the explicit
     // cross-user capability may use that path. Self-service insertion goes
     // through updateUserEventAttendanceMutation, which binds the actor itself.
-    PreInsert: Permission.change_others_event_responses,
+    PreInsert: BandPermission.change_others_event_responses,
 });
 
 export const xEventAuthMap_UserResponseRelation = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_events_nonpublic,
-    PostQuery: Permission.view_events_nonpublic,
+    PostQueryAsOwner: BandPermission.view_events_nonpublic,
+    PostQuery: BandPermission.view_events_nonpublic,
     // An owner must not be able to authorize changing the user or parent event
     // merely because the persisted response currently belongs to them.
-    PreMutateAsOwner: Permission.change_others_event_responses,
-    PreMutate: Permission.change_others_event_responses,
-    PreInsert: Permission.change_others_event_responses,
+    PreMutateAsOwner: BandPermission.change_others_event_responses,
+    PreMutate: BandPermission.change_others_event_responses,
+    PreInsert: BandPermission.change_others_event_responses,
 });
 
 export const xEventAuthMap_R_EOwn_EManagers = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_events_nonpublic,
-    PostQuery: Permission.view_events_nonpublic,
-    PreMutateAsOwner: Permission.view_events_nonpublic,
-    PreMutate: Permission.manage_events,
-    PreInsert: Permission.manage_events,
+    PostQueryAsOwner: BandPermission.view_events_nonpublic,
+    PostQuery: BandPermission.view_events_nonpublic,
+    PreMutateAsOwner: BandPermission.view_events_nonpublic,
+    PreMutate: BandPermission.manage_events,
+    PreInsert: BandPermission.manage_events,
 });
 
 export const xEventAuthMap_R_EManagers = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_events_nonpublic,
-    PostQuery: Permission.view_events_nonpublic,
-    PreMutateAsOwner: Permission.manage_events,
-    PreMutate: Permission.manage_events,
-    PreInsert: Permission.manage_events,
+    PostQueryAsOwner: BandPermission.view_events_nonpublic,
+    PostQuery: BandPermission.view_events_nonpublic,
+    PreMutateAsOwner: BandPermission.manage_events,
+    PreMutate: BandPermission.manage_events,
+    PreInsert: BandPermission.manage_events,
 });
 
 export const xEventAuthMap_R_EAdmin = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_events_nonpublic,
-    PostQuery: Permission.view_events_nonpublic,
-    PreMutateAsOwner: Permission.admin_events,
-    PreMutate: Permission.admin_events,
-    PreInsert: Permission.admin_events,
+    PostQueryAsOwner: BandPermission.view_events_nonpublic,
+    PostQuery: BandPermission.view_events_nonpublic,
+    PreMutateAsOwner: BandPermission.admin_events,
+    PreMutate: BandPermission.admin_events,
+    PreInsert: BandPermission.admin_events,
 });
 
 export const xEventAuthMap_CreatedAt = xEventAuthMap_R_EAdmin;
@@ -108,9 +106,9 @@ export const xEventAuthMap_CreatedAt = xEventAuthMap_R_EAdmin;
 export const xEventAuthMap_Homepage = db3.defineAuthMap({
     PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
     PostQuery: db3.DB3FieldReadAuth.inheritRow,
-    PreMutateAsOwner: Permission.edit_public_homepage,
-    PreMutate: Permission.edit_public_homepage,
-    PreInsert: Permission.edit_public_homepage,
+    PreMutateAsOwner: BandPermission.edit_public_homepage,
+    PreMutate: BandPermission.edit_public_homepage,
+    PreInsert: BandPermission.edit_public_homepage,
 });
 
 // Event-status display metadata is part of the row's public identity. Once the
@@ -136,25 +134,25 @@ const makeEventChipSortOrderField = () => new GenericIntegerField({
 export const xEventTableAuthMap_R_EManagers: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.public,
     View: Permission.public,
-    EditOwn: Permission.manage_events,
-    Edit: Permission.manage_events,
-    Insert: Permission.manage_events,
+    EditOwn: BandPermission.manage_events,
+    Edit: BandPermission.manage_events,
+    Insert: BandPermission.manage_events,
 };
 
 export const xEventTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.public,
     View: Permission.public,
-    EditOwn: Permission.admin_events,
-    Edit: Permission.admin_events,
-    Insert: Permission.admin_events,
+    EditOwn: BandPermission.admin_events,
+    Edit: BandPermission.admin_events,
+    Insert: BandPermission.admin_events,
 };
 
 export const xEventTableAuthMap_UserResponse: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.view_events_nonpublic,
-    View: Permission.view_events_nonpublic,
-    EditOwn: Permission.respond_to_events,
-    Edit: Permission.change_others_event_responses,
-    Insert: Permission.change_others_event_responses,
+    ViewOwn: BandPermission.view_events_nonpublic,
+    View: BandPermission.view_events_nonpublic,
+    EditOwn: BandPermission.respond_to_events,
+    Edit: BandPermission.change_others_event_responses,
+    Insert: BandPermission.change_others_event_responses,
 };
 
 
@@ -310,15 +308,19 @@ export const EventAPI = {
 
 
 export const xEventArgs_Base = db3.defineTableDesc({
+    globalVisibilityPermission: kGlobalVisibilityPermissionPolicy,
     prismaModel: db3.prismaModel<Prisma.EventDelegate>(),
     getIdentity: (event: { publicId: EventPublicId }) => event.publicId,
     // modifying an event means multiple related changes; see the mutation event hooks.
     tableName: "Event", // case matters :(
-    bandScope: { member: "bandId", managePermission: Permission.manage_events },
+    bandScope: {
+        member: "bandId",
+        managePermission: BandPermission.manage_events
+    },
     readConsistency: "snapshot",
     deletePolicy: "softOnly",
-    viewDeletedPermission: Permission.recover_events,
-    restorePermission: Permission.recover_events,
+    viewDeletedPermission: BandPermission.recover_events,
+    restorePermission: BandPermission.recover_events,
     queryParameters: EventQueryParameters,
     getSelectionArgs: (filterModel): Prisma.EventDefaultArgs => {
         return EventArgs;
@@ -588,7 +590,11 @@ export const xEventSegment = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventSegmentDelegate>(),
     getIdentity: (row: { publicId: EventSegmentPublicId }) => row.publicId,
     tableName: "EventSegment",
-    bandScope: { member: "bandId", via: { relation: "event", ownerUserMember: "createdByUserId" }, managePermission: Permission.manage_events },
+    bandScope: {
+        member: "bandId",
+        via: { relation: "event", ownerUserMember: "createdByUserId" },
+        managePermission: BandPermission.manage_events
+    },
     readConsistency: "snapshot",
     deletePolicy: "hard",
     queryParameters: {
@@ -695,7 +701,11 @@ export const xEventSegmentUserResponse = db3.defineTable({
     getIdentity: (row: { publicId: EventSegmentUserResponsePublicId }) => row.publicId,
     tableName: "EventSegmentUserResponse",
     deletePolicy: "hard",
-    bandScope: { member: "bandId", via: { relation: "bandUser", ownerUserMember: "userId" }, managePermission: Permission.change_others_event_responses },
+    bandScope: {
+        member: "bandId",
+        via: { relation: "bandUser", ownerUserMember: "userId" },
+        managePermission: BandPermission.change_others_event_responses
+    },
     readConsistency: "snapshot",
     queryParameters: {
         eventSegmentId: { kind: "entityIdentity", targetTableID: "EventSegment", authorizeAs: "eventSegmentId" },
@@ -756,7 +766,11 @@ export const xEventUserResponse = db3.defineTable({
     getIdentity: (row: { publicId: EventUserResponsePublicId }) => row.publicId,
     tableName: "EventUserResponse",
     deletePolicy: "hard",
-    bandScope: { member: "bandId", via: { relation: "bandUser", ownerUserMember: "userId" }, managePermission: Permission.change_others_event_responses },
+    bandScope: {
+        member: "bandId",
+        via: { relation: "bandUser", ownerUserMember: "userId" },
+        managePermission: BandPermission.change_others_event_responses
+    },
     readConsistency: "snapshot",
     queryParameters: {
         eventId: {
@@ -836,7 +850,7 @@ export const xEventSongList = db3.defineTable({
             relation: "event",
             ownerUserMember: "createdByUserId"
         },
-        managePermission: Permission.manage_events
+        managePermission: BandPermission.manage_events
     },
     readConsistency: "snapshot",
     deletePolicy: "hard",
@@ -895,7 +909,7 @@ export const xEventSongListSong = db3.defineTable({
     tableName: "EventSongListSong",
     bandScope: {
         inheritsBandFrom: "eventSongList",
-        managePermission: Permission.manage_events
+        managePermission: BandPermission.manage_events
     },
     readConsistency: "snapshot",
     deletePolicy: "hard",
@@ -948,7 +962,7 @@ export const xEventSongListDivider = db3.defineTable({
     tableName: "EventSongListDivider",
     bandScope: {
         inheritsBandFrom: "eventSongList",
-        managePermission: Permission.manage_events
+        managePermission: BandPermission.manage_events
     },
     readConsistency: "snapshot",
     deletePolicy: "hard",

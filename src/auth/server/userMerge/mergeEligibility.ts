@@ -6,7 +6,7 @@ import { resolveAuthorizedDynamicStrings } from "src/locale/server/localization"
 import type { MergeIdentity, UserMergeParticipants } from "../../userMergeSchemas";
 import { PermissionSet } from "../../shared/PermissionSet";
 import { canManageUser, type UserManagementActor } from "../userManagementPolicy";
-import { makePermissionSetFromRole, makeUserManagementTarget } from "../userManagementState";
+import { loadGlobalPublicRoleGrants, makePermissionSetFromRole } from "../userManagementState";
 import { mergeUserInclude, type MergeAuthority, type MergeCandidate, type MergeContext, type MergeDatabase, type MergeUser } from "./types";
 
 export async function authorizeMergeActor(db: MergeDatabase, authority: MergeAuthority): Promise<UserManagementActor> {
@@ -18,25 +18,16 @@ export async function authorizeMergeActor(db: MergeDatabase, authority: MergeAut
     auth.requirePermission(Permission.manage_global_users);
     return { principal: auth.user, auth };
 }
-export function canMergeAccount(actor: UserManagementActor, target: MergeCandidate): boolean {
-    if (!canManageUser({ actor, target: makeUserManagementTarget(target), action: "merge" })) {
+export function canMergeAccount(actor: UserManagementActor, target: MergeCandidate, targetRolePermissions: PermissionSet): boolean {
+    if (!canManageUser({ actor, target: { principal: target, rolePermissions: targetRolePermissions }, action: "merge" })) {
         return false;
     }
-    if (actor.auth.hasPermission(Permission.sysadmin)) {
-        return true;
-    }
-    if (target.isSysAdmin) {
-        return false;
-    }
-    // A selected-band grant cannot authorize account-wide changes in other bands.
-    const globalEnvelope = makePermissionSetFromRole(actor.auth.user?.globalRole);
-    if (!globalEnvelope.hasAllDelegable(makeUserManagementTarget(target).rolePermissions)) {
-        return false;
-    }
+    // Merging memberships affects multiple bands. Selected-band grants cannot
+    // authorize transferring another band's membership privileges.
     return target.bandUsersByUser.every(member => {
         const grants = member.bandRole && !member.bandRole.isDeleted
             ? member.bandRole.bandRolePermissions.filter(grant => !grant.permission.isDeleted).map(grant => grant.permission.name) : [];
-        return globalEnvelope.hasAllDelegable(new PermissionSet(grants));
+        return grants.length === 0 || actor.auth.hasPermission(Permission.global_band_admin);
     });
 }
 export async function loadEligibleMergeUser(db: MergeDatabase, actor: UserManagementActor, userId: UserPublicId): Promise<MergeUser> {
@@ -44,7 +35,8 @@ export async function loadEligibleMergeUser(db: MergeDatabase, actor: UserManage
     if (!user) {
         throw new NotFoundError();
     }
-    if (!canMergeAccount(actor, user)) {
+    const rolePermissions = user.globalRole ? makePermissionSetFromRole(user.globalRole) : await loadGlobalPublicRoleGrants(db);
+    if (!canMergeAccount(actor, user, rolePermissions)) {
         throw new AuthorizationError("Not authorized to merge this account.");
     }
     return user;
@@ -62,7 +54,9 @@ export async function loadMergeContext(db: MergeDatabase, authority: MergeAuthor
 }
 export async function mergeIdentity(db: MergeDatabase, user: MergeCandidate, locale: LocalePreferenceInput): Promise<MergeIdentity> {
     const labels = await resolveAuthorizedDynamicStrings(db, { band: null }, user.globalRole ? [user.globalRole.nameId] : [], locale);
+    const rolePermissions = user.globalRole ? makePermissionSetFromRole(user.globalRole) : await loadGlobalPublicRoleGrants(db);
     return { publicId: parsePublicId<"User">(user.publicId), name: user.name, email: user.email, createdAt: user.createdAt,
         roleId: user.globalRole ? parsePublicId<"GlobalRole">(user.globalRole.publicId) : null,
-        roleName: user.globalRole ? labels.get(user.globalRole.nameId)?.value ?? null : null, isDeleted: user.isDeleted, isSysAdmin: user.isSysAdmin };
+        roleName: user.globalRole ? labels.get(user.globalRole.nameId)?.value ?? null : null, isDeleted: user.isDeleted,
+        isSysAdmin: rolePermissions.includesName(Permission.sysadmin) };
 }

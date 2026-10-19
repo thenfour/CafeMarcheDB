@@ -1,5 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { AuthorizationError, NotFoundError } from "blitz";
-import { Permission } from "shared/permissions";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { memberSongCreditView } from "../shared/entities/song/songViews";
 import { bandUserIdentityView } from "../shared/entities/user/bandUserProfile";
@@ -16,7 +16,7 @@ export function readMemberSongCredits(database: DB3ReadDatabase, authorization: 
         if (auth.requireBand().publicId !== bandPublicId) {
             throw new AuthorizationError("Member credits require the selected band.");
         }
-        auth.requirePermission(Permission.manage_users);
+        auth.requirePermission(BandPermission.manage_users);
         const member = await queryView(
             {
                 view: bandUserIdentityView,

@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 
 import { Alert } from "@mui/material";
 import { useLocale } from "src/locale/components/useLocale";
@@ -5,7 +6,6 @@ import { useMutation } from "@blitzjs/rpc";
 import { History, LockOpen } from "@mui/icons-material";
 import { ListItemIcon, MenuItem } from "@mui/material";
 import React from "react";
-import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace } from "shared/utils";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { gIconMap } from "../../db3/components/IconMap";
@@ -350,7 +350,7 @@ interface WikiPageViewModeProps {
 //////////////////////////////////////////////////
 export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = true, ...props }: WikiPageViewModeProps) => {
     const dashboardContext = useDashboardContext();
-    const authorizedForEdit = !props.readonly && dashboardContext.isAuthorized(Permission.edit_wiki_pages);
+    const authorizedForEdit = !props.readonly && dashboardContext.isAuthorized(BandPermission.edit_wiki_pages);
     const snackbar = useSnackbar();
     const router = useCmdbRouter();
     const endMenuItemRef = React.useRef<() => void>(() => { });
@@ -371,7 +371,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
                 endMenuItemRef.current();
             }} />
         </MenuItem>,
-        pageExists && dashboardContext.isAuthorized(Permission.view_wiki_page_revisions) &&
+        pageExists && dashboardContext.isAuthorized(BandPermission.view_wiki_page_revisions) &&
         <MenuItem key={"copylink"} onClick={async () => {
             await snackbar.invokeAsync(async () =>
                 navigator.clipboard.writeText(
@@ -387,7 +387,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
             </ListItemIcon>
             Copy link to wiki page
         </MenuItem>,
-        pageExists && dashboardContext.isAuthorized(Permission.view_wiki_page_revisions) &&
+        pageExists && dashboardContext.isAuthorized(BandPermission.view_wiki_page_revisions) &&
         <MenuItem key={"viewhistory"} onClick={async () => {
             void router.push(router.href(`/backstage/wikiPageHistory?path=${encodeURIComponent(props.wikiPageApi.wikiPath.canonicalWikiPath)}`));
             endMenuItemRef.current();
@@ -408,7 +408,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
             Clear your lock
         </MenuItem>
         ,
-        dashboardContext.isAuthorized(Permission.admin_wiki_pages) && props.wikiPageApi.lockStatus.isLocked &&
+        dashboardContext.isAuthorized(BandPermission.admin_wiki_pages) && props.wikiPageApi.lockStatus.isLocked &&
         <MenuItem key={"releaselockadmin"} onClick={async () => {
             await snackbar.invokeAsync(async () => props.wikiPageApi.adminClearLock(), "Lock cleared");
             endMenuItemRef.current();

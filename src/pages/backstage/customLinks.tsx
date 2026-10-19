@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { defineCmdbPage } from "src/route/cmdbPage";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
@@ -5,7 +6,6 @@ import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMa
 import { BlitzPage } from "@blitzjs/next";
 import { Alert } from "@mui/material";
 import { Suspense } from 'react';
-import { Permission } from "shared/permissions";
 import { CustomLinkList } from "src/core/components/CustomLinksComponents";
 import { useLocale } from "src/locale/components/useLocale";
 
@@ -20,7 +20,7 @@ const MyContent = () => {
         return <Alert severity="info">{locale.getPlainString("customLink.selectBand")}</Alert>;
     }
 
-    if (!dashboardContext.isAuthorized(Permission.view_custom_links)) {
+    if (!dashboardContext.isAuthorized(BandPermission.view_custom_links)) {
         throw new Error(`Unauthorized`);
     }
 

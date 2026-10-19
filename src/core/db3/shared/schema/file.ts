@@ -1,3 +1,4 @@
+import { BandPermission, kGlobalVisibilityPermissionPolicy } from "src/auth/shared/bandPermissionPolicy";
 import { xBandFileTag } from "../entities/file/fileTagCatalogs";
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
@@ -22,9 +23,9 @@ import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 export const xFrontpageTableAuthMap: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.public,
     View: Permission.public,
-    EditOwn: Permission.edit_public_homepage,
-    Edit: Permission.edit_public_homepage,
-    Insert: Permission.edit_public_homepage,
+    EditOwn: BandPermission.edit_public_homepage,
+    Edit: BandPermission.edit_public_homepage,
+    Insert: BandPermission.edit_public_homepage,
 };
 
 
@@ -33,28 +34,28 @@ export const xFrontpageTableAuthMap: db3.DB3AuthTablePermissionMap = {
 // - uploaders can upload and edit their own files
 // - but editing other peoples files is for managers only.
 export const xFileTableAuth_FileObjects: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.view_files,
-    View: Permission.view_files,
-    EditOwn: Permission.upload_files, // anyone can edit their own uploaded files.
-    Edit: Permission.manage_files,
-    Insert: Permission.upload_files,
+    ViewOwn: BandPermission.view_files,
+    View: BandPermission.view_files,
+    EditOwn: BandPermission.upload_files, // anyone can edit their own uploaded files.
+    Edit: BandPermission.manage_files,
+    Insert: BandPermission.upload_files,
 };
 
 export const xFileAuthMap_FileObjects = db3.defineAuthMap({
     PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
     PostQuery: db3.DB3FieldReadAuth.inheritRow,
-    PreMutateAsOwner: Permission.upload_files,
-    PreMutate: Permission.manage_files,
-    PreInsert: Permission.upload_files,
+    PreMutateAsOwner: BandPermission.upload_files,
+    PreMutate: BandPermission.manage_files,
+    PreInsert: BandPermission.upload_files,
 });
 
 // mime type or those kinds of things can only be edited by admins.
 export const xFileAuthMap_FileObjects_AdminEdit = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_files,
-    PostQuery: Permission.view_files,
-    PreMutateAsOwner: Permission.admin_files,
-    PreMutate: Permission.admin_files,
-    PreInsert: Permission.upload_files,
+    PostQueryAsOwner: BandPermission.view_files,
+    PostQuery: BandPermission.view_files,
+    PreMutateAsOwner: BandPermission.admin_files,
+    PreMutate: BandPermission.admin_files,
+    PreInsert: BandPermission.upload_files,
 });
 
 // some fields are server-owned -- like storage identity UUID / derived metadata
@@ -66,7 +67,7 @@ export const xFileAuthMap_FileObjects_AdminEdit = db3.defineAuthMap({
 // - never modified
 const authorizeFileServerOwnedField = (args: db3.DB3AuthorizeAndSanitizeFieldInput<TAnyModel>): boolean => {
     if (args.rowMode === "view") {
-        return args.auth.hasPermission(Permission.view_files);
+        return args.auth.hasPermission(BandPermission.view_files);
     }
     if (args.rowMode === "new") {
         // The upload service supplies storage metadata after authorizing the client fields.
@@ -85,7 +86,7 @@ export const xBandFileTagAssignment = db3.defineTable({
     tableName: "bandFileTagAssignment",
     bandScope: {
         inheritsBandFrom: "file",
-        managePermission: Permission.manage_files
+        managePermission: BandPermission.manage_files
     },
     readConsistency: "snapshot",
     tableUniqueName: "BandFileTagAssignment",
@@ -150,7 +151,7 @@ export const xFileUserTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileUserTagDelegate>(),
     getIdentity: (association: { publicId: FileUserTagPublicId }) => association.publicId,
     tableName: "FileUserTag",
-    bandScope: { inheritsBandFrom: "file", managePermission: Permission.manage_files },
+    bandScope: { inheritsBandFrom: "file", managePermission: BandPermission.manage_files },
     readConsistency: "snapshot",
     deletePolicy: "hard",
     naturalOrderBy: FileUserTagNaturalOrderBy,
@@ -207,7 +208,7 @@ export const xFileSongTag = db3.defineTable({
     tableName: "FileSongTag",
     bandScope: {
         inheritsBandFrom: "file",
-        managePermission: Permission.manage_files
+        managePermission: BandPermission.manage_files
     },
     readConsistency: "snapshot",
     deletePolicy: "hard",
@@ -260,7 +261,7 @@ export const xFileEventTag = db3.defineTable({
     tableName: "FileEventTag",
     bandScope: {
         inheritsBandFrom: "file",
-        managePermission: Permission.manage_files
+        managePermission: BandPermission.manage_files
     },
     readConsistency: "snapshot",
     deletePolicy: "hard",
@@ -315,7 +316,7 @@ export const xFileInstrumentTag = db3.defineTable({
     tableName: "FileInstrumentTag",
     bandScope: {
         inheritsBandFrom: "file",
-        managePermission: Permission.manage_files
+        managePermission: BandPermission.manage_files
     },
     readConsistency: "snapshot",
     deletePolicy: "hard",
@@ -385,18 +386,19 @@ interface ResolvedFileFilterParams {
 }
 
 const xFileBaseArgs = db3.defineTableDesc({
+    globalVisibilityPermission: kGlobalVisibilityPermissionPolicy,
     serverInsertOnly: true,
     prismaModel: db3.prismaModel<Prisma.FileDelegate>(),
     getIdentity: (file: { publicId: FilePublicId }) => file.publicId,
     tableName: "File",
     bandScope: {
         member: "bandId",
-        managePermission: Permission.manage_files
+        managePermission: BandPermission.manage_files
     },
     readConsistency: "snapshot",
     deletePolicy: "softOnly" as const,
-    viewDeletedPermission: Permission.recover_files,
-    restorePermission: Permission.recover_files,
+    viewDeletedPermission: BandPermission.recover_files,
+    restorePermission: BandPermission.recover_files,
     queryParameters: {
         fileId: { kind: "entityIdentity", targetTableID: "File", authorizeAs: "publicId" },
         fileTagIds: {
@@ -633,9 +635,9 @@ export const xFile = db3.defineTable(xFileBaseArgs);
 export const xFrontpageAuthMap_Basic = db3.defineAuthMap({
     PostQueryAsOwner: Permission.public,
     PostQuery: Permission.public,
-    PreMutateAsOwner: Permission.edit_public_homepage,
-    PreMutate: Permission.edit_public_homepage,
-    PreInsert: Permission.edit_public_homepage,
+    PreMutateAsOwner: BandPermission.edit_public_homepage,
+    PreMutate: BandPermission.edit_public_homepage,
+    PreInsert: BandPermission.edit_public_homepage,
 });
 
 
@@ -655,6 +657,7 @@ export const xFrontpageAuthMap_Basic = db3.defineAuthMap({
 //     visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
 //   }
 export const xFrontpageGalleryItem = db3.defineTable({
+    globalVisibilityPermission: kGlobalVisibilityPermissionPolicy,
     prismaModel: db3.prismaModel<Prisma.FrontpageGalleryItemDelegate>(),
     getIdentity: (item: { publicId: FrontpageGalleryItemPublicId }) => item.publicId,
     tableName: "FrontpageGalleryItem",
@@ -665,12 +668,12 @@ export const xFrontpageGalleryItem = db3.defineTable({
             relation: "file",
             ownerUserMember: "uploadedByUserId"
         },
-        managePermission: Permission.edit_public_homepage
+        managePermission: BandPermission.edit_public_homepage
     },
     readConsistency: "snapshot",
     deletePolicy: "softOnly",
-    viewDeletedPermission: Permission.edit_public_homepage,
-    restorePermission: Permission.edit_public_homepage,
+    viewDeletedPermission: BandPermission.edit_public_homepage,
+    restorePermission: BandPermission.edit_public_homepage,
     queryParameters: {},
     getSelectionArgs: (): Prisma.FrontpageGalleryItemDefaultArgs => {
         return FrontpageGalleryItemArgs;
@@ -734,7 +737,7 @@ export const xFileWikiPageTag = db3.defineTable({
     tableName: "FileWikiPageTag",
     bandScope: {
         inheritsBandFrom: "file",
-        managePermission: Permission.manage_files
+        managePermission: BandPermission.manage_files
     },
     readConsistency: "snapshot",
     deletePolicy: "hard",

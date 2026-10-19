@@ -1,10 +1,10 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import React from "react";
 import { CMChip, CMChipSizeOptions } from "../CMChip";
 import { useQuery } from "@blitzjs/rpc";
 import getUser from "../../db3/queries/getUser";
 import { getHashedColor } from "shared/utils";
 import { ColorVariationSpec } from "../color/palette";
-import { Permission } from "@/shared/permissions";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import type { UserPublicId } from "shared/publicId";
 import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
@@ -42,7 +42,7 @@ const ValuedUserChip = (props: ValuedUserChipProps) => {
     const context = useDB3QueryContext();
 
     const userId = props.value?.publicId || null;
-    const canViewProfile = dashboardContext.isAuthorized(Permission.view_users_basic_info) || dashboardContext.currentUser?.publicId === userId;
+    const canViewProfile = dashboardContext.isAuthorized(BandPermission.view_users_basic_info) || dashboardContext.currentUser?.publicId === userId;
     const userURI = userId && context.bandPublicId && canViewProfile
         ? bandMemberHref(userId, context, router.hosting) : undefined;
 

@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "@prisma/client";
 import { Permission } from "shared/permissions";
 import type { BandUserPublicId } from "shared/publicId";
@@ -14,11 +15,11 @@ export const xEventResponseMembership = defineTable({
     tableUniqueName: "EventResponseMembership",
     prismaModel: prismaModel<Prisma.BandUserDelegate>(),
     getIdentity: (row: { publicId: BandUserPublicId }) => row.publicId,
-    bandScope: { member: "bandId", managePermission: Permission.manage_users },
+    bandScope: { member: "bandId", managePermission: BandPermission.manage_users },
     readConsistency: "snapshot", deletePolicy: "disabled",
     tableAuthMap: {
-        View: Permission.view_events_nonpublic,
-        ViewOwn: Permission.view_events_nonpublic,
+        View: BandPermission.view_events_nonpublic,
+        ViewOwn: BandPermission.view_events_nonpublic,
         Edit: Permission.never_grant,
         EditOwn: Permission.never_grant,
         Insert: Permission.never_grant,

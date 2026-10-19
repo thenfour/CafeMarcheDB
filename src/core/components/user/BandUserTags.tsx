@@ -1,7 +1,8 @@
+import { scopedAuthorizationSatisfiesRequirement } from "src/auth/shared/permissionRequirement";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert, Box, Stack, Typography } from "@mui/material";
-import { Permission } from "shared/permissions";
 import type { UserTagPublicId } from "shared/publicId";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
@@ -46,7 +47,7 @@ export function BandUserTagsEditor({ member, refetch }: {
         const tag = dashboard.userTag.getById(option.publicId);
         return option.available && tag ? <CMStandardDBChip model={tag} size="small" /> : <Typography component="span">{option.label}</Typography>;
     };
-    const canEdit = presentation.data?.authorization.effectivePermissionNames.includes(Permission.manage_users) ?? false;
+    const canEdit = scopedAuthorizationSatisfiesRequirement(presentation.data?.authorization, BandPermission.manage_users) ?? false;
     return <Stack spacing={1} alignItems="flex-start" aria-busy={saving}>
         {error && !open && <Alert severity="error">{error}</Alert>}
         {selected.length === 0 && <Typography>{locale.getPlainString("membership.tags.empty")}</Typography>}

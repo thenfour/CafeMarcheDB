@@ -1,3 +1,5 @@
+import { scopedAuthorizationSatisfiesRequirement, permissionNamesSatisfyRequirement } from "src/auth/shared/permissionRequirement";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert, Breadcrumbs, Typography } from "@mui/material";
@@ -37,7 +39,7 @@ export function BandMemberProfileEditor({ member, refetch }: {
 function MemberProfileRole({ member, refetch }: { readonly member: BandUserProfileDto; readonly refetch: () => Promise<unknown> }) {
     const context = useDB3QueryContext();
     const presentation = usePresentation();
-    const canAssign = presentation.data?.authorization.effectivePermissionNames.includes(Permission.assign_user_roles) ?? false;
+    const canAssign = scopedAuthorizationSatisfiesRequirement(presentation.data?.authorization, BandPermission.assign_user_roles) ?? false;
     const options = { staleTime: 0, cacheTime: 0, keepPreviousData: false };
     const [roles] = useQuery(db3queries, {
         ...context, table: { tableID: bandRoleListView.tableID, tableName: bandRoleListView.tableName, viewID: bandRoleListView.viewID },
@@ -57,7 +59,7 @@ function LoadedMemberProfile({ personId }: { readonly personId: UserPublicId }) 
     const presentation = usePresentation();
     const locale = useLocale();
     const permissions = presentation.data?.authorization.effectivePermissionNames ?? [];
-    const canOpenDirectory = permissions.includes(Permission.search_users) && permissions.includes(Permission.view_users_basic_info);
+    const canOpenDirectory = permissionNamesSatisfyRequirement(permissions, BandPermission.search_users, Boolean(presentation.bandPublicId)) && permissionNamesSatisfyRequirement(permissions, BandPermission.view_users_basic_info, Boolean(presentation.bandPublicId));
     const [result, { refetch }] = useQuery(db3queries, {
         ...context, table: { tableID: bandUserProfileView.tableID, tableName: bandUserProfileView.tableName, viewID: bandUserProfileView.viewID },
         filter: { tableParams: { personPublicId: personId } }, take: 1, cmdbQueryContext: "member profile",

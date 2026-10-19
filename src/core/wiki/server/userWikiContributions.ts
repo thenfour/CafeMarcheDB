@@ -1,4 +1,4 @@
-import { Permission } from "shared/permissions";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { AuthorizationError } from "blitz";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { queryView } from "src/core/db3/server/db3QueryCore";
@@ -39,7 +39,7 @@ export function readUserWikiContributions(database: DB3ReadDatabase, authorizati
 ) {
     const args = ZTGetUserWikiContributionsArgs.parse(input);
     return executeDB3Read(database, authorization, async context => {
-        const auth = requireWikiAccess(context, Permission.view_wiki_page_revisions);
+        const auth = requireWikiAccess(context, BandPermission.view_wiki_page_revisions);
         if (auth.requireBand().publicId !== args.bandPublicId) {
             throw new AuthorizationError("Wiki contributions require the selected band.");
         }

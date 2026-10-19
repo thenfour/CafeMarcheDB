@@ -51,13 +51,14 @@ export async function seedDemoDatabase(databaseUrl: string, config: DemoConfig, 
             const c = createDemoContext(db, config, locales);
             const roles = await loadDemoRoles(db, locales.get("en-US")!);
             const sysadmin = await db.globalRole.findFirstOrThrow({ where: { isSysAdminRole: true, isDeleted: false } });
+            const accountRole = await db.globalRole.findFirstOrThrow({ where: { isRoleForNewUsers: true, isDeleted: false } });
             await createDemoPerson(c, "platform", "Demo Platform Administrator", "admin@demo.invalid", hashedPassword, sysadmin.id);
-            const shared = await createDemoPerson(c, "shared", "Alex Shared", "shared@demo.invalid", hashedPassword);
+            const shared = await createDemoPerson(c, "shared", "Alex Shared", "shared@demo.invalid", hashedPassword, accountRole.id);
             await seedDemoShellTranslations(c);
             const catalogs = await seedDemoCatalogs(c);
             const visibility = await db.permission.findUniqueOrThrow({ where: { name: "visibility_members" } });
             for (let index = 0; index < config.bands; index++) {
-                const band = { ...await seedDemoBand(c, index, catalogs, shared, hashedPassword, roles), memberVisibilityId: visibility.id };
+                const band = { ...await seedDemoBand(c, index, catalogs, shared, hashedPassword, roles, accountRole.id), memberVisibilityId: visibility.id };
                 const { songs } = await seedDemoSongs(c, band, catalogs, assets);
                 await seedDemoWiki(c, band);
                 await seedDemoEvents(c, band, catalogs, songs);

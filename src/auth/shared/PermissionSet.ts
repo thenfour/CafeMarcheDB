@@ -1,20 +1,21 @@
-import { getPermissionDefinition, isPermission } from "@/shared/permissions";
+import { asPermission, getPermissionDefinition, isPermission, Permission } from "@/shared/permissions";
 
 // client-friendly permission set with only names (no db ids)
 export class PermissionSet {
-    private readonly permissionNames: ReadonlySet<string>;
+    private readonly permissionNames: ReadonlySet<Permission>;
 
-    constructor(names: readonly string[]) {
-        if (!Array.isArray(names) || !names.every(name => typeof name === "string")) {
+    constructor(names: readonly Permission[]) {
+        if (!Array.isArray(names)) {
             throw new Error("Expected permission names.");
         }
-        this.permissionNames = new Set(names);
+        const perms = names.map(name => asPermission(name));
+        this.permissionNames = new Set(perms);
     }
 
-    get names(): string[] { return [...this.permissionNames]; }
+    get names(): Permission[] { return [...this.permissionNames]; }
 
-    includesName(name: string): boolean { return this.permissionNames.has(name); }
-    includesAllNames(names: readonly string[]): boolean { return names.every(name => this.includesName(name)); }
+    includesName(name: Permission): boolean { return this.permissionNames.has(name); }
+    includesAllNames(names: readonly Permission[]): boolean { return names.every(name => this.includesName(name)); }
 
     hasAll(other: Readonly<PermissionSet>): boolean {
         return this.includesAllNames(other.names);
@@ -27,7 +28,7 @@ export class PermissionSet {
             && this.includesName(name));
     }
 
-    hasSameNames(names: readonly string[]): boolean {
+    hasSameNames(names: readonly Permission[]): boolean {
         return new Set(names).size === this.permissionNames.size && this.includesAllNames(names);
     }
 }

@@ -1,3 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
+import { selectableBandVisibilityPermissionWhere } from "../entities/user/visibilityPermissionPolicy";
 import type { UserWithRolesPayload } from "./userPayloads";
 
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
@@ -5,27 +7,27 @@ import { Prisma } from "db";
 import { assertIsNumberArray } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import type {
-    PermissionPublicId,
     BandUserPublicId,
+    PermissionPublicId,
     UserPublicId,
     UserTagPublicId,
 } from "shared/publicId";
 import { TAnyModel } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
 import { PermissionSignificance } from "../apiTypes";
+import { GenericStringField } from "../columnTypes/genericString";
+import { serverOwnedField } from "../columnTypes/inherited";
+import { LocalizedStringField, localizedText } from "../columnTypes/localizedString";
 import { BoolField, ForeignCollectionField, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
-import { GenericStringField } from "../columnTypes/genericString";
 import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserSafeArgs } from "./prismArgs";
-import { LocalizedStringField, localizedText } from "../columnTypes/localizedString";
-import { serverOwnedField } from "../columnTypes/inherited";
 import { getEmailSignInSearchExpression } from "./userSignInMethod";
 
 // Basic profile data is self-service for the account owner and readable for
 // other users only through the explicit member-profile capability.
 export const xUserBasicProfileAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
-    PostQuery: Permission.view_users_basic_info,
+    PostQuery: BandPermission.view_users_basic_info,
     PreMutateAsOwner: Permission.login,
     PreMutate: Permission.manage_global_users,
     PreInsert: Permission.manage_global_users,
@@ -35,17 +37,17 @@ export const xUserBasicProfileAuthMap = db3.defineAuthMap({
 // data, but owning the account does not grant write access.
 export const xUserBasicProfileManagerWriteAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
-    PostQuery: Permission.view_users_basic_info,
-    PreMutateAsOwner: Permission.manage_users,
-    PreMutate: Permission.manage_users,
-    PreInsert: Permission.manage_users,
+    PostQuery: BandPermission.view_users_basic_info,
+    PreMutateAsOwner: BandPermission.manage_users,
+    PreMutate: BandPermission.manage_users,
+    PreInsert: BandPermission.manage_users,
 });
 
 // The old User presentation field belongs to the shared person. Band taxonomy
 // writers will use BandUser fields when the descriptors are adapted.
 export const xUserPresentationMetadataAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
-    PostQuery: Permission.view_users_basic_info,
+    PostQuery: BandPermission.view_users_basic_info,
     PreMutateAsOwner: Permission.manage_global_users,
     PreMutate: Permission.manage_global_users,
     PreInsert: Permission.manage_global_users,
@@ -56,16 +58,16 @@ export const xUserPresentationMetadataAuthMap = db3.defineAuthMap({
 const xUserTaxonomyDefinitionAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
     PostQuery: db3.DB3FieldReadAuth.inheritRow,
-    PreMutateAsOwner: Permission.manage_user_taxonomy,
-    PreMutate: Permission.manage_user_taxonomy,
-    PreInsert: Permission.manage_user_taxonomy,
+    PreMutateAsOwner: BandPermission.manage_user_taxonomy,
+    PreMutate: BandPermission.manage_user_taxonomy,
+    PreInsert: BandPermission.manage_user_taxonomy,
 });
 
 // Contact information has a separate non-owner read capability. Phone remains
 // self-editable; email writes are owned by dedicated account-maintenance flows.
 export const xUserContactInfoAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
-    PostQuery: Permission.view_user_contact_info,
+    PostQuery: BandPermission.view_user_contact_info,
     PreMutateAsOwner: Permission.login,
     PreMutate: Permission.manage_global_users,
     PreInsert: Permission.manage_global_users,
@@ -73,7 +75,7 @@ export const xUserContactInfoAuthMap = db3.defineAuthMap({
 
 export const xUserEmailAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
-    PostQuery: Permission.view_user_contact_info,
+    PostQuery: BandPermission.view_user_contact_info,
     PreMutateAsOwner: Permission.sysadmin,
     PreMutate: Permission.sysadmin,
     PreInsert: Permission.sysadmin,
@@ -82,8 +84,8 @@ export const xUserEmailAuthMap = db3.defineAuthMap({
 // Operational account metadata is visible to user maintainers. Its mutation
 // authority stays separate and is enforced by existing dedicated flows.
 const xUserOperationalMetadataAuthMap = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.manage_users,
-    PostQuery: Permission.manage_users,
+    PostQueryAsOwner: BandPermission.manage_users,
+    PostQuery: BandPermission.manage_users,
     PreMutateAsOwner: Permission.sysadmin,
     PreMutate: Permission.sysadmin,
     PreInsert: Permission.sysadmin,
@@ -116,10 +118,10 @@ const denyGenericUserAuthenticationField = (): boolean => false;
 
 export const xUserTableAuthMap: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.login,
-    View: Permission.view_users_basic_info,
+    View: BandPermission.view_users_basic_info,
     EditOwn: Permission.login,
-    Edit: Permission.manage_users,
-    Insert: Permission.manage_users,
+    Edit: BandPermission.manage_users,
+    Insert: BandPermission.manage_users,
 } as const;
 
 const xUserTableAuthMap_SysadminInsert: db3.DB3AuthTablePermissionMap = {
@@ -131,9 +133,9 @@ const xUserTableAuthMap_SysadminInsert: db3.DB3AuthTablePermissionMap = {
 export const xUserTaxonomyTableAuthMap: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.login,
     View: Permission.login,
-    EditOwn: Permission.manage_user_taxonomy,
-    Edit: Permission.manage_user_taxonomy,
-    Insert: Permission.manage_user_taxonomy,
+    EditOwn: BandPermission.manage_user_taxonomy,
+    Edit: BandPermission.manage_user_taxonomy,
+    Insert: BandPermission.manage_user_taxonomy,
 } as const;
 
 export const xPermissionTableAuthMap: db3.DB3AuthTablePermissionMap = {
@@ -350,7 +352,7 @@ const userBaseArgs = db3.defineTableDesc({
     tableName: "User",
     readConsistency: "snapshot",
     deletePolicy: "disabled",
-    viewDeletedPermission: Permission.recover_users,
+    viewDeletedPermission: BandPermission.recover_users,
     searchCapabilities: { includeDeleted: true },
     queryParameters: {
         userId: { kind: "entityIdentity", targetTableID: "User", authorizeAs: "publicId" },
@@ -532,6 +534,7 @@ export class VisiblePermissionField<
             columnName: args.columnName || "visiblePermission",
             fkidMember: (args.fkMember || "visiblePermissionId") as TForeignKeyMember,
             getForeignTable: () => xPermission,
+            getWriteTargetWhereClause: selectableBandVisibilityPermissionWhere,
             specialFunction: db3.SqlSpecialColumnFunction.visiblePermission,
             allowNull: true,
             getQuickFilterWhereClause: () => false,

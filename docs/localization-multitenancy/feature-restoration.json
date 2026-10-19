@@ -423,7 +423,8 @@
       "verification": "Verify the protected sample URLs and their controls without rejected requests or uncaught browser errors.",
       "status": "pending",
       "evidence": [
-        "2026-10-12 A1 caller audit: The protected backstage/gallery and backstage/test component/grid demonstrations remain guarded for Sysadmin and have no core application callers. They are outside everyday workflow parity and remain pending for B, with their two source references intact; no example workflow is retired or claimed restored."
+        "2026-10-12 A1 caller audit: The protected backstage/gallery and backstage/test component/grid demonstrations remain guarded for Sysadmin and have no core application callers. They are outside everyday workflow parity and remain pending for B, with their two source references intact; no example workflow is retired or claimed restored.",
+        "2026-10-19: Commit 7b5f951b removed src/pages/dev/test2.tsx. Remove its stale manifest reference so validation reflects the surviving gallery source; developer-examples remains pending."
       ]
     }
   ],
@@ -433,12 +434,6 @@
       "featureId": "developer-examples",
       "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/gallery.tsx:1-474",
       "sha256": "1642d706c090bcc8e1a4162b3b079db004145ba8c15df38e23f30a58ec8313cf"
-    },
-    {
-      "file": "src/pages/dev/test2.tsx",
-      "featureId": "developer-examples",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/test.tsx:1-272",
-      "sha256": "a8f67e7a82c9bcc421082d853c3cb4aa86105b3083bda6ed6290128bd8b4bec6"
     }
   ]
 }

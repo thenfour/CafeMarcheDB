@@ -1,5 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { activityReferenceField, activityReferenceLabel, correlateActivityReferences, readActivityReferenceView } from "./activityReferenceRead";
-import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import type { DB3ReadContext } from "src/core/db3/server/db3ReadExecution";
 import { fileReferenceView, frontpageGalleryItemReferenceView } from "src/core/db3/shared/entities/file/fileReferences";
@@ -65,11 +65,11 @@ async function readDetailReferenceViews(context: DB3ReadContext, input: FacetedB
     const credits = await readActivityReferenceView(context, { ...preferences, view: songCreditTypeReferenceView, filter: { publicIds: creditIds.map(row => parsePublicId<"SongCreditType">(row.publicId)) } });
     const instruments = await readActivityReferenceView(context, { ...preferences, view: bandInstrumentReferenceView, filter: {
         publicIds: instrumentIds.map(row => parsePublicId<"Instrument">(row.publicId)),
-        tableParams: { includeHidden: context.authorization.hasPermission(Permission.admin_instruments) },
+        tableParams: { includeHidden: context.authorization.hasPermission(BandPermission.admin_instruments) },
     } });
     const instrumentGroups = await readActivityReferenceView(context, { ...preferences, view: bandInstrumentGroupReferenceView, filter: {
         publicIds: instruments.flatMap(row => row.functionalGroupId === undefined ? [] : [row.functionalGroupId]),
-        tableParams: { includeHidden: context.authorization.hasPermission(Permission.admin_instruments) },
+        tableParams: { includeHidden: context.authorization.hasPermission(BandPermission.admin_instruments) },
     } });
     return { files, segments, setlists, gallery, plans, attendance, credits, instruments, instrumentGroups };
 }

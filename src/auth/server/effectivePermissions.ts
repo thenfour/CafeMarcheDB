@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { AuthenticationError } from "blitz";
-import { getPermissionDefinition, isPermission, Permission } from "shared/permissions";
+import { getPermissionDefinition, isPermission, Permission, type PermissionScope } from "shared/permissions";
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
 import { CreatePublicData, type CreatePublicDataArgs, type PublicDataType } from "types";
 import { ServerPermissionSet, type DatabasePermissionIdentity } from "./ServerPermissionSet";
@@ -20,26 +20,68 @@ const grantSelection = Prisma.validator<Prisma.GlobalRolePermissionSelect>()({
     permission: { select: { id: true, name: true, isDeleted: true } },
 });
 type PersistedGrant = Prisma.GlobalRolePermissionGetPayload<{ select: typeof grantSelection }>;
-type RecognizedPermission = DatabasePermissionIdentity & { readonly name: Permission };
 
 export interface EffectivePermissionContext {
     readonly effectivePermissions: ServerPermissionSet;
     readonly globalPermissions: ServerPermissionSet;
     readonly bandPermissions: ServerPermissionSet;
-    /** Band-independent display grants for the shared session. */
+    /** Only the selected global role contributes to the shared session. */
     readonly sessionPermissions: ServerPermissionSet;
     readonly membership: AuthorizationMembership | null;
 }
 
-function recognizedGrants(entries: readonly PersistedGrant[]): RecognizedPermission[] {
+function rolePermissions(entries: readonly PersistedGrant[], scope: PermissionScope): ServerPermissionSet {
     const unknown = new Set<string>();
-    const permissions = entries.flatMap<RecognizedPermission>(({ permission }) => {
-        if (permission.isDeleted || permission.name === Permission.never_grant) return [];
-        if (!isPermission(permission.name)) { unknown.add(permission.name); return []; }
-        return [{ id: permission.id, name: permission.name }];
+    const permissions: DatabasePermissionIdentity[] = [];
+    for (const { permission } of entries) {
+        if (permission.isDeleted || permission.name === Permission.never_grant) {
+            continue;
+        }
+        if (!isPermission(permission.name)) {
+            unknown.add(permission.name);
+            continue;
+        }
+        if (getPermissionDefinition(permission.name).scope !== scope) {
+            throw new Error(`A ${scope} role cannot grant ${permission.name}.`);
+        }
+        permissions.push({ id: permission.id, name: permission.name });
+    }
+    if (unknown.size) {
+        console.warn(`Ignoring unknown persisted permissions: ${[...unknown].join(", ")}`);
+    }
+    return new ServerPermissionSet(permissions);
+}
+
+async function loadGlobalRolePermissions(
+    database: AuthorizationDatabase,
+    roleId: number | null,
+): Promise<ServerPermissionSet> {
+    const roles = await database.globalRole.findMany({
+        where: { isDeleted: false, ...(roleId === null ? { isPublicRole: true } : { id: roleId }) },
+        select: { permissions: { select: grantSelection } },
     });
-    if (unknown.size) console.warn(`Ignoring unknown persisted permissions: ${[...unknown].join(", ")}`);
-    return permissions;
+    if (roles.length !== 1) {
+        throw new Error(roleId === null
+            ? "Expected exactly one active Global Public role."
+            : "The assigned global role is unavailable.");
+    }
+    return rolePermissions(roles[0]!.permissions, "global");
+}
+
+async function loadBandRolePermissions(
+    database: AuthorizationDatabase,
+    roleId: number | null,
+): Promise<ServerPermissionSet> {
+    const roles = await database.bandRole.findMany({
+        where: { isDeleted: false, ...(roleId === null ? { isPublicRole: true } : { id: roleId }) },
+        select: { bandRolePermissions: { select: grantSelection } },
+    });
+    if (roles.length !== 1) {
+        throw new Error(roleId === null
+            ? "Expected exactly one active Band Public role."
+            : "The assigned band role is unavailable.");
+    }
+    return rolePermissions(roles[0]!.bandRolePermissions, "band");
 }
 
 export async function loadEffectivePermissionContext(
@@ -53,77 +95,21 @@ export async function loadEffectivePermissionContext(
         select: membershipSelection,
     }) : null;
     const activeMembership = membership && !membership.isDeleted ? membership : null;
-
-    const globalRoles = user ? await database.globalRole.findMany({
-        where: {
-            isDeleted: false,
-            OR: [
-                ...(user.globalRoleId === null ? [] : [{ id: user.globalRoleId }]),
-                ...(user.isSysAdmin ? [{ isSysAdminRole: true }] : []),
-            ],
-        },
-        select: { id: true, isSysAdminRole: true, permissions: { select: grantSelection } },
-    }) : [];
-    if (user?.isSysAdmin && globalRoles.filter(role => role.isSysAdminRole).length !== 1) {
-        throw new Error("Expected exactly one active designated Sysadmin role.");
-    }
-
-    // The public definition is shared, but any band grants on it still require
-    // a band context. The new-user role applies only to an active roleless member.
-    const storedBandRoles = await database.bandRole.findMany({
-        where: {
-            isDeleted: false,
-            OR: [
-                { isPublicRole: true },
-                ...(activeMembership?.bandRoleId == null ? [] : [{ id: activeMembership.bandRoleId }]),
-                ...(activeMembership?.bandRoleId === null ? [{ isRoleForNewUsers: true }] : []),
-            ],
-        },
-        select: { id: true, isPublicRole: true, isRoleForNewUsers: true, bandRolePermissions: { select: grantSelection } },
-    });
-    const ambiguousBandDesignations = storedBandRoles.filter(role => role.isPublicRole).length > 1
-        || storedBandRoles.filter(role => role.isRoleForNewUsers).length > 1;
-    if (bandId !== null && ambiguousBandDesignations) {
-        throw new Error("Ambiguous active public or new-member role designation.");
-    }
-    // Invalid band definitions confer no public grants in platform context.
-    // Independently validated global/account authority remains usable for their repair.
-    const bandRoles = ambiguousBandDesignations ? [] : storedBandRoles;
-
-    // Login and logged-in visibility describe the global account, independently
-    // of whether the person has joined a band or received a membership role.
-    const accountPermissions = user ? await database.permission.findMany({
-        where: { name: { in: [Permission.login, Permission.visibility_logged_in_users] }, isDeleted: false },
-        select: { id: true, name: true },
-    }) : [];
-    const global = recognizedGrants(globalRoles.flatMap(role => role.permissions))
-        .filter(permission => bandId !== null || getPermissionDefinition(permission.name).scope !== "band");
-    const band = recognizedGrants(bandRoles.flatMap(role => role.bandRolePermissions)).filter(permission => {
-        // The registry, not persisted grants, determines enforceable scope.
-        const scope = getPermissionDefinition(permission.name).scope;
-        return scope !== "platform" && (scope !== "account" || !!user) && (scope !== "band" || bandId !== null);
-    });
-    const globalPermissions = new ServerPermissionSet([...global, ...accountPermissions]);
-    const bandPermissions = new ServerPermissionSet(band);
-    // Public/account grants from the shared public definition are independent
-    // of membership. Grants from a selected member role stay in its context.
-    const publicPermissionIds = new Set(bandRoles.filter(role => role.isPublicRole)
-        .flatMap(role => role.bandRolePermissions.map(grant => grant.permission.id)));
-    const sessionPermissions = new ServerPermissionSet([
-        ...global.filter(permission => getPermissionDefinition(permission.name).scope !== "band"),
-        ...accountPermissions,
-        ...band.filter(permission => publicPermissionIds.has(permission.id)
-            && getPermissionDefinition(permission.name).scope !== "band"),
-    ]);
+    const globalPermissions = await loadGlobalRolePermissions(database, user?.globalRoleId ?? null);
+    const bandPermissions = bandId === null ? new ServerPermissionSet([])
+        : await loadBandRolePermissions(database, activeMembership?.bandRoleId ?? null);
     return {
-        effectivePermissions: new ServerPermissionSet([...global, ...accountPermissions, ...band]),
+        effectivePermissions: new ServerPermissionSet([...globalPermissions.entries, ...bandPermissions.entries]),
         globalPermissions,
         bandPermissions,
-        sessionPermissions,
+        sessionPermissions: globalPermissions,
         membership: activeMembership,
     };
 }
 
+// note that this is really specific to the current user; there are small policies that
+// only work there. for example a deactivated account is treated as anonymous. this can't be
+// used on principal targets because t hat logic is not applicable there.
 export async function loadEffectivePermissions(
     database: AuthorizationDatabase,
     user: PermissionPrincipal | null | undefined,
@@ -140,7 +126,9 @@ export const createPublicDataFromDatabase = async (
         ...UserWithRolesArgs,
         where: { id: args.user.id, isDeleted: false, mergedIntoUserId: null },
     }) : null;
-    if (args.user && !user) throw new AuthenticationError();
+    if (args.user && !user) {
+        throw new AuthenticationError();
+    }
     const { sessionPermissions } = await loadEffectivePermissionContext(database, user, null);
     return CreatePublicData({ ...args, user, permissions: sessionPermissions.names });
 };

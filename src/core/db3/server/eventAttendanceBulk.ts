@@ -1,6 +1,6 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import type { Prisma } from "@prisma/client";
 import { NotFoundError } from "blitz";
-import { Permission } from "shared/permissions";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "src/auth/server/activityLog";
 import type { CMServerAuthorization, CMServerAuthorizationWithUser } from "src/auth/server/serverAuthorization";
 import { generatePublicId } from "src/server/publicId";
@@ -97,7 +97,7 @@ async function executeBulkAttendanceInTransaction(database: Prisma.TransactionCl
 ): Promise<null> {
     const auth = (await authorization.refresh(database)).requireUser();
     const bandId = requireAttendanceBand(auth, operation.args.bandPublicId);
-    auth.requirePermission(Permission.admin_events);
+    auth.requirePermission(BandPermission.admin_events);
     const { source, target } = await resolveSegments(database, auth, operation);
     const [existing, desired] = await Promise.all([
         loadSegmentAnswers(database, target.id, bandId),

@@ -1,5 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { AuthorizationError } from "blitz";
-import { Permission } from "shared/permissions";
 import { authorizeAndProjectViewDto, queryView } from "src/core/db3/server/db3QueryCore";
 import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
 import type { DB3ReadContext } from "src/core/db3/server/db3ReadExecution";
@@ -11,7 +11,7 @@ import { SpecialWikiNamespace, wikiParseCanonicalWikiPath } from "../shared/wiki
 import { requireWikiAccess } from "./wikiAuthorization";
 
 export async function findReadableWikiPage(context: DB3ReadContext, canonicalWikiPath: string) {
-    const auth = requireWikiAccess(context, Permission.view_wiki_pages);
+    const auth = requireWikiAccess(context, BandPermission.view_wiki_pages);
     return context.database.wikiPage.findFirst({
         where: await GetAuthorizedTableReadWhere({ table: xWikiPage, auth, where: { slug: canonicalWikiPath } }),
         ...wikiPageApiSelection,

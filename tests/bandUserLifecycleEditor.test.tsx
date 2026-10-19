@@ -20,7 +20,7 @@ vi.mock("@blitzjs/rpc", () => ({ useQuery: (_resolver: unknown, args: { table: {
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({ refreshCachedData: refreshDashboard }) }));
 vi.mock("src/core/components/SnackbarContext", () => ({ useSnackbar: () => ({ showMessage }) }));
 vi.mock("src/locale/components/PresentationProvider", () => ({ usePresentation: () => ({ bandPublicId: bandId, data: {
-    authorization: { userPublicId: active.user.publicId, effectivePermissionNames: permissions }, input: { clientRequestId: requestId },
+    authorization: { bandPublicId: bandId, userPublicId: active.user.publicId, effectivePermissionNames: permissions }, input: { clientRequestId: requestId },
 }, invalidate: invalidatePresentation }) }));
 vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({ getPlainString: (key: LocalizedPlainStringKey) => kStaticLocalizedStringRegistry[key].defaultValue }) }));
 

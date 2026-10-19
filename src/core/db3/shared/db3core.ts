@@ -6,6 +6,7 @@ import { isEmptyArray } from "shared/arrayUtils";
 import { CalculateChanges, type CalculateChangesResult, createEmptyCalculateChangesResult } from "shared/associationUtils";
 import { SqlCombineAndExpression, SqlCombineOrExpression } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
+import type { GlobalPermissionRequirement, PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import { isPublicId } from "shared/publicId";
 import type { SortDirection, TAnyModel } from "shared/rootroot";
 import { z } from "zod";
@@ -295,15 +296,15 @@ export const DB3FieldReadAuth = Object.freeze({
     inheritRow: "inheritRow",
 } as const);
 
-export type DB3FieldReadAuthRequirement = Permission | typeof DB3FieldReadAuth.inheritRow;
+export type DB3FieldReadAuthRequirement = PermissionRequirement | typeof DB3FieldReadAuth.inheritRow;
 export type DB3FieldReadPresence = "required" | "optional";
 
 export type DB3AuthContextPermissionMapShape = {
     readonly PostQuery: DB3FieldReadAuthRequirement;
     readonly PostQueryAsOwner: DB3FieldReadAuthRequirement;
-    readonly PreInsert: Permission;
-    readonly PreMutate: Permission;
-    readonly PreMutateAsOwner: Permission;
+    readonly PreInsert: PermissionRequirement;
+    readonly PreMutate: PermissionRequirement;
+    readonly PreMutateAsOwner: PermissionRequirement;
 };
 
 declare const db3AuthMapReadPresence: unique symbol;
@@ -353,7 +354,7 @@ export function defineAuthMap(map: DB3AuthContextPermissionMapShape): DB3AuthCon
     return map;
 }
 
-export const createAuthContextMap_Mono = (p: Permission) => defineAuthMap({
+export const createAuthContextMap_Mono = (p: PermissionRequirement) => defineAuthMap({
     PostQuery: p,
     PostQueryAsOwner: p,
     PreInsert: p,
@@ -387,11 +388,11 @@ export const createAuthContextMap_TODO = () => createAuthContextMap_Mono(Permiss
 
 ////////////////////////////////////////////////////////////////
 export type DB3AuthTablePermissionMap = {
-    View: Permission;
-    ViewOwn: Permission;
-    Edit: Permission;
-    EditOwn: Permission;
-    Insert: Permission;
+    View: PermissionRequirement;
+    ViewOwn: PermissionRequirement;
+    Edit: PermissionRequirement;
+    EditOwn: PermissionRequirement;
+    Insert: PermissionRequirement;
     // TODO: support deletes.
     // for now use edit permissions
     // DeleteOwnHard: Permission;
@@ -939,7 +940,7 @@ interface DB3BandScopeMetadata {
     readonly inheritedFrom?: string;
     readonly inheritedSourceMember?: string;
     readonly hiddenMember?: string;
-    readonly managePermission: Permission;
+    readonly managePermission: PermissionRequirement;
 }
 
 export type DB3BandScope = DB3BandScopeMetadata & ({
@@ -982,6 +983,15 @@ export interface TableDesc {
     queryParameters?: DB3QueryParameterMap; // runtime contract for untrusted generic DB3 requests
     bandScope?: DB3BandScope;
 
+    // visibility permission is band-level permission for which global roles won't be granted.
+    // so basically, every "visibility permission" should have 2 checks against permission:
+    // one standard one at the band level, and one for global roles.
+    // IOW, this establishes visibility for global roles - otherwise global admins would not
+    // be able to see any rows with visibility restrictions.
+    // because this policy is not user-configurable, we make it static here.
+    // globalVisibilityPermission
+    globalVisibilityPermission?: GlobalPermissionRequirement;
+
     // Resolved queries assemble fields across independent reads before filtering/paging.
     // DB3 owns a coherent snapshot for this strategy, independently of band ownership.
     queryStrategy?: "resolved";
@@ -1009,8 +1019,8 @@ export interface TableDesc {
     deletePolicy: DB3DeletePolicy;
 
     // specify the permission required to view or restore soft-deleted content
-    viewDeletedPermission?: Permission;
-    restorePermission?: Permission;
+    viewDeletedPermission?: PermissionRequirement;
+    restorePermission?: PermissionRequirement;
 
     // lsmb todo: this is likely better handled at the VIEW level. hard to justify this.
     searchCapabilities?: { includeDeleted?: boolean };
@@ -1265,8 +1275,8 @@ export class xTable<
     getSelectionArgs: (filterModel: CMDBTableFilterModel, authorization: CMServerAuthorization) => TAnyModel;
 
     deletePolicy: DB3DeletePolicy;
-    viewDeletedPermission?: Permission;
-    restorePermission?: Permission;
+    viewDeletedPermission?: PermissionRequirement;
+    restorePermission?: PermissionRequirement;
     searchCapabilities?: { includeDeleted?: boolean };
     pkMember: string;
     publicIdMember?: string;
@@ -1277,6 +1287,7 @@ export class xTable<
     queryParameters?: DB3QueryParameterMap;
 
     bandScope?: DB3BandScope;
+    globalVisibilityPermission?: GlobalPermissionRequirement;
     queryStrategy?: "resolved";
     readConsistency?: "snapshot";
     serverInsertOnly?: boolean;
@@ -1500,7 +1511,9 @@ export class xTable<
             const permissionColumn = this.SqlSpecialColumns.visiblePermission.fkidMember!;
             const permissionIds = auth.effectivePermissions.ids;
             const permissionIdList = permissionIds.length > 0 ? permissionIds.join(",") : "NULL";
-            const explicitPermissionExpr = `(${tableAlias}.${permissionColumn} IN (${permissionIdList}))`;
+            const explicitPermissionExpr = this.canBypassConfiguredVisibilityViaGlobalRole(auth)
+                ? `(${tableAlias}.${permissionColumn} IS NOT NULL)`
+                : `(${tableAlias}.${permissionColumn} IN (${permissionIdList}))`;
             if (auth.userId) {
                 AND.push(SqlCombineOrExpression([
                     explicitPermissionExpr,
@@ -1754,15 +1767,21 @@ export class xTable<
             if (visiblePermissionColumn) {
                 const visiblePermissionId = args.model[visiblePermissionColumn.fkidMember!];
                 if (visiblePermissionId == null) {
-                    if (!isOwner) return false;
+                    if (!isOwner) return false;  // private visibility = only the owner can see it
                 } else {
-                    if (!args.auth.effectivePermissions.includesId(visiblePermissionId)) return false;
+                    if (!this.canBypassConfiguredVisibilityViaGlobalRole(args.auth)
+                        && !args.auth.effectivePermissions.includesId(visiblePermissionId)) {
+                        return false;
+                    }
                 }
             }
         }
 
         return true;
     };
+
+    private canBypassConfiguredVisibilityViaGlobalRole = (auth: IAuthorization): boolean => !!this.globalVisibilityPermission
+        && auth.hasPermission(this.globalVisibilityPermission);
 
     canViewDeletedRows = (
         auth: IAuthorization,
@@ -1814,7 +1833,7 @@ export class xTable<
         return this.hasPermission(args.auth, requiredPermission);
     };
 
-    private hasPermission = (auth: IAuthorization, permission: Permission): boolean => auth.hasPermission(permission);
+    private hasPermission = (auth: IAuthorization, permission: PermissionRequirement): boolean => auth.hasPermission(permission);
 
     private getOwnerUserId = (
         model: TAnyModel | null,
@@ -2148,6 +2167,7 @@ export class xTable<
         if (this.SqlSpecialColumns.visiblePermission) {
             and.push(GetVisibilityWhereExpression({
                 auth,
+                allowConfiguredVisibility: this.canBypassConfiguredVisibilityViaGlobalRole(auth),
                 //permissionIds: [...auth.effectivePermissions.ids],
                 visiblePermissionIdColumnName: this.SqlSpecialColumns.visiblePermission.fkidMember,
                 //ownerUserId: auth.userId || undefined,

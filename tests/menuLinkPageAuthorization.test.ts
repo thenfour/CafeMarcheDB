@@ -1,3 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
+import { permissionNamesSatisfyRequirement, type PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import type { SessionContext } from "@blitzjs/auth";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
@@ -16,8 +18,8 @@ describe("menu link page authorization", () => {
     beforeEach(() => loadAuth.mockReset());
 
     function grant(...permissions: Permission[]) {
-        const requirePermission = vi.fn((permission: Permission) => {
-            if (!permissions.includes(permission)) {
+        const requirePermission = vi.fn((permission: PermissionRequirement) => {
+            if (!permissionNamesSatisfyRequirement(permissions, permission, true)) {
                 throw new Error("Denied");
             }
         });
@@ -40,7 +42,7 @@ describe("menu link page authorization", () => {
         const requirePermission = grant(Permission.customize_menu);
         await authorizePageRequest("/backstage/menuLinks", session, bandPublicId);
         expect(loadAuth).toHaveBeenCalledWith(session, bandPublicId);
-        expect(requirePermission).toHaveBeenCalledWith(Permission.customize_menu);
+        expect(requirePermission).toHaveBeenCalledWith(BandPermission.customize_menu);
     });
 
     it("rejects a selected band whose actor lacks the menu-link capability", async () => {

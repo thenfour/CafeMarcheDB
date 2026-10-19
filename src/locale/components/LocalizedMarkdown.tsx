@@ -1,3 +1,4 @@
+import { scopedAuthorizationSatisfiesRequirement } from "src/auth/shared/permissionRequirement";
 import { invoke, useMutation } from "@blitzjs/rpc";
 import { MenuItem, TextField } from "@mui/material";
 import React from "react";
@@ -166,7 +167,7 @@ function LocalizedMarkdownScope(props: LocalizedMarkdownProps) {
     const [editing, setEditing] = React.useState(false);
     const authorization = presentation.data?.authorization;
     const canEdit = !!authorization?.userPublicId
-        && authorization.effectivePermissionNames.includes(staticStringWritePermission(props.scope))
+        && scopedAuthorizationSatisfiesRequirement(authorization, staticStringWritePermission(props.scope))
         && (props.scope === "global" || !!authorization.bandPublicId);
     const target = React.useMemo<StaticStringTarget>(() => ({
         key: props.id, scope: props.scope,

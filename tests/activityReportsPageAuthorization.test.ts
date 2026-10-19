@@ -1,3 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
+import { permissionNamesSatisfyRequirement, type PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import type { SessionContext } from "@blitzjs/auth";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
@@ -13,8 +15,8 @@ const session = {} as SessionContext;
 const bandPublicId = parsePublicId<"Band">("ReportBand000001");
 
 function grant(...permissions: Permission[]) {
-    const requirePermission = vi.fn((permission: Permission) => {
-        if (!permissions.includes(permission)) {
+    const requirePermission = vi.fn((permission: PermissionRequirement) => {
+        if (!permissionNamesSatisfyRequirement(permissions, permission, true)) {
             throw new Error("Denied");
         }
     });
@@ -39,7 +41,7 @@ describe("activity report page authorization", () => {
         const requirePermission = grant(Permission.view_feature_reports);
         await authorizePageRequest("/backstage/featureReports", session, bandPublicId);
         expect(loadAuth).toHaveBeenCalledWith(session, bandPublicId);
-        expect(requirePermission).toHaveBeenCalledWith(Permission.view_feature_reports);
+        expect(requirePermission).toHaveBeenCalledWith(BandPermission.view_feature_reports);
     });
 
     it("rejects a selected-band request without the report capability", async () => {

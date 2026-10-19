@@ -49,6 +49,41 @@ pending outside A1. Keep deferred owners coherently unavailable until their cont
 are safe. Dated checkpoints retain their earlier verification results; the gate
 table and latest verification status describe the current position.
 
+## Explicit role authorization checkpoint
+
+2026-10-19: Permissions and roles use matching `global`/`band` scopes. Every
+request selects one global role, plus one band role for an explicit band; empty
+slots select their corresponding Public role without inheritance. Account/default
+roles are persisted at creation. Grants, administrator displays and delegation
+follow the selected roles, with explicit `global_band_admin` policy for band
+operations. Its grant remains independently revocable. Role pickers and matrices
+show only matching-scope permissions; configured visibility choices/writes and
+private ownership use the same policy across readers and mutations. See the
+[task plan](authorization-role-simplification.md) and
+[authorization contract](05-authorization-foundation.md).
+
+Verification passed: the complete repository test runner selected 312 files,
+with 3,213 tests passing across 240 files and 961 database-gated cases skipped
+across 72 files. Separate disposable MariaDB runs passed 184 selected cases for
+role/member/account administration, merging, migration, fresh/repeated seeds,
+settings, event creation and dashboard bootstrap. Typecheck, changed-file ESLint,
+preservation verification and the isolated normal production build passed.
+The build's runtime sources match the working tree. Four built Chromium groups
+passed with zero page or unexpected RPC errors, covering both Public roles,
+account/member isolation, scoped matrices and cap-only operations across two
+bands with immediate matrix-driven revocation. Role definitions/matrices were
+visually inspected. Browser/native fixture databases and owned servers were
+removed; existing application databases were unchanged.
+
+The `20261019120000_explicit_authorization_roles` migration converts old effective
+inheritance into stored grants, preserves valid custom assignments, retires
+mismatched grants and replaces previously unused global designations with safe
+defaults. Review and apply it before using existing data with the updated code.
+The authorization contract records the separate existing shared-account
+deactivation policy follow-up. Trivial cleanup removed stale manifest/route/menu
+references to deleted pages, corrected the limited-account notice condition and
+updated obsolete test expectations for current controls.
+
 ## Event search checkpoint
 
 The existing Events page, `SearchPageContent`, filter/list hooks,

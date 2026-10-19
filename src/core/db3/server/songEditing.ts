@@ -1,7 +1,8 @@
+import type { PermissionRequirement } from "src/auth/shared/permissionRequirement";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "@prisma/client";
 import { AuthorizationError } from "blitz";
 import { z } from "zod";
-import { Permission } from "shared/permissions";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { BandPublicIdSchema } from "src/locale/shared/presentationInput";
 import { songEditorView, xFile, xSong } from "../db3";
@@ -22,7 +23,7 @@ export const UpdateSongPinnedRecordingSchema = z.object({
 function writeSongFields(database: DB3ReadRootDatabase, authorization: CMServerAuthorization,
     target: { bandPublicId: z.infer<typeof BandPublicIdSchema>; songId: z.infer<typeof xSong.identitySchema> },
     fields: { description?: string; pinnedRecordingId?: z.infer<typeof xFile.identitySchema> | null },
-    permission: Permission,
+    permission: PermissionRequirement,
 ) {
     const dto = songEditorView.crud.operations.update.command.parseDto({ identity: target.songId, patch: fields });
     return database.$transaction(async transaction => {
@@ -40,12 +41,12 @@ export function updateSongBasicFields(database: DB3ReadRootDatabase, authorizati
     input: z.infer<typeof UpdateSongBasicFieldsSchema>,
 ) {
     const { description, ...target } = UpdateSongBasicFieldsSchema.parse(input);
-    return writeSongFields(database, authorization, target, description === undefined ? {} : { description }, Permission.view_songs);
+    return writeSongFields(database, authorization, target, description === undefined ? {} : { description }, BandPermission.view_songs);
 }
 
 export function updateSongPinnedRecording(database: DB3ReadRootDatabase, authorization: CMServerAuthorization,
     input: z.infer<typeof UpdateSongPinnedRecordingSchema>,
 ) {
     const { fileId, ...target } = UpdateSongPinnedRecordingSchema.parse(input);
-    return writeSongFields(database, authorization, target, { pinnedRecordingId: fileId }, Permission.pin_song_recordings);
+    return writeSongFields(database, authorization, target, { pinnedRecordingId: fileId }, BandPermission.pin_song_recordings);
 }

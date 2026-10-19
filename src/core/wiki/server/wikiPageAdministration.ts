@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import type { WikiPageRevisionPublicId } from "shared/publicId";
 import * as db3 from "src/core/db3/db3";
 import { queryView } from "src/core/db3/server/db3QueryCore";
@@ -5,7 +6,6 @@ import { deleteImpl } from "src/core/db3/server/db3mutationCore";
 import { wikiPageRevisionDeleteTargetView } from "src/core/db3/shared/entities/wiki/wikiViews";
 import { AuthorizationError } from "blitz";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "src/auth/server/activityLog";
-import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
 import { resolvePublicForeignIds } from "src/core/db3/server/db3PublicIds";
 import type { DB3ReadContext } from "src/core/db3/server/db3ReadExecution";
@@ -23,7 +23,7 @@ const clearedLock = () => ({
 });
 
 export async function renewWikiLock(context: DB3ReadContext, args: TWikiReleaseYourLockArgs) {
-    const auth = requireWikiAccess(context, Permission.edit_wiki_pages);
+    const auth = requireWikiAccess(context, BandPermission.edit_wiki_pages);
     const page = await findReadableWikiPage(context, args.canonicalWikiPath);
     if (!page) {
         return false;
@@ -39,7 +39,7 @@ export async function renewWikiLock(context: DB3ReadContext, args: TWikiReleaseY
 }
 
 export async function releaseWikiLock(context: DB3ReadContext, args: TWikiReleaseYourLockArgs): Promise<void> {
-    const auth = requireWikiAccess(context, Permission.edit_wiki_pages);
+    const auth = requireWikiAccess(context, BandPermission.edit_wiki_pages);
     const page = await findReadableWikiPage(context, args.canonicalWikiPath);
     if (!page) {
         return;
@@ -51,7 +51,7 @@ export async function releaseWikiLock(context: DB3ReadContext, args: TWikiReleas
 }
 
 export async function clearWikiLock(context: DB3ReadContext, args: TAdminClearPageLockArgs): Promise<void> {
-    const auth = requireWikiAccess(context, Permission.admin_wiki_pages);
+    const auth = requireWikiAccess(context, BandPermission.admin_wiki_pages);
     const page = await findReadableWikiPage(context, args.canonicalWikiPath);
     if (!page) {
         throw new AuthorizationError();
@@ -62,7 +62,7 @@ export async function clearWikiLock(context: DB3ReadContext, args: TAdminClearPa
 }
 
 export async function setWikiVisibility(context: DB3ReadContext, args: TSetWikiPageVisibilityArgs): Promise<void> {
-    const auth = requireWikiAccess(context, Permission.edit_wiki_pages);
+    const auth = requireWikiAccess(context, BandPermission.edit_wiki_pages);
     const page = await findReadableWikiPage(context, args.canonicalWikiPath);
     if (!page) {
         throw new AuthorizationError();
@@ -81,7 +81,7 @@ export async function setWikiVisibility(context: DB3ReadContext, args: TSetWikiP
 }
 
 export async function rebuildWikiRevisionStats(context: DB3ReadContext): Promise<void> {
-    const auth = requireWikiAccess(context, Permission.admin_wiki_pages);
+    const auth = requireWikiAccess(context, BandPermission.admin_wiki_pages);
     // Maintenance includes hidden pages in the selected band and returns no content.
     const pages = await context.database.wikiPage.findMany({
         where: { bandId: auth.requireBand().id },
@@ -109,7 +109,7 @@ export async function rebuildWikiRevisionStats(context: DB3ReadContext): Promise
 }
 
 export async function deleteWikiPageRevision(context: DB3ReadContext, revisionId: WikiPageRevisionPublicId): Promise<void> {
-    const authorization = requireWikiAccess(context, Permission.admin_wiki_pages);
+    const authorization = requireWikiAccess(context, BandPermission.admin_wiki_pages);
     const tx = context.database;
     const target = await queryView({
         view: wikiPageRevisionDeleteTargetView,

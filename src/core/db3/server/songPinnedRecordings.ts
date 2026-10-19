@@ -1,6 +1,6 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { AuthorizationError } from "blitz";
 import { z } from "zod";
-import { Permission } from "shared/permissions";
 import type { SongPublicId } from "shared/publicId";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { BandPublicIdSchema } from "src/locale/shared/presentationInput";
@@ -28,8 +28,8 @@ export function readSongPinnedRecordings(database: DB3ReadDatabase, authorizatio
         }
 
         // todo: this is redundnat; auth is performed in db3.
-        auth.requirePermission(Permission.view_songs);
-        if (!args.songIds.length || !auth.hasPermission(Permission.view_files)) {
+        auth.requirePermission(BandPermission.view_songs);
+        if (!args.songIds.length || !auth.hasPermission(BandPermission.view_files)) {
             return {};
         }
 

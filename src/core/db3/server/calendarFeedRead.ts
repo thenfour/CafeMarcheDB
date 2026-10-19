@@ -1,6 +1,6 @@
+import { BandPermission, kGlobalVisibilityPermissionPolicy } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "@prisma/client";
 import { CalendarDate } from "shared/dateTimePolicy";
-import { Permission } from "shared/permissions";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { loadBandTimeZone } from "src/server/bandTimeZone";
 import { loadSettingsSnapshot } from "src/setting/server/settings";
@@ -13,7 +13,8 @@ import { EventSegmentForCalArgs, EventSongListForCalArgs } from "./icalUtils";
 function calendarEventSelection(auth: CMServerAuthorization) {
     const bandId = auth.requireBand().id;
     const bandUserId = auth.requireMembership().id;
-    const visibleContent = { bandId, ...GetUserVisibilityWhereExpression({ auth, createdByUserIDColumnName: "createdByUserId" }) };
+    const visibleContent = { bandId, ...GetUserVisibilityWhereExpression({ auth, createdByUserIDColumnName: "createdByUserId",
+        allowConfiguredVisibility: auth.hasPermission(kGlobalVisibilityPermissionPolicy) }) };
     return Prisma.validator<Prisma.EventDefaultArgs>()({
         select: {
             publicId: true,
@@ -55,7 +56,7 @@ function calendarEventSelection(auth: CMServerAuthorization) {
                         where: {
                             song: { ...visibleContent, isDeleted: false },
                             // Song contents require their own read capability, even within a visible event.
-                            ...(auth.hasPermission(Permission.view_songs) ? {} : { id: { in: [] } }),
+                            ...(auth.hasPermission(BandPermission.view_songs) ? {} : { id: { in: [] } }),
                         },
                     },
                 },
@@ -63,7 +64,7 @@ function calendarEventSelection(auth: CMServerAuthorization) {
             descriptionWikiPage: {
                 where: {
                     ...visibleContent,
-                    ...(auth.hasPermission(Permission.view_wiki_pages) && auth.hasPermission(Permission.view_wiki_page_revisions) ? {} : { id: { in: [] } }),
+                    ...(auth.hasPermission(BandPermission.view_wiki_pages) && auth.hasPermission(BandPermission.view_wiki_page_revisions) ? {} : { id: { in: [] } }),
                 },
                 select: {
                     currentRevision: {

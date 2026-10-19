@@ -17,7 +17,7 @@ import db3PaginatedQuery from "@db3/queries/db3paginatedQueries"
 import { queryTable } from "@db3/server/db3QueryCore"
 import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization"
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
-import { Permission } from "shared/permissions"
+import { gPermissionOrdered, Permission } from "shared/permissions"
 import { parsePublicId } from "shared/publicId"
 import { createAuthorizationPersona, createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures"
 import { forgeDb3Insert, forgeDb3Query, forgeDb3PublicUpdate } from "./support/db3RequestBuilders"
@@ -38,7 +38,7 @@ beforeEach(() => resetAuthorizationDatabase())
 
 describe("explicit DB3 authorization", () => {
   it("uses public identity for client owner edit hints", () => {
-    const authorization = testServerAuthorization(
+    const authorization = testBandAuthorization(
       { id: 501, publicId: userPublicId(501) },
       new ServerPermissionSet([{ id: 1, name: Permission.view_songs }]),
     )
@@ -63,15 +63,15 @@ describe("explicit DB3 authorization", () => {
     expect(() => db3.xSong.authorizeTableForView({ userId: 0 })).toThrow()
   })
 
-  it("enforces database public-role grants through the ordinary query path", async () => {
+  it("enforces scope-matching database Public grants through the ordinary query path", async () => {
     const publicRole = {
       id: 90, isPublicRole: true,
-      permissions: [Permission.always_grant, Permission.public, Permission.view_songs, Permission.visibility_public]
+      permissions: [Permission.view_songs, Permission.visibility_public]
         .map((name, index) => ({ id: 700 + index, permissionId: 700 + index, permission: { id: 700 + index, name } })),
     }
     resetAuthorizationDatabase({
       bandRole: [{ ...publicRole, isDeleted: false, bandRolePermissions: publicRole.permissions }],
-      song: [makeSong(1, { visiblePermissionId: 703 }), makeSong(2), makeSong(3, { visiblePermissionId: 703, isDeleted: true })],
+      song: [makeSong(1, { visiblePermissionId: 701 }), makeSong(2), makeSong(3, { visiblePermissionId: 701, isDeleted: true })],
     })
     const result = await queryTable(forgeDb3Query("Song", authorizationBandId), await loadAuthorizationForUser(null, undefined, authorizationBandId))
     expect(result.items.map(row => row.publicId)).toEqual([songPublicId(1)])
@@ -80,7 +80,7 @@ describe("explicit DB3 authorization", () => {
     await expect(queryTable(forgeDb3Query("Song", authorizationBandId), await loadAuthorizationForUser(null, undefined, authorizationBandId))).rejects.toThrow("Not authorized")
   })
 
-  it("uses inherited public permission IDs for both predicates and row sanitization", async () => {
+  it("uses explicit role visibility grants for both predicates and row sanitization", async () => {
     const { user, ctx } = createAuthorizationPersona("normal", {
       id: 501, permissions: [Permission.login, Permission.view_songs],
     })
@@ -102,8 +102,10 @@ describe("explicit DB3 authorization", () => {
       auth: authorization,
       filter: { items: [] },
     })
-    expect(matchesWhere({ id: authorizationPermissionId(Permission.visibility_public), isVisibility: true }, where)).toBe(true)
-    expect(matchesWhere({ id: 999_999, isVisibility: true }, where)).toBe(false)
+    expect(matchesWhere({ id: authorizationPermissionId(Permission.visibility_public), name: Permission.visibility_public,
+      isVisibility: true, isDeleted: false }, where)).toBe(true)
+    expect(matchesWhere({ id: 999_999, name: Permission.visibility_members,
+      isVisibility: true, isDeleted: false }, where)).toBe(false)
 
     const permission = (id: number, name: Permission, isVisibility: boolean) => ({
       id,
@@ -137,11 +139,11 @@ describe("explicit DB3 authorization", () => {
       skip: 0,
       take: 20,
     }, ctx)
-    const expected = [Permission.visibility_public, Permission.visibility_logged_in_users, Permission.visibility_members]
+    const expected = [Permission.visibility_public, Permission.visibility_members]
       .map(name => permission(name === Permission.visibility_members ? 999_999 : authorizationPermissionId(name), name, true).publicId)
     expect(result.items.map(item => item.publicId).sort()).toEqual(expected.sort())
     expect(paginated.items.map(item => item.publicId).sort()).toEqual(expected.sort())
-    expect(paginated.count).toBe(3)
+    expect(paginated.count).toBe(2)
   })
 
   it.each([undefined, false, true])("honors includeDeleted=%s for Sysadmin queries and counts", async includeDeleted => {
@@ -168,7 +170,7 @@ describe("explicit DB3 authorization", () => {
   })
 
   it("applies the same recovery and private-owner rules to included relations", async () => {
-    const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
+    const actor = createAuthorizationTestUser("sysadmin", { id: 501, permissions: gPermissionOrdered.filter(permission => permission !== Permission.global_band_admin) })
     const resolved = createAuthorizationSchemaData(actor)
     const authorization = testBandAuthorization(resolved.user, resolved.effectivePermissions)
     const selection = await db3.xSong.CalculateSelectionArgs(
@@ -195,7 +197,7 @@ describe("explicit DB3 authorization", () => {
 
   it.each([db3.xEventSongList, db3.xEventSongListSong, db3.xSongCredit])(
     "enforces song visibility through $tableID at the query boundary", async table => {
-      const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
+      const actor = createAuthorizationTestUser("sysadmin", { id: 501, permissions: gPermissionOrdered.filter(permission => permission !== Permission.global_band_admin) })
       resetAuthorizationDatabase({ user: [actor] })
       const authorization = await loadAuthorizationForUser(actor, undefined, authorizationBandId)
       // Each descriptor produces a different Prisma selection; capture its actual predicate.
@@ -219,7 +221,7 @@ describe("explicit DB3 authorization", () => {
   )
 
   it("enforces song visibility through the Event calendar view", async () => {
-    const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
+    const actor = createAuthorizationTestUser("sysadmin", { id: 501, permissions: gPermissionOrdered.filter(permission => permission !== Permission.global_band_admin) })
     resetAuthorizationDatabase({ user: [actor] })
     const authorization = await loadAuthorizationForUser(actor, undefined, authorizationBandId)
     // Capture the calendar's nested selection while retaining the real transaction owner.
@@ -246,7 +248,7 @@ describe("explicit DB3 authorization", () => {
   })
 
   it("keeps nested event song filters specific to each viewer and recovery request", async () => {
-    const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
+    const actor = createAuthorizationTestUser("sysadmin", { id: 501, permissions: gPermissionOrdered.filter(permission => permission !== Permission.global_band_admin) })
     const resolved = createAuthorizationSchemaData(actor)
     const owner = testBandAuthorization(resolved.user, resolved.effectivePermissions)
     const otherResolved = createAuthorizationSchemaData(createAuthorizationTestUser("sysadmin", { id: 502 }))
@@ -279,7 +281,7 @@ describe("explicit DB3 authorization", () => {
   })
 
   it.each(["include", "select"])("traverses association targets with %s and preserves authored filters", async selectionKind => {
-    const resolved = createAuthorizationSchemaData(createAuthorizationTestUser("sysadmin", { id: 501 }))
+    const resolved = createAuthorizationSchemaData(createAuthorizationTestUser("sysadmin", { id: 501, permissions: gPermissionOrdered.filter(permission => permission !== Permission.global_band_admin) }))
     const authorization = testBandAuthorization(resolved.user, resolved.effectivePermissions)
     const selection: any = {
       songs: {

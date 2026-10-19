@@ -1,10 +1,10 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { z } from "zod";
 import { stringSetting } from "./settingsHelpers";
 import { freezeRegistry } from "./registryHelpers";
 import { BandTimeZoneSchema, DEFAULT_BAND_TIME_ZONE } from "@/shared/dateTimePolicy";
 import { DefaultDbBrandConfig } from "shared/brandConfigBase";
 import { BrandAssetUrlSchema, OptionalBrandColorSchema } from "shared/brandingValidation";
-import { Permission } from "shared/permissions";
 
 // TO BAND-scoped SETTING ---------------------------------------------
 // - Dashboard_SiteTitle -> band.siteTitle
@@ -27,63 +27,63 @@ export const kBandSettingsRegistry = freezeRegistry({
     // site config / branding
     "siteCustomization.title": stringSetting({
         defaultValue: DefaultDbBrandConfig.siteTitle,
-        writePermission: Permission.manage_site_branding,
+        writePermission: BandPermission.manage_site_branding,
         schema: z.string().max(100),
         stringFormat: "plain",
     }),
     "siteCustomization.titlePrefix": stringSetting({
         defaultValue: DefaultDbBrandConfig.siteTitlePrefix,
-        writePermission: Permission.manage_site_branding,
+        writePermission: BandPermission.manage_site_branding,
         schema: z.string().max(8),
         stringFormat: "plain",
     }),
     "siteCustomization.faviconUrl": stringSetting({
         defaultValue: DefaultDbBrandConfig.siteFaviconUrl,
-        writePermission: Permission.manage_site_branding,
+        writePermission: BandPermission.manage_site_branding,
         schema: BrandAssetUrlSchema,
         stringFormat: "plain",
     }),
     "siteCustomization.logoUrl": stringSetting({
         defaultValue: DefaultDbBrandConfig.siteLogoUrl ?? "",
-        writePermission: Permission.manage_site_branding,
+        writePermission: BandPermission.manage_site_branding,
         schema: BrandAssetUrlSchema,
         stringFormat: "plain",
     }),
     "siteCustomization.themeColors.primaryMain": stringSetting({
         defaultValue: DefaultDbBrandConfig.theme!.primaryMain!,
-        writePermission: Permission.manage_site_branding,
+        writePermission: BandPermission.manage_site_branding,
         // Colors must be usable by MUI; an empty value selects the presentation default.
         schema: OptionalBrandColorSchema,
         stringFormat: "plain",
     }),
     "siteCustomization.themeColors.secondaryMain": stringSetting({
         defaultValue: DefaultDbBrandConfig.theme!.secondaryMain!,
-        writePermission: Permission.manage_site_branding,
+        writePermission: BandPermission.manage_site_branding,
         schema: OptionalBrandColorSchema,
         stringFormat: "plain",
     }),
     "siteCustomization.themeColors.backgroundDefault": stringSetting({
         defaultValue: DefaultDbBrandConfig.theme!.backgroundDefault!,
-        writePermission: Permission.manage_site_branding,
+        writePermission: BandPermission.manage_site_branding,
         schema: OptionalBrandColorSchema,
         stringFormat: "plain",
     }),
     "siteCustomization.themeColors.backgroundPaper": stringSetting({
         defaultValue: DefaultDbBrandConfig.theme!.backgroundPaper!,
-        writePermission: Permission.manage_site_branding,
+        writePermission: BandPermission.manage_site_branding,
         schema: OptionalBrandColorSchema,
         stringFormat: "plain",
     }),
     "siteCustomization.themeColors.textPrimary": stringSetting({
         // Empty leaves primary text color to the application theme.
         defaultValue: DefaultDbBrandConfig.theme?.textPrimary ?? "",
-        writePermission: Permission.manage_site_branding,
+        writePermission: BandPermission.manage_site_branding,
         schema: OptionalBrandColorSchema,
         stringFormat: "plain",
     }),
     "siteCustomization.themeColors.contrastText": stringSetting({
         defaultValue: DefaultDbBrandConfig.theme!.contrastText!,
-        writePermission: Permission.manage_site_branding,
+        writePermission: BandPermission.manage_site_branding,
         schema: OptionalBrandColorSchema,
         stringFormat: "plain",
     }),
@@ -102,25 +102,25 @@ export const kBandSettingsRegistry = freezeRegistry({
     // - Ical_CalendarEventPrefix -> band.ical.calendarEventPrefix
 
     "ical.calendarName": stringSetting({
-        writePermission: Permission.manage_site_branding,
+        writePermission: BandPermission.manage_site_branding,
         defaultValue: "",
         schema: z.string().max(100),
         stringFormat: "plain",
     }),
     "ical.calendarCompany": stringSetting({
-        writePermission: Permission.manage_site_branding,
+        writePermission: BandPermission.manage_site_branding,
         defaultValue: "",
         schema: z.string().max(100),
         stringFormat: "plain",
     }),
     "ical.calendarProduct": stringSetting({
-        writePermission: Permission.manage_site_branding,
+        writePermission: BandPermission.manage_site_branding,
         defaultValue: "",
         schema: z.string().max(100),
         stringFormat: "plain",
     }),
     "ical.calendarEventPrefix": stringSetting({
-        writePermission: Permission.manage_site_branding,
+        writePermission: BandPermission.manage_site_branding,
         defaultValue: "",
         schema: z.string().max(100),
         stringFormat: "plain",

@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { describePermissionRequirement } from "src/auth/shared/permissionRequirement";
 import React from "react";
 import { act } from "react-dom/test-utils";
 import { createRoot, type Root } from "react-dom/client";
@@ -23,13 +24,13 @@ afterEach(() => {
 
 function RouteDetails() {
     const route = usePageRoute();
-    return <span>{route.key}:{route.permission}:{route.theming}</span>;
+    return <span>{route.key}:{describePermissionRequirement(route.permission)}:{route.theming}</span>;
 }
 
 describe("current page route", () => {
     it("updates route metadata for navigation without reading Next's pathname", () => {
         act(() => root.render(<PageRouteProvider routeKey="bandEvent"><RouteDetails /></PageRouteProvider>));
-        expect(container.textContent).toBe("bandEvent:view_events_nonpublic:band");
+        expect(container.textContent).toBe("bandEvent:view_events_nonpublic or global_band_admin:band");
 
         act(() => root.render(<PageRouteProvider routeKey="adminLogs"><RouteDetails /></PageRouteProvider>));
         expect(container.textContent).toBe("adminLogs:sysadmin:platform");

@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "@prisma/client";
 import { Permission } from "shared/permissions";
 import type { BandRolePublicId } from "shared/publicId";
@@ -102,7 +103,7 @@ export const bandRoleChoicesView = defineView({
     hydrate: contract.hydrate,
     where: ({ auth }) => {
         auth.requireBand();
-        auth.requirePermission(Permission.assign_user_roles);
+        auth.requirePermission(BandPermission.assign_user_roles);
         return assignableBandRoleWhere(auth);
     },
 });

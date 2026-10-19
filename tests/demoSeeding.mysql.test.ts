@@ -31,7 +31,8 @@ describe.skipIf(!testUrl)("demo reset and generators on MySQL", () => {
     it("creates authenticated people with genuinely different band memberships and grants", async () => {
         const shared = await database.user.findUniqueOrThrow({ where: { publicId: demoId({ seed: 104 }, "person:shared") },
             include: { signInMethods: true, bandUsersByUser: { include: { bandRole: { include: { bandRolePermissions: { include: { permission: true } } } } } } } });
-        expect(shared.globalRoleId).toBeNull();
+        const accountRole = await database.globalRole.findFirstOrThrow({ where: { isRoleForNewUsers: true, isDeleted: false } });
+        expect(shared.globalRoleId).toBe(accountRole.id);
         expect(shared.signInMethods[0]?.identifier).toBe("shared@demo.invalid");
         expect(await SecurePassword.verify(shared.hashedPassword!, demoPassword)).toBe(SecurePassword.VALID);
         const canManage = shared.bandUsersByUser.map(member => member.bandRole!.bandRolePermissions.some(grant => grant.permission.name === "manage_users"));
@@ -39,6 +40,9 @@ describe.skipIf(!testUrl)("demo reset and generators on MySQL", () => {
         expect(shared.bandUsersByUser).toHaveLength(2);
         expect(await database.bandUser.count()).toBe(16);
         const ordinary = await database.user.findFirstOrThrow({ where: { email: "member1-1@demo.invalid" }, include: { bandUsersByUser: true } });
+        expect(ordinary.globalRoleId).toBe(accountRole.id);
+        expect(ordinary.isSysAdmin).toBe(false);
+        expect(await database.user.count({ where: { globalRoleId: null } })).toBe(0);
         expect(ordinary.bandUsersByUser).toHaveLength(1);
     });
 

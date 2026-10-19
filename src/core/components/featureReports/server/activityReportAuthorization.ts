@@ -1,5 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { AuthorizationError } from "blitz";
-import { Permission } from "shared/permissions";
 import type { BandPublicId } from "shared/publicId";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 
@@ -9,6 +9,6 @@ export function authorizeActivityReport(authorization: CMServerAuthorization, ba
     if (band.publicId !== bandPublicId) {
         throw new AuthorizationError("Activity reports require the selected band.");
     }
-    auth.requirePermission(Permission.view_feature_reports);
+    auth.requirePermission(BandPermission.view_feature_reports);
     return { auth, band };
 }

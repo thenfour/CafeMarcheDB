@@ -1,6 +1,6 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import type { Prisma } from "@prisma/client";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
-import { Permission } from "shared/permissions";
 import { bandInstrumentCommand, xBandInstrument, xBandInstrumentFunctionalGroup, type BandInstrumentCommand } from "../../shared/entities/instrument/bandInstrumentContracts";
 import { createCommandRowServices, defineCommandHandler } from "../db3CommandCore";
 
@@ -11,7 +11,7 @@ export async function optInBandInstrumentCatalog(database: InstrumentWriterDatab
     input: BandInstrumentCommand,
 ) {
     const auth = await authorization.refresh(database);
-    auth.requirePermission(Permission.admin_instruments);
+    auth.requirePermission(BandPermission.admin_instruments);
     auth.requireBand();
     const command = bandInstrumentCommand.parseDto(input);
     const rows = createCommandRowServices(auth, database);

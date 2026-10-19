@@ -81,7 +81,8 @@ describe("authorization test personas", () => {
     expect(fixture.persona).toBe(persona)
     expect(fixture.publicData.userId).toBe(fixture.user?.id ?? 0)
     expect(fixture.publicData.isSysAdmin).toBe(persona === "sysadmin")
-    expect(fixture.publicData.permissionNames).toContain(Permission.visibility_public)
+    expect(fixture.publicData.permissionNames).not.toContain(Permission.visibility_public)
+    expect(fixture.schemaAuthorization.hasPermission(Permission.visibility_public)).toBe(true)
   })
 
   it("keeps Band Admin distinct from Sysadmin", () => {
@@ -377,8 +378,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
     resetAuthorizationDatabase({
       user: [{ ...normal, mergedIntoUserId: null, globalRoleId: 10_000 }],
       globalRole: [{ id: 10_000, isDeleted: false }],
-      globalRolePermission: [{ id: 1, globalRoleId: 10_000, permissionId: 1 }],
-      permission: [{ id: 1, name: Permission.login }],
+      globalRolePermission: [{ id: 1, globalRoleId: 10_000, permissionId: authorizationPermissionId(Permission.login) }],
     })
   }
 
@@ -1491,7 +1491,7 @@ describe("BA-U004 impersonation hardening", () => {
       id: 30,
       permissions: [Permission.login, permission],
     })
-    resetAuthorizationDatabase({ user: [sysadmin, protectedTarget], change: [] })
+    resetAuthorizationDatabase({ user: protectedTarget.id === sysadmin.id ? [sysadmin] : [sysadmin, protectedTarget], change: [] })
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
     const createSession = vi.spyOn(ctx.session, "$create")
 
@@ -1507,7 +1507,7 @@ describe("BA-U004 impersonation hardening", () => {
     ["the current actor", sysadmin],
     ["a deleted user", createAuthorizationTarget("ordinary", { id: 41, isDeleted: true })],
   ])("rejects %s as an impersonation target", async (_description, protectedTarget) => {
-    resetAuthorizationDatabase({ user: [sysadmin, protectedTarget], change: [] })
+    resetAuthorizationDatabase({ user: protectedTarget.id === sysadmin.id ? [sysadmin] : [sysadmin, protectedTarget], change: [] })
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
     const createSession = vi.spyOn(ctx.session, "$create")
 

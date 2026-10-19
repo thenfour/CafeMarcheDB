@@ -1,6 +1,6 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { Permission } from "shared/permissions";
 import { isPublicId, parsePublicId } from "shared/publicId";
 import { BandPublicIdSchema } from "src/locale/shared/presentationInput";
 import { localizedText } from "../../columnTypes/localizedString";
@@ -20,7 +20,7 @@ const PublicId = z.string().refine(isPublicId, "Expected a public ID");
 export const BandInstrumentIdentity = PublicId.transform(value => parsePublicId<"Instrument">(value));
 export const GroupIdentity = PublicId.transform(value => parsePublicId<"InstrumentFunctionalGroup">(value));
 
-const { authMap, sourceAuthMap, tableAuthMap } = bandCatalogAuth(Permission.admin_instruments);
+const { authMap, sourceAuthMap, tableAuthMap } = bandCatalogAuth(BandPermission.admin_instruments);
 const groupColorField = inheritedField(MakeColorField({ authMap }));
 const groupSelection = Prisma.validator<Prisma.BandInstrumentFunctionalGroupDefaultArgs>()({
     select: {
@@ -47,7 +47,7 @@ export const xBandInstrumentFunctionalGroup = defineTable({
         inheritedFrom: "globalFunctionalGroup",
         inheritedSourceMember: "globalFunctionalGroupId",
         hiddenMember: "isHidden",
-        managePermission: Permission.admin_instruments,
+        managePermission: BandPermission.admin_instruments,
     },
     naturalOrderBy: { sortOrder: "asc", name: "asc" },
     getSelectionArgs: () => groupSelection,
@@ -84,7 +84,7 @@ export const xBandInstrument = defineTable({
         inheritedFrom: "globalInstrument",
         inheritedSourceMember: "globalInstrumentId",
         hiddenMember: "isHidden",
-        managePermission: Permission.admin_instruments,
+        managePermission: BandPermission.admin_instruments,
     },
     naturalOrderBy: { sortOrder: "asc", name: "asc" },
     getSelectionArgs: () => instrumentSelection,

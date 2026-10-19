@@ -2,9 +2,11 @@ import type { Ctx } from "blitz";
 import { parsePublicId } from "shared/publicId";
 import type { CurrentAccount } from "../shared/currentAccount";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
+import { Permission } from "shared/permissions";
 
 export default async function getCurrentUser(_ = null, { session }: Ctx): Promise<CurrentAccount | null> {
-  const { user } = await loadAuthorization(session);
+  const auth = await loadAuthorization(session);
+  const { user } = auth;
   if (!user) {
     return null;
   }
@@ -17,6 +19,6 @@ export default async function getCurrentUser(_ = null, { session }: Ctx): Promis
     phone: user.phone,
     createdAt: user.createdAt,
     cssClass: user.cssClass,
-    isSysAdmin: user.isSysAdmin,
+    isSysAdmin: auth.hasPermission(Permission.sysadmin),
   };
 }

@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Permission } from "shared/permissions";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import type { LocalePreferenceInput } from "src/locale/shared/localePreferences";
@@ -46,12 +47,12 @@ export async function loadDashboardCatalogs(database: DB3ReadDatabase, authoriza
         return { instrument: [], instrumentFunctionalGroup: [], songTag: [], userTag: [], eventTag: [], fileTag: [], wikiPageTag: [] };
     }
     return executeDB3Read(database, authorization, async context => {
-        const instrumentFilter = { tableParams: { includeHidden: context.authorization.hasPermission(Permission.admin_instruments) } };
-        const songFilter = { tableParams: { includeHidden: context.authorization.hasPermission(Permission.admin_songs) } };
-        const userTagFilter = { tableParams: { includeHidden: context.authorization.hasPermission(Permission.manage_user_taxonomy) } };
-        const eventTagFilter = { tableParams: { includeHidden: context.authorization.hasPermission(Permission.admin_events) } };
-        const wikiTagFilter = { tableParams: { includeHidden: context.authorization.hasPermission(Permission.admin_wiki_pages) } };
-        const fileTagFilter = { tableParams: { includeHidden: context.authorization.hasPermission(Permission.admin_files) } };
+        const instrumentFilter = { tableParams: { includeHidden: context.authorization.hasPermission(BandPermission.admin_instruments) } };
+        const songFilter = { tableParams: { includeHidden: context.authorization.hasPermission(BandPermission.admin_songs) } };
+        const userTagFilter = { tableParams: { includeHidden: context.authorization.hasPermission(BandPermission.manage_user_taxonomy) } };
+        const eventTagFilter = { tableParams: { includeHidden: context.authorization.hasPermission(BandPermission.admin_events) } };
+        const wikiTagFilter = { tableParams: { includeHidden: context.authorization.hasPermission(BandPermission.admin_wiki_pages) } };
+        const fileTagFilter = { tableParams: { includeHidden: context.authorization.hasPermission(BandPermission.admin_files) } };
         const [groups, instruments, tags, userTags, eventTags, fileTags, wikiTags] = await Promise.all([
             queryView({
                 view: instrumentFunctionalGroupDashboardView, ...preferences, filter: instrumentFilter,

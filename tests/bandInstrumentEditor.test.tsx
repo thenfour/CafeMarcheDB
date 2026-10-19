@@ -63,7 +63,7 @@ const dashboard = {
 };
 
 const authorization = new CMClientAuthorization({ id: 1, publicId: parsePublicId<"User">("User000000000001") },
-    new PermissionSet([Permission.login, Permission.always_grant, Permission.admin_instruments]));
+    new PermissionSet([Permission.login, Permission.always_grant, Permission.admin_instruments]), null, parsePublicId<"Band">("Band000000000001"));
 const resolution = { value: "Woodwinds", localeTag: "en-US", scope: "global", source: "stored", reason: "exact", requestedTag: "en-US" };
 const group = bandInstrumentGroupView.parseDto({
     publicId: "Group00000000001", name: "Woodwinds", description: "Inherited description",

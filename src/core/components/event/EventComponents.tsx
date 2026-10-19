@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { isTenant } from "src/route/portalRouting";
 import type { EventPublicId, EventSegmentPublicId } from "shared/publicId";
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
@@ -11,7 +12,6 @@ import { assert } from 'blitz';
 import React, { Suspense } from "react";
 import { toSorted } from 'shared/arrayUtils';
 import { isAttendanceGoing, isAttendanceNotGoing } from 'shared/eventAttendance';
-import { Permission } from 'shared/permissions';
 import { Timing } from 'shared/time';
 import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, PermissionPublicId } from 'shared/publicId';
 import { IsNullOrWhitespace } from 'shared/utils';
@@ -156,7 +156,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     const recordFeature = useFeatureRecorder();
     const [showCancelledSegments, setShowCancelledSegments] = React.useState<boolean>(false);
     const [saving, setSaving] = React.useState(false);
-    const canManageInvitations = dashboardContext.isAuthorized(Permission.manage_events);
+    const canManageInvitations = dashboardContext.isAuthorized(BandPermission.manage_events);
     const [initialResponses] = React.useState(() => ({
         event: props.responseInfo.getEventResponseForUser(props.user, dashboardContext, props.userMap)?.response ?? null,
         segments: Object.fromEntries(Object.entries(props.responseInfo.getResponsesBySegmentForUser(props.user)).map(([id, response]) => [id, response.response])),
@@ -292,7 +292,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             {eventResponseTableSpec.renderEditor("isInvited", eventResponseValue, eventValidationResult, handleChangedEventResponse, !canManageInvitations)}
             {eventResponseTableSpec.renderEditor("bandInstrument", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
 
-            {(cancelledSegments.length > 0) && dashboardContext.isAuthorized(Permission.manage_events) &&
+            {(cancelledSegments.length > 0) && dashboardContext.isAuthorized(BandPermission.manage_events) &&
                 <FormControlLabel
                     control={
                         <Switch checked={showCancelledSegments} onChange={e => {
@@ -375,7 +375,7 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
         return null;
     }
 
-    const authorizedForEdit = dashboardContext.isAuthorized(Permission.change_others_event_responses);
+    const authorizedForEdit = dashboardContext.isAuthorized(BandPermission.change_others_event_responses);
     const isYou = eventResponse.user.publicId === currentUser.publicId;
 
     const [_, uncancelledSegments] = dashboardContext.partitionEventSegmentsByCancellation(event.segments);
@@ -457,7 +457,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
 
     const [showCancelledSegments, setShowCancelledSegments] = React.useState<boolean>(false);
 
-    const canAddUsers = dashboardContext.isAuthorized(Permission.manage_events);
+    const canAddUsers = dashboardContext.isAuthorized(BandPermission.manage_events);
     const [cancelledSegments, uncancelledSegments] = dashboardContext.partitionEventSegmentsByCancellation(event.segments);
     const showCancelledSegmentsControls = canAddUsers && cancelledSegments.length > 0;
 
@@ -690,7 +690,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
 
     const [showCancelledSegments, setShowCancelledSegments] = React.useState<boolean>(false);
     const [cancelledSegments, uncancelledSegments] = dashboardContext.partitionEventSegmentsByCancellation(event.segments);
-    const showCancelledSegmentsControls = dashboardContext.isAuthorized(Permission.manage_events) && cancelledSegments.length > 0;
+    const showCancelledSegmentsControls = dashboardContext.isAuthorized(BandPermission.manage_events) && cancelledSegments.length > 0;
     const shownSegments: (typeof event.segments[0])[] = showCancelledSegments ? event.segments : uncancelledSegments;
 
     const functionalGroupsClient = DB3Client.useDb3Query({
@@ -856,7 +856,7 @@ const EventDotMenu = ({ event, showVisibility, refetch, allowRelevanceEditing = 
 
         <Divider />
 
-        {allowRelevanceEditing && dashboardContext.isAuthorized(Permission.manage_events) &&
+        {allowRelevanceEditing && dashboardContext.isAuthorized(BandPermission.manage_events) &&
             <RelevanceClassOverrideMenuItemGroup event={event} closeMenu={closeMenu} refetch={refetch} />
         }
     </DotMenu>;
@@ -920,7 +920,7 @@ export const EventDetailContainer = ({ eventData, tableClient, editCommands, ref
         `status_${eventData.event.status?.significance}`,
     ];
 
-    const showVisibility = props.showVisibility && dashboardContext.isAuthorized(Permission.manage_events);
+    const showVisibility = props.showVisibility && dashboardContext.isAuthorized(BandPermission.manage_events);
 
     const isCancelled = eventData.event.status?.significance === db3.EventStatusSignificance.Cancelled;
 

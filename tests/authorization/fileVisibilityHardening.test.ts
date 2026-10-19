@@ -1,3 +1,4 @@
+import { resetAuthorizationDatabase } from "./support/authorizationSeed";
 import type { File } from "@prisma/client";
 import * as filesystem from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -14,7 +15,7 @@ vi.mock("node:fs/promises", async () => {
 });
 
 import send from "send";
-import { Permission, gPermissionRegistry } from "shared/permissions";
+import { Permission, gPermissionRegistry, getPermissionDefinition } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import forkImageMutation from "src/core/db3/mutations/forkImage";
@@ -50,15 +51,16 @@ const makeFile = (overrides: Partial<File> = {}): File => ({
 /** Persist band grants so each reader and transaction owner refreshes database authority. */
 function seedFileAccess(files: File[], actorId: number | null, grants: Permission[]) {
     const actor = actorId === null ? null : createAuthorizationTestUser("normal", { id: actorId, permissions: grants });
-    authorizationTestDb.reset({
-        user: actor ? [{ ...actor, globalRoleId: null }] : [],
+    resetAuthorizationDatabase({
+        user: actor ? [actor] : [],
         band: [{ id: 1, publicId: bandPublicId, isDeleted: false }],
         bandUser: actor ? [{ id: 1, publicId: "FileAuthMember01", userId: actor.id, bandId: 1, bandRoleId: 20, isDeleted: false }] : [],
         bandRole: [{ id: 10, isPublicRole: true, isDeleted: false }, { id: 20, isDeleted: false }],
         permission: gPermissionRegistry.map((entry, index) => ({ id: index + 1,
-            publicId: "FilePerm" + String(index + 1).padStart(8, "0"), name: entry.key, isDeleted: false })),
-        bandRolePermission: [...publicPermissions.map(name => ({ bandRoleId: 10, permissionId: permissionId(name) })),
-            ...grants.map(name => ({ bandRoleId: 20, permissionId: permissionId(name) }))].map((entry, index) => ({ id: index + 1, ...entry })),
+            publicId: "FilePerm" + String(index + 1).padStart(8, "0"), name: entry.key,
+            isVisibility: entry.isVisibility, isDeleted: false })),
+        bandRolePermission: [...publicPermissions.filter(name => getPermissionDefinition(name).scope === "band").map(name => ({ bandRoleId: 10, permissionId: permissionId(name) })),
+            ...(actor?.permissions ?? []).filter(name => getPermissionDefinition(name).scope === "band").map(name => ({ bandRoleId: 20, permissionId: permissionId(name) }))].map((entry, index) => ({ id: index + 1, ...entry })),
         file: files, frontpageGalleryItem: [],
     });
     return actorId === null ? createAuthorizationPersona("public").ctx

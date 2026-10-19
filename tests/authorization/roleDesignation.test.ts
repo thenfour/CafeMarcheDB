@@ -5,6 +5,9 @@ import { AssignUserRoleInput } from "src/auth/mutations/assignUserRole";
 import { bandRoleEditorView, globalRoleEditorView } from "src/core/db3/shared/entities/user/roleViews";
 import { setBandRolePermissionCommand, setGlobalRolePermissionCommand } from "src/core/db3/shared/entities/user/rolePermissionCommands";
 import { getDB3CommandHandler } from "src/core/db3/server/db3CommandRegistry";
+import { userEditorView } from "src/core/db3/shared/entities/user/userViews";
+import { platformUserEditorView } from "src/core/db3/shared/entities/user/platformUser";
+import { platformUserAccountCreateCommandHandler, userAccountCreateCommandHandler } from "src/core/db3/server/commands/userAccountCreateCommands";
 
 const globalRole = parsePublicId<"GlobalRole">("GlobalRole000001");
 const bandRole = parsePublicId<"BandRole">("BandRole00000001");
@@ -12,15 +15,22 @@ const userId = parsePublicId<"User">("Account000000001");
 
 describe("role administration request boundaries", () => {
     it.each([
+        { view: userEditorView, handler: userAccountCreateCommandHandler },
+        { view: platformUserEditorView, handler: platformUserAccountCreateCommandHandler },
+    ])("keeps account creation under its lifecycle owner when another CRUD operation is generated: $view.viewID", ({ view, handler }) => {
+        getDB3CommandHandler(view.crud.operations.update.command.commandID);
+        expect(getDB3CommandHandler(view.crud.operations.create.command.commandID)).toBe(handler);
+    });
+    it.each([
         { scope: "global", designation: "sysadmin", roleId: globalRole },
+        { scope: "global", designation: "public", roleId: globalRole },
+        { scope: "global", designation: "newUsers", roleId: globalRole },
         { scope: "band", designation: "public", roleId: bandRole },
         { scope: "band", designation: "newUsers", roleId: bandRole },
     ])("accepts the migrated $scope/$designation designation", edit => {
         expect(SetRoleDesignationInput.parse(edit)).toEqual(edit);
     });
     it.each([
-        { scope: "global", designation: "public", roleId: globalRole },
-        { scope: "global", designation: "newUsers", roleId: globalRole },
         { scope: "band", designation: "sysadmin", roleId: bandRole },
         { designation: "public", roleId: bandRole },
         { scope: "band", designation: "public", roleId: 12 },

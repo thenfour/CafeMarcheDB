@@ -1,17 +1,10 @@
 import { resolver } from "@blitzjs/rpc";
-import { NotFoundError } from "blitz";
 import db, { Prisma } from "db";
-import {
-    ChangeAction,
-    CreateChangeContext,
-    RegisterChange,
-} from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import { cmauthorize } from "../server/cmResolver";
 import { z } from "zod";
 import { UserPublicIdSchema } from "../schemas";
-import { requireCanManageUser } from "../server/userManagementPolicy";
-import { findUserManagementActor, findUserManagementTargetByPublicId } from "../server/userManagementState";
+import { writeAccountAdministratorRole } from "../server/accountRoleWrite";
 
 export const SetUserSysAdminInput = z.object({
     userId: UserPublicIdSchema,
@@ -22,36 +15,7 @@ export default resolver.pipe(
     resolver.zod(SetUserSysAdminInput),
     cmauthorize(Permission.login),
     async ({ userId, isSysAdmin }, ctx) => db.$transaction(
-        async tx => {
-            const [actor, target] = await Promise.all([
-                findUserManagementActor(tx, ctx.session.userId),
-                findUserManagementTargetByPublicId(tx, userId),
-            ]);
-
-            if (!target) throw new NotFoundError();
-            requireCanManageUser({ actor, target, action: "setSysAdmin" });
-
-            if (target.principal.isSysAdmin === isSysAdmin) {
-                return { userId, isSysAdmin };
-            }
-
-            await tx.user.update({
-                where: { id: target.principal.id },
-                data: { isSysAdmin },
-            });
-            await RegisterChange({
-                action: ChangeAction.update,
-                changeContext: CreateChangeContext("setUserSysAdmin"),
-                table: "User",
-                pkid: target.principal.id,
-                oldValues: { isSysAdmin: target.principal.isSysAdmin },
-                newValues: { isSysAdmin },
-                auth: ctx.auth,
-                db: tx,
-            });
-
-            return { userId, isSysAdmin };
-        },
+        tx => writeAccountAdministratorRole(tx, ctx.auth, { userId, isSysAdmin }),
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     ),
 );

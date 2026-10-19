@@ -1,3 +1,5 @@
+import { scopedAuthorizationSatisfiesRequirement } from "src/auth/shared/permissionRequirement";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import React from "react";
 import { Permission } from "shared/permissions";
 import type { BandPublicId } from "shared/publicId";
@@ -24,7 +26,7 @@ function useBrandingAssetUpload(props: SettingDraftToolsProps & { readonly draft
     const enabled = !props.readOnly && !props.saving && !!bandPublicId
         && !!snapshot?.authorization.userPublicId
         && snapshot.authorization.bandPublicId === bandPublicId
-        && snapshot.authorization.effectivePermissionNames.includes(Permission.upload_files);
+        && scopedAuthorizationSatisfiesRequirement(snapshot.authorization, BandPermission.upload_files);
     const [progress, setProgress] = React.useState<number | null>(null);
     const pending = React.useRef<AbortController | null>(null);
     const mounted = React.useRef(false);

@@ -22,19 +22,31 @@ capability checks. Member-only operations also require membership. The legacy
 synchronous `resolver.authorize` must reject band capabilities, including stale
 cookie grants. Supplied account hints are IDs to reread, not trusted role state.
 
-- Active people receive stored `login` and logged-in visibility independently of
-  membership. Deleted/merged people lose access and sessions are revoked.
-- Public-role band grants require a resolved band. Only an active selected
-  membership supplies its role; null uses designated new-member defaults.
-  Outsiders and inactive memberships do not receive that default.
-- Global-role grants are membership-independent. `isSysAdmin` inherits the actual
-  designated active global Sysadmin grants; it is not an authorization bypass.
-- Registry scope is authoritative: band roles cannot confer platform authority;
-  global-role band grants still require a band. Deleted definitions, unknown
-  permission names and `never_grant` are ineffective. Ambiguous active role
-  designations fail rather than combining grants.
-- Deactivating membership removes that band's member grants while preserving
-  account/global, other-band and applicable public access.
+- Permission and role scopes are `global` and `band`; grants must match their
+  role's scope. Public access and authentication are not permission scopes.
+- Resolve exactly one global role: the account's assignment, or Global Public
+  when unassigned or anonymous. With an explicit band, also resolve exactly one
+  band role: the active membership's assignment, or Band Public when unassigned,
+  inactive or absent. Public roles replace empty slots and never add grants
+  alongside assigned roles. An unavailable explicit assignment fails.
+- Effective permissions are the union of the selected roles' stored grants.
+  `login` and every visibility permission must be granted explicitly. Authentication
+  establishes identity independently of grants; Public can be configured with
+  `login` without creating an authenticated person. All visibility permissions
+  concern band content and are band-scoped.
+- Default roles are assigned at account/membership creation. New-member
+  designations never add grants at read time. `User.isSysAdmin` is display state;
+  only the selected global role's grants establish Sysadmin authority.
+- `global_band_admin` explicitly authorizes band feature operations through
+  `BandPermission` requirements. It requires a target band and does not expand
+  the effective permission list. Resource ownership and operation-specific
+  membership checks remain mandatory. Configured row visibility can be read
+  under this authority; private rows with null visibility retain owner checks.
+- Deleted definitions, unknown permission names and `never_grant` are ineffective.
+  Scope mismatches and ambiguous selected Public roles fail. Deleted/merged
+  accounts lose identity and their assigned grants; sessions are revoked.
+- Deactivating membership replaces its role with Band Public in that band,
+  preserving the account's global role and other-band assignments.
 
 ## Capability boundaries
 
@@ -47,7 +59,7 @@ cookie grants. Supplied account hints are IDs to reread, not trusted role state.
 | Membership role/deactivation/reactivation | `assign_user_roles` / `deactivate_users` / `recover_users`, with delegation/continuity checks. |
 | Role definitions/designations/matrices | Platform `sysadmin`. |
 | Global catalogs | `manage_global_catalogs`. |
-| Band catalogs/content | Selected-band domain capability and verified ownership. |
+| Band catalogs/content | Selected-band domain capability or `global_band_admin`, with verified ownership. |
 | Settings/localization | Relevant global/band capability plus per-key rules. |
 | Band lifecycle | Platform `manage_bands`; membership operations keep their band gates. |
 
@@ -89,16 +101,16 @@ Invitation significance is read-only in catalog editing; hiding retains assignme
 
 ## Delegation, continuity and membership status
 
-Role assignment checks current and desired complete effective grants, including
-public/new-member defaults. Null role is not an empty grant set. Unknown/platform
-grants are not delegable; invalid roles or ambiguous defaults fail. The authorized
-platform Sysadmin exception still requires an explicit band. UI-filtered role
-choices do not replace mutation checks.
+Role assignment checks the current and desired selected roles' complete grants.
+A null role selects Public rather than an empty grant set. Unknown or mismatched
+grants are not delegable; invalid roles or ambiguous Public selections fail. The
+authorized global administrator exception still requires an explicit band.
+UI-filtered role choices do not replace mutation checks.
 
 Before removing continuity-sensitive authority, inspect other active ordinary
-same-band members and effective defaults. Foreign/inactive members, deleted/merged
+same-band members and their selected roles. Foreign/inactive members, deleted/merged
 people and platform Sysadmins must not mask the loss; grants retained through
-public access are not lost. Unacknowledged risk returns `confirmationRequired`
+the selected Public role are not lost. Unacknowledged risk returns `confirmationRequired`
 without writes/audits. Confirmation reruns current authorization and policy checks.
 
 Deactivation/reactivation requires its distinct capability and delegation over
@@ -115,14 +127,36 @@ inactive members. Use the ordinary scoped snapshot/pagination pipeline.
 
 [accessControl.ts](../../src/setup/accessControl.ts) initializes known definitions
 and missing descriptions, seeds roles only when role tables are empty, and
-requires a unique active global Sysadmin designation with required grants.
+requires unique active Public/default designations in each scope and a global
+Sysadmin designation with explicit `sysadmin` and `login`. Fresh setup grants
+`global_band_admin` to that role; it can be revoked independently.
 Repeated startup preserves matrices/wording and does not revive deleted definitions,
 create memberships, generate demos or run historical backfills. Signup creates
-only a shared account; bootstrap uses the existing one-time-secret/audit protocol.
+a shared account with its configured default global role; bootstrap assigns the
+designated Sysadmin role through the existing one-time-secret/audit protocol.
 Permission additions and historical transformations belong to deployment SQL.
+
+The `20261019120000_explicit_authorization_roles` migration materializes previous
+Public inheritance and automatic account grants into explicit database mappings,
+assigns existing roleless accounts/memberships, and removes mismatched grants.
+Existing custom valid grants remain. Logged-in nonmembers now use Band Public
+visibility, and ordinary global roles no longer carry band grants. Startup
+validates configuration without repairing revoked grants.
+Previously unused global Public/new-account flags are replaced with safe explicit
+defaults while their original roles, grants and account assignments remain.
+Previously ineffective platform grants on band roles are discarded, preventing
+their accidental promotion into anonymous or account authority.
 
 Context changes clear old drafts/query data. Pending writes block duplicates and
 unsafe dismissal; failed writes retain drafts. Changed desired roles clear
 continuity acknowledgement. Successful writes refresh member/dashboard data;
 presentation-affecting writes also invalidate presentation across tabs. Report a
 committed save followed by refresh failure as saved but needing reload.
+
+## Existing account policy follow up
+
+Shared-account deactivation currently checks `manage_global_users` without the
+target delegation check used for role assignment, reactivation and merging.
+This existing policy difference in
+[userManagementPolicy.ts](../../src/auth/server/userManagementPolicy.ts) remains
+separate from the scoped-role change and band membership offboarding.

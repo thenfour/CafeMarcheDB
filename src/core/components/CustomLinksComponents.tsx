@@ -1,8 +1,8 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { gNullValue, TAnyModel } from "@/shared/rootroot";
 import { Tooltip, Typography } from "@mui/material";
 import React from "react";
-import { Permission } from 'shared/permissions';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
@@ -325,7 +325,7 @@ export const CustomLinkList = () => {
         tableClient: client,
     });
 
-    const canEdit = dashboardContext.isAuthorized(Permission.manage_custom_links);
+    const canEdit = dashboardContext.isAuthorized(BandPermission.manage_custom_links);
 
     const newObj = db3.xCustomLink.createNew(dashboardContext.currentUser);
 

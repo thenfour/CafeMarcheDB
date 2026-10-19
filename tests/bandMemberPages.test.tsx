@@ -41,7 +41,7 @@ vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useFea
     refreshCachedData: refreshDashboard, userTag: { items: [], getById: () => undefined },
     instrument: { items: directoryInstruments, getById: (id: string) => directoryInstruments.find(item => item.publicId === id) },
     referenceStore: references, authorizationContext: { bandPublicId: bandId },
-    authorization: new CMClientAuthorization({ id: 1, publicId: personId }, new PermissionSet(permissions)),
+    authorization: new CMClientAuthorization({ id: 1, publicId: personId }, new PermissionSet(permissions), null, parsePublicId<"Band">(bandId)),
     localePreferences: { routeLocale: "fr-BE", browserLanguages: ["nl-BE"] },
     portalHosting: { kind: "platform" as const }, memberPresentation: { bandPublicId: bandId, routeLocale: "fr-BE" },
     isAuthorized: (permission: Permission) => permissions.includes(permission),

@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
@@ -23,12 +24,12 @@ export function UserListItem({ user, index, refetch, filterSpec }: {
     const router = useCmdbRouter();
     const context = useDB3QueryContext();
     const locale = useLocale();
-    const canManage = dashboard.isAuthorized(Permission.manage_users);
+    const canManage = dashboard.isAuthorized(BandPermission.manage_users);
     const joinedAt = user.createdAt;
     return <GenericSearchListItem index={index} item={user} refetch={refetch} icon={gIconMap.Person()}
         href={bandMemberHref(user.user.publicId, context, router.hosting)} title={user.user.name ?? ""}
         titleExtra={canManage && user.isDeleted && <CMChip color="warning" size="small">Deactivated</CMChip>}
-        credits={dashboard.isAuthorized(Permission.view_user_contact_info) ? [user.user.email, user.user.phone] : []}
+        credits={dashboard.isAuthorized(BandPermission.view_user_contact_info) ? [user.user.email, user.user.phone] : []}
         bodyContent={<>
             <CMChipContainer className="songTags">
                 {user.bandUserTagAssignments.map(assignment => {

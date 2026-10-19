@@ -1,4 +1,4 @@
-import { Permission } from "@/shared/permissions";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { getHashedColor } from "@/shared/utils";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { Prisma } from "@prisma/client";
@@ -33,7 +33,7 @@ export interface FileChipProps {
 export const FileChip = (props: FileChipProps) => {
     const dashboardContext = useDashboardContext();
     const router = useCmdbRouter();
-    const href = dashboardContext.isAuthorized(Permission.view_files) ? router.getURIForFile(props.value) : undefined;
+    const href = dashboardContext.isAuthorized(BandPermission.view_files) ? router.getURIForFile(props.value) : undefined;
     return <CMChip
         variation={props.variation}
         size={props.size}

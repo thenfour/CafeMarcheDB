@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { useMutation } from "@blitzjs/rpc";
 import {
     Tooltip
@@ -69,7 +70,7 @@ export const DeactivateUserButton = ({ capabilities, user, onOK }: DeactivateUse
                         if (dashboardContext.currentUser?.publicId === user.publicId) {
                             window.location.assign(router.homeHref());
                         } else if (!dashboardContext.isAuthorized(Permission.manage_global_users)) {
-                            const destination = dashboardContext.memberPresentation.bandPublicId && dashboardContext.isAuthorized(Permission.search_users)
+                            const destination = dashboardContext.memberPresentation.bandPublicId && dashboardContext.isAuthorized(BandPermission.search_users)
                                 ? router.href("/backstage/users") : router.homeHref();
                             await router.replace(destination);
                         } else {

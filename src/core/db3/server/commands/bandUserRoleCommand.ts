@@ -1,6 +1,6 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import type { Prisma } from "@prisma/client";
 import { NotFoundError } from "blitz";
-import { Permission } from "shared/permissions";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "src/auth/server/activityLog";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { bandUserRoleCommand, type BandUserRoleEdit } from "../../shared/entities/user/bandUserRoles";
@@ -12,7 +12,7 @@ import { requireActiveBandMembership } from "../db3MemberAssignments";
 /** The shared command endpoint supplies Serializable execution and refreshed authorization. */
 export async function assignBandUserRole(database: Prisma.TransactionClient, auth: CMServerAuthorization, rawEdit: BandUserRoleEdit) {
     const edit = bandUserRoleCommand.parseDto(rawEdit);
-    auth.requirePermission(Permission.assign_user_roles);
+    auth.requirePermission(BandPermission.assign_user_roles);
     const membership = await requireActiveBandMembership(database, auth, edit.membershipId);
     const roles = await loadMemberRoles(database);
     const desiredRole = edit.roleId === null ? undefined : roles.find(role => role.publicId === edit.roleId && !role.isDeleted);

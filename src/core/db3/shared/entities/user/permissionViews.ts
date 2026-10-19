@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
-import { Permission } from "shared/permissions";
+import { gPermissionRegistry, Permission, type PermissionScope } from "shared/permissions";
+import type { IAuthorization } from "src/auth/shared/cmAuthorization";
 // Register role association targets before compiling the matrix selections.
 import "./roleViews";
 import { deriveViewContract } from "../../core/db3ViewContract";
@@ -7,6 +8,7 @@ import { defineCrudView } from "../../core/db3CrudView";
 import { defineView } from "../../core/db3View";
 import { PermissionForVisibilityArgs } from "../../schema/prismArgs";
 import { xPermission } from "../../schema/user";
+import { selectableBandVisibilityPermissionWhere } from "./visibilityPermissionPolicy";
 
 const permissionMetadataViewContract = deriveViewContract(
     xPermission,
@@ -31,15 +33,38 @@ export const permissionEditorView = defineCrudView({
     hydrate: permissionMetadataViewContract.hydrate,
 });
 
+function roleGrantPermissionWhere(scope: PermissionScope, auth: IAuthorization): Prisma.PermissionWhereInput {
+    auth.requirePermission(Permission.sysadmin);
+    return {
+        isDeleted: false,
+        name: { in: gPermissionRegistry.filter(definition => definition.scope === scope && definition.key !== Permission.never_grant)
+            .map(definition => definition.key) },
+    };
+}
+
+export const permissionGlobalRoleChoicesView = defineView({
+    viewID: "Permission_GlobalRoleChoices",
+    entity: xPermission,
+    selection: permissionMetadataViewContract.prismaSelection,
+    dtoSchema: permissionMetadataViewContract.dtoSchema,
+    hydrate: permissionMetadataViewContract.hydrate,
+    where: ({ auth }) => roleGrantPermissionWhere("global", auth),
+});
+
+export const permissionBandRoleChoicesView = defineView({
+    viewID: "Permission_BandRoleChoices",
+    entity: xPermission,
+    selection: permissionMetadataViewContract.prismaSelection,
+    dtoSchema: permissionMetadataViewContract.dtoSchema,
+    hydrate: permissionMetadataViewContract.hydrate,
+    where: ({ auth }) => roleGrantPermissionWhere("band", auth),
+});
+
 export const permissionVisibilityView = defineView({
     viewID: "Permission_Visibility",
     entity: xPermission,
     selection: permissionMetadataViewContract.prismaSelection,
-    // Only show permissions that are marked as visible and that the user has effective access to.
-    where: ({ auth }) => ({
-        isVisibility: { equals: true },
-        id: { in: auth.effectivePermissions.ids },
-    }),
+    where: ({ auth }) => selectableBandVisibilityPermissionWhere(auth),
     dtoSchema: permissionMetadataViewContract.dtoSchema,
     hydrate: permissionDisplayContract.hydrate,
 });
@@ -99,18 +124,12 @@ export const permissionGlobalRoleMatrixView = defineView({
     selection: globalMatrixContract.prismaSelection,
     dtoSchema: globalMatrixContract.dtoSchema,
     hydrate: globalMatrixContract.hydrate,
-    where: ({ auth }) => {
-        auth.requirePermission(Permission.sysadmin);
-        return {};
-    },
+    where: ({ auth }) => roleGrantPermissionWhere("global", auth),
 });
 export const permissionBandRoleMatrixView = defineView({
     viewID: "Permission_BandRoleMatrix", entity: xPermission,
     selection: bandMatrixContract.prismaSelection,
     dtoSchema: bandMatrixContract.dtoSchema,
     hydrate: bandMatrixContract.hydrate,
-    where: ({ auth }) => {
-        auth.requirePermission(Permission.sysadmin);
-        return {};
-    },
+    where: ({ auth }) => roleGrantPermissionWhere("band", auth),
 });

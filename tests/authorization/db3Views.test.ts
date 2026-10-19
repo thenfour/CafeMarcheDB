@@ -177,7 +177,10 @@ describe("DB3 named views", () => {
         expect(db3.eventTypeEditorView.getWhereClause(context)).toBeUndefined();
         expect(db3.songCreditUserView.getWhereClause(context)).toBeUndefined();
         expect(db3.permissionVisibilityView.getWhereClause(context)).toEqual({
-            isVisibility: { equals: true },
+            isDeleted: false,
+            isVisibility: true,
+            name: { in: [Permission.visibility_public, Permission.visibility_logged_in_users,
+                Permission.visibility_members, Permission.visibility_editors] },
             id: { in: [] },
         });
 

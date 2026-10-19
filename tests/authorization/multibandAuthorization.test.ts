@@ -33,10 +33,10 @@ const bandA = parsePublicId<"Band">(publicId("Band", 1));
 const bandB = parsePublicId<"Band">(publicId("Band", 2));
 const account = { id: 42, publicId: publicId("User", 42), name: "Shared person", email: "shared@test.invalid",
     phone: null, createdAt: new Date(), cssClass: null, isDeleted: false, mergedIntoUserId: null,
-    globalRoleId: null, isSysAdmin: false };
+    globalRoleId: 31, isSysAdmin: false };
 const permissionId = (name: Permission): number => gPermissionRegistry.findIndex(definition => definition.key === name) + 1;
 const bandGrant = (id: number, bandRoleId: number, name: Permission) => ({ id, bandRoleId, permissionId: permissionId(name) });
-const globalGrant = (id: number, name: Permission) => ({ id, globalRoleId: 30, permissionId: permissionId(name) });
+const globalGrant = (id: number, name: Permission, globalRoleId = 30) => ({ id, globalRoleId, permissionId: permissionId(name) });
 
 function resetFixture(): void {
     authorizationTestDb.reset({
@@ -52,7 +52,11 @@ function resetFixture(): void {
             { id: 1, publicId: publicId("BandUser", 1), userId: 42, bandId: 1, bandRoleId: 20, isDeleted: false },
             { id: 2, publicId: publicId("BandUser", 2), userId: 42, bandId: 2, bandRoleId: 21, isDeleted: false },
         ],
-        globalRole: [{ id: 30, isSysAdminRole: true, isDeleted: false }],
+        globalRole: [
+            { id: 5, isPublicRole: true, isDeleted: false },
+            { id: 30, isSysAdminRole: true, isDeleted: false },
+            { id: 31, isRoleForNewUsers: true, isDeleted: false },
+        ],
         bandRole: [
             { id: 10, isPublicRole: true, isRoleForNewUsers: false, isDeleted: false },
             { id: 20, isPublicRole: false, isRoleForNewUsers: false, isDeleted: false },
@@ -63,8 +67,10 @@ function resetFixture(): void {
             id: index + 1, name: definition.key, isDeleted: false,
         })),
         globalRolePermission: [globalGrant(1, Permission.sysadmin), globalGrant(2, Permission.login),
-            globalGrant(3, Permission.manage_global_users), globalGrant(4, Permission.manage_events)],
-        bandRolePermission: [bandGrant(1, 10, Permission.public), bandGrant(2, 10, Permission.view_events),
+            globalGrant(3, Permission.manage_global_users), globalGrant(4, Permission.global_band_admin),
+            globalGrant(5, Permission.login, 31), globalGrant(6, Permission.public, 31),
+            globalGrant(7, Permission.public, 5), globalGrant(8, Permission.practice_tools_use, 5)],
+        bandRolePermission: [bandGrant(1, 10, Permission.visibility_public), bandGrant(2, 10, Permission.view_events),
             bandGrant(3, 20, Permission.manage_events), bandGrant(4, 21, Permission.view_songs),
             bandGrant(5, 22, Permission.respond_to_events)],
     });
@@ -125,8 +131,8 @@ describe("trusted platform and band authorization", () => {
         expect(secondTab).toMatchObject({ locale: "nl-BE", authorization: {
             bandPublicId: bandB, bandUserPublicId: publicId("BandUser", 2),
         } });
-        const firstClient = new CMClientAuthorization(user, new PermissionSet(firstTab.authorization.effectivePermissionNames));
-        const secondClient = new CMClientAuthorization(user, new PermissionSet(secondTab.authorization.effectivePermissionNames));
+        const firstClient = new CMClientAuthorization(user, new PermissionSet(firstTab.authorization.effectivePermissionNames), null, bandA);
+        const secondClient = new CMClientAuthorization(user, new PermissionSet(secondTab.authorization.effectivePermissionNames), null, bandB);
         expect(firstClient.hasPermission(Permission.manage_events)).toBe(true);
         expect(firstClient.hasPermission(Permission.view_songs)).toBe(false);
         expect(secondClient.hasPermission(Permission.view_songs)).toBe(true);
@@ -151,13 +157,13 @@ describe("trusted platform and band authorization", () => {
 
     it("does not put grants sourced from a selected member role into the shared session", async () => {
         await authorizationTestDb.getDelegate("bandRolePermission").create({
-            data: bandGrant(100, 20, Permission.practice_tools_use),
+            data: bandGrant(100, 20, Permission.edit_wiki_pages),
         });
         const session = sessionForAccount();
-        expect((await loadAuthorization(session, bandA)).hasPermission(Permission.practice_tools_use)).toBe(true);
-        expect(session.$publicData.permissionNames).not.toContain(Permission.practice_tools_use);
-        expect((await loadAuthorization(session, bandB)).hasPermission(Permission.practice_tools_use)).toBe(false);
-        expect(session.$publicData.permissionNames).not.toContain(Permission.practice_tools_use);
+        expect((await loadAuthorization(session, bandA)).hasPermission(Permission.edit_wiki_pages)).toBe(true);
+        expect(session.$publicData.permissionNames).not.toContain(Permission.edit_wiki_pages);
+        expect((await loadAuthorization(session, bandB)).hasPermission(Permission.edit_wiki_pages)).toBe(false);
+        expect(session.$publicData.permissionNames).not.toContain(Permission.edit_wiki_pages);
     });
 
     it.each([false, true])("preserves the GlobalRole administrator's inspector preference (%s) without a legacy flag", async showAdminControls => {
@@ -179,7 +185,7 @@ describe("trusted platform and band authorization", () => {
         session.$publicData.showAdminControls = true;
         await loadAuthorization(session, bandA);
         expect(session.$publicData.showAdminControls).toBe(true);
-        await authorizationTestDb.getDelegate("user").update({ where: { id: account.id }, data: { globalRoleId: null } });
+        await authorizationTestDb.getDelegate("user").update({ where: { id: account.id }, data: { globalRoleId: 31 } });
         const nextRequest = { ...session, get userId() { return session.userId; } };
         await loadAuthorization(nextRequest, bandB);
         expect(session.$publicData.showAdminControls).toBe(false);
@@ -192,8 +198,8 @@ describe("trusted platform and band authorization", () => {
         const session = sessionForAccount();
         session.$publicData.isSysAdmin = true;
         session.$publicData.showAdminControls = true;
-        await loadAuthorization(session, bandA);
-        expect(session.$publicData.showAdminControls).toBe(false);
+        await expect(loadAuthorization(session, bandA)).rejects.toThrow("A band role cannot grant sysadmin");
+        expect(session.$publicData.permissionNames).not.toContain(Permission.sysadmin);
         expect(session.$publicData.permissionNames).not.toContain(Permission.sysadmin);
     });
 
@@ -252,39 +258,31 @@ describe("trusted platform and band authorization", () => {
         expect(inactive.membership).toBeNull();
     });
 
-    it("applies the new-member role only to an active roleless membership", async () => {
+    it("selects Band Public for an active roleless membership without adding the new-member role", async () => {
         await authorizationTestDb.getDelegate("bandUser").update({ where: { id: 1 }, data: { bandRoleId: null } });
         const auth = await loadAuthorization(sessionForAccount(), bandA);
-        expect(auth.hasPermission(Permission.respond_to_events)).toBe(true);
+        expect(auth.hasPermission(Permission.respond_to_events)).toBe(false);
         expect(auth.hasPermission(Permission.manage_events)).toBe(false);
     });
 
-    it("never accepts platform permissions or never_grant from a band role", async () => {
-        await authorizationTestDb.getDelegate("bandRolePermission").create({ data: bandGrant(100, 20, Permission.sysadmin) });
-        await authorizationTestDb.getDelegate("bandRolePermission").create({ data: bandGrant(101, 20, Permission.manage_global_users) });
-        await authorizationTestDb.getDelegate("bandRolePermission").create({ data: bandGrant(102, 20, Permission.never_grant) });
-        const auth = await loadAuthorization(sessionForAccount(), bandA);
-        expect(auth.hasPermission(Permission.sysadmin)).toBe(false);
-        expect(auth.hasPermission(Permission.manage_global_users)).toBe(false);
-        expect(auth.hasPermission(Permission.never_grant)).toBe(false);
+    it.each([Permission.sysadmin, Permission.manage_global_users])("rejects mismatched band grant %s", async permission => {
+        await authorizationTestDb.getDelegate("bandRolePermission").create({ data: bandGrant(100, 20, permission) });
+        await expect(loadAuthorization(sessionForAccount(), bandA)).rejects.toThrow("A band role cannot grant");
     });
 
-    it.each(["bandRole", "permission"])("excludes deleted %s grants", async table => {
-        const id = table === "bandRole" ? 20 : permissionId(Permission.manage_events);
-        await authorizationTestDb.getDelegate(table).update({ where: { id }, data: { isDeleted: true } });
+    it("rejects an unavailable assigned role and ignores a deleted permission definition", async () => {
+        await authorizationTestDb.getDelegate("permission").update({ where: { id: permissionId(Permission.manage_events) }, data: { isDeleted: true } });
         expect((await loadAuthorization(sessionForAccount(), bandA)).hasPermission(Permission.manage_events)).toBe(false);
+        await authorizationTestDb.getDelegate("bandRole").update({ where: { id: 20 }, data: { isDeleted: true } });
+        await expect(loadAuthorization(sessionForAccount(), bandA)).rejects.toThrow("assigned band role is unavailable");
     });
 
-    it("inherits actual Sysadmin-role grants without turning the flag into a bypass", async () => {
+    it("does not derive authority from the Sysadmin account flag", async () => {
         await authorizationTestDb.getDelegate("user").update({ where: { id: 42 }, data: { isSysAdmin: true } });
-        const first = await loadAuthorization(sessionForAccount(), bandB);
-        expect(first.hasPermission(Permission.sysadmin)).toBe(true);
-        expect(first.hasPermission(Permission.manage_events)).toBe(true);
-        expect(first.sessionPermissions.includesName(Permission.sysadmin)).toBe(true);
-        expect(first.sessionPermissions.includesName(Permission.manage_events)).toBe(false);
-        await authorizationTestDb.getDelegate("globalRolePermission").deleteMany({ where: { permissionId: permissionId(Permission.sysadmin) } });
-        expect((await loadAuthorization(sessionForAccount(), bandB)).hasPermission(Permission.sysadmin)).toBe(false);
-        expect((await loadAuthorization(sessionForAccount())).hasPermission(Permission.manage_events)).toBe(false);
+        const auth = await loadAuthorization(sessionForAccount(), bandB);
+        expect(auth.hasPermission(Permission.sysadmin)).toBe(false);
+        expect(auth.hasPermission(Permission.global_band_admin)).toBe(false);
+        expect(auth.sessionPermissions.includesName(Permission.sysadmin)).toBe(false);
     });
 
     it("honors an assigned global role without requiring the Sysadmin display flag", async () => {
@@ -356,7 +354,7 @@ describe("trusted platform and band authorization", () => {
 
     it("rechecks account identity and grants before creating session public data", async () => {
         const staleUser = (await loadAuthorizationForUser({ id: 42 }, database, bandA)).requireUser().user;
-        await authorizationTestDb.getDelegate("user").update({ where: { id: 42 }, data: { isSysAdmin: true } });
+        await authorizationTestDb.getDelegate("user").update({ where: { id: 42 }, data: { globalRoleId: 30 } });
         const publicData = await createPublicDataFromDatabase(database, { user: staleUser });
         expect(publicData.isSysAdmin).toBe(true);
         expect(publicData.permissionNames).toContain(Permission.manage_global_users);
@@ -383,7 +381,7 @@ describe("trusted platform and band authorization", () => {
         for (const action of ["assignRole", "deactivate", "merge"] as const) {
             expect(canManageUser({ actor: bandActor, target, action })).toBe(false);
         }
-        await authorizationTestDb.getDelegate("user").update({ where: { id: 42 }, data: { isSysAdmin: true } });
+        await authorizationTestDb.getDelegate("user").update({ where: { id: 42 }, data: { globalRoleId: 30 } });
         const platformAuth = await loadAuthorization(sessionForAccount());
         const platformActor = { principal: platformAuth.user, auth: platformAuth };
         expect(canManageUser({ actor: platformActor, target, action: "deactivate" })).toBe(true);
@@ -433,13 +431,10 @@ describe("trusted platform and band authorization", () => {
         await expect(loadAuthorization(sessionForAccount(), bandA)).rejects.toThrow("unavailable");
     });
 
-    it("requires one active designated Sysadmin role and adds missing required grants there", async () => {
+    it("validates configured Sysadmin grants without adding them", async () => {
         await authorizationTestDb.getDelegate("globalRolePermission").deleteMany();
-        await assertValidSysadminRole(database);
-        expect(authorizationTestDb.snapshot("globalRolePermission")).toEqual(expect.arrayContaining([
-            expect.objectContaining({ globalRoleId: 30, permissionId: permissionId(Permission.sysadmin) }),
-            expect.objectContaining({ globalRoleId: 30, permissionId: permissionId(Permission.login) }),
-        ]));
+        await expect(assertValidSysadminRole(database)).rejects.toThrow("must explicitly grant");
+        expect(authorizationTestDb.snapshot("globalRolePermission")).toEqual([]);
         await authorizationTestDb.getDelegate("globalRole").create({ data: { isSysAdminRole: true, isDeleted: false } });
         await expect(assertValidSysadminRole(database)).rejects.toThrow("exactly one active designated");
     });
@@ -453,7 +448,7 @@ describe("trusted platform and band authorization", () => {
             email: "new@test.invalid", name: "New person", password: "valid password",
         }, ctx);
         expect(result).toMatchObject({ name: "New person" });
-        expect(authorizationTestDb.snapshot("user")[0]).toMatchObject({ globalRoleId: null, isSysAdmin: false });
+        expect(authorizationTestDb.snapshot("user")[0]).toMatchObject({ globalRoleId: 31, isSysAdmin: false });
         expect(authorizationTestDb.snapshot("bandUser")).toEqual([]);
         expect(ctx.session.$publicData.permissionNames).toContain(Permission.login);
         expect(ctx.session.$publicData).not.toHaveProperty("authorizationBandPublicId");
@@ -475,7 +470,7 @@ describe("trusted platform and band authorization", () => {
         await expect(invokeResolver(claimAdminBootstrap, {
             secret: "a-wrong-bootstrap-secret-over-32-characters",
         }, ctx)).rejects.toThrow("bootstrap is unavailable");
-        expect(authorizationTestDb.snapshot("user")[0]).toMatchObject({ isSysAdmin: false, globalRoleId: null });
+        expect(authorizationTestDb.snapshot("user")[0]).toMatchObject({ isSysAdmin: false, globalRoleId: 31 });
         expect(authorizationTestDb.snapshot("adminBootstrapClaim")).toEqual([]);
     });
 
@@ -492,7 +487,7 @@ describe("trusted platform and band authorization", () => {
         second.session.$publicData.userId = 99;
         await expect(invokeResolver(claimAdminBootstrap, { secret }, second)).rejects.toThrow("bootstrap is unavailable");
         expect(authorizationTestDb.snapshot("user").find(user => user.id === 99))
-            .toMatchObject({ isSysAdmin: false, globalRoleId: null });
+            .toMatchObject({ isSysAdmin: false, globalRoleId: 31 });
     });
 
     it.each(["isDeleted", "mergedIntoUserId"])("rejects inactive sign-in targets (%s)", async field => {

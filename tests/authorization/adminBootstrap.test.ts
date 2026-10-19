@@ -1,4 +1,4 @@
-import { resetAuthorizationDatabase } from "./support/authorizationSeed";
+import { authorizationAccountRoleId, resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { hash256 } from "@blitzjs/auth"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -82,7 +82,7 @@ describe("BA-U005 administrator bootstrap", () => {
       expect.objectContaining({
         id: 1,
         email: bootstrapEmail,
-        globalRoleId: null,
+        globalRoleId: authorizationAccountRoleId,
         isSysAdmin: false,
       }),
     ])
@@ -93,7 +93,7 @@ describe("BA-U005 administrator bootstrap", () => {
       name: "Recovery user",
       email: bootstrapEmail,
       isSysAdmin: false,
-      globalRoleId: null,
+      globalRoleId: authorizationAccountRoleId,
       authenticationMethod: "password",
     })
     expect(createSession).toHaveBeenCalledOnce()
@@ -105,7 +105,7 @@ describe("BA-U005 administrator bootstrap", () => {
       { id: 10, isRoleForNewUsers: true },
       { id: 11, isRoleForNewUsers: true },
     ]],
-  ])("creates a roleless account independently of %s membership defaults", async (_case, roles) => {
+  ])("assigns the configured account role independently of %s membership defaults", async (_case, roles) => {
     resetBootstrapDatabase({ bandRole: roles, user: [], change: [] })
     const { ctx } = createAuthorizationPersona("public")
 
@@ -115,8 +115,24 @@ describe("BA-U005 administrator bootstrap", () => {
       password: "valid password",
     }, ctx)).resolves.toMatchObject({ email: "new-user@test.invalid" })
 
-    expect(authorizationTestDb.snapshot("user")[0]).toMatchObject({ globalRoleId: null, isSysAdmin: false });
+    expect(authorizationTestDb.snapshot("user")[0]).toMatchObject({ globalRoleId: authorizationAccountRoleId, isSysAdmin: false });
     expect(authorizationTestDb.snapshot("bandUser")).toEqual([]);
+  })
+
+  it.each(["missing", "duplicated"])("rejects account creation when its configured default is %s", async state => {
+    resetBootstrapDatabase({ user: [], change: [] });
+    const roles = authorizationTestDb.getDelegate("globalRole");
+    if (state === "missing") {
+      await roles.updateMany({ where: { isRoleForNewUsers: true }, data: { isRoleForNewUsers: false } });
+    } else {
+      await roles.create({ data: { id: 900_005, publicId: "DuplicateRole001", isRoleForNewUsers: true, isDeleted: false } });
+    }
+    const { ctx } = createAuthorizationPersona("public");
+    await expect(invokeResolver(signup, {
+      email: "new-user@test.invalid", name: "New user", password: "valid password",
+    }, ctx)).rejects.toThrow("exactly one active role for new accounts");
+    expect(authorizationTestDb.snapshot("user")).toEqual([]);
+    expect(authorizationTestDb.snapshot("change")).toEqual([]);
   })
 
   // it.each([
@@ -232,8 +248,8 @@ describe("BA-U005 administrator bootstrap", () => {
         table: "User",
         recordId: actor.id,
         context: "claimAdminBootstrap",
-        oldValues: JSON.stringify({ isSysAdmin: false }),
-        newValues: JSON.stringify({ isSysAdmin: true }),
+        oldValues: JSON.stringify({ isSysAdmin: false, globalRoleId: actor.globalRoleId }),
+        newValues: JSON.stringify({ isSysAdmin: true, globalRoleId: 900_002 }),
       }),
     ])
     expect(createSession).toHaveBeenCalledWith(expect.objectContaining({

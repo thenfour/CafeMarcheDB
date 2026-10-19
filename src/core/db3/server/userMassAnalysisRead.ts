@@ -3,6 +3,8 @@ import { NotFoundError } from "blitz";
 import { getPermissionDefinition, isPermission, Permission } from "shared/permissions";
 import { parsePublicId, type UserPublicId } from "shared/publicId";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
+import { loadGlobalPublicRoleGrants, makePermissionSetFromRole } from "src/auth/server/userManagementState";
+import type { PermissionSet } from "src/auth/shared/PermissionSet";
 import { resolveAuthorizedDynamicStrings } from "src/locale/server/localization";
 import type { LocalePreferenceInput } from "src/locale/shared/localePreferences";
 import type {
@@ -35,6 +37,7 @@ const accountSelection = Prisma.validator<Prisma.UserSelect>()({
                 select: {
                     permission: {
                         select: {
+                            id: true,
                             name: true,
                             isDeleted: true
                         }
@@ -182,19 +185,15 @@ function aggregateMembershipCounts(memberships: readonly UserMassAnalysisMembers
     };
 }
 
-function accountRiskProtection(account: StoredAccount) {
-    const grants = account.globalRole && !account.globalRole.isDeleted
-        ? account.globalRole.permissions.filter(grant => !grant.permission.isDeleted).map(grant => grant.permission.name) : [];
-    // A flagged administrator stays protected even if its designated grant is temporarily invalid.
+function accountRiskProtection(grants: PermissionSet) {
     return {
-        isProtectedAdministrator: account.isSysAdmin || grants.includes(Permission.sysadmin),
-        // Global roles can also grant authority across selected bands, beyond ordinary account access.
-        hasElevatedGlobalRole: grants.some(name => {
+        isProtectedAdministrator: grants.includesName(Permission.sysadmin),
+        hasElevatedGlobalRole: grants.names.some(name => {
             if (!isPermission(name)) {
                 return false;
             }
-            const scope = getPermissionDefinition(name).scope;
-            return scope === "platform" || scope === "band";
+            const definition = getPermissionDefinition(name);
+            return definition.scope === "global" && definition.isProtected;
         })
     };
 }
@@ -206,7 +205,8 @@ async function presentAccountInventory(database: Prisma.TransactionClient,
     const memberships = await Promise.all(storedMemberships.map(membership => presentMembership(database, membership, locale)));
     const contentCounts = accountContentCounts(account);
     const participationCounts = aggregateMembershipCounts(memberships);
-    const { isProtectedAdministrator, hasElevatedGlobalRole } = accountRiskProtection(account);
+    const globalGrants = account.globalRole ? makePermissionSetFromRole(account.globalRole) : await loadGlobalPublicRoleGrants(database);
+    const { isProtectedAdministrator, hasElevatedGlobalRole } = accountRiskProtection(globalGrants);
     const activityMetrics = measureUserActivity(account.createdAt, lastAction?.createdAt ?? null, account._count.actions, now);
     const globalRoleName = account.globalRole ? roleLabels.get(account.globalRole.nameId)?.value ?? null : null;
     return {
@@ -215,7 +215,7 @@ async function presentAccountInventory(database: Prisma.TransactionClient,
             name: account.name,
             email: account.email,
             createdAt: account.createdAt,
-            isSysAdmin: account.isSysAdmin,
+            isSysAdmin: isProtectedAdministrator,
             isProtectedAdministrator,
             isDeleted: account.isDeleted,
             globalRoleId: account.globalRole ? parsePublicId<"GlobalRole">(account.globalRole.publicId) : null,

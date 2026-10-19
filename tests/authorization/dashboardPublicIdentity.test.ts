@@ -96,8 +96,9 @@ describe.each(["normal", "sysadmin"] as const)("dashboard public identities for 
         expect(relevanceQuery.mock.calls[0]![0].sql).toContain("bandId");
         expect(relevanceQuery.mock.calls[0]![0].sql).not.toMatch(/NOT IN\s*\(\s*\)/);
         const authorization = await loadAuthorization(ctx.session, authorizationBandId);
-        expect(relevanceQuery.mock.calls[0]![0].sql)
-            .toContain(`visiblePermissionId IN (${authorization.effectivePermissions.ids.join(",")})`);
+        expect(relevanceQuery.mock.calls[0]![0].sql).toContain(authorization.hasPermission(Permission.global_band_admin)
+            ? "visiblePermissionId IS NOT NULL"
+            : `visiblePermissionId IN (${authorization.effectivePermissions.ids.join(",")})`);
 
         const result = await invokeResolver(db3Query, request({ publicIds: dto.relevantEventIds }), ctx);
         expect(result.items.map(item => item.publicId).sort()).toEqual([...dto.relevantEventIds].sort());

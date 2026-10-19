@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { Permission } from "shared/permissions";
@@ -12,7 +13,7 @@ import { defineCrudView } from "../../core/db3CrudView";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { FileTagSignificance } from "../../schema/prismArgs";
 
-const { authMap, sourceAuthMap, tableAuthMap } = bandCatalogAuth(Permission.admin_files);
+const { authMap, sourceAuthMap, tableAuthMap } = bandCatalogAuth(BandPermission.admin_files);
 const colorField = inheritedField(MakeColorField({ authMap }));
 
 class FileTagSourceField extends CatalogSourceField<{ authMap: typeof sourceAuthMap }> {
@@ -55,7 +56,7 @@ export const xBandFileTag = defineTable({
         inheritedFrom: "globalFileTag",
         inheritedSourceMember: "globalFileTagId",
         hiddenMember: "isHidden",
-        managePermission: Permission.admin_files,
+        managePermission: BandPermission.admin_files,
     },
     naturalOrderBy: { sortOrder: "asc", name: "asc" },
     getSelectionArgs: () => ({

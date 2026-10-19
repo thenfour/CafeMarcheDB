@@ -1,37 +1,25 @@
-import { Permission } from "shared/permissions";
+import { gPermissionRegistry, Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { vi } from "vitest";
 import { selectPrismaTestRow } from "tests/support/prismaSelection";
 import type { DB3ReadSelectionArgs } from "src/core/db3/shared/core/db3ReadSelection";
-import { authorizationPermissionId, type AuthorizationTestUser } from "./authorizationFixtures";
+import { authorizationPermissionId, testPublicRolePermissions, type AuthorizationTestUser } from "./authorizationFixtures";
 import { authorizationTestDb } from "./inMemoryPrisma";
+import { createAuthorizationSeed } from "./authorizationSeed";
 
 export const wikiFixtureBand = parsePublicId<"Band">("FixtureBand00001");
 
 /** Wiki resolver tests use real selected-band grants rather than the retired User.role relation. */
 export function seedWikiAuthorization(user: AuthorizationTestUser) {
-    authorizationTestDb.getDelegate("user").reset([{ ...user, globalRoleId: null, mergedIntoUserId: null }]);
-    const grants = user.permissions.map((name, index) => ({
-        id: index + 1, permission: {
-            id: authorizationPermissionId(name), name,
-            publicId: `TestPerm${String(authorizationPermissionId(name)).padStart(8, "0")}`,
-            isDeleted: false,
-        },
+    const permissions = gPermissionRegistry.map(definition => ({
+        id: authorizationPermissionId(definition.key), name: definition.key,
+        publicId: `TestPerm${String(authorizationPermissionId(definition.key)).padStart(8, "0")}`,
+        isDeleted: false, significance: definition.key === Permission.visibility_members ? "Visibility_Members" : null,
     }));
-    authorizationTestDb.getDelegate("permission").reset(grants.map(grant => ({
-        ...grant.permission, isDeleted: false,
-        significance: grant.permission.name === Permission.visibility_members ? "Visibility_Members" : null,
-    })));
-    authorizationTestDb.getDelegate("band").reset([{ id: 1, publicId: wikiFixtureBand, isDeleted: false }]);
-    authorizationTestDb.getDelegate("bandUser").reset([{
-        id: 1, publicId: "FixtureMember001", bandId: 1, userId: user.id, bandRoleId: 1, isDeleted: false,
-    }]);
-    authorizationTestDb.getDelegate("bandRole").reset([{
-        id: 1, isDeleted: false, isPublicRole: false, isRoleForNewUsers: false,
-    }]);
-    authorizationTestDb.getDelegate("bandRolePermission").reset(grants.map(grant => ({
-        id: grant.id, bandRoleId: 1, permissionId: grant.permission.id,
-    })));
+    const authorization = createAuthorizationSeed([user], testPublicRolePermissions, permissions);
+    for (const [table, rows] of Object.entries(authorization)) {
+        authorizationTestDb.getDelegate(table).reset(rows);
+    }
 }
 
 /** Parent ownership support must obey Prisma selects, without returning a recursive page graph. */

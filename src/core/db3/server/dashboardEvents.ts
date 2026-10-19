@@ -1,4 +1,4 @@
-import { Permission } from "shared/permissions";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { parsePublicId, type EventPublicId } from "shared/publicId";
 import { gMillisecondsPerDay } from "shared/time";
 import { BigintToNumberNullable } from "shared/utils";
@@ -21,7 +21,7 @@ function parseRelevanceOverride(value: number | null): EventRelevanceClassValue 
 /** The reference's twenty nearest candidates feed its existing five-card classifier. */
 export async function readDashboardRelevantEvents(context: DB3ReadContext, now: Date): Promise<EventPublicId[]> {
     const auth = context.authorization;
-    if (!auth.user || !auth.band || !auth.hasPermission(Permission.view_events_nonpublic)) {
+    if (!auth.user || !auth.band || !auth.hasPermission(BandPermission.view_events_nonpublic)) {
         return [];
     }
     if (!xEvent.authorizeTableForView(auth) || Object.keys(eventRelevanceView.dtoSchema.shape).some(columnName =>

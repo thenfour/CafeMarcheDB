@@ -1,9 +1,9 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 // todo: unify stat/analytics systems. we have song history, event statistics, and also
 // separate "quick filter search" and normal faceted search which does its own stats calculations..
 
 import { AuthorizationError } from "blitz";
 import { CalendarDate } from "shared/dateTimePolicy";
-import { Permission } from "shared/permissions";
 import type { SongPublicId } from "shared/publicId";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { loadBandTimeZone } from "src/server/bandTimeZone";
@@ -56,7 +56,7 @@ export function readEventStatistics(database: DB3ReadDatabase, authorization: CM
         if (band.publicId !== bandPublicId) {
             throw new AuthorizationError("Event statistics require the selected band.");
         }
-        auth.requirePermission(Permission.view_events_reports);
+        auth.requirePermission(BandPermission.view_events_reports);
         const timeZone = await loadBandTimeZone(context.database, band.id);
         const today = CalendarDate.fromInstant({ value: new Date(), timeZone });
         const { timing, songTagIds, ...catalogFilters } = args.filterSpec;

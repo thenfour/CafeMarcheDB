@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, expectTypeOf, it, vi } from "vitest"
 import { loadEffectivePermissions } from "src/auth/server/effectivePermissions"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import type { AuthorizationDatabase } from "src/auth/server/authorizationContext"
@@ -15,6 +15,22 @@ import {
 } from "shared/permissions"
 
 describe("canonical permission registry", () => {
+  it("preserves each selected definition's literal metadata", () => {
+    const sysadmin = getPermissionDefinition("sysadmin")
+    expectTypeOf(sysadmin).toEqualTypeOf<Extract<(typeof gPermissionRegistry)[number], { key: "sysadmin" }>>()
+    expectTypeOf(sysadmin.key).toEqualTypeOf<"sysadmin">()
+    expectTypeOf(sysadmin.scope).toEqualTypeOf<"global">()
+    expectTypeOf(sysadmin.sortOrder).toEqualTypeOf<9010>()
+    expectTypeOf(sysadmin.isProtected).toEqualTypeOf<true>()
+    expectTypeOf(sysadmin.isDelegable).toEqualTypeOf<false>()
+
+    const visibility = getPermissionDefinition("visibility_members")
+    expectTypeOf(visibility.scope).toEqualTypeOf<"band">()
+    expectTypeOf(visibility.isVisibility).toEqualTypeOf<true>()
+    expectTypeOf(visibility.isProtected).toEqualTypeOf<false>()
+    expectTypeOf(visibility.presentation.color).toEqualTypeOf<"gold">()
+  })
+
   it("generates the complete compatibility API and ordered view", () => {
     const registryKeys = gPermissionRegistry.map((definition) => definition.key)
 
@@ -41,18 +57,22 @@ describe("canonical permission registry", () => {
       if (definition.isVisibility) {
         expect(definition.presentation).toBeDefined()
       }
-      if (definition.scope === "platform") {
+      if (definition.scope === "global" && definition.isProtected) {
         expect(definition.isProtected).toBe(true)
         expect(definition.isDelegable).toBe(false)
       }
     }
 
     expect(isPermission("not_a_real_permission")).toBe(false)
+    for (const inheritedKey of ["constructor", "__proto__", "toString"]) {
+      expect(isPermission(inheritedKey)).toBe(false)
+    }
   })
 
   it("derives protected and continuity policy from metadata", () => {
     expect([...gProtectedPermissions]).toEqual([
       Permission.merge_users,
+      Permission.global_band_admin,
       Permission.manage_bands,
       Permission.manage_global_catalogs,
       Permission.manage_global_settings,
@@ -95,7 +115,7 @@ describe("canonical permission registry", () => {
   it("ignores unknown persisted permissions without granting or crashing", async () => {
     const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined)
     authorizationTestDb.reset({
-      bandRole: [{ id: 10, isPublicRole: true, isDeleted: false, bandRolePermissions: [
+      globalRole: [{ id: 10, isPublicRole: true, isDeleted: false, permissions: [
         { id: 1, permission: { id: 1, name: Permission.public, isDeleted: false } },
         { id: 2, permission: { id: 2, name: "retired_permission", isDeleted: false } },
       ] }],

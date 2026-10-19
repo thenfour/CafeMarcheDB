@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { defineCmdbPage } from "src/route/cmdbPage";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 import type { BlitzPage } from "@blitzjs/next";
@@ -6,7 +7,6 @@ import { Alert } from "@mui/material";
 import React from "react";
 import { arraysContainSameValues } from "shared/arrayUtils";
 import { CalendarDate } from "shared/dateTimePolicy";
-import { Permission } from "shared/permissions";
 import type { SongPublicId } from "shared/publicId";
 import { ActivityVis } from "src/core/components/ActivityVis";
 import { CMChip } from "src/core/components/CMChip";
@@ -155,7 +155,7 @@ function MainContent() {
     const context = useDB3QueryContext();
     const dashboard = useDashboardContext();
     const locale = useLocale();
-    if (!context.bandPublicId || !dashboard.isAuthorized(Permission.view_events_reports)) {
+    if (!context.bandPublicId || !dashboard.isAuthorized(BandPermission.view_events_reports)) {
         return <Alert severity="info">{locale.getPlainString("eventStatistics.unavailable")}</Alert>;
     }
     return <CMSinglePageSurfaceCard><div className="content">

@@ -6,6 +6,7 @@ import type { MergeAccountAnalysisInput, PreviewUserMergeInput, SearchUserMergeC
 import { authorizeMergeActor, canMergeAccount, loadEligibleMergeUser, mergeIdentity } from "./mergeEligibility";
 import { prepareUserMerge } from "./prepareUserMerge";
 import { mergeCandidateSelect, type MergeAuthority } from "./types";
+import { loadGlobalPublicRoleGrants, makePermissionSetFromRole } from "../userManagementState";
 export function previewMerge(database: DB3ReadDatabase, authority: MergeAuthority, input: z.infer<typeof PreviewUserMergeInput>) {
     return executeDB3Read(database, authority.authorization, async context => (await prepareUserMerge(context.database,
         { ...authority, authorization: context.authorization }, input.participants, input)).preview);
@@ -18,7 +19,9 @@ export function searchMergeCandidates(database: DB3ReadDatabase, authority: Merg
             // Use the canonical tokenizer: every word can match any permitted identity field.
             AND: SplitQuickFilter(input.query).map(word => ({ OR: [{ name: { contains: word } }, { email: { contains: word } }, { publicId: { contains: word } }] })),
         }, select: mergeCandidateSelect, orderBy: [{ name: "asc" }, { publicId: "asc" }] });
-        const eligible = accounts.filter(account => canMergeAccount(actor, account)).slice(0, 100);
+        const publicGrants = await loadGlobalPublicRoleGrants(context.database);
+        const eligible = accounts.filter(account => canMergeAccount(actor, account,
+            account.globalRole ? makePermissionSetFromRole(account.globalRole) : publicGrants)).slice(0, 100);
         return Promise.all(eligible.map(account => mergeIdentity(context.database, account, input)));
     });
 }

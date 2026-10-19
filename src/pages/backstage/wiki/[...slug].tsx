@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { defineCmdbPage } from "src/route/cmdbPage";
 import { BlitzPage } from "@blitzjs/next";
 import db from "db";
@@ -47,7 +48,7 @@ export const getServerSideProps = gSSP<PageProps>(async (args) => {
     if (!presentation.bandPublicId && auth.user && auth.hasPermission(Permission.login)) {
         return { props: { title: wikiPath.slugWithoutNamespace, wikiPath, wikiPageId: null } };
     }
-    if (!auth.user || !auth.hasPermission(Permission.view_wiki_pages)) {
+    if (!auth.user || !auth.hasPermission(BandPermission.view_wiki_pages)) {
         return {
             redirect: {
                 destination: "/",

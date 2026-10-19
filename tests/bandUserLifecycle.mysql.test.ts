@@ -15,6 +15,7 @@ import { setBandUserActive } from "src/core/db3/server/commands/bandUserLifecycl
 import { bindDB3ReadSnapshot } from "src/core/db3/server/db3ReadExecution";
 import { DB3PaginatedQueryCore, queryView } from "src/core/db3/server/db3QueryCore";
 import { settingsMysqlTestUrl, withSettingsMysqlFixture, type SettingsMysqlFixture } from "./support/settingsMysqlFixture";
+import { loadDefaultAccountRole } from "src/auth/server/accountRoleDefaults";
 
 async function createRole(tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture, grants: readonly string[]) {
     const permissions = await tx.permission.findMany({ where: { name: { in: [...grants] } } });
@@ -26,7 +27,11 @@ async function createRole(tx: Prisma.TransactionClient, fixture: SettingsMysqlFi
 }
 
 async function prepare(tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture, grants: readonly Permission[] = [Permission.deactivate_users, Permission.recover_users, Permission.assign_user_roles]) {
-    const role = await createRole(tx, fixture, [Permission.view_users_basic_info, ...grants]);
+    const publicRole = await tx.bandRole.findFirstOrThrow({ where: { isPublicRole: true, isDeleted: false },
+        include: { bandRolePermissions: { include: { permission: true } } } });
+    // The actor's configured role explicitly includes the grants it may delegate to roleless members.
+    const publicGrants = publicRole.bandRolePermissions.map(entry => entry.permission.name);
+    const role = await createRole(tx, fixture, [Permission.view_users_basic_info, ...publicGrants, ...grants]);
     const member = await tx.bandUser.update({ where: { bandId_userId: { bandId: fixture.bands[0]!.id, userId: fixture.user.id } }, data: { bandRoleId: role.id } });
     const bandId = parsePublicId<"Band">(fixture.bands[0]!.publicId);
     const auth = await authorization.loadAuthorizationForUser(fixture.user, tx, bandId);
@@ -38,7 +43,8 @@ async function prepare(tx: Prisma.TransactionClient, fixture: SettingsMysqlFixtu
 }
 
 async function createTarget(tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture, bandRoleId: number | null, isDeleted = false, name = "Target") {
-    const user = await tx.user.create({ data: { publicId: generatePublicId(), name, email: `${generatePublicId()}@lifecycle.test.invalid` } });
+    const accountRole = await loadDefaultAccountRole(tx);
+    const user = await tx.user.create({ data: { publicId: generatePublicId(), name, email: `${generatePublicId()}@lifecycle.test.invalid`, globalRoleId: accountRole.id } });
     const member = await tx.bandUser.create({ data: { publicId: generatePublicId(), userId: user.id, bandId: fixture.bands[0]!.id, bandRoleId, isDeleted } });
     return { user, member };
 }
@@ -145,14 +151,14 @@ describe.skipIf(!settingsMysqlTestUrl)("membership lifecycle on MariaDB", () => 
         await expect(setBandUserActive(tx, platform, { membershipId: xBandUser.parseIdentity(context.member.publicId), action: "deactivate", acknowledgeContinuityRisk: true })).rejects.toThrow();
     }));
 
-    it("requires delegation over stored and default role grants before deactivation or recovery", () => withFixture(async (tx, fixture) => {
+    it("requires delegation over the selected stored or Public role before deactivation or recovery", () => withFixture(async (tx, fixture) => {
         const context = await prepare(tx, fixture);
         const elevatedRole = await createRole(tx, fixture, [Permission.admin_events]);
         const target = await createTarget(tx, fixture, elevatedRole.id);
         await expect(context.edit(target.member.publicId, "deactivate", true)).rejects.toThrow("delegation authority");
         await tx.bandUser.update({ where: { id: target.member.id }, data: { isDeleted: true } });
         await expect(context.edit(target.member.publicId, "reactivate")).rejects.toThrow("delegation authority");
-        const pending = await tx.bandRole.findFirstOrThrow({ where: { isRoleForNewUsers: true, isDeleted: false } });
+        const pending = await tx.bandRole.findFirstOrThrow({ where: { isPublicRole: true, isDeleted: false } });
         await tx.bandRolePermission.deleteMany({ where: { bandRoleId: pending.id } });
         const privilege = await tx.permission.findUniqueOrThrow({ where: { name: Permission.admin_events } });
         await tx.bandRolePermission.create({ data: { publicId: generatePublicId(), bandRoleId: pending.id, permissionId: privilege.id } });
@@ -199,12 +205,12 @@ describe.skipIf(!settingsMysqlTestUrl)("membership lifecycle on MariaDB", () => 
         await tx.bandUser.update({ where: { id: backup.member.id }, data: { bandId: fixture.bands[0]!.id, isDeleted: true } });
         expect(await context.edit(context.member.publicId, "deactivate")).toMatchObject({ status: "confirmationRequired" });
         await tx.bandUser.update({ where: { id: backup.member.id }, data: { isDeleted: false } });
-        for (const state of [{ isDeleted: true }, { isDeleted: false, mergedIntoUserId: fixture.user.id }, { mergedIntoUserId: null, isSysAdmin: true }]) {
+        for (const state of [{ isDeleted: true }, { isDeleted: false, mergedIntoUserId: fixture.user.id }]) {
             await tx.user.update({ where: { id: backup.user.id }, data: state });
             expect(await context.edit(context.member.publicId, "deactivate")).toMatchObject({ status: "confirmationRequired" });
         }
         const sysadminRole = await tx.globalRole.findFirstOrThrow({ where: { isSysAdminRole: true } });
-        await tx.user.update({ where: { id: backup.user.id }, data: { isSysAdmin: false, globalRoleId: sysadminRole.id } });
+        await tx.user.update({ where: { id: backup.user.id }, data: { mergedIntoUserId: null, globalRoleId: sysadminRole.id } });
         expect(await context.edit(context.member.publicId, "deactivate")).toMatchObject({ status: "confirmationRequired" });
         await tx.user.update({ where: { id: backup.user.id }, data: { globalRoleId: null } });
         expect(await context.edit(context.member.publicId, "deactivate")).toMatchObject({ status: "saved" });

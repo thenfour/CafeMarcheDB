@@ -69,6 +69,11 @@ describe.skipIf(!testUrl)("restored development seeding on MySQL", () => {
         expect(await database.user.count()).toBe(config.userCount);
         expect(await database.song.count()).toBe(config.songCount);
         const shared = await database.user.findFirstOrThrow({ where: { email: "shared@demo.invalid" }, include: { bandUsersByUser: true, signInMethods: true } });
+        const accountRole = await database.globalRole.findFirstOrThrow({ where: { isRoleForNewUsers: true, isDeleted: false } });
+        expect(shared.globalRoleId).toBe(accountRole.id);
+        expect(shared.isSysAdmin).toBe(false);
+        expect(await database.user.count({ where: { globalRoleId: null } })).toBe(0);
+        expect(await database.bandUser.count({ where: { bandRoleId: null } })).toBe(0);
         expect(shared.bandUsersByUser).toHaveLength(2);
         expect(new Set(shared.bandUsersByUser.map(member => member.bandRoleId)).size).toBe(2);
         expect(shared.signInMethods.some(method => method.type === "email" && method.identifier === shared.email)).toBe(true);
@@ -80,6 +85,8 @@ describe.skipIf(!testUrl)("restored development seeding on MySQL", () => {
         }
         for (const email of ["member1-1@demo.invalid", "member2-1@demo.invalid"]) {
             const member = await database.user.findFirstOrThrow({ where: { email }, include: { bandUsersByUser: true } });
+            expect(member.globalRoleId).toBe(accountRole.id);
+            expect(member.isSysAdmin).toBe(false);
             expect(member.bandUsersByUser).toHaveLength(1);
         }
     });

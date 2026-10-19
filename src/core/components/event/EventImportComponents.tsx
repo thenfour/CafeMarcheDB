@@ -1,7 +1,7 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { useQuery } from "@blitzjs/rpc";
 import React from "react";
-import { Permission } from "shared/permissions";
 import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -69,10 +69,10 @@ export function EventImportForm({ preview, onSave }: { preview: TGetImportEventD
     });
     const eventValidation = eventSpec.args.table.ValidateAndComputeDiff(event, event, "new");
     const segmentValidation = segmentSpec.args.table.ValidateAndComputeDiff(segment, segment, "new");
-    const canSave = dashboard.isAuthorized(Permission.manage_events)
+    const canSave = dashboard.isAuthorized(BandPermission.manage_events)
         && ["revision", "frontpageVisible"].every(columnName => db3.xEvent.authorizeColumnForInsert({
             auth: dashboard.authorization, model: null, columnName,
-        })) && (preview.responses.length === 0 || dashboard.isAuthorized(Permission.change_others_event_responses));
+        })) && (preview.responses.length === 0 || dashboard.isAuthorized(BandPermission.change_others_event_responses));
 
     async function save() {
         if (saving) {

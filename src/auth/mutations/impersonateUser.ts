@@ -4,7 +4,7 @@ import { cmauthorize } from "@/src/auth/server/cmResolver"
 import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { Permission } from "shared/permissions"
-import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads"
+import { NullableHydrateUserWithRoles, UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads"
 import * as z from "zod"
 import { UserPublicIdSchema } from "../schemas"
 import { createPublicDataFromDatabase } from "../server/effectivePermissions"
@@ -28,10 +28,10 @@ export default resolver.pipe(
         freshAuth.requirePermission(Permission.impersonate_user)
         const actor = freshAuth.requireUser()
 
-        const user = await db.user.findFirst({
+        const user = NullableHydrateUserWithRoles(await db.user.findFirst({
             ...UserWithRolesArgs,
             where: { publicId: userId },
-        })
+        }));
         if (!user) throw new Error("Could not find user id " + userId)
 
         requireCanManageUser({

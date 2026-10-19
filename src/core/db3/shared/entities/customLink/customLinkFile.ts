@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import type { FilePublicId } from "shared/publicId";
@@ -34,7 +35,7 @@ export const xCustomLinkFile = db3.defineTable({
     tableName: "File",
     tableUniqueName: "CustomLinkFile",
     deletePolicy: "disabled",
-    bandScope: { member: "bandId", managePermission: Permission.manage_files },
+    bandScope: { member: "bandId", managePermission: BandPermission.manage_files },
     readConsistency: "snapshot",
     queryParameters: {},
     getParameterizedWhereClause: (_params: {}, auth): Prisma.FileWhereInput[] => [
@@ -50,8 +51,8 @@ export const xCustomLinkFile = db3.defineTable({
     getSelectionArgs: () => customLinkFileArgs,
     naturalOrderBy: [{ fileLeafName: "asc" }],
     tableAuthMap: {
-        View: Permission.view_files,
-        ViewOwn: Permission.view_files,
+        View: BandPermission.view_files,
+        ViewOwn: BandPermission.view_files,
         Insert: Permission.never_grant,
         Edit: Permission.never_grant,
         EditOwn: Permission.never_grant,

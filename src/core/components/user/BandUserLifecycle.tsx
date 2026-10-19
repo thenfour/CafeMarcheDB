@@ -1,3 +1,5 @@
+import { scopedAuthorizationSatisfiesRequirement } from "src/auth/shared/permissionRequirement";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import React from "react";
 import { Alert, DialogActions, DialogContent, DialogTitle, Stack, Typography } from "@mui/material";
 import { CMButton } from "../CMCoreComponents2";
@@ -27,7 +29,7 @@ export function BandUserLifecycleControl({ member, refetch }: {
     const [error, setError] = React.useState<string | null>(null);
     const pending = React.useRef(false);
     const action = member.isDeleted ? "reactivate" : "deactivate";
-    const canEdit = presentation.data?.authorization.effectivePermissionNames.includes(member.isDeleted ? Permission.recover_users : Permission.deactivate_users) ?? false;
+    const canEdit = scopedAuthorizationSatisfiesRequirement(presentation.data?.authorization, member.isDeleted ? BandPermission.recover_users : BandPermission.deactivate_users) ?? false;
     const actionLabel = locale.getPlainString(member.isDeleted ? "membership.lifecycle.reactivate" : "membership.lifecycle.deactivate");
     const close = () => {
         if (!pending.current) {

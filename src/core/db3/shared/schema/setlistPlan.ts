@@ -1,29 +1,30 @@
+import { BandPermission, kGlobalVisibilityPermissionPolicy } from "src/auth/shared/bandPermissionPolicy";
 
+import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import type { SetlistPlanGroupPublicId, SetlistPlanPublicId } from "shared/publicId";
+import { GenericIntegerField } from "../columnTypes/genericInteger";
+import { MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
+import { serverOwnedField } from "../columnTypes/inherited";
 import { foreignRef, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
-import { MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
-import { gGeneralPaletteList } from "@/src/core/components/color/palette";
-import { GenericIntegerField } from "../columnTypes/genericInteger";
-import { serverOwnedField } from "../columnTypes/inherited";
 
 const xAuthMap = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.setlist_planner_access,
-    PostQuery: Permission.setlist_planner_access,
-    PreMutateAsOwner: Permission.setlist_planner_access,
-    PreMutate: Permission.setlist_planner_access,
-    PreInsert: Permission.setlist_planner_access,
+    PostQueryAsOwner: BandPermission.setlist_planner_access,
+    PostQuery: BandPermission.setlist_planner_access,
+    PreMutateAsOwner: BandPermission.setlist_planner_access,
+    PreMutate: BandPermission.setlist_planner_access,
+    PreInsert: BandPermission.setlist_planner_access,
 });
 
 const xTableAuthMap: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.setlist_planner_access,
-    View: Permission.setlist_planner_access,
-    EditOwn: Permission.setlist_planner_access,
-    Edit: Permission.setlist_planner_access,
-    Insert: Permission.setlist_planner_access,
+    ViewOwn: BandPermission.setlist_planner_access,
+    View: BandPermission.setlist_planner_access,
+    EditOwn: BandPermission.setlist_planner_access,
+    Edit: BandPermission.setlist_planner_access,
+    Insert: BandPermission.setlist_planner_access,
 } as const;
 
 
@@ -67,7 +68,7 @@ export const xSetlistPlanGroup = db3.defineTable({
     tableName: "SetlistPlanGroup",
     bandScope: {
         member: "bandId",
-        managePermission: Permission.setlist_planner_access
+        managePermission: BandPermission.setlist_planner_access
     },
     deletePolicy: "hard",
     naturalOrderBy: SetlistPlanGroupNaturalOrderBy,
@@ -121,6 +122,7 @@ export const SetlistPlanNaturalOrderBy: Prisma.SetlistPlanOrderByWithRelationInp
 
 ////////////////////////////////////////////////////////////////
 export const xSetlistPlan = db3.defineTable({
+    globalVisibilityPermission: kGlobalVisibilityPermissionPolicy,
     prismaModel: db3.prismaModel<Prisma.SetlistPlanDelegate>(),
     getIdentity: (plan: { publicId: SetlistPlanPublicId }) => plan.publicId,
     getSelectionArgs: (): Prisma.SetlistPlanDefaultArgs => {
@@ -130,11 +132,11 @@ export const xSetlistPlan = db3.defineTable({
     readConsistency: "snapshot",
     bandScope: {
         member: "bandId",
-        managePermission: Permission.setlist_planner_access,
+        managePermission: BandPermission.setlist_planner_access,
     },
     deletePolicy: "softOnly",
-    viewDeletedPermission: Permission.setlist_planner_access,
-    restorePermission: Permission.setlist_planner_access,
+    viewDeletedPermission: BandPermission.setlist_planner_access,
+    restorePermission: BandPermission.setlist_planner_access,
     naturalOrderBy: SetlistPlanNaturalOrderBy,
     getRowInfo: (row: SetlistPlanPayload) => ({
         pk: row.publicId,

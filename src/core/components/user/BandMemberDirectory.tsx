@@ -1,5 +1,6 @@
+import { permissionNamesSatisfyRequirement } from "src/auth/shared/permissionRequirement";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Alert } from "@mui/material";
-import { Permission } from "shared/permissions";
 import type { SortDirection } from "shared/rootroot";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType as Behavior } from "src/core/db3/shared/apiTypes";
@@ -66,7 +67,7 @@ function LoadedMemberDirectory() {
     const context = useDB3QueryContext();
     const router = useCmdbRouter();
     const locale = useLocale();
-    const canManage = dashboard.isAuthorized(Permission.manage_users);
+    const canManage = dashboard.isAuthorized(BandPermission.manage_users);
     const allPreset = { ...all, label: locale.getPlainString("membership.directory.all"), helpText: locale.getPlainString("membership.directory.allDescription") };
     const newPreset = { ...newMembers, label: locale.getPlainString("membership.directory.new"), helpText: locale.getPlainString("membership.directory.newDescription") };
     const presets = canManage ? [allPreset, newPreset] : [allPreset];
@@ -152,7 +153,7 @@ function LoadedMemberDirectory() {
         { key: "instruments", label: "Instruments", type: "tags", column: "bandUserInstruments" },
     ];
     return <div className="eventsMainContent searchPage">
-        {dashboard.isAuthorized(Permission.recover_users) && <CMLink href={portalHref("/backstage/recoverMembers", context, router.hosting)}>{locale.getPlainString("membership.lifecycle.recoveryTitle")}</CMLink>}
+        {dashboard.isAuthorized(BandPermission.recover_users) && <CMLink href={portalHref("/backstage/recoverMembers", context, router.hosting)}>{locale.getPlainString("membership.lifecycle.recoveryTitle")}</CMLink>}
         <SearchPageContent config={config} filterHooks={{ tags: tagFilter, role: roleFilter, instruments: instrumentFilter }}
             filterGroupDefinitions={groups} searchPageHook={searchPage} />
     </div>;
@@ -165,7 +166,7 @@ export function BandMemberDirectory() {
         return <Alert severity="info">{locale.getPlainString("membership.directory.noBand")}</Alert>;
     }
     const permissions = presentation.data?.authorization.effectivePermissionNames ?? [];
-    if (!permissions.includes(Permission.search_users) || !permissions.includes(Permission.view_users_basic_info)) {
+    if (!permissionNamesSatisfyRequirement(permissions, BandPermission.search_users, Boolean(presentation.bandPublicId)) || !permissionNamesSatisfyRequirement(permissions, BandPermission.view_users_basic_info, Boolean(presentation.bandPublicId))) {
         return <Alert severity="info">{locale.getPlainString("membership.directory.noAccess")}</Alert>;
     }
     return <LoadedMemberDirectory key={`${presentation.bandPublicId}/${presentation.data?.input.clientRequestId}`} />;

@@ -4,13 +4,27 @@ import { Permission } from "shared/permissions";
 import { bandUserRoleCommand, bandUserRolesView } from "src/core/db3/shared/entities/user/bandUserRoles";
 import { bandRoleListView, xBandRole } from "src/core/db3/shared/entities/user/bandRoleViews";
 import { getDB3CommandHandler } from "src/core/db3/server/db3CommandRegistry";
+import { canDelegateBandRoleGrants } from "src/auth/shared/bandRolePolicy";
+import { CMClientAuthorization } from "src/auth/shared/cmAuthorization";
+import { PermissionSet } from "src/auth/shared/PermissionSet";
 
 const membershipId = parsePublicId<"BandUser">("Membership000001");
 const roleId = parsePublicId<"BandRole">("BandRole00000001");
 const edit = { membershipId, roleId, acknowledgeContinuityRisk: false };
 
 describe("membership role transport", () => {
-    it("registers strict membership assignment and explicit reset to new-member defaults", () => {
+    it("confines global band delegation to known band grants in an explicit band context", () => {
+        const grants = new PermissionSet([Permission.global_band_admin]);
+        const unscoped = new CMClientAuthorization(null, grants);
+        const scoped = new CMClientAuthorization(null, grants, null, parsePublicId<"Band">("Band000000000001"));
+        expect(canDelegateBandRoleGrants(unscoped, [Permission.manage_events])).toBe(false);
+        expect(canDelegateBandRoleGrants(scoped, [Permission.manage_events])).toBe(true);
+        expect(canDelegateBandRoleGrants(scoped, [Permission.manage_global_users])).toBe(false);
+        expect(canDelegateBandRoleGrants(scoped, ["unknown_band_permission"])).toBe(false);
+        expect(scoped.hasPermission(Permission.manage_events)).toBe(false);
+        expect(grants.hasAllDelegable(new PermissionSet([Permission.manage_events]))).toBe(false);
+    });
+    it("registers strict membership assignment and explicit reset to Band Public", () => {
         expect(getDB3CommandHandler(bandUserRoleCommand.commandID).command).toBe(bandUserRoleCommand);
         expect(bandUserRoleCommand.serialize(edit)).toEqual(edit);
         expect(bandUserRoleCommand.serialize({ ...edit, roleId: null })).toEqual({ ...edit, roleId: null });

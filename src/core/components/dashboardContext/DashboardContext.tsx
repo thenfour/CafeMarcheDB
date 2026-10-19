@@ -10,7 +10,10 @@ import { ClientSession, useSession } from '@blitzjs/auth';
 import { useMutation, useQuery } from '@blitzjs/rpc';
 import React from 'react';
 import { isAttendanceGoing } from 'shared/eventAttendance';
-import { Permission } from 'shared/permissions';
+import { asPermission, isPermission, Permission } from 'shared/permissions';
+import type { PermissionRequirement } from 'src/auth/shared/permissionRequirement';
+import { kGlobalVisibilityPermissionPolicy } from 'src/auth/shared/bandPermissionPolicy';
+import { isSelectableBandVisibilityPermission } from 'src/core/db3/shared/entities/user/visibilityPermissionPolicy';
 import type { BandPublicId, EventAttendancePublicId } from "shared/publicId";
 import { TableAccessor } from 'shared/rootroot';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
@@ -59,20 +62,27 @@ export class DashboardContextData extends DashboardContextDataBase {
         this.metronomeSilencers = [];
     }
 
-    isAuthorized(p: Permission | string) {
-        return this.effectivePermissions.includesName(p);
+    // isAuthorized(p: PermissionRequirement | string) {
+    //     if (typeof p === "string") {
+    //         return isPermission(p) && this.authorization.hasPermission(p);
+    //     }
+    //     return this.authorization.hasPermission(p);
+    // }
+
+    isAuthorized(p: PermissionRequirement) {
+        return this.authorization.hasPermission(p);
     }
 
     isAuthorizedForVisibility(visibilityPermissionId: PermissionPublicId | null, ownerUserId: number | null) {
         if (visibilityPermissionId == null) {
-            return ownerUserId === null || ownerUserId === this.currentUser?.id;
+            return ownerUserId !== null && ownerUserId === this.currentUser?.id;
         }
         const pobj = this.permission.getById(visibilityPermissionId);
         if (!pobj) {
             console.error(`Unknown visibility permission ID: ${visibilityPermissionId}`);
             return false; // unknown permission??
         }
-        return this.isAuthorized(pobj.name);
+        return this.isAuthorized(asPermission(pobj.name)) || this.isAuthorized(kGlobalVisibilityPermissionPolicy);
     }
 
     getPermission = (q: Permission) => {
@@ -166,7 +176,7 @@ export class DashboardContextData extends DashboardContextDataBase {
     }
 
     getVisibilityPermissions(): db3.ClientOf<typeof db3.permissionDashboardView>[] {
-        return this.permission.filter(p => p.isVisibility);
+        return this.permission.filter(permission => isSelectableBandVisibilityPermission(permission, this.authorization));
     }
 
     recordAction(args: { feature: ActivityFeature, properties?: any }): Promise<void> {
@@ -245,7 +255,8 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.localePreferences = localization.preferences;
     valueRef.current.formattingLocale = localization.formattingLocale;
 
-    valueRef.current.authorization = new CMClientAuthorization(currentUser, valueRef.current.effectivePermissions);
+    valueRef.current.authorization = new CMClientAuthorization(currentUser, valueRef.current.effectivePermissions,
+        null, authorizationContext.bandPublicId);
 
     valueRef.current.userTag = new TableAccessor(dashboardData.userTag, tag => tag.publicId);
     valueRef.current.wikiPageTag = new TableAccessor(

@@ -289,8 +289,29 @@ describe.skipIf(!url)("shared-account merge on native MySQL", () => {
         expect(report.userInfo.publicId).toBe(pair.mainUserId);
         await expect(readUserMassAnalysis(db, authority.authorization, pair.mainUserId, locale)).rejects.toThrow("sysadmin");
         await db.user.update({ where: { id: 20 }, data: { isSysAdmin: true } });
+        expect(await searchMergeCandidates(db, authority, { query: "", excludeUserId: pair.mainUserId }))
+            .toMatchObject([{ publicId: pair.retiringUserId, isSysAdmin: false }]);
+        const sysadminRole = await db.globalRole.findFirstOrThrow({ where: { isSysAdminRole: true } });
+        await db.user.update({ where: { id: 20 }, data: { globalRoleId: sysadminRole.id, isSysAdmin: false } });
         expect(await searchMergeCandidates(db, authority, { query: "", excludeUserId: pair.mainUserId })).toEqual([]);
         await expect(preview()).rejects.toThrow("authorized");
+    });
+    it("requires explicit global band authority to merge an account with membership privileges", async () => {
+        const permissions = await db.permission.findMany({ where: { name: { in: [Permission.merge_users, Permission.manage_global_users] } } });
+        const role = await db.globalRole.create({ data: { publicId: generatePublicId(), name: { create: { publicId: generatePublicId() } },
+            permissions: { create: permissions.map(permission => ({ publicId: generatePublicId(), permissionId: permission.id })) } } });
+        await db.user.update({ where: { id: 1 }, data: { globalRoleId: role.id } });
+        const eventPermission = await db.permission.findUniqueOrThrow({ where: { name: Permission.manage_events } });
+        const bandRole = await db.bandRole.create({ data: { publicId: generatePublicId(), name: { create: { publicId: generatePublicId() } },
+            bandRolePermissions: { create: { publicId: generatePublicId(), permissionId: eventPermission.id } } } });
+        await db.bandUser.updateMany({ where: { userId: 20 }, data: { bandRoleId: bandRole.id } });
+        expect(await searchMergeCandidates(db, authority, { query: "retiring", excludeUserId: pair.mainUserId })).toEqual([]);
+        await expect(preview()).rejects.toThrow("authorized");
+        const globalAuthority = await db.permission.findUniqueOrThrow({ where: { name: Permission.global_band_admin } });
+        await db.globalRolePermission.create({ data: { publicId: generatePublicId(), globalRoleId: role.id, permissionId: globalAuthority.id } });
+        expect((await searchMergeCandidates(db, authority, { query: "retiring", excludeUserId: pair.mainUserId })).map(choice => choice.publicId)).toEqual([pair.retiringUserId]);
+        expect((await authority.authorization.refresh(db)).hasPermission(Permission.manage_events)).toBe(false);
+        await expect(preview()).resolves.toMatchObject({ canCommit: true });
     });
     it.each(["anonymous", "deleted", "merged", "impersonated", "bandOnly", "accountGrantRevoked"])("rejects %s actors before returning participant information", async reason => {
         if (reason === "anonymous") { authority.authorization = await loadAuthorizationForUser(null, db, null); }

@@ -21,7 +21,7 @@ vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({
 vi.mock("src/core/components/CMCoreComponents", () => ({ InstrumentChip: ({ value }: { value: InstrumentPublicId }) => <span>{instruments.find(row => row.publicId === value)?.name}</span> }));
 vi.mock("src/core/components/SnackbarContext", () => ({ useSnackbar: () => ({ showMessage }) }));
 vi.mock("src/locale/components/PresentationProvider", () => ({ usePresentation: () => ({ bandPublicId: bandId, data: { authorization: {
-    bandUserPublicId: membershipId, effectivePermissionNames: permissions,
+    bandPublicId: bandId, bandUserPublicId: membershipId, effectivePermissionNames: permissions,
 }, input: { clientRequestId: "snapshot" } } }) }));
 vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({ getPlainString: (key: LocalizedPlainStringKey) => kStaticLocalizedStringRegistry[key].defaultValue }) }));
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
-import { createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures";
+import { authorizationPermissionId, createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { authorizationBandId, resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { invokeResolver } from "./support/resolverHarness";
@@ -24,8 +24,9 @@ import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
 beforeEach(() => {
     const member = createAuthorizationTestUser("normal", { id: 10 });
     resetAuthorizationDatabase({ user: [{ ...member, mergedIntoUserId: null, globalRoleId: 10_000 }],
-        globalRole: [{ id: 10_000, isDeleted: false }], globalRolePermission: [{ id: 1, globalRoleId: 10_000, permissionId: 1 }],
-        permission: [{ id: 1, name: Permission.login }], change: [{ id: 1, table: "User", recordId: 10 }],
+        globalRole: [{ id: 10_000, isDeleted: false }, { id: 10_001, isPublicRole: true, isDeleted: false }],
+        globalRolePermission: [{ id: 1, globalRoleId: 10_000, permissionId: authorizationPermissionId(Permission.login) }],
+        change: [{ id: 1, table: "User", recordId: 10 }],
     });
     vi.restoreAllMocks();
 });

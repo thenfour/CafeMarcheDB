@@ -1,5 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "db";
-import { Permission } from "shared/permissions";
 import type { WikiPageTagPublicId } from "shared/publicId";
 import { bandCatalogAuth, bandCatalogFields, bandCatalogCreateFromString, catalogColor, catalogDisplayModel } from "../../columnTypes/bandCatalog";
 import { MakeColorField } from "../../columnTypes/color";
@@ -10,7 +10,7 @@ import { defineCrudView } from "../../core/db3CrudView";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { defineTable, prismaModel } from "../../db3core";
 
-const { authMap, sourceAuthMap, tableAuthMap } = bandCatalogAuth(Permission.admin_wiki_pages);
+const { authMap, sourceAuthMap, tableAuthMap } = bandCatalogAuth(BandPermission.admin_wiki_pages);
 const colorField = inheritedField(MakeColorField({ authMap }));
 
 export const bandWikiPageTagSelection = Prisma.validator<Prisma.BandWikiPageTagDefaultArgs>()({
@@ -38,7 +38,7 @@ export const xBandWikiPageTag = defineTable({
         inheritedFrom: "globalWikiPageTag",
         inheritedSourceMember: "globalWikiPageTagId",
         hiddenMember: "isHidden",
-        managePermission: Permission.admin_wiki_pages,
+        managePermission: BandPermission.admin_wiki_pages,
     },
     naturalOrderBy: { sortOrder: "asc", name: "asc" },
     // Ownership is required for row authorization and stays outside public transport.

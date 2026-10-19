@@ -1,6 +1,6 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "@prisma/client";
 import { AuthorizationError } from "blitz";
-import { Permission } from "shared/permissions";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { xFrontpageGalleryItem } from "../db3";
 import { MakeDefaultImageEditParams } from "../shared/fileTypes";
@@ -13,8 +13,8 @@ import { createImageFork } from "./imageFork";
 
 async function requireGalleryImageEdit(context: DB3ReadContext, args: GalleryImageInput) {
     const auth = context.authorization.requireUser();
-    auth.requirePermission(Permission.edit_public_homepage);
-    auth.requirePermission(Permission.upload_files);
+    auth.requirePermission(BandPermission.edit_public_homepage);
+    auth.requirePermission(BandPermission.upload_files);
     if (auth.requireBand().publicId !== args.bandPublicId) {
         throw new AuthorizationError("Gallery image editing requires the selected band.");
     }

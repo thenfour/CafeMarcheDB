@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { CMServerAuthorization } from "@/src/auth/server/serverAuthorization";
 import * as mime from "mime";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -6,7 +7,6 @@ import send from "send";
 import type { FilePublicId } from "shared/publicId";
 import * as db3 from "src/core/db3/db3";
 import * as mutationCore from "src/core/db3/server/db3mutationCore";
-import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { z } from "zod";
 import db from "db";
@@ -29,7 +29,7 @@ export async function GetAuthorizedCustomLinkFile(
     database: DB3ReadDatabase = db,
 ): Promise<DownloadableFile | null> {
     return executeDB3Read(database, auth, async context => {
-        if (!context.authorization.hasPermission(Permission.view_files)) {
+        if (!context.authorization.hasPermission(BandPermission.view_files)) {
             return null;
         }
         const result = await queryTable({

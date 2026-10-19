@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import type { SessionContext } from "@blitzjs/auth";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
@@ -12,14 +13,14 @@ const session = {} as SessionContext;
 const band = parsePublicId<"Band">("RoutePolicyBand1");
 
 const splitRoutes = [
-    ["wiki/[...slug]", Permission.view_wiki_pages, Permission.login],
-    ["wikiPageHistory", Permission.view_wiki_page_revisions, Permission.login],
-    ["featureReports", Permission.view_feature_reports, Permission.login],
-    ["menuLinks", Permission.customize_menu, Permission.login],
-    ["customLinks", Permission.view_custom_links, Permission.login],
-    ["editEventTags", Permission.admin_events, Permission.manage_global_catalogs],
-    ["editFileTags", Permission.admin_files, Permission.manage_global_catalogs],
-    ["editWikiPageTags", Permission.admin_wiki_pages, Permission.login],
+    ["wiki/[...slug]", BandPermission.view_wiki_pages, Permission.login],
+    ["wikiPageHistory", BandPermission.view_wiki_page_revisions, Permission.login],
+    ["featureReports", BandPermission.view_feature_reports, Permission.login],
+    ["menuLinks", BandPermission.customize_menu, Permission.login],
+    ["customLinks", BandPermission.view_custom_links, Permission.login],
+    ["editEventTags", BandPermission.admin_events, Permission.manage_global_catalogs],
+    ["editFileTags", BandPermission.admin_files, Permission.manage_global_catalogs],
+    ["editWikiPageTags", BandPermission.admin_wiki_pages, Permission.login],
     ["settings", Permission.login, Permission.login],
     ["roles", Permission.sysadmin, Permission.sysadmin],
     ["permissions", Permission.sysadmin, Permission.sysadmin],

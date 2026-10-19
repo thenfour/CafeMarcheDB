@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { Permission } from "shared/permissions";
@@ -50,12 +51,12 @@ export const xBandUserInstrument = defineTable({
             relation: "bandUser",
             ownerUserMember: "userId",
         },
-        managePermission: Permission.manage_users
+        managePermission: BandPermission.manage_users
     },
     deletePolicy: "disabled",
     readConsistency: "snapshot",
     tableAuthMap: {
-        View: Permission.view_users_basic_info,
+        View: BandPermission.view_users_basic_info,
         ViewOwn: Permission.login,
         Edit: Permission.never_grant,
         EditOwn: Permission.never_grant,

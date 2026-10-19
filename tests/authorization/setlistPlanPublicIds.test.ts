@@ -1,4 +1,4 @@
-import { authorizationBandId } from "./support/authorizationSeed";
+import { authorizationBandId, resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("db", async () => {
@@ -19,7 +19,7 @@ import { CreateNewSetlistPlan, ZSetlistPlan } from "@db3/shared/setlistPlanTypes
 import { makeSetlistPlanSaveArgs, ZDeleteSetlistPlanArgs } from "@db3/shared/setlistPlanApi";
 import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/featureReports/activityTracking";
 
-import { gPermissionRegistry, Permission } from "shared/permissions";
+import { gPermissionRegistry, getPermissionDefinition, Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
@@ -46,16 +46,15 @@ const plan = (id: number, groupNaturalId: number | null, sortOrder: number, isDe
 describe("Setlist planning public identities", () => {
     beforeEach(() => {
         ctx = createAuthorizationPersona("normal", { id: actor.id, permissions }).ctx;
-        authorizationTestDb.reset({
-            user: [{ ...actor, isDeleted: false, mergedIntoUserId: null, globalRoleId: null, isSysAdmin: false }],
+        resetAuthorizationDatabase({
+            user: [actor],
             setlistPlanGroup: [group(20, 0), group(21, 1)],
             band: [{ id: 1, publicId: bandPublicId, isDeleted: false }],
             bandUser: [{ id: 1, publicId: "BandUser00000001", userId: actor.id, bandId: 1, bandRoleId: 20, isDeleted: false }],
             bandRole: [{ id: 10, isPublicRole: true, isDeleted: false }, { id: 20, isDeleted: false }],
             permission: gPermissionRegistry.map((definition, index) => ({ id: index + 1, publicId: `Permission${String(index + 1).padStart(6, "0")}`, name: definition.key, isDeleted: false })),
-            bandRolePermission: [Permission.public, Permission.setlist_planner_access].map((permission, index) => ({
-                id: index + 1, bandRoleId: index === 0 ? 10 : 20,
-                permissionId: gPermissionRegistry.findIndex(definition => definition.key === permission) + 1,
+            bandRolePermission: actor.permissions.filter(name => getPermissionDefinition(name).scope === "band").map((name, index) => ({
+                id: index + 1, bandRoleId: 20, permissionId: gPermissionRegistry.findIndex(definition => definition.key === name) + 1,
             })),
             locale: [{ id: 1, publicId: "Locale0000000001", ietfTag: "en-US", isDeleted: false, sortOrder: 0 }],
             bandLocale: [{ id: 1, bandId: 1, localeId: 1, sortOrder: 0 }],

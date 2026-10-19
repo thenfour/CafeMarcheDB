@@ -143,6 +143,6 @@ describe("membership profile data visibility", () => {
             .filter(([, assignedPermission]) => assignedPermission === permission)
             .map(([roleName]) => roleName).sort();
         expect(rolesWith(Permission.search_users)).toEqual(rolesWith(Permission.view_users_basic_info));
-        expect(rolesWith(Permission.view_users_basic_info)).toEqual(["Admin", "Band Admin", "Editors", "Moderators", "Normal Users"]);
+        expect(rolesWith(Permission.view_users_basic_info)).toEqual(["Band Admin", "Editors", "Moderators", "Normal Users"]);
     });
 });

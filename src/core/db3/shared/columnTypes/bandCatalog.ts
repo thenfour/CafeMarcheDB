@@ -1,3 +1,4 @@
+import type { PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import { Permission } from "shared/permissions";
 import type { ColorPaletteList } from "src/core/components/color/palette";
 import type { DB3AuthSpec, DB3AuthTablePermissionMap, DB3CreateFromStringContext } from "../db3core";
@@ -51,7 +52,7 @@ export function bandCatalogCreateFromString(input: string, context?: DB3CreateFr
     return { name: { kind: "set", stringPublicId: null, localeTag: context.localeTag, value: input } };
 }
 
-export function bandCatalogAuth(managePermission: Permission) {
+export function bandCatalogAuth(managePermission: PermissionRequirement) {
     const authMap = defineAuthMap({
         PostQuery: DB3FieldReadAuth.inheritRow, PostQueryAsOwner: DB3FieldReadAuth.inheritRow,
         PreInsert: managePermission, PreMutate: managePermission, PreMutateAsOwner: managePermission

@@ -90,7 +90,9 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
     // These existing operations alter a shared account, not its membership.
     // Band offboarding and band-role assignment use separate BandUser writers.
     if (["merge", "assignRole", "deactivate", "reactivate"].includes(action)
-        && !actor.auth.hasPermission(Permission.manage_global_users)) return false;
+        && !actor.auth.hasPermission(Permission.manage_global_users)) {
+        return false;
+    }
 
     if (target.principal.mergedIntoUserId != null) {
         return false;
@@ -99,7 +101,6 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
     if (action === "merge") {
         return actor.auth.hasPermission(Permission.merge_users)
             && actor.principal?.id !== target.principal.id
-            && (!target.principal.isSysAdmin || actorIsSysadmin)
             && (!target.principal.isDeleted || actor.auth.hasPermission(Permission.manage_global_users))
             && (actorIsSysadmin || isRoleWithinDelegationEnvelope(actor, target.rolePermissions));
     }
@@ -143,12 +144,15 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
     }
 
     if (action === "assignRole") {
-        if (target.principal.isSysAdmin) {
+        if (!actor.auth.hasPermission(Permission.manage_global_users)) {
             return false;
         }
-        if (!actor.auth.hasPermission(Permission.manage_global_users)) return false;
-        if (!isRoleWithinDelegationEnvelope(actor, target.rolePermissions)) return false;
-        if (desiredRole !== undefined && !isRoleWithinDelegationEnvelope(actor, desiredRole)) return false;
+        if (!isRoleWithinDelegationEnvelope(actor, target.rolePermissions)) {
+            return false;
+        }
+        if (desiredRole !== undefined && !isRoleWithinDelegationEnvelope(actor, desiredRole)) {
+            return false;
+        }
         return true;
     }
 
@@ -181,20 +185,25 @@ export const getContinuityWarningsForUserResult = (
     resultingRole: PermissionSet,
     activeNonSysadminUsers: readonly UserManagementSubject[],
 ): Permission[] => {
-    if (target.principal.isDeleted === true || target.principal.isSysAdmin || target.rolePermissions.includesName(Permission.sysadmin)) {
+    if (target.principal.isDeleted === true || target.rolePermissions.includesName(Permission.sysadmin)) {
         return [];
     }
     const principalId = target.principal.id;
 
     return gPermissionOrdered.filter(permission => {
-        if (!gContinuitySensitivePermissions.has(permission)) return false;
-        if (!target.rolePermissions.includesName(permission)) return false;
-        if (resultingRole.includesName(permission)) return false;
+        if (!gContinuitySensitivePermissions.has(permission)) {
+            return false;
+        }
+        if (!target.rolePermissions.includesName(permission)) {
+            return false;
+        }
+        if (resultingRole.includesName(permission)) {
+            return false;
+        }
 
         return !activeNonSysadminUsers.some(user => (
             user.principal.id !== principalId
             && user.principal.isDeleted !== true
-            && !user.principal.isSysAdmin
             && !user.rolePermissions.includesName(Permission.sysadmin)
             && user.rolePermissions.includesName(permission)
         ));

@@ -18,7 +18,11 @@ const database = authorizationTestDb as unknown as Prisma.TransactionClient;
 const row = (bandId: number, value: string) => ({ id: bandId, bandId, name: "dateTime.bandTimeZone", value });
 
 describe("server band timezone configuration", () => {
-    beforeEach(() => authorizationTestDb.reset({ band: [{ id: 1, publicId: "Band000000000001", isDeleted: false }] }));
+    beforeEach(() => authorizationTestDb.reset({
+        band: [{ id: 1, publicId: "Band000000000001", isDeleted: false }],
+        globalRole: [{ id: 1, isPublicRole: true, isDeleted: false }],
+        bandRole: [{ id: 1, isPublicRole: true, isDeleted: false }],
+    }));
 
     it("uses Brussels without writing when the selected band has no setting", async () => {
         expect(await loadBandTimeZone(database, 1)).toBe("Europe/Brussels");

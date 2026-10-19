@@ -23,7 +23,7 @@ export type PublicDataType = {
   impersonatingFromUserId?: number | null,
   isSysAdmin: boolean,
   // shared grants only. scoped (e.g. band) grants are delivered in dashboard context where it's possible to have multiple tabs open with different contexts.
-  permissionNames: string[],
+  permissionNames: Permission[],
 
   showAdminControls: boolean; // show things like editing chrome content (SettingMarkdown etc)
   GOOGLE_ANALYTICS_ID_BACKSTAGE: string | undefined;
@@ -33,7 +33,7 @@ export type PublicDataType = {
 // Blitz still invokes this for resolvers using resolver.authorize.
 interface CMDBResolverAuthorizeArgs {
   ctx: Ctx,
-  args: [permission: string],
+  args: [permission: Permission],
 };
 
 export function CMDBResolverAuthorize(args: CMDBResolverAuthorizeArgs) {
@@ -44,7 +44,6 @@ export function CMDBResolverAuthorize(args: CMDBResolverAuthorizeArgs) {
   if (permission === Permission.never_grant) return false;
   const scope = getPermissionDefinition(permission).scope;
   if (scope === "band") return false;
-  if (scope === "account" && !args.ctx.session.userId) return false;
   return args.ctx.session.$publicData.permissionNames?.includes(permission) ?? false;
 }
 
@@ -59,7 +58,7 @@ export interface CreatePublicDataArgs {
   user?: UserWithRolesPayload | null; //Prisma.UserGetPayload<{ include: { role: { include: { permissions: { include: { permission: true } } } } } }>; // if no user, public profile.
   impersonatingFromUserId?: number;
   showAdminControls?: boolean; // client-side option
-  permissions: string[];
+  permissions: Permission[];
 }
 
 export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
@@ -67,7 +66,7 @@ export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
     // anonymous/public
     return {
       userId: 0, // numeric & falsy
-      isSysAdmin: false,
+      isSysAdmin: args.permissions.includes(Permission.sysadmin),
       permissionNames: [...new Set(args.permissions)],
       impersonatingFromUserId: args.impersonatingFromUserId,
       showAdminControls: false,
@@ -77,7 +76,7 @@ export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
   }
   return {
     userId: args.user.id,
-    isSysAdmin: args.user.isSysAdmin,
+    isSysAdmin: args.permissions.includes(Permission.sysadmin),
     permissionNames: [...new Set(args.permissions)],
     impersonatingFromUserId: args.impersonatingFromUserId,
     showAdminControls: args.showAdminControls || false,

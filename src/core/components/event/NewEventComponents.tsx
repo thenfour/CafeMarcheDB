@@ -1,8 +1,8 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { TAnyModel } from "@/shared/rootroot";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import React from "react";
-import { Permission } from "shared/permissions";
 import type { PermissionPublicId } from "shared/publicId";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -203,7 +203,7 @@ export const NewEventButton = (props: {}) => {
     }));
 
     if (!dashboardContext.authorizationContext?.bandPublicId
-        || !dashboardContext.isAuthorized(Permission.manage_events) || !canInitializeEvent) {
+        || !dashboardContext.isAuthorized(BandPermission.manage_events) || !canInitializeEvent) {
         return null;
     }
 

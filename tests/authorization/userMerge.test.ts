@@ -12,13 +12,14 @@ describe("shared-account merge authorization and transport", () => {
         await expect(publicMergeResponse(async () => { throw new Error("query with private comment and password hash"); })).rejects.toThrow("Unable to complete");
         await expect(publicMergeResponse(async () => { throw new UserMergeError("Refresh the report"); })).rejects.toThrow("Refresh the report");
     });
-    it("requires account management and merge authority over both targets, excludes self and protects flagged administrators", () => {
+    it("requires account management and merge authority over both targets and excludes self", () => {
         const user = createAuthorizationTestUser("normal", { id: 2, permissions: [Permission.merge_users, Permission.manage_global_users] });
         const actor = asUserManagementActor(user);
         const target = createAuthorizationTestUser("normal", { id: 20, permissions: [] });
         expect(canManageUser({ actor, target: asUserManagementTarget(target), action: "merge" })).toBe(true);
         expect(canManageUser({ actor, target: asUserManagementTarget(user), action: "merge" })).toBe(false);
-        expect(canManageUser({ actor, target: asUserManagementTarget({ ...target, isSysAdmin: true }), action: "merge" })).toBe(false);
+        expect(canManageUser({ actor, target: asUserManagementTarget({ ...target, isSysAdmin: true }), action: "merge" })).toBe(true);
+        expect(canManageUser({ actor, target: asUserManagementTarget(createAuthorizationTestUser("sysadmin", { id: 20 })), action: "merge" })).toBe(false);
         expect(canManageUser({ actor, target: asUserManagementTarget({ ...target, mergedIntoUserId: 10 }), action: "merge" })).toBe(false);
         expect(canManageUser({ actor: asUserManagementActor(createAuthorizationTestUser("bandAdmin", { id: 2 })), target: asUserManagementTarget(target), action: "merge" })).toBe(false);
     });

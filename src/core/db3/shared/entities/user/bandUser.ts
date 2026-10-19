@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { Permission } from "shared/permissions";
@@ -19,13 +20,13 @@ export function activeBandMembershipWhere(): Prisma.BandUserWhereInput {
 
 const instrumentAssignments = defineAuthMap({
     ...kReadOnlyAuthMap,
-    PreMutate: Permission.manage_users,
+    PreMutate: BandPermission.manage_users,
     PreMutateAsOwner: Permission.login,
 });
 const managerAssignments = defineAuthMap({
     ...kReadOnlyAuthMap,
-    PreMutate: Permission.manage_users,
-    PreMutateAsOwner: Permission.manage_users,
+    PreMutate: BandPermission.manage_users,
+    PreMutateAsOwner: BandPermission.manage_users,
 });
 
 /** Search-only fields borrow the shared person's field policy; no contact data is stored on membership. */
@@ -73,14 +74,14 @@ export const xBandUser = defineTable({
     tableUniqueName: "BandUser",
     prismaModel: prismaModel<Prisma.BandUserDelegate>(),
     getIdentity: (row: { publicId: BandUserPublicId }) => row.publicId,
-    bandScope: { member: "bandId", managePermission: Permission.manage_users },
+    bandScope: { member: "bandId", managePermission: BandPermission.manage_users },
     readConsistency: "snapshot", deletePolicy: "disabled",
-    viewDeletedPermission: Permission.recover_users,
+    viewDeletedPermission: BandPermission.recover_users,
     searchCapabilities: { includeDeleted: true },
     tableAuthMap: {
-        View: Permission.view_users_basic_info,
+        View: BandPermission.view_users_basic_info,
         ViewOwn: Permission.login,
-        Edit: Permission.manage_users,
+        Edit: BandPermission.manage_users,
         EditOwn: Permission.login,
         Insert: Permission.never_grant,
     },
@@ -103,7 +104,7 @@ export const xBandUser = defineTable({
     }, auth): Prisma.BandUserWhereInput[] => {
         const status = params.membershipStatus === undefined ? undefined : z.enum(["active", "inactive"]).parse(params.membershipStatus);
         if (status === "inactive") {
-            auth.requirePermission(Permission.recover_users);
+            auth.requirePermission(BandPermission.recover_users);
         }
         // Deleted-row authorization still requires includeDeleted; shared people must remain active.
         const clauses: Prisma.BandUserWhereInput[] = [{
@@ -161,7 +162,7 @@ export const xBandUser = defineTable({
         publicId: () => MakePublicIdField<BandUserPublicId>(),
         createdAt: () => MakeCreatedAtField({
             authMap: defineAuthMap({
-                ...kReadOnlyAuthMap, PostQuery: Permission.manage_users, PostQueryAsOwner: Permission.manage_users,
+                ...kReadOnlyAuthMap, PostQuery: BandPermission.manage_users, PostQueryAsOwner: BandPermission.manage_users,
             })
         }),
         isDeleted: columnName => new BoolField({

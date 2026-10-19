@@ -113,7 +113,7 @@ export async function seedBand(db: Prisma.TransactionClient, platform: SeedPlatf
     for (const [personIndex, person] of persons.entries()) {
         const roleId = personIndex === 1 || people.special.some(special => special.id === person.id) || (personIndex === 0 && index === 0)
             ? roles.get("Band Admin")! : personIndex === 0 || personIndex === 5 ? roles.get("Normal Users")!
-                : probability(0.05) ? null : choose([...roles.values()]);
+                : probability(0.05) ? roles.get("Limited Users")! : choose([...roles.values()]);
         const member = await db.bandUser.create({ data: {
             publicId: generatePublicId<"BandUser">(), bandId: band.id, userId: person.id, bandRoleId: roleId,
             createdAt: randomDate(person.createdAt, personIndex < 5

@@ -1,3 +1,5 @@
+import type { PermissionRequirement } from "src/auth/shared/permissionRequirement";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 // LSMB todo: figure out a unified design for searches.
 // we have
 // - paginated search features + frontpage relevant events (currently using paginated faceted search; ad-hoc SQL)
@@ -274,20 +276,20 @@ async function readPersonMatches(context: DB3ReadContext, query: ParseQuickFilte
 
 interface QuickSearchPlugin {
     readonly aliases: readonly string[];
-    readonly permission: Permission;
+    readonly permission: PermissionRequirement;
     readonly entity: xTable;
     readonly read: (context: DB3ReadContext, query: ParseQuickFilterResult, input: QuickSearchInput, catalogs: SearchCatalogs) => Promise<QuickSearchItemMatch[]>;
 }
 const plugins: { readonly [Type in QuickSearchItemType]: QuickSearchPlugin } = {
     song: {
         aliases: ["song", "s"],
-        permission: Permission.view_songs,
+        permission: BandPermission.view_songs,
         entity: xSong,
         read: readSongMatches
     },
     event: {
         aliases: ["event", "e"],
-        permission: Permission.view_events,
+        permission: BandPermission.view_events,
         entity: xEvent,
         read: readEventMatches
     },
@@ -299,11 +301,11 @@ const plugins: { readonly [Type in QuickSearchItemType]: QuickSearchPlugin } = {
     },
     wikiPage: {
         aliases: ["wikipage", "w"],
-        permission: Permission.search_wiki_pages,
+        permission: BandPermission.search_wiki_pages,
         entity: xWikiPage,
         read: readWikiMatches
     },
-    user: { aliases: ["user", "u"], permission: Permission.search_users, entity: xUser, read: readPersonMatches },
+    user: { aliases: ["user", "u"], permission: BandPermission.search_users, entity: xUser, read: readPersonMatches },
 };
 
 async function parseBandSearchQuery(context: DB3ReadContext, keyword: string): Promise<ParseQuickFilterResult> {

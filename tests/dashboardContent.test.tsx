@@ -4,6 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { act } from "react-dom/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
+import { satisfiesPermissionRequirement, type PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import { createTestRouter } from "./support/routing";
 import { parsePortalPath } from "src/route/portalRouting";
 vi.mock("src/route/useCmdbRouter", () => ({ useCmdbRouter: () => createTestRouter({ baseUri: "https://test", hosting: { kind: "multiBand" }, requestPath: parsePortalPath(`/fr-BE/b/${band}`, { kind: "multiBand" }) }) }));
@@ -27,13 +28,16 @@ vi.mock("src/core/components/event/RelevantEvents", () => ({ RelevantEvents: () 
 vi.mock("src/core/components/EventCalendar", () => ({ BigEventCalendar: () => <div className="CMBigCalendar">Calendar</div> }));
 vi.mock("src/core/components/dashboard/DashboardLayout", () => ({ default: ({ children }: React.PropsWithChildren) => <>{children}</> }));
 vi.mock("src/core/components/CMCoreComponents", () => ({
-    PermissionBoundary: ({ permission, children }: React.PropsWithChildren<{ permission: Permission }>) => dashboard.isAuthorized(permission) ? <>{children}</> : null,
+    PermissionBoundary: ({ permission, children }: React.PropsWithChildren<{ permission: PermissionRequirement }>) => dashboard.isAuthorized(permission) ? <>{children}</> : null,
 }));
 vi.mock("src/core/components/wiki/WikiStandaloneComponents", () => ({
     WikiStandaloneControl: (props: { canonicalWikiPath: string; className?: string; floatingHeader?: boolean }) =>
         <div className={props.className} data-floating={props.floatingHeader}>{props.canonicalWikiPath}</div>,
 }));
-vi.mock("src/setting/client/components/SettingMarkdown", () => ({ BandLocalizedMarkdown: ({ id }: { id: string }) => <div data-setting={id}>{id}</div> }));
+vi.mock("src/setting/client/components/SettingMarkdown", () => ({
+    BandLocalizedMarkdown: ({ id }: { id: string }) => <div data-setting={id}>{id}</div>,
+    Localized: ({ id }: { id: LocalizedPlainStringKey }) => <>{kStaticLocalizedStringRegistry[id].defaultValue}</>,
+}));
 vi.mock("src/locale/components/useLocale", () => ({
     useLocale: () => ({
         getPlainString: (key: LocalizedPlainStringKey) => kStaticLocalizedStringRegistry[key].defaultValue,
@@ -64,7 +68,8 @@ const dashboard = {
     memberPresentation,
     currentUser: authenticatedPerson(),
     currentMembership: { bandUserInstruments: [] },
-    isAuthorized: (value: Permission | string) => grants.has(value),
+    isAuthorized: (value: PermissionRequirement | string) => typeof value === "string" ? grants.has(value)
+        : satisfiesPermissionRequirement(value, permission => grants.has(permission), Boolean(dashboard.memberPresentation.bandPublicId)),
 };
 function menu(overrides: Partial<MenuLinkListClient> = {}): MenuLinkListClient {
     return {
@@ -93,7 +98,9 @@ describe("dashboard announcements and navigation", () => {
     it("retains nested Wiki paths, contextual band/locale, authored blank captions and external URLs", () => {
         const link = DynMenuToMenuItem(menu(), dashboard)!;
         expect(link.path).toBe("/backstage/wiki/special/announcements");
-        expect(link).toMatchObject({ className: "score-link", permission: Permission.visibility_members, linkCaption: "Partitions", openInNewTab: false });
+        expect(link).toMatchObject({ className: "score-link", permission: {
+            anyOf: [Permission.visibility_members, Permission.global_band_admin], requiresBand: true,
+        }, linkCaption: "Partitions", openInNewTab: false });
         expect(DynMenuToMenuItem(menu({ caption: { ...menu().caption, value: "" } }), dashboard)!.linkCaption).toBe("");
         const externalURI = "https://example.invalid/scores?edition=2026#brass";
         expect(DynMenuToMenuItem(menu({ linkType: "ExternalURL", externalURI }), dashboard)).toMatchObject({ path: externalURI, openInNewTab: true });

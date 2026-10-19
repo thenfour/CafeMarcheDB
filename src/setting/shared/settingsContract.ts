@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { Permission } from "shared/permissions";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import type { IAuthorization } from "src/auth/shared/cmAuthorization";
 import { kGlobalSettingsRegistry } from "./globalSettingsRegistry";
 import { kBandSettingsRegistry } from "./bandSettingsRegistry";
@@ -40,7 +41,7 @@ export function getSettingCapabilities(hive: SettingsHive, key: string, context:
     const readPermission = definition.readPermission === undefined
         ? (hive === "user" || hive === "bandUser" ? Permission.login : null) : definition.readPermission;
     const writePermission = definition.writePermission ?? (hive === "global" ? Permission.manage_global_settings
-        : hive === "band" ? Permission.manage_band_settings : Permission.login);
+        : hive === "band" ? BandPermission.manage_band_settings : Permission.login);
     const canView = scopeAvailable && (readPermission === null || context.hasPermission(readPermission));
     return { canView, canEdit: canView && context.hasPermission(writePermission) };
 }

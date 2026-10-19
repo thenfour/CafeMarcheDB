@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { defineCmdbPage } from "src/route/cmdbPage";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { Alert } from "@mui/material";
@@ -12,7 +13,6 @@ import { Tooltip } from "@mui/material";
 import React, { Suspense } from "react";
 import ReactDiffViewer from 'react-diff-viewer';
 import { toSorted } from "shared/arrayUtils";
-import { Permission } from "shared/permissions";
 import type { WikiPageRevisionPublicId } from "shared/publicId";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
 import { CMDialog } from "src/core/components/CMDialog";
@@ -152,7 +152,7 @@ const WikiRevisionHistoryPageContent = () => {
     const [selectedRevisionB, setSelectedRevisionB] = React.useState<RevisionHistoryItem>(currentRevision);
 
     return <div className="contentSection fullWidth wikiRevisionHistoryPage">
-        {dashboardContext.isAuthorized(Permission.admin_wiki_pages) && <RebuildStatsButton onChanged={() => {
+        {dashboardContext.isAuthorized(BandPermission.admin_wiki_pages) && <RebuildStatsButton onChanged={() => {
             void qExtra.refetch();
         }} />}
         <h1>
@@ -188,7 +188,7 @@ const WikiRevisionHistoryPageContent = () => {
                     >
                         <td>
                             <WikiRevisionPreviewButton revisionId={rev.publicId} />
-                            {rev.publicId !== currentRevision.publicId && dashboardContext.isAuthorized(Permission.admin_wiki_pages) && <WikiRevisionDeleteButton revision={rev} onChanged={() => {
+                            {rev.publicId !== currentRevision.publicId && dashboardContext.isAuthorized(BandPermission.admin_wiki_pages) && <WikiRevisionDeleteButton revision={rev} onChanged={() => {
                                 void qExtra.refetch();
                             }} />}
                         </td>

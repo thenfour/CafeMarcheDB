@@ -1,9 +1,9 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "@prisma/client";
 import { AuthorizationError } from "blitz";
 import { mkdir, open, readFile } from "node:fs/promises";
 import path from "node:path";
 import sharp, { type Sharp } from "sharp";
-import { Permission } from "shared/permissions";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { generatePublicId } from "src/server/publicId";
 import { fileImageSourceView, xFile } from "../db3";
@@ -113,7 +113,7 @@ export async function createImageFork(context: DB3ReadContext, input: ImageForkI
 ) {
     const args = ForkImageParamsSchema.parse(input);
     const auth = context.authorization.requireUser();
-    auth.requirePermission(Permission.upload_files);
+    auth.requirePermission(BandPermission.upload_files);
     if (auth.requireBand().publicId !== args.bandPublicId) {
         throw new AuthorizationError("Image forking requires the selected band.");
     }

@@ -82,28 +82,31 @@ describe.skipIf(!settingsMysqlTestUrl)("membership role assignments on MariaDB",
         const backup = await tx.bandUser.create({ data: { publicId: generatePublicId(), bandId: fixture.bands[1]!.id, userId: other.id, bandRoleId: context.role.id } });
         expect(await context.edit(desired.publicId)).toMatchObject({ status: "confirmationRequired" });
         await tx.bandUser.update({ where: { id: backup.id }, data: { bandId: context.member.bandId } });
-        for (const personState of [{ isDeleted: true }, { isDeleted: false, mergedIntoUserId: fixture.user.id }, { mergedIntoUserId: null, isSysAdmin: true }]) {
+        const sysadminRole = await tx.globalRole.findFirstOrThrow({ where: { isSysAdminRole: true } });
+        for (const personState of [{ isDeleted: true }, { isDeleted: false, mergedIntoUserId: fixture.user.id }, { mergedIntoUserId: null, globalRoleId: sysadminRole.id }]) {
             await tx.user.update({ where: { id: other.id }, data: personState });
             expect(await context.edit(desired.publicId)).toMatchObject({ status: "confirmationRequired" });
         }
-        await tx.user.update({ where: { id: other.id }, data: { isSysAdmin: false } });
+        await tx.user.update({ where: { id: other.id }, data: { globalRoleId: null } });
         await tx.bandUser.update({ where: { id: backup.id }, data: { isDeleted: true } });
         expect(await context.edit(desired.publicId)).toMatchObject({ status: "confirmationRequired" });
         await tx.bandUser.update({ where: { id: backup.id }, data: { isDeleted: false } });
         expect(await context.edit(desired.publicId)).toMatchObject({ status: "saved" });
     }));
 
-    it.each(["account flag", "global role"])("does not count a Sysadmin's membership as an ordinary continuity holder: %s", carrier => withFixture(async (tx, fixture) => {
+    it("treats an account flag as ordinary membership authority and excludes actual Sysadmin roles", () => withFixture(async (tx, fixture) => {
         const context = await prepare(tx, fixture);
         const desired = await createRole(tx, fixture, "Member");
         const sysadminRole = await tx.globalRole.findFirstOrThrow({ where: { isSysAdminRole: true } });
-        await tx.user.update({ where: { id: fixture.user.id }, data: carrier === "account flag" ? { isSysAdmin: true } : { globalRoleId: sysadminRole.id } });
+        await tx.user.update({ where: { id: fixture.user.id }, data: { isSysAdmin: true } });
+        expect(await context.edit(desired.publicId)).toMatchObject({ status: "confirmationRequired" });
+        await tx.user.update({ where: { id: fixture.user.id }, data: { globalRoleId: sysadminRole.id } });
         expect(await context.edit(desired.publicId)).toMatchObject({ status: "saved" });
     }));
 
-    it("uses new-member defaults when clearing a role and rejects escalation through null", () => withFixture(async (tx, fixture) => {
+    it("uses Band Public when clearing a role and rejects escalation through null", () => withFixture(async (tx, fixture) => {
         const context = await prepare(tx, fixture);
-        const pending = await tx.bandRole.findFirstOrThrow({ where: { isRoleForNewUsers: true, isDeleted: false } });
+        const pending = await tx.bandRole.findFirstOrThrow({ where: { isPublicRole: true, isDeleted: false } });
         await tx.bandRolePermission.deleteMany({ where: { bandRoleId: pending.id } });
         const permission = await tx.permission.findUniqueOrThrow({ where: { name: Permission.impersonate_user } });
         await tx.bandRolePermission.create({ data: { publicId: generatePublicId(), bandRoleId: pending.id, permissionId: permission.id } });

@@ -1,7 +1,7 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { TAnyModel } from "@/shared/rootroot";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import React from "react";
-import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { SongClientColumns } from "src/core/components/song/SongComponents";
@@ -15,7 +15,7 @@ export const NewSongButton = () => {
     const router = useCmdbRouter();
     const dashboardContext = useDashboardContext();
 
-    if (!dashboardContext.isAuthorized(Permission.manage_songs)) {
+    if (!dashboardContext.isAuthorized(BandPermission.manage_songs)) {
         return null;
     }
 

@@ -171,8 +171,12 @@ export async function resolvePublicForeignIds(
         const foreignField = field as db3.ForeignSingleField<TAnyModel>;
         const foreignTable = foreignField.getForeignTableSchema();
         // Evaluate reference policy only for fields actually supplied by this write.
-        const resolveReference = (publicId: string) => resolvePublicId(foreignTable, publicId, auth, database, false,
-            { where: foreignField.getTargetWhereClause?.(auth) });
+        const resolveReference = (publicId: string) => {
+            const targetWhere = foreignField.getTargetWhereClause?.(auth);
+            const writeWhere = foreignField.getWriteTargetWhereClause?.(auth);
+            const where = targetWhere && writeWhere ? { AND: [targetWhere, writeWhere] } : targetWhere ?? writeWhere;
+            return resolvePublicId(foreignTable, publicId, auth, database, false, { where });
+        };
         if (!foreignTable.publicIdMember) {
             // foreign table doesn't use publicId; skip.
             continue;

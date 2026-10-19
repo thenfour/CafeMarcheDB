@@ -3,7 +3,7 @@
 import type { Permission } from "shared/permissions";
 import type { UserPublicId } from "shared/publicId";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { UserWithRolesArgs, UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
+import { HydrateUserWithRoles, UserWithRolesArgs, UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
 import { PermissionSet } from "../shared/PermissionSet";
 import { CMServerAuthorization, loadAuthorizationForUser } from "./serverAuthorization";
 import {
@@ -19,7 +19,7 @@ type RoleWithPermissionIdentities = {
     permissions: ReadonlyArray<{
         permission: {
             id: number;
-            name: string;
+            name: Permission;
             isDeleted: boolean;
         };
     }>;
@@ -33,6 +33,29 @@ type UserManagementPrincipalPayload = UserManagementPrincipal & {
 export const makePermissionSetFromRole = (role: RoleWithPermissionIdentities | null | undefined): PermissionSet => (
     new PermissionSet(role && !role.isDeleted ? role.permissions.filter(entry => !entry.permission.isDeleted).map(entry => entry.permission.name) : [])
 );
+
+/** Clearing an assignment selects Public; it does not remove the global role slot. */
+export async function loadGlobalPublicRoleGrants(db: TransactionalPrismaClient): Promise<PermissionSet> {
+    const roles = await db.globalRole.findMany({
+        where: { isPublicRole: true, isDeleted: false },
+        include: { permissions: { include: { permission: true } } },
+    });
+    if (roles.length !== 1) {
+        throw new Error("Authorization requires exactly one active Public global role.");
+    }
+    return makePermissionSetFromRole(roles[0]);
+}
+
+async function resolveUserManagementTarget(db: TransactionalPrismaClient, principal: UserManagementPrincipalPayload): Promise<UserManagementTarget> {
+    const target = makeUserManagementTarget(principal);
+    if (!principal.globalRole) {
+        return {
+            ...target,
+            rolePermissions: await loadGlobalPublicRoleGrants(db),
+        };
+    }
+    return target;
+}
 
 export const makeUserManagementActor = (
     principal: UserManagementPrincipalPayload | null,
@@ -57,7 +80,7 @@ export const findUserManagementTarget = async (
         select: { ...UserWithRolesArgs.select, mergedIntoUserId: true },
         where: { id: userId },
     });
-    return principal ? makeUserManagementTarget(principal) : null;
+    return principal ? resolveUserManagementTarget(db, principal) : null;
 };
 
 export const findUserManagementTargetByPublicId = async (
@@ -68,7 +91,7 @@ export const findUserManagementTargetByPublicId = async (
         select: { ...UserWithRolesArgs.select, mergedIntoUserId: true },
         where: { publicId },
     });
-    return principal ? makeUserManagementTarget(principal) : null;
+    return principal ? resolveUserManagementTarget(db, principal) : null;
 };
 
 export const findUserManagementActor = async (
@@ -80,21 +103,26 @@ export const findUserManagementActor = async (
         where: { id: userId },
     }) : null;
     const auth = await loadAuthorizationForUser(principal, db);
-    return makeUserManagementActor(principal, auth);
+    const hydratedPrincipal = principal ? HydrateUserWithRoles(principal) : null;
+    return makeUserManagementActor(hydratedPrincipal, auth);
 };
 
-export const findActiveNonSysadminUsers = async (
+export const findActiveUserManagementSubjects = async (
     db: TransactionalPrismaClient,
-): Promise<UserManagementSubject[]> => (
-    await db.user.findMany({
+): Promise<UserManagementSubject[]> => {
+    const principals = await db.user.findMany({
         ...UserWithRolesArgs,
         where: {
             isDeleted: false,
-            isSysAdmin: false,
             mergedIntoUserId: null,
         },
-    })
-).map(makeUserManagementTarget);
+    });
+    const publicGrants = await loadGlobalPublicRoleGrants(db);
+    return principals.map(principal => ({
+        principal,
+        rolePermissions: principal.globalRole ? makePermissionSetFromRole(principal.globalRole) : publicGrants,
+    }));
+};
 
 export const getUserManagementContinuityWarnings = async (
     db: TransactionalPrismaClient,
@@ -103,5 +131,5 @@ export const getUserManagementContinuityWarnings = async (
 ): Promise<Permission[]> => getContinuityWarningsForUserResult(
     target,
     resultingRole,
-    await findActiveNonSysadminUsers(db),
+    await findActiveUserManagementSubjects(db),
 );

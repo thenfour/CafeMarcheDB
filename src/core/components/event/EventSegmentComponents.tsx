@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 import { EventDateRangeText } from "../DateTime/EventDateRangeText";
 
@@ -9,7 +10,6 @@ import { useMutation } from "@blitzjs/rpc";
 import { Divider, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React from "react";
 import { toSorted } from "shared/arrayUtils";
-import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace } from "shared/utils";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
@@ -401,7 +401,7 @@ export const EventSegmentDotMenu = (props: EventSegmentDotMenuProps) => {
     const [clearEventSegmentResponsesMutation] = useMutation(clearEventSegmentResponses);
     const dashboardContext = useDashboardContext();
 
-    if (!dashboardContext.isAuthorized(Permission.admin_events)) return null;
+    if (!dashboardContext.isAuthorized(BandPermission.admin_events)) return null;
 
     const handleClear = async () => {
         await clearEventSegmentResponsesMutation({

@@ -1,10 +1,11 @@
+import { scopedAuthorizationSatisfiesRequirement } from "src/auth/shared/permissionRequirement";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { defineCmdbPage } from "src/route/cmdbPage";
 import { Alert, FormControlLabel } from "@mui/material";
 import { ArrowUpward, Clear } from "@mui/icons-material";
 import React from "react";
 import { CalendarDate } from "shared/dateTimePolicy";
 import { ActivityReportTimeBucketSize } from "shared/mysqlUtils";
-import { Permission } from "shared/permissions";
 import { CMButton, CMButtonGroup, CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
@@ -86,7 +87,7 @@ function GeneralFeatureStatsReport({ bandPublicId, timeZone }: { readonly bandPu
                 <CMDateRangePicker
                     value={{ start: range.startDate, end: range.endDateExclusive }}
                     timeZone={timeZone}
-                    showEventHighlights={presentation.data?.authorization.effectivePermissionNames.includes(Permission.view_events_nonpublic) ?? false}
+                    showEventHighlights={scopedAuthorizationSatisfiesRequirement(presentation.data?.authorization, BandPermission.view_events_nonpublic) ?? false}
                     onChange={value => setDateRange({ startDate: value.start, endDateExclusive: value.end })}
                 />
                 <CMButtonGroup>{periods.map(period => (
@@ -125,7 +126,7 @@ function FeatureReportsPage() {
     const locale = useLocale();
     const authorization = presentation.data?.authorization;
     const bandPublicId = authorization?.bandPublicId;
-    const canRead = !!authorization?.userPublicId && authorization.effectivePermissionNames.includes(Permission.view_feature_reports);
+    const canRead = !!authorization?.userPublicId && scopedAuthorizationSatisfiesRequirement(authorization, BandPermission.view_feature_reports);
     const timeZone = bandPublicId && presentation.data ? readSettingSnapshot(presentation.data.settings, "band", "dateTime.bandTimeZone") : null;
     return <DashboardLayout title={locale.getPlainString("activityReports.title")}>
         {!bandPublicId || !timeZone ? <Alert severity="info">{locale.getPlainString("activityReports.selectBand")}</Alert>

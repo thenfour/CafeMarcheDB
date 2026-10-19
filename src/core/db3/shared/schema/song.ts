@@ -1,74 +1,75 @@
+import { BandPermission, kGlobalVisibilityPermissionPolicy } from "src/auth/shared/bandPermissionPolicy";
 
 // no admin page:
 // - song credits
 
+import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import type {
     SongCreditPublicId,
+    SongPublicId,
     SongTagAssociationPublicId,
     SongTagPublicId,
-    SongPublicId,
     UserPublicId,
 } from "shared/publicId";
 import { CMDBTableFilterModel } from "../apiTypes";
+import { catalogColor } from "../columnTypes/bandCatalog";
+import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
+import { serverOwnedField } from "../columnTypes/inherited";
+import { localizedText } from "../columnTypes/localizedString";
 import { ForeignCollectionField, foreignRef, foreignRefByTableId, GenericIntegerField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeUpdatedAtField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
-import { serverOwnedField } from "../columnTypes/inherited";
-import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
-import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongNaturalOrderBy, SongPayload, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload } from "./prismArgs";
-import { MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField, xUser } from "./user";
 import { xBandSongTag as xSongTag } from "../entities/song/bandSongTagViews";
-import { gGeneralPaletteList } from "@/src/core/components/color/palette";
-import { localizedText } from "../columnTypes/localizedString";
-import { catalogColor } from "../columnTypes/bandCatalog";
 import { xSongCreditType } from "../entities/song/songCreditTypes";
 import { activeBandPersonWhere } from "../entities/user/bandPersonReference";
+import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongNaturalOrderBy, SongPayload, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload } from "./prismArgs";
+import { MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField, xUser } from "./user";
 
-export { xSongTag, xSongCreditType };
+export { xSongCreditType, xSongTag };
 
 
 export const xSongAuthMap_R_EOwn_EManagers = db3.defineAuthMap({
     PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
     PostQuery: db3.DB3FieldReadAuth.inheritRow,
-    PreMutateAsOwner: Permission.view_songs,
-    PreMutate: Permission.manage_songs,
-    PreInsert: Permission.manage_songs,
+    PreMutateAsOwner: BandPermission.view_songs,
+    PreMutate: BandPermission.manage_songs,
+    PreInsert: BandPermission.manage_songs,
 });
 
 export const xSongAuthMap_R_EManagers = db3.defineAuthMap({
     PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
     PostQuery: db3.DB3FieldReadAuth.inheritRow,
-    PreMutateAsOwner: Permission.manage_songs,
-    PreMutate: Permission.manage_songs,
-    PreInsert: Permission.manage_songs,
+    PreMutateAsOwner: BandPermission.manage_songs,
+    PreMutate: BandPermission.manage_songs,
+    PreInsert: BandPermission.manage_songs,
 });
 
 export const xSongAuthMap_R_EAdmin = db3.defineAuthMap({
     PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
     PostQuery: db3.DB3FieldReadAuth.inheritRow,
-    PreMutateAsOwner: Permission.admin_songs,
-    PreMutate: Permission.admin_songs,
-    PreInsert: Permission.admin_songs,
+    PreMutateAsOwner: BandPermission.admin_songs,
+    PreMutate: BandPermission.admin_songs,
+    PreInsert: BandPermission.admin_songs,
 });
 
 
 
 
 export const xSongTableAuthMap_R_EManagers: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.view_songs,
-    View: Permission.view_songs,
-    EditOwn: Permission.manage_songs,
-    Edit: Permission.manage_songs,
-    Insert: Permission.manage_songs,
+    ViewOwn: BandPermission.view_songs,
+    View: BandPermission.view_songs,
+    EditOwn: BandPermission.manage_songs,
+    Edit: BandPermission.manage_songs,
+    Insert: BandPermission.manage_songs,
 };
 
 export const xSongTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.view_songs,
-    View: Permission.view_songs,
-    EditOwn: Permission.admin_songs,
-    Edit: Permission.admin_songs,
-    Insert: Permission.admin_songs,
+    ViewOwn: BandPermission.view_songs,
+    View: BandPermission.view_songs,
+    EditOwn: BandPermission.admin_songs,
+    Edit: BandPermission.admin_songs,
+    Insert: BandPermission.admin_songs,
 };
 
 
@@ -84,7 +85,7 @@ export const xSongTagAssociation = db3.defineTable({
             relation: "song",
             ownerUserMember: "createdByUserId"
         },
-        managePermission: Permission.manage_songs,
+        managePermission: BandPermission.manage_songs,
     },
     readConsistency: "snapshot",
     deletePolicy: "hard",
@@ -133,17 +134,18 @@ interface ResolvedSongTableParams {
 
 ////////////////////////////////////////////////////////////////
 const xSongArgs_Base = db3.defineTableDesc({
+    globalVisibilityPermission: kGlobalVisibilityPermissionPolicy,
     prismaModel: db3.prismaModel<Prisma.SongDelegate>(),
     getIdentity: (song: { publicId: SongPublicId }) => song.publicId,
     tableName: "Song",
     bandScope: {
         member: "bandId",
-        managePermission: Permission.manage_songs
+        managePermission: BandPermission.manage_songs
     },
     readConsistency: "snapshot",
     deletePolicy: "softOnly",
-    viewDeletedPermission: Permission.recover_songs,
-    restorePermission: Permission.recover_songs,
+    viewDeletedPermission: BandPermission.recover_songs,
+    restorePermission: BandPermission.recover_songs,
     queryParameters: {
         songId: { kind: "entityIdentity", targetTableID: "Song", authorizeAs: "publicId", nullable: true },
         songIds: { kind: "entityIdentityArray", targetTableID: "Song", authorizeAs: "publicId", nullable: true },
@@ -295,7 +297,7 @@ export const xSongCredit = db3.defineTable({
             relation: "song",
             ownerUserMember: "createdByUserId"
         },
-        managePermission: Permission.manage_songs
+        managePermission: BandPermission.manage_songs
     },
     readConsistency: "snapshot",
     deletePolicy: "hard",

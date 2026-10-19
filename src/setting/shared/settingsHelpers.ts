@@ -1,11 +1,11 @@
 import { z } from "zod";
 import { RegistryEntryWithoutKey, registryEntry } from "./registryHelpers";
-import type { Permission } from "shared/permissions";
+import type { PermissionRequirement } from "src/auth/shared/permissionRequirement";
 
 // ---- settings registry helpers...
 export type SettingDefinition<TZodSchema extends z.ZodTypeAny> = RegistryEntryWithoutKey<TZodSchema> & {
-    readonly readPermission?: Permission | null;
-    readonly writePermission?: Permission;
+    readonly readPermission?: PermissionRequirement | null;
+    readonly writePermission?: PermissionRequirement;
 };
 
 export type BooleanSettingDefinition = SettingDefinition<z.ZodBoolean>;

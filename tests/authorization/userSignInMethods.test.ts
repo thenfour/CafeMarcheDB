@@ -32,7 +32,7 @@ import db3Mutation from "./db3MutationTestResolver";
 
 const admin = createAuthorizationTestUser("sysadmin", { id: 1 });
 const bandAdmin = createAuthorizationTestUser("bandAdmin", { id: 2 });
-const globalManager = createAuthorizationTestUser("normal", { id: 50, permissions: [Permission.manage_global_users] });
+const globalManager = createAuthorizationTestUser("normal", { id: 50, permissions: [Permission.login, Permission.manage_global_users] });
 const target = createAuthorizationTestUser("normal", { id: 10, email: "contact@test.invalid" });
 const other = createAuthorizationTestUser("normal", { id: 11, email: target.email });
 const methods = [

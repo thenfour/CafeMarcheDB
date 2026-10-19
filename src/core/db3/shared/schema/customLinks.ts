@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
@@ -5,27 +6,27 @@ import type { CustomLinkPublicId } from "shared/publicId";
 import { AuxUserArgs } from "types";
 import { z } from "zod";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
-import { BoolField, ConstEnumStringField, foreignRef, GenericIntegerField, GhostField, MakeCreatedAtField, MakePKfield, MakePublicIdField } from "../columnTypes/xTableColumnTypes";
 import { serverOwnedField } from "../columnTypes/inherited";
+import { BoolField, ConstEnumStringField, foreignRef, GenericIntegerField, GhostField, MakeCreatedAtField, MakePKfield, MakePublicIdField } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { kReadOnlyAuthMap } from "../entities/common/entityCommon";
 import { xCustomLinkFile } from "../entities/customLink/customLinkFile";
 import { MakeCreatedByField } from "./user";
 
 const xAuthMap = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_custom_links,
-    PostQuery: Permission.view_custom_links,
-    PreMutateAsOwner: Permission.manage_custom_links,
-    PreMutate: Permission.manage_custom_links,
-    PreInsert: Permission.manage_custom_links,
+    PostQueryAsOwner: BandPermission.view_custom_links,
+    PostQuery: BandPermission.view_custom_links,
+    PreMutateAsOwner: BandPermission.manage_custom_links,
+    PreMutate: BandPermission.manage_custom_links,
+    PreInsert: BandPermission.manage_custom_links,
 });
 
 const xTableAuthMap: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.view_custom_links,
-    View: Permission.view_custom_links,
-    EditOwn: Permission.manage_custom_links,
-    Edit: Permission.manage_custom_links,
-    Insert: Permission.manage_custom_links,
+    ViewOwn: BandPermission.view_custom_links,
+    View: BandPermission.view_custom_links,
+    EditOwn: BandPermission.manage_custom_links,
+    Edit: BandPermission.manage_custom_links,
+    Insert: BandPermission.manage_custom_links,
 } as const;
 
 
@@ -65,7 +66,10 @@ export const xCustomLink = db3.defineTable({
         return CustomLinkArgs;
     },
     tableName: "CustomLink",
-    bandScope: { member: "bandId", managePermission: Permission.manage_custom_links },
+    bandScope: {
+        member: "bandId",
+        managePermission: BandPermission.manage_custom_links
+    },
     readConsistency: "snapshot",
     deletePolicy: "hard",
     naturalOrderBy: CustomLinkNaturalOrderBy,

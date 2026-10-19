@@ -1,5 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { AuthorizationError } from "blitz";
-import { Permission } from "shared/permissions";
 import { CalendarDate } from "shared/dateTimePolicy";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { loadBandTimeZone } from "src/server/bandTimeZone";
@@ -19,8 +19,8 @@ export function readSongHistory(database: DB3ReadDatabase, authorization: CMServ
         if (band.publicId !== args.bandPublicId) {
             throw new AuthorizationError("Song history requires the selected band.");
         }
-        auth.requirePermission(Permission.view_songs);
-        auth.requirePermission(Permission.view_events_nonpublic);
+        auth.requirePermission(BandPermission.view_songs);
+        auth.requirePermission(BandPermission.view_events_nonpublic);
         const song = await queryView({ view: songReferenceView, ...presentation, filter: { tableParams: { songId: args.songId } }, cmdbQueryContext: "song history owner" }, auth, context);
         if (!song.items.length) {
             throw new AuthorizationError("Song was not found.");

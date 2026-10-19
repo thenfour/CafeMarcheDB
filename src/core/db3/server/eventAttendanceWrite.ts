@@ -1,6 +1,8 @@
+import type { PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import { Prisma } from "@prisma/client";
 import { AuthorizationError, NotFoundError } from "blitz";
-import { Permission } from "shared/permissions";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
+import { describePermissionRequirement } from "src/auth/shared/permissionRequirement";
 import { ChangeAction, CreateChangeContext, RegisterChange, type ChangeContext } from "src/auth/server/activityLog";
 import type { CMServerAuthorization, CMServerAuthorizationWithUser } from "src/auth/server/serverAuthorization";
 import { generatePublicId } from "src/server/publicId";
@@ -12,20 +14,20 @@ import { RecalcEventDateRangeAndIncrementRevision } from "./db3mutationCore";
 import { requireAttendanceBand, requireAttendanceTarget } from "./eventAttendancePolicy";
 
 export class EventAttendanceAuthorizationError extends AuthorizationError {
-    constructor(permission: Permission) {
-        super(`Not authorized to update event attendance; required: ${permission}.`);
+    constructor(permission: PermissionRequirement) {
+        super(`Not authorized to update event attendance; required: ${describePermissionRequirement(permission)}.`);
         this.name = "EventAttendanceAuthorizationError";
     }
 }
 
 function authorizeAttendanceChanges(auth: CMServerAuthorization, args: TupdateUserEventAttendanceMutationArgs): void {
     requireAttendanceBand(auth, args.bandPublicId);
-    const permissions: Permission[] = [];
+    const permissions: PermissionRequirement[] = [];
     if (args.comment !== undefined || args.instrumentId !== undefined || Object.keys(args.segmentResponses ?? {}).length > 0) {
-        permissions.push(auth.userPublicId === args.userId ? Permission.respond_to_events : Permission.change_others_event_responses);
+        permissions.push(auth.userPublicId === args.userId ? BandPermission.respond_to_events : BandPermission.change_others_event_responses);
     }
     if (args.isInvited !== undefined) {
-        permissions.push(Permission.manage_events);
+        permissions.push(BandPermission.manage_events);
     }
     for (const permission of permissions) {
         if (!auth.hasPermission(permission)) {

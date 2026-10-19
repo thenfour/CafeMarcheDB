@@ -1,6 +1,7 @@
 import { PrismaClient, type Prisma } from "@prisma/client";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { parsePublicId } from "shared/publicId";
+import { Permission } from "shared/permissions";
 import { loadAvailableBands } from "src/auth/server/availableBands";
 import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
 import { loadDashboardData } from "src/core/db3/server/db3DashboardData";
@@ -44,6 +45,30 @@ describe.skipIf(!settingsMysqlTestUrl)("account and dashboard bootstrap on migra
         } });
         return { member, instrument };
     }
+
+    it("lets an explicit global band administrator choose bands without membership or Sysadmin", () => withFixture(async (tx, fixture) => {
+        const template = await tx.globalRole.findFirstOrThrow({ where: { isRoleForNewUsers: true, isDeleted: false } });
+        const permissions = await tx.permission.findMany({ where: {
+            name: { in: [Permission.login, Permission.global_band_admin, Permission.sysadmin] }, isDeleted: false,
+        } });
+        const role = await tx.globalRole.create({ data: {
+            publicId: generatePublicId(), nameId: template.nameId,
+            permissions: { create: permissions.filter(permission => permission.name !== Permission.sysadmin)
+                .map(permission => ({ publicId: generatePublicId(), permissionId: permission.id })) },
+        } });
+        await tx.user.update({ where: { id: fixture.user.id }, data: { globalRoleId: role.id } });
+        await tx.bandUser.deleteMany({ where: { userId: fixture.user.id } });
+        const auth = await loadAuthorizationForUser(fixture.user, tx);
+        const context = await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" });
+        expect(auth.hasPermission(Permission.sysadmin)).toBe(false);
+        const choices = await loadAvailableBands(context, auth, {});
+        expect(choices.map(choice => choice.publicId)).toEqual(expect.arrayContaining(fixture.bands.map(band => band.publicId)));
+
+        await tx.globalRolePermission.deleteMany({ where: { globalRoleId: role.id, permission: { name: Permission.global_band_admin } } });
+        const sysadmin = permissions.find(permission => permission.name === Permission.sysadmin)!;
+        await tx.globalRolePermission.create({ data: { publicId: generatePublicId(), globalRoleId: role.id, permissionId: sysadmin.id } });
+        expect(await loadAvailableBands(context, auth, {})).toEqual([]);
+    }));
 
     it("boots platform/account context without executing deferred domain readers", () => withFixture(async (tx, fixture) => {
         const name = await tx.dynamicLocalizedString.create({ data: {

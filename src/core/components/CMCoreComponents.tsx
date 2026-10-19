@@ -11,7 +11,7 @@ import * as db3 from "src/core/db3/db3";
 import { Coord2D, TAnyModel } from "@/shared/rootroot";
 import { CMLink } from "@/src/route/CMLink";
 import { Tooltip } from "@mui/material";
-import { Permission } from "shared/permissions";
+import type { PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import type { EventPublicId, EventStatusPublicId, EventTypePublicId, InstrumentFunctionalGroupPublicId, InstrumentPublicId } from "shared/publicId";
 import { RenderMuiIcon } from "../db3/components/IconMap";
 import { CMChip, CMChipBorderOption, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
@@ -331,7 +331,7 @@ export const OpenCloseIcon = ({ isOpen }: { isOpen: boolean }) => {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PermissionBoundaryProps {
-    permission: Permission;
+    permission: PermissionRequirement;
     fallback?: React.ReactNode;
 };
 

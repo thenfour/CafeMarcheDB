@@ -1,5 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { NotFoundError } from "blitz";
-import { Permission } from "shared/permissions";
 import type { FilePublicId } from "shared/publicId";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import type { PresentationInput } from "src/locale/shared/presentationInput";
@@ -14,7 +14,7 @@ export function readFileDetailPage(database: DB3ReadDatabase, authorization: CMS
     return executeDB3Read(database, authorization, async context => {
         const auth = context.authorization;
         if (!auth.user
-            || !auth.hasPermission(Permission.access_file_landing_page)
+            || !auth.hasPermission(BandPermission.access_file_landing_page)
             || !input.bandPublicId
             || auth.band?.publicId !== input.bandPublicId) {
             return null;

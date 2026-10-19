@@ -1,5 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { NotFoundError } from "blitz";
-import { Permission } from "shared/permissions";
 import type { EventPublicId } from "shared/publicId";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { collectLocalePreferences, selectFormattingLocale } from "src/locale/shared/localePreferences";
@@ -15,7 +15,7 @@ export function readEventDetailPage(database: DB3ReadDatabase, authorization: CM
 ): Promise<{ title: string; eventId: EventPublicId } | null> {
     return executeDB3Read(database, authorization, async context => {
         const auth = context.authorization;
-        if (!auth.hasPermission(Permission.view_events_nonpublic) || !input.bandPublicId
+        if (!auth.hasPermission(BandPermission.view_events_nonpublic) || !input.bandPublicId
             || auth.band?.publicId !== input.bandPublicId) {
             return null;
         }

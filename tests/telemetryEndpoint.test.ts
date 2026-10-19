@@ -1,3 +1,4 @@
+import { resetAuthorizationDatabase } from "./authorization/support/authorizationSeed";
 import type { Ctx } from "blitz";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -29,7 +30,7 @@ const body = { event: { feature: ActivityFeature.profile_view },
 
 beforeEach(() => {
     vi.restoreAllMocks();
-    authorizationTestDb.reset({ band: [{ id: 1, publicId: "TelemetryBand001", isDeleted: false }],
+    resetAuthorizationDatabase({ band: [{ id: 1, publicId: "TelemetryBand001", isDeleted: false }],
         locale: [{ id: 2, ietfTag: "fr-BE", isDeleted: false }], action: [] });
 });
 

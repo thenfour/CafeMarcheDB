@@ -1,5 +1,6 @@
 import type { AuthenticatedCtx, Ctx } from "blitz";
 import { Permission } from "shared/permissions";
+import type { PermissionRequirement } from "../shared/permissionRequirement";
 import { loadAuthorization, type CMServerAuthorization, type CMServerAuthorizationWithUser } from "./serverAuthorization";
 import type { BandPublicId } from "shared/publicId";
 
@@ -22,7 +23,7 @@ type DontRequireUser = {
 }
 
 type CmauthorizeArgsCommon = {
-    readonly permission: Permission;
+    readonly permission: PermissionRequirement;
     readonly bandPublicId?: BandPublicId;
 }
 
@@ -38,7 +39,7 @@ export function cmauthorize(argsOrPermission: CmauthorizeArgs | Permission) {
     const middleware = async <TInput>(input: TInput, ctx: Ctx) => {
         const auth = await loadAuthorization(ctx.session, typeof argsOrPermission === "object" ? argsOrPermission.bandPublicId : undefined);
 
-        let permission: Permission;
+        let permission: PermissionRequirement;
         let requireUser: boolean;
         if (typeof argsOrPermission === "object") {
             permission = argsOrPermission.permission;

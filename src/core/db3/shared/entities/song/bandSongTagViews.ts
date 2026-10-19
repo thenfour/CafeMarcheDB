@@ -1,5 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "@prisma/client";
-import { Permission } from "shared/permissions";
 import { SongTagPublicId, type PublicId } from "shared/publicId";
 import { bandCatalogAuth, bandCatalogFields, bandCatalogCreateFromString, catalogColor, catalogDisplayModel } from "../../columnTypes/bandCatalog";
 import { MakeColorField } from "../../columnTypes/color";
@@ -11,7 +11,7 @@ import { defineTable, prismaModel, makeColumnSet } from "../../db3core";
 import { defineCrudView } from "../../core/db3CrudView";
 import { deriveViewContract } from "../../core/db3ViewContract";
 
-const { authMap, sourceAuthMap, tableAuthMap } = bandCatalogAuth(Permission.admin_songs);
+const { authMap, sourceAuthMap, tableAuthMap } = bandCatalogAuth(BandPermission.admin_songs);
 const colorField = inheritedField(MakeColorField({ authMap }));
 export const bandSongTagSelection = Prisma.validator<Prisma.BandSongTagDefaultArgs>()({
     select: {
@@ -40,7 +40,7 @@ export const xBandSongTag = defineTable({
         inheritedFrom: "globalSongTag",
         inheritedSourceMember: "globalSongTagId",
         hiddenMember: "isHidden",
-        managePermission: Permission.admin_songs,
+        managePermission: BandPermission.admin_songs,
     },
     naturalOrderBy: { sortOrder: "asc", name: "asc" },
     getSelectionArgs: () => bandSongTagSelection,

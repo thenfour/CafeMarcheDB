@@ -4,7 +4,7 @@ import { createDemoString, type DemoContext } from "./context";
 import type { DemoCatalogs } from "./catalogs";
 
 export async function createDemoPerson(c: DemoContext, key: string, name: string, email: string,
-    hashedPassword: string, globalRoleId?: number) {
+    hashedPassword: string, globalRoleId: number) {
     const createdAt = demoDateBetween(c.config, `person:${key}`, demoDaysAgo(c.config, 5 * 365), demoDaysAgo(c.config, 3 * 365));
     return c.db.user.create({ data: { publicId: c.id(`person:${key}`), name, email, hashedPassword, globalRoleId,
         createdAt, signInMethods: { create: { publicId: c.id(`sign-in:${key}`), type: "email", identifier: email, createdAt } } } });
@@ -60,7 +60,7 @@ async function seedBandSettings(c: DemoContext, bandId: number, key: string, tit
 }
 
 export async function seedDemoBand(c: DemoContext, index: number, catalogs: DemoCatalogs,
-    sharedPerson: Pick<User, "id" | "createdAt">, hashedPassword: string, roles: ReadonlyMap<string, number>) {
+    sharedPerson: Pick<User, "id" | "createdAt">, hashedPassword: string, roles: ReadonlyMap<string, number>, accountGlobalRoleId: number) {
     const key = `band:${index + 1}`;
     const title = index === 0 ? "River Fanfare" : index === 1 ? "Harbour Brass" : `Demo Ensemble ${index + 1}`;
     const locales = c.config.locales.filter(tag => index % 2 === 0 || tag !== "fr-BE");
@@ -89,12 +89,12 @@ export async function seedDemoBand(c: DemoContext, index: number, catalogs: Demo
                 stringId: catalogs.instruments[0]!.descriptionId, blobValue: "" },
         ] });
     }
-    const manager = await createDemoPerson(c, `${key}:manager`, `${title} Manager`, `manager${index + 1}@demo.invalid`, hashedPassword);
+    const manager = await createDemoPerson(c, `${key}:manager`, `${title} Manager`, `manager${index + 1}@demo.invalid`, hashedPassword, accountGlobalRoleId);
     const members: Array<BandUser & { instrumentId: number }> = [];
     for (let memberIndex = 0; memberIndex < c.config.membersPerBand; memberIndex++) {
         const person = memberIndex === 0 ? sharedPerson : memberIndex === 1 ? manager : await createDemoPerson(c,
             `${key}:member:${memberIndex}`, `${title} Musician ${memberIndex - 1}`,
-            `member${index + 1}-${memberIndex - 1}@demo.invalid`, hashedPassword);
+            `member${index + 1}-${memberIndex - 1}@demo.invalid`, hashedPassword, accountGlobalRoleId);
         const roleName = memberIndex === 1 || (memberIndex === 0 && index === 0) ? "Band Admin"
             : memberIndex > 2 && memberIndex === c.config.membersPerBand - 1 ? "Limited Users" : "Normal Users";
         const membership = await c.db.bandUser.create({ data: {

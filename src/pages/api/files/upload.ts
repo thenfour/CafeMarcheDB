@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import type { Ctx } from "@blitzjs/next";
 import { AuthenticationError, AuthorizationError, NotFoundError } from "blitz";
 import db from "db";
@@ -31,7 +32,7 @@ export async function uploadFileRoute(req: NextApiRequest, res: NextApiResponse<
         }
         const bandPublicId = BandPublicIdSchema.parse(req.query.bandPublicId);
         const auth = (await loadAuthorization(ctx.session, bandPublicId)).requireUser();
-        auth.requirePermission(Permission.upload_files);
+        auth.requirePermission(BandPermission.upload_files);
         storageDirectory = path.dirname(GetFileServerStoragePath("upload-staging"));
         await mkdir(storageDirectory, { recursive: true });
         staging = await mkdtemp(path.join(storageDirectory, ".incoming-"));

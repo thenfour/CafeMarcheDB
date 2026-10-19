@@ -1,9 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { AuthorizationError } from "blitz";
-import { getPermissionDefinition, gContinuitySensitivePermissions, gPermissionOrdered, Permission } from "shared/permissions";
+import { getPermissionDefinition, gContinuitySensitivePermissions, gPermissionOrdered, Permission, asPermission } from "shared/permissions";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
-import { platformSysadminWhere } from "src/auth/server/principalPredicates";
+import { loadPlatformSysadminWhere } from "src/auth/server/principalPredicates";
 import { PermissionSet } from "src/auth/shared/PermissionSet";
+import { canDelegateBandRoleGrants } from "src/auth/shared/bandRolePolicy";
 
 const roleSelection = Prisma.validator<Prisma.BandRoleDefaultArgs>()({
     select: {
@@ -17,32 +18,50 @@ const roleSelection = Prisma.validator<Prisma.BandRoleDefaultArgs>()({
             select: {
                 permission: {
                     select: {
-                        name: true, isDeleted: true
+                        name: true,
+                        isDeleted: true
                     }
                 }
             }
         },
     },
 });
-type AssignmentRole = Prisma.BandRoleGetPayload<typeof roleSelection>;
+
+// needed because the above has name: string rather than Permission.
+type AssignmentRole = {
+    id: number;
+    publicId: string;
+    isDeleted: boolean;
+    isPublicRole: boolean;
+    isRoleForNewUsers: boolean;
+    bandRolePermissions: {
+        permission: {
+            name: Permission;
+            isDeleted: boolean;
+        }
+    }[];
+}
 
 export function roleGrants(role: AssignmentRole | undefined): PermissionSet {
-    return new PermissionSet(role && !role.isDeleted ? role.bandRolePermissions
-        .filter(grant => !grant.permission.isDeleted).map(grant => grant.permission.name) : []);
+    const isActiveRole = role && !role.isDeleted;
+    if (!isActiveRole) {
+        return new PermissionSet([]);
+    }
+    return new PermissionSet(role.bandRolePermissions
+        .filter(grant => !grant.permission.isDeleted)
+        .map(grant => grant.permission.name));
 }
 
 export function requireDelegableRoles(auth: CMServerAuthorization, current: PermissionSet, desired: PermissionSet): void {
-    if (!auth.hasPermission(Permission.sysadmin)
-        && (!auth.hasAllDelegable(current) || !auth.hasAllDelegable(desired))) {
+    if (!canDelegateBandRoleGrants(auth, current.names) || !canDelegateBandRoleGrants(auth, desired.names)) {
         throw new AuthorizationError("The membership role is outside your delegation authority.");
     }
 }
 
-/** Roleless memberships receive the designated new-member role, plus the public role. */
+/** One membership role occupies the band slot; unassigned memberships use Public. */
 export function effectiveMemberRoleGrants(roles: readonly AssignmentRole[], roleId: number | null): PermissionSet {
-    return new PermissionSet(roles.filter(role => !role.isDeleted && (role.isPublicRole
-        || (roleId === null ? role.isRoleForNewUsers : role.id === roleId)))
-        .flatMap(role => roleGrants(role).names));
+    const assigned = roles.find(role => role.id === roleId && !role.isDeleted);
+    return roleId === null ? publicBandRoleGrants(roles) : roleGrants(assigned);
 }
 
 // warn when a band would become unmanageable due to loss of critical permissions
@@ -62,6 +81,7 @@ export async function findContinuityWarnings(
     if (lost.length === 0) {
         return [];
     }
+    const platformSysadminWhere = await loadPlatformSysadminWhere(database);
     const platformAdministrator = await database.user.findFirst({
         where: {
             id: target.userId,
@@ -92,12 +112,21 @@ export async function findContinuityWarnings(
 
 /** Role assignment and lifecycle commands validate the same platform-owned role definitions. */
 export async function loadMemberRoles(database: Prisma.TransactionClient): Promise<AssignmentRole[]> {
+    // lsmb todo: use a view with proper hydration.
     const roles = await database.bandRole.findMany(roleSelection);
-    if (roles.filter(role => !role.isDeleted && role.isRoleForNewUsers).length > 1
-        || roles.filter(role => !role.isDeleted && role.isPublicRole).length > 1) {
-        throw new Error("Ambiguous active public or new-member role designation.");
+    if (roles.filter(role => !role.isDeleted && role.isPublicRole).length !== 1) {
+        throw new Error("Authorization requires exactly one active Public band role.");
     }
-    return roles;
+
+    return roles.map(role => ({
+        ...role,
+        bandRolePermissions: role.bandRolePermissions.map(brp => ({
+            permission: {
+                ...brp.permission,
+                name: asPermission(brp.permission.name),
+            }
+        }))
+    }));
 }
 
 /** Inactive memberships retain only the band's public grants. */

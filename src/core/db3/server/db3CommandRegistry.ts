@@ -13,6 +13,7 @@ import { bandUserRoleCommandHandler } from "./commands/bandUserRoleCommand";
 import { bandUserProfileCommandHandler } from "./commands/bandUserProfileCommand";
 import { bandUserLifecycleCommandHandler } from "./commands/bandUserLifecycleCommand";
 import { bandRolePermissionSetCommandHandler, globalRolePermissionSetCommandHandler } from "./commands/rolePermissionSetCommand";
+import { platformUserAccountCreateCommandHandler, userAccountCreateCommandHandler } from "./commands/userAccountCreateCommands";
 
 const commandHandlers = new Map<string, AnyDB3CommandHandler>();
 
@@ -33,6 +34,8 @@ export function registerDB3CommandHandlers(handlers: AnyDB3CommandHandler[]): vo
 registerDB3CommandHandlers([
     globalRolePermissionSetCommandHandler,
     bandRolePermissionSetCommandHandler,
+    userAccountCreateCommandHandler,
+    platformUserAccountCreateCommandHandler,
     bandInstrumentCommandHandler,
     bandUserInstrumentsCommandHandler,
     bandUserTagsCommandHandler,
@@ -56,7 +59,10 @@ function getGeneratedCrudCommandHandler(commandID: string): AnyDB3CommandHandler
     if (!view) return undefined;
     const handlers = defineEntityCrudCommandHandlers(view.crud);
     for (const handler of handlers.all) {
-        registerDB3CommandHandler(handler);
+        // Explicit lifecycle handlers keep ownership when another operation is generated.
+        if (!commandHandlers.has(handler.command.commandID)) {
+            registerDB3CommandHandler(handler);
+        }
     }
     return commandHandlers.get(commandID);
 }

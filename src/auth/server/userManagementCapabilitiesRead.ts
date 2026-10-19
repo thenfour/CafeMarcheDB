@@ -7,7 +7,7 @@ import { globalRoleListView, xGlobalRole } from "src/core/db3/shared/entities/us
 import { canManageUser } from "./userManagementPolicy";
 import type { CMServerAuthorization } from "./serverAuthorization";
 import { getContinuityWarningsForUserResult, evaluateUserManagementCapabilities, type UserManagementActor } from "./userManagementPolicy";
-import { findActiveNonSysadminUsers, findUserManagementTargetByPublicId, makePermissionSetFromRole } from "./userManagementState";
+import { findActiveUserManagementSubjects, findUserManagementTargetByPublicId, makePermissionSetFromRole } from "./userManagementState";
 import { PermissionSet } from "../shared/PermissionSet";
 import { canMergeAccount } from "./userMerge/mergeEligibility";
 import { mergeUserInclude } from "./userMerge/types";
@@ -55,7 +55,7 @@ export function readUserManagementCapabilities(database: DB3ReadDatabase, author
                 }
             },
         }) : null;
-        const activeUsers = capabilities.canDeactivate ? await findActiveNonSysadminUsers(context.database) : [];
+        const activeUsers = capabilities.canDeactivate ? await findActiveUserManagementSubjects(context.database) : [];
         const replacement = target.principal.mergedIntoUserId == null ? null : await context.database.user.findUnique({
             where: { id: target.principal.mergedIntoUserId },
             select: { publicId: true },
@@ -65,7 +65,7 @@ export function readUserManagementCapabilities(database: DB3ReadDatabase, author
         }) : null;
         return {
             ...capabilities,
-            canMerge: mergeTarget !== null && canMergeAccount(actor, mergeTarget),
+            canMerge: mergeTarget !== null && canMergeAccount(actor, mergeTarget, target.rolePermissions),
             currentRoleId: currentRole?.globalRole ? xGlobalRole.parseIdentity(currentRole.globalRole.publicId) : null,
             assignableRoles,
             mergedIntoUserId: replacement ? parsePublicId<"User">(replacement.publicId) : null,

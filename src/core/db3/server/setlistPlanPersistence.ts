@@ -1,6 +1,6 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "@prisma/client";
 import { AuthorizationError, NotFoundError } from "blitz";
-import { Permission } from "shared/permissions";
 import type { BandPublicId, PermissionPublicId, SetlistPlanPublicId } from "shared/publicId";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "src/auth/server/activityLog";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
@@ -16,13 +16,14 @@ import { resolvePublicId } from "./db3PublicIds";
 import { executePublicIdReorder, type PublicIdReorderRow } from "./db3PublicIdReorder";
 import { db3Server } from "./db3Server";
 import { authorizePlanPayloadReferences } from "./setlistPlanReferences";
+import { selectableBandVisibilityPermissionWhere } from "../shared/entities/user/visibilityPermissionPolicy";
 
 function requirePlannerScope(authorization: CMServerAuthorization, bandPublicId: BandPublicId) {
     const auth = authorization.requireUser();
     if (auth.requireBand().publicId !== bandPublicId) {
         throw new AuthorizationError("Setlist planning requires the selected band.");
     }
-    auth.requirePermission(Permission.setlist_planner_access);
+    auth.requirePermission(BandPermission.setlist_planner_access);
     return auth;
 }
 
@@ -36,7 +37,6 @@ async function findVisiblePlan(database: Prisma.TransactionClient, auth: CMServe
     return plan;
 }
 
-// LSMB TODO: do not reinvent visibility / auth / soft delete mechanics. use what db3 provides.
 async function resolvePlanVisibility(database: Prisma.TransactionClient, auth: CMServerAuthorization, publicId: PermissionPublicId | null) {
     if (publicId === null) {
         return null;
@@ -44,11 +44,7 @@ async function resolvePlanVisibility(database: Prisma.TransactionClient, auth: C
     const visibility = await database.permission.findFirst({
         where: {
             publicId,
-            isDeleted: false,
-            isVisibility: true,
-            id: {
-                in: [...auth.effectivePermissions.ids]
-            },
+            ...selectableBandVisibilityPermissionWhere(auth),
         }, select: { id: true }
     });
     if (!visibility) {

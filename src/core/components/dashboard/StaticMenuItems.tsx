@@ -17,7 +17,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import PersonIcon from '@mui/icons-material/Person';
 import SecurityIcon from '@mui/icons-material/Security';
 import * as React from 'react';
-import { Permission } from "shared/permissions";
+import type { PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import type { MenuCaptionKey } from 'src/locale/shared/menuStrings';
 import { gIconMap } from "../../db3/components/IconMap";
 
@@ -36,7 +36,7 @@ export enum NavRealm {
 
 export interface MenuLink {
     type: "link";
-    permission: Permission;
+    permission: PermissionRequirement;
     linkCaption: string;
     path: string;
     routeKey?: CmdbRouteKey;
@@ -252,14 +252,11 @@ export const gMenuSections: StaticMenuSection[] = [
                 links: [
                     pageLink("bandAdminUsers", "menu.adminUsers", "band", { renderIcon: () => <PersonIcon /> }),
                     pageLink("platformAdminUsers", "menu.platform-adminUsers", "platform", { renderIcon: () => <PersonIcon /> }),
-                    pageLink("bandEditSongs", "menu.editSongs", "band", { renderIcon: () => <MusicNoteIcon /> }),
                     pageLink("bandEditSongCredits", "menu.editSongCredits", "band", { renderIcon: () => <MusicNoteIcon /> }),
                     pageLink("bandUserInstruments", "menu.userInstruments", "band", { renderIcon: () => <MusicNoteIcon /> }),
                     pageLink("bandUserTags", "menu.userTags", "band", { renderIcon: () => <PersonIcon /> }),
                     pageLink("bandUserRoles", "menu.userRoles", "band", { renderIcon: () => <PersonIcon /> }),
                     pageLink("bandRecoverMembers", "menu.recoverMembers", "band", { renderIcon: () => <PersonIcon /> }),
-                    pageLink("bandEditEvents", "menu.editEvents", "band", { renderIcon: () => <CalendarMonthOutlinedIcon /> }),
-                    pageLink("bandEditEventSegments", "menu.editEventSegments", "band", { renderIcon: () => <CalendarMonthOutlinedIcon /> }),
                     pageLink("bandEditFiles", "menu.editFiles", "band", { renderIcon: gIconMap.AttachFile }),
                     pageLink("bandEditFrontpageGalleryItems", "menu.editFrontpageGalleryItems", "band", { renderIcon: gIconMap.AttachFile }),
                 ]

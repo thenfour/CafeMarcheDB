@@ -88,7 +88,7 @@ export const membershipStrings = {
     "membership.roles.title": label("Member roles"),
     "membership.roles.edit": label("Change band role"),
     "membership.roles.role": label("Band role"),
-    "membership.roles.unassigned": label("No assigned role (new-member defaults apply)"),
+    "membership.roles.unassigned": label("Use Public band role"),
     "membership.roles.unavailable": label("Unavailable role"),
     "membership.roles.description": label("This changes membership permissions in this band. Role definitions are managed by the platform."),
     "membership.roles.continuity": label("This change would leave no other active member with the following band capabilities:"),

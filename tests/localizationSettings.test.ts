@@ -26,7 +26,7 @@ vi.mock("src/server/brand", () => ({ clearBrandCache: vi.fn() }));
 
 // The fake implements the Prisma queries needed by these integration checks.
 const database = authorizationTestDb as unknown as Prisma.TransactionClient;
-const user = { id: 42, publicId: "User000000000042", globalRoleId: null, isDeleted: false, mergedIntoUserId: null, isSysAdmin: false };
+const user = { id: 42, publicId: "User000000000042", globalRoleId: 31, isDeleted: false, mergedIntoUserId: null, isSysAdmin: false };
 const outsider = { ...user, id: 43, publicId: "User000000000043" };
 const bandA = parsePublicId<"Band">("Band000000000001");
 const bandB = parsePublicId<"Band">("Band000000000002");
@@ -41,12 +41,15 @@ beforeEach(() => authorizationTestDb.reset({
     band: [1, 2].map(id => ({ id, publicId: `Band00000000000${id}`, isDeleted: false })),
     bandUser: [1, 2].map(id => ({ id, publicId: `Member000000000${id}`, bandId: id, userId: 42, bandRoleId: id + 10, isDeleted: false })),
     bandRole: [{ id: 1, isPublicRole: true, isDeleted: false }, { id: 11, isDeleted: false }, { id: 12, isDeleted: false }],
-    globalRole: [{ id: 30, isSysAdminRole: true, isDeleted: false }],
+    globalRole: [{ id: 30, isSysAdminRole: true, isDeleted: false }, { id: 31, isDeleted: false }, { id: 32, isPublicRole: true, isDeleted: false }],
     permission: gPermissionRegistry.map((definition, index) => ({ id: index + 1, name: definition.key, isDeleted: false })),
     bandRolePermission: [Permission.manage_band_settings, Permission.manage_site_branding, Permission.manage_band_localization]
         .map((key, index) => ({ id: index + 1, bandRoleId: 11, permissionId: permissionId(key) })),
-    globalRolePermission: [Permission.manage_global_settings, Permission.manage_global_localization, Permission.sysadmin]
-        .map((key, index) => ({ id: index + 1, globalRoleId: 30, permissionId: permissionId(key) })),
+    globalRolePermission: [
+        ...[Permission.manage_global_settings, Permission.manage_global_localization, Permission.sysadmin]
+            .map((key, index) => ({ id: index + 1, globalRoleId: 30, permissionId: permissionId(key) })),
+        { id: 10, globalRoleId: 31, permissionId: permissionId(Permission.login) },
+    ],
     locale: ["en-US", "fr-BE", "nl-BE"].map((ietfTag, index) => ({ id: index + 1, publicId: `Locale000000000${index + 1}`, ietfTag, isDeleted: false })),
     bandLocale: [1, 2].flatMap(bandId => [1, 2, 3].map(localeId => ({ id: bandId * 10 + localeId, bandId, localeId }))),
     staticLocalizedStringValue: [valueRow(1, 3, "Global Dutch", { stringKey: key })],

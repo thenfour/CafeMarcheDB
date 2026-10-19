@@ -11,7 +11,7 @@ export interface AvailableBand {
     readonly supportedLocales: readonly string[];
 }
 
-/** The account may explicitly choose an active membership; platform Sysadmins may choose any active band. */
+/** Memberships supply ordinary choices; global band administrators may choose any active band. */
 export function loadAvailableBands(database: DB3ReadDatabase, authorization: CMServerAuthorization,
     preferences: LocalePreferenceInput,
 ): Promise<AvailableBand[]> {
@@ -21,10 +21,12 @@ export function loadAvailableBands(database: DB3ReadDatabase, authorization: CMS
         if (!fresh.user || !fresh.hasPermission(Permission.login)) {
             return [];
         }
+        const mayChooseAnyBand = fresh.hasPermission(Permission.global_band_admin)
+            || fresh.hasPermission(Permission.manage_bands);
         const bands = await transaction.band.findMany({
             where: {
                 isDeleted: false,
-                ...(fresh.hasPermission(Permission.sysadmin) ? {} : {
+                ...(mayChooseAnyBand ? {} : {
                     bandUsers: { some: { userId: fresh.user.id, isDeleted: false } },
                 }),
             },

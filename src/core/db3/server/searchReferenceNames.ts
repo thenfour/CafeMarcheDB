@@ -1,4 +1,4 @@
-import { Permission } from "shared/permissions";
+import type { PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import type { AnyDB3Field, xTable } from "../shared/db3core";
 import { DiscreteCriterionFilterType } from "../shared/apiTypes";
 import { resolvePublicIds } from "./db3PublicIds";
@@ -6,7 +6,7 @@ import { SearchCatalogs, searchCatalogNameMatches } from "./searchCatalogs";
 
 export interface SearchReferenceName {
     readonly field: AnyDB3Field;
-    readonly permission: Permission;
+    readonly permission: PermissionRequirement;
 }
 
 /** Relations supply SQL membership predicates; catalog views supply eligible display names. */

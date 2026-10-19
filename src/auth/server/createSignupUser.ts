@@ -7,6 +7,7 @@ import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
 import { SignInMethodSchema } from "../signInMethodSchemas";
 import { addSignInMethod, SignInMethodConflictError, signInMethodWhere } from "./signInMethods";
 import { loadAuthorization } from "./serverAuthorization";
+import { loadDefaultAccountRole } from "./accountRoleDefaults";
 
 export interface CreateSignupUserArgs {
     email: string;
@@ -35,13 +36,14 @@ export const createSignupUser = async (args: CreateSignupUserArgs, ctx: Ctx) => 
             }
         }
 
+        const defaultRole = await loadDefaultAccountRole(tx);
         const data: Prisma.UserUncheckedCreateInput = {
             publicId: generatePublicId<"User">(),
             name: args.name,
             email: emailMethod.identifier,
             hashedPassword,
-            isSysAdmin: false,
-            globalRoleId: null,
+            isSysAdmin: defaultRole.isSysAdmin,
+            globalRoleId: defaultRole.id,
         };
         const user = await tx.user.create({
             data,
@@ -62,7 +64,7 @@ export const createSignupUser = async (args: CreateSignupUserArgs, ctx: Ctx) => 
             newValues: {
                 name: user.name,
                 email: user.email,
-                isSysAdmin: false,
+                isSysAdmin: user.isSysAdmin,
                 globalRoleId: user.globalRoleId,
                 authenticationMethod: args.googleId ? "google" : "password",
             },

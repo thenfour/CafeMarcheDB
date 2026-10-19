@@ -1,8 +1,8 @@
 import { PrismaClient, type Prisma } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { Permission } from "shared/permissions";
+import { gPermissionRegistry, Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
-import { writeAccountRole } from "src/auth/server/accountRoleWrite";
+import { writeAccountAdministratorRole, writeAccountRole } from "src/auth/server/accountRoleWrite";
 import { writeRoleDesignation } from "src/auth/server/roleDesignationWrite";
 import { loadAuthorizationForUser, type CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { readUserManagementCapabilities } from "src/auth/server/userManagementCapabilitiesRead";
@@ -12,11 +12,19 @@ import { getDB3CommandHandler } from "src/core/db3/server/db3CommandRegistry";
 import { queryView } from "src/core/db3/server/db3QueryCore";
 import { bandRoleEditorView, globalRoleEditorView, xGlobalRole } from "src/core/db3/shared/entities/user/roleViews";
 import { xBandRole } from "src/core/db3/shared/entities/user/bandRoleViews";
-import { permissionBandRoleMatrixView, permissionEditorView, permissionGlobalRoleMatrixView } from "src/core/db3/shared/entities/user/permissionViews";
+import { permissionBandRoleChoicesView, permissionBandRoleMatrixView, permissionEditorView, permissionGlobalRoleChoicesView, permissionGlobalRoleMatrixView } from "src/core/db3/shared/entities/user/permissionViews";
 import { setBandRolePermissionCommand, setGlobalRolePermissionCommand } from "src/core/db3/shared/entities/user/rolePermissionCommands";
 import { generatePublicId } from "src/server/publicId";
 import { initializeAccessControl } from "src/setup/accessControl";
 import { executeCatalogCrud } from "./support/db3CatalogFixture";
+import { userEditorView } from "src/core/db3/shared/entities/user/userViews";
+import { platformUserEditorView } from "src/core/db3/shared/entities/user/platformUser";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
+import { loadPlatformSysadminWhere } from "src/auth/server/principalPredicates";
+import { bandRoleChoicesView } from "src/core/db3/shared/entities/user/bandRoleViews";
+import { assignBandUserRole } from "src/core/db3/server/commands/bandUserRoleCommand";
+import { setBandUserActive } from "src/core/db3/server/commands/bandUserLifecycleCommand";
+import { canDelegateBandRoleGrants } from "src/auth/shared/bandRolePolicy";
 import { settingsMysqlTestUrl, withSettingsMysqlFixture, type SettingsMysqlFixture } from "./support/settingsMysqlFixture";
 
 async function createGlobalRole(tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture, names: readonly Permission[] = []) {
@@ -33,6 +41,75 @@ describe.skipIf(!settingsMysqlTestUrl)("role administration on MariaDB", () => {
     beforeAll(() => initializeAccessControl(database), 30_000);
     afterAll(() => database.$disconnect());
     const run = (work: (tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture) => Promise<void>) => withSettingsMysqlFixture(database, work);
+
+    it("lets an explicit global band administrator choose, assign and recover ordinary roles across bands without membership", () => run(async (tx, fixture) => {
+        const globalRole = await createGlobalRole(tx, fixture, [Permission.login, Permission.public, Permission.always_grant, Permission.global_band_admin]);
+        const operator = await tx.user.create({ data: { publicId: generatePublicId(), name: "Band operator", email: "band-operator@test.invalid", globalRoleId: globalRole.id } });
+        const permissions = await tx.permission.findMany({ where: { name: { in: [Permission.manage_events, Permission.assign_user_roles, Permission.deactivate_users, Permission.recover_users] } } });
+        const role = await tx.bandRole.create({ data: { publicId: generatePublicId(), nameId: (await tx.bandRole.findFirstOrThrow()).nameId,
+            bandRolePermissions: { create: permissions.map(permission => ({ publicId: generatePublicId(), permissionId: permission.id })) } } });
+        const globalPermission = await tx.permission.findUniqueOrThrow({ where: { name: Permission.manage_global_users } });
+        const malformed = await tx.bandRole.create({ data: { publicId: generatePublicId(), nameId: role.nameId,
+            bandRolePermissions: { create: { publicId: generatePublicId(), permissionId: globalPermission.id } } } });
+        const unscoped = await loadAuthorizationForUser(operator, tx, null);
+        expect(canDelegateBandRoleGrants(unscoped, [Permission.manage_events])).toBe(false);
+        for (const band of fixture.bands) {
+            const auth = await loadAuthorizationForUser(operator, tx, parsePublicId<"Band">(band.publicId));
+            expect(auth.membership).toBeNull();
+            expect(auth.hasPermission(Permission.sysadmin)).toBe(false);
+            expect(auth.hasPermission(Permission.assign_user_roles)).toBe(false);
+            expect(auth.hasPermission(Permission.manage_events)).toBe(false);
+            const choices = await queryView({ view: bandRoleChoicesView, filter: {}, cmdbQueryContext: "global band role choices" }, auth, await snapshot(tx, auth));
+            expect(choices.items.map(choice => choice.publicId)).toContain(role.publicId);
+            expect(choices.items.map(choice => choice.publicId)).not.toContain(malformed.publicId);
+            const member = await tx.bandUser.findUniqueOrThrow({ where: { bandId_userId: { bandId: band.id, userId: fixture.user.id } } });
+            const membershipId = parsePublicId<"BandUser">(member.publicId);
+            await expect(assignBandUserRole(tx, auth, { membershipId, roleId: xBandRole.parseIdentity(malformed.publicId), acknowledgeContinuityRisk: true }))
+                .rejects.toThrow("delegation authority");
+            expect(await assignBandUserRole(tx, auth, { membershipId, roleId: xBandRole.parseIdentity(role.publicId), acknowledgeContinuityRisk: true }))
+                .toMatchObject({ status: "saved" });
+            expect(await setBandUserActive(tx, auth, { membershipId, action: "deactivate", acknowledgeContinuityRisk: false }))
+                .toMatchObject({ status: "confirmationRequired" });
+            expect(await setBandUserActive(tx, auth, { membershipId, action: "deactivate", acknowledgeContinuityRisk: true }))
+                .toMatchObject({ status: "saved" });
+            expect(await setBandUserActive(tx, auth, { membershipId, action: "reactivate", acknowledgeContinuityRisk: false }))
+                .toMatchObject({ status: "saved" });
+        }
+        expect(await tx.bandUser.count({ where: { userId: operator.id } })).toBe(0);
+    }));
+
+    it.each(["global", "band"] as const)("offers only active known %s permissions in role choices and the matrix", scope => run(async (tx, fixture) => {
+        const auth = await loadAuthorizationForUser(fixture.admin, tx, null);
+        const retired = scope === "global" ? Permission.manage_bands : Permission.manage_events;
+        await tx.permission.update({ where: { name: retired }, data: { isDeleted: true } });
+        const unknown = await tx.permission.create({ data: { publicId: generatePublicId(), name: "unknown_role_matrix_permission" } });
+        const choices = scope === "global" ? permissionGlobalRoleChoicesView : permissionBandRoleChoicesView;
+        const matrix = scope === "global" ? permissionGlobalRoleMatrixView : permissionBandRoleMatrixView;
+        const expected = new Set(gPermissionRegistry.filter(definition => definition.scope === scope
+            && definition.key !== Permission.never_grant && definition.key !== retired).map(definition => definition.key));
+        for (const view of [choices, matrix]) {
+            const result = await queryView({ view, filter: {}, cmdbQueryContext: "scope-specific role permissions" }, auth, await snapshot(tx, auth));
+            expect(new Set(result.items.map(row => row.name))).toEqual(expected);
+        }
+        const editor = await queryView({ view: permissionEditorView, filter: { publicIds: [parsePublicId<"Permission">(unknown.publicId)] },
+            cmdbQueryContext: "whole permission registry" }, auth, await snapshot(tx, auth));
+        expect(editor.items).toMatchObject([{ name: unknown.name }]);
+    }));
+
+    it.each([userEditorView, platformUserEditorView])("assigns the configured account default during $viewID creation", view => run(async (tx, fixture) => {
+        const auth = await loadAuthorizationForUser(fixture.admin, tx, null);
+        const defaultRole = await tx.globalRole.findFirstOrThrow({ where: { isRoleForNewUsers: true, isDeleted: false } });
+        // Generating Update must preserve the explicit Create lifecycle handler.
+        getDB3CommandHandler(view.crud.operations.update.command.commandID);
+        const created = await executeCatalogCrud(tx, auth, view, { name: "Created account", email: "created@test.invalid" });
+        const person = await tx.user.findUniqueOrThrow({ where: { publicId: String(created.identity) } });
+        expect(person.globalRoleId).toBe(defaultRole.id);
+        await tx.globalRole.updateMany({ data: { isRoleForNewUsers: false } });
+        await expect(executeCatalogCrud(tx, auth, view, { name: "Missing default", email: "missing-default@test.invalid" }))
+            .rejects.toThrow("exactly one active role for new accounts");
+        expect(await tx.user.count({ where: { email: "missing-default@test.invalid" } })).toBe(0);
+        expect((await loadAuthorizationForUser(person, tx, null)).hasPermission(Permission.login)).toBe(true);
+    }));
 
     it("edits global Permission metadata through its original CRUD owner while leaving grants unchanged", () => run(async (tx, fixture) => {
         const auth = await loadAuthorizationForUser(fixture.admin, tx, null);
@@ -75,33 +152,52 @@ describe.skipIf(!settingsMysqlTestUrl)("role administration on MariaDB", () => {
         expect(await tx.bandUser.findMany({ where: { userId: fixture.user.id } })).toEqual(otherMembership);
     }));
 
-    it("withholds ambiguous public grants while retaining independent platform authority for repairs", () => run(async (tx, fixture) => {
+    it.each(["public", "newUsers"] as const)("repairs missing/duplicate %s global designations without reassigning accounts", designation => run(async (tx, fixture) => {
+        const auth = await loadAuthorizationForUser(fixture.admin, tx);
+        const flag = designation === "public" ? "isPublicRole" : "isRoleForNewUsers";
+        const selected = await createGlobalRole(tx, fixture, [Permission.public]);
+        const people = await tx.user.findMany();
+        await tx.globalRole.updateMany({ data: { [flag]: true } });
+        const edit = { scope: "global", designation, roleId: xGlobalRole.parseIdentity(selected.publicId) } as const;
+        await writeRoleDesignation(tx, auth, edit);
+        expect(await tx.globalRole.findMany({ where: { [flag]: true } })).toMatchObject([{ id: selected.id }]);
+        const auditCount = await tx.change.count();
+        await writeRoleDesignation(tx, auth, edit);
+        expect(await tx.change.count()).toBe(auditCount);
+        await tx.globalRole.updateMany({ data: { [flag]: false } });
+        await writeRoleDesignation(tx, auth, edit);
+        expect(await tx.globalRole.count({ where: { [flag]: true } })).toBe(1);
+        expect(await tx.user.findMany()).toEqual(people);
+    }));
+
+    it("keeps unselected band configuration out of global authorization and supports designation repairs", () => run(async (tx, fixture) => {
         await tx.bandRole.updateMany({ data: { isPublicRole: true } });
         const admin = await loadAuthorizationForUser(fixture.admin, tx, null);
         expect(admin.hasPermission(Permission.sysadmin)).toBe(true);
         expect(admin.bandPermissions.names).toEqual([]);
         const anonymous = await loadAuthorizationForUser(null, tx, null);
-        expect(anonymous.effectivePermissions.names).toEqual([]);
+        expect(anonymous.bandPermissions.names).toEqual([]);
+        expect(anonymous.hasPermission(Permission.public)).toBe(true);
         await expect(loadAuthorizationForUser(fixture.admin, tx, parsePublicId<"Band">(fixture.bands[0]!.publicId)))
-            .rejects.toThrow("Ambiguous active public");
+            .rejects.toThrow("exactly one active Band Public");
         const selected = await tx.bandRole.findFirstOrThrow({ where: { isDeleted: false } });
         await writeRoleDesignation(tx, admin, { scope: "band", designation: "public", roleId: xBandRole.parseIdentity(selected.publicId) });
         expect((await loadAuthorizationForUser(fixture.admin, tx, parsePublicId<"Band">(fixture.bands[0]!.publicId))).hasPermission(Permission.sysadmin)).toBe(true);
     }));
 
-    it("repairs duplicate global designations through a role-carried Sysadmin while account flags remain fail-closed", () => run(async (tx, fixture) => {
-        const selected = await createGlobalRole(tx, fixture, [Permission.sysadmin, Permission.login]);
+    it("repairs duplicate Sysadmin designations without changing assigned authority or using account flags", () => run(async (tx, fixture) => {
+        const selected = await createGlobalRole(tx, fixture, [Permission.sysadmin, Permission.login, Permission.global_band_admin]);
         await tx.globalRole.updateMany({ data: { isSysAdminRole: true } });
         await tx.user.update({ where: { id: fixture.user.id }, data: { isSysAdmin: true } });
-        await expect(loadAuthorizationForUser(fixture.user, tx, null)).rejects.toThrow("exactly one active designated");
+        expect((await loadAuthorizationForUser(fixture.user, tx, null)).hasPermission(Permission.sysadmin)).toBe(false);
         const admin = await loadAuthorizationForUser(fixture.admin, tx, null);
         await writeRoleDesignation(tx, admin, { scope: "global", designation: "sysadmin", roleId: xGlobalRole.parseIdentity(selected.publicId) });
-        expect((await loadAuthorizationForUser(fixture.user, tx, null)).hasPermission(Permission.sysadmin)).toBe(true);
+        expect((await loadAuthorizationForUser(fixture.user, tx, null)).hasPermission(Permission.sysadmin)).toBe(false);
     }));
 
     it("repairs the global Sysadmin designation without changing sessions or band defaults", () => run(async (tx, fixture) => {
         const auth = await loadAuthorizationForUser(fixture.admin, tx);
-        const selected = await createGlobalRole(tx, fixture, [Permission.sysadmin, Permission.login]);
+        const selected = await createGlobalRole(tx, fixture, [Permission.sysadmin, Permission.login, Permission.global_band_admin]);
         const bandRoles = await tx.bandRole.findMany();
         const session = await tx.session.create({ data: { userId: fixture.admin.id, handle: generatePublicId(), hashedSessionToken: generatePublicId(), antiCSRFToken: generatePublicId(), expiresAt: new Date("2099-01-01") } });
         await writeRoleDesignation(tx, auth, { scope: "global", designation: "sysadmin", roleId: xGlobalRole.parseIdentity(selected.publicId) });
@@ -165,7 +261,7 @@ describe.skipIf(!settingsMysqlTestUrl)("role administration on MariaDB", () => {
         const auth = await loadAuthorizationForUser(fixture.admin, tx);
         const role = scope === "global" ? await createGlobalRole(tx, fixture)
             : await tx.bandRole.create({ data: { publicId: generatePublicId(), nameId: (await tx.bandRole.findFirstOrThrow()).nameId } });
-        const permission = await tx.permission.findUniqueOrThrow({ where: { name: Permission.manage_events } });
+        const permission = await tx.permission.findUniqueOrThrow({ where: { name: scope === "global" ? Permission.manage_bands : Permission.manage_events } });
         const command = scope === "global" ? setGlobalRolePermissionCommand : setBandRolePermissionCommand;
         const handler = getDB3CommandHandler(command.commandID);
         const edit = { localIdentity: parsePublicId<"Permission">(permission.publicId), foreignIdentity: scope === "global" ? xGlobalRole.parseIdentity(role.publicId) : xBandRole.parseIdentity(role.publicId), isAssociated: true };
@@ -233,6 +329,14 @@ describe.skipIf(!settingsMysqlTestUrl)("role administration on MariaDB", () => {
         expect(await tx.change.count()).toBe(0);
     }));
 
+    it.each([Permission.manage_events, Permission.view_files, Permission.visibility_public])("rejects band grant %s on global definitions", permissionName => run(async (tx, fixture) => {
+        const auth = await loadAuthorizationForUser(fixture.admin, tx);
+        const role = await createGlobalRole(tx, fixture);
+        const permission = await tx.permission.findUniqueOrThrow({ where: { name: permissionName } });
+        await expect(executeCatalogCrud(tx, auth, globalRoleEditorView, { permissions: [permission.publicId] }, xGlobalRole.parseIdentity(role.publicId))).rejects.toThrow();
+        expect(await tx.change.count()).toBe(0);
+    }));
+
     it.each([Permission.sysadmin, Permission.login])("preserves required %s in the designated global role through both grant paths", permissionName => run(async (tx, fixture) => {
         const auth = await loadAuthorizationForUser(fixture.admin, tx);
         const role = await tx.globalRole.findFirstOrThrow({ where: { isSysAdminRole: true } });
@@ -244,6 +348,37 @@ describe.skipIf(!settingsMysqlTestUrl)("role administration on MariaDB", () => {
         await expect(handler.execute({ localIdentity: parsePublicId<"Permission">(permission.publicId), foreignIdentity: identity, isAssociated: false },
             { authorization: auth, transaction: tx, rowServices: createCommandRowServices(auth, tx) })).rejects.toThrow("must retain");
         expect(await tx.change.count()).toBe(0);
+    }));
+
+    it("allows revoking band administration independently from the designated Sysadmin role", () => run(async (tx, fixture) => {
+        const auth = await loadAuthorizationForUser(fixture.admin, tx);
+        const role = await tx.globalRole.findFirstOrThrow({ where: { isSysAdminRole: true } });
+        const grants = await tx.globalRolePermission.findMany({ where: { globalRoleId: role.id,
+            permission: { name: { not: Permission.global_band_admin } } }, include: { permission: true } });
+        await executeCatalogCrud(tx, auth, globalRoleEditorView,
+            { permissions: grants.map(grant => grant.permission.publicId) }, xGlobalRole.parseIdentity(role.publicId));
+        const platform = await auth.refresh(tx);
+        expect(platform.hasPermission(Permission.sysadmin)).toBe(true);
+        expect(platform.hasPermission(Permission.manage_bands)).toBe(true);
+        expect(platform.hasPermission(Permission.global_band_admin)).toBe(false);
+        const selectedBand = await loadAuthorizationForUser(fixture.admin, tx, parsePublicId<"Band">(fixture.bands[0]!.publicId));
+        expect(selectedBand.hasPermission(BandPermission.manage_events)).toBe(false);
+    }));
+
+    it("classifies unassigned accounts through explicit Global Public Sysadmin grants without inheriting them into assigned roles", () => run(async (tx, fixture) => {
+        const roleless = await tx.user.create({ data: { publicId: generatePublicId(), name: "Unassigned account", email: "roleless@test.invalid" } });
+        await tx.user.update({ where: { id: fixture.user.id }, data: { isSysAdmin: true } });
+        const namesBefore = await tx.user.findMany({ where: await loadPlatformSysadminWhere(tx), select: { id: true } });
+        expect(namesBefore.map(person => person.id)).not.toContain(roleless.id);
+        const publicRole = await tx.globalRole.findFirstOrThrow({ where: { isPublicRole: true, isDeleted: false } });
+        const sysadmin = await tx.permission.findUniqueOrThrow({ where: { name: Permission.sysadmin } });
+        await tx.globalRolePermission.create({ data: { publicId: generatePublicId(), globalRoleId: publicRole.id, permissionId: sysadmin.id } });
+        const administrators = await tx.user.findMany({ where: await loadPlatformSysadminWhere(tx), select: { id: true } });
+        expect(administrators.map(person => person.id)).toContain(roleless.id);
+        expect(administrators.map(person => person.id)).toContain(fixture.admin.id);
+        expect(administrators.map(person => person.id)).not.toContain(fixture.user.id);
+        expect((await loadAuthorizationForUser(roleless, tx)).hasPermission(Permission.sysadmin)).toBe(true);
+        expect((await loadAuthorizationForUser(fixture.user, tx)).hasPermission(Permission.sysadmin)).toBe(false);
     }));
 
     it("assigns and clears shared account roles without changing either membership or sessions", () => run(async (tx, fixture) => {
@@ -265,6 +400,21 @@ describe.skipIf(!settingsMysqlTestUrl)("role administration on MariaDB", () => {
         expect(await tx.change.findMany()).toMatchObject([{ table: "User", recordId: person.id }, { table: "User", recordId: person.id }]);
     }));
 
+    it("assigns and removes the administrator role explicitly while keeping the display flag synchronized", () => run(async (tx, fixture) => {
+        const auth = await loadAuthorizationForUser(fixture.admin, tx);
+        const person = await tx.user.findUniqueOrThrow({ where: { id: fixture.user.id } });
+        const userId = parsePublicId<"User">(person.publicId);
+        const memberships = await tx.bandUser.findMany({ where: { userId: person.id } });
+        await writeAccountAdministratorRole(tx, auth, { userId, isSysAdmin: true });
+        expect((await loadAuthorizationForUser(person, tx, null)).hasPermission(Permission.sysadmin)).toBe(true);
+        expect(await tx.user.findUniqueOrThrow({ where: { id: person.id } })).toMatchObject({ isSysAdmin: true });
+        await writeAccountAdministratorRole(tx, auth, { userId, isSysAdmin: false });
+        const ordinaryRole = await tx.globalRole.findFirstOrThrow({ where: { isRoleForNewUsers: true, isDeleted: false } });
+        expect(await tx.user.findUniqueOrThrow({ where: { id: person.id } })).toMatchObject({ globalRoleId: ordinaryRole.id, isSysAdmin: false });
+        expect((await loadAuthorizationForUser(person, tx, null)).hasPermission(Permission.sysadmin)).toBe(false);
+        expect(await tx.bandUser.findMany({ where: { userId: person.id } })).toEqual(memberships);
+    }));
+
     it("confirms losing the final ordinary global management holder and excludes role-carried Sysadmins", () => run(async (tx, fixture) => {
         const auth = await loadAuthorizationForUser(fixture.admin, tx);
         const role = await createGlobalRole(tx, fixture, [Permission.manage_global_users]);
@@ -277,8 +427,9 @@ describe.skipIf(!settingsMysqlTestUrl)("role administration on MariaDB", () => {
     }));
 
     it("returns authorized localized global role choices with fresh delegation limits", () => run(async (tx, fixture) => {
-        const role = await createGlobalRole(tx, fixture, [Permission.manage_global_users]);
+        const role = await createGlobalRole(tx, fixture, [Permission.manage_global_users, Permission.login]);
         const safe = await createGlobalRole(tx, fixture, [Permission.login]);
+        await tx.user.update({ where: { id: fixture.user.id }, data: { globalRoleId: safe.id } });
         const operator = await tx.user.create({ data: { publicId: generatePublicId(), name: "Global operator", email: "role-operator@test.invalid", globalRoleId: role.id } });
         const auth = await loadAuthorizationForUser(operator, tx);
         const target = parsePublicId<"User">((await tx.user.findUniqueOrThrow({ where: { id: fixture.user.id } })).publicId);

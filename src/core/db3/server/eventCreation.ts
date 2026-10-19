@@ -1,6 +1,6 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "@prisma/client";
 import { AuthorizationError, NotFoundError, assert } from "blitz";
-import { Permission } from "shared/permissions";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "src/auth/server/activityLog";
 import type { CMServerAuthorization, CMServerAuthorizationWithUser } from "src/auth/server/serverAuthorization";
 import type { LocalePreferenceInput } from "src/locale/shared/localePreferences";
@@ -14,6 +14,7 @@ import { resolveDB3ReadGraph } from "./db3ResolvedFields";
 import { db3Server } from "./db3Server";
 import { insertImpl, RecalcEventDateRangeAndIncrementRevision } from "./db3mutationCore";
 import { findAttendanceMember } from "./eventAttendancePolicy";
+import { selectableBandVisibilityPermissionWhere } from "../shared/entities/user/visibilityPermissionPolicy";
 
 async function resolveEventFields(database: Prisma.TransactionClient, auth: CMServerAuthorizationWithUser, args: TinsertEventArgs) {
     const resolveOptional = (table: db3.xTable, publicId: string | null) => publicId === null ? null : resolvePublicId(table, publicId, auth, database);
@@ -22,13 +23,10 @@ async function resolveEventFields(database: Prisma.TransactionClient, auth: CMSe
         resolveOptional(db3.xEventStatus, args.event.statusId),
         resolvePublicIds(db3.xBandEventTag, args.event.tags, auth, database),
         resolveOptional(db3.xBandUserTag, args.event.expectedAttendanceUserTagId),
-        // LSMB todo: don't do ad-hoc visibility/soft-delete/permissions checks here. use db3 mechanisms.
         args.event.visiblePermissionId === null ? null : database.permission.findFirst({
             where: {
                 publicId: args.event.visiblePermissionId,
-                isDeleted: false,
-                isVisibility: true,
-                id: { in: [...auth.effectivePermissions.ids] }
+                ...selectableBandVisibilityPermissionWhere(auth),
             },
             select: { id: true },
         }),
@@ -120,7 +118,7 @@ async function createInitialResponses(database: Prisma.TransactionClient, auth: 
     if (responses.length === 0) {
         return;
     }
-    auth.requirePermission(Permission.change_others_event_responses);
+    auth.requirePermission(BandPermission.change_others_event_responses);
     for (const response of responses) {
         const [member, attendance] = await Promise.all([
             findAttendanceMember(database, auth.requireBand().id, response.userId),
@@ -180,7 +178,7 @@ export async function insertEventInTransaction(database: Prisma.TransactionClien
     if (auth.requireBand().publicId !== args.bandPublicId) {
         throw new AuthorizationError("Event creation requires the selected band.");
     }
-    auth.requirePermission(Permission.manage_events);
+    auth.requirePermission(BandPermission.manage_events);
     const eventFields = await resolveEventFields(database, auth, args);
     const event = await insertImpl<Prisma.EventGetPayload<{}>>(db3.xEvent, eventFields, auth, database);
     const segmentFields: Omit<Prisma.EventSegmentUncheckedCreateInput, "publicId"> = {

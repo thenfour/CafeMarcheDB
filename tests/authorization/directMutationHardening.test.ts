@@ -146,7 +146,7 @@ describe("DB3 command boundary", () => {
     const permissions = [Permission.login, Permission.view_songs, Permission.manage_songs]
     const actor = createAuthorizationTestUser("normal", { id: 97, permissions })
     const visibility = {
-      id: 3,
+      id: authorizationPermissionId(Permission.visibility_public),
       publicId: parsePublicId<"Permission">("SongVisPerm00003"),
       name: Permission.visibility_public,
       description: "Public",
@@ -251,8 +251,7 @@ describe("DB3 command boundary", () => {
       id: 99, name: "Original user", email: "original@example.test",
     })
     resetAuthorizationDatabase({
-      user: [{ ...target, globalRoleId: null, mergedIntoUserId: null }],
-      permission: [{ id: 1, name: Permission.login, isDeleted: false }],
+      user: [{ ...target, mergedIntoUserId: null }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: target.id })

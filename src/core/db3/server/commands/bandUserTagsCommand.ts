@@ -1,5 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import type { Prisma } from "@prisma/client";
-import { Permission } from "shared/permissions";
 import { CreateChangeContext } from "src/auth/server/activityLog";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { xBandUser } from "../../shared/entities/user/bandUser";
@@ -12,7 +12,7 @@ import { UpdateAssociations } from "../db3mutationCore";
 /** Shared command execution supplies Serializable isolation and refreshed grants. */
 export async function editBandUserTags(database: Prisma.TransactionClient, auth: CMServerAuthorization, rawEdit: BandUserTagsEdit) {
     const edit = bandUserTagsCommand.parseDto(rawEdit);
-    auth.requirePermission(Permission.manage_users);
+    auth.requirePermission(BandPermission.manage_users);
     const membership = await requireEditableBandMembership(database, auth, edit.membershipId);
     const assignments = await database.bandUserTagAssignment.findMany({
         where: { bandUserId: membership.id },

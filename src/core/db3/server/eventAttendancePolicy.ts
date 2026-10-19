@@ -1,6 +1,6 @@
+import { BandPermission, kGlobalVisibilityPermissionPolicy } from "src/auth/shared/bandPermissionPolicy";
 import type { Prisma } from "@prisma/client";
 import { AuthorizationError, NotFoundError } from "blitz";
-import { Permission } from "shared/permissions";
 import type { BandPublicId, EventPublicId, UserPublicId } from "shared/publicId";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { GetUserVisibilityWhereExpression } from "./db3Helpers";
@@ -18,7 +18,8 @@ export function visibleAttendanceEvents(auth: CMServerAuthorization): Prisma.Eve
     return {
         bandId: auth.requireBand().id,
         isDeleted: false,
-        ...GetUserVisibilityWhereExpression({ auth, createdByUserIDColumnName: "createdByUserId" }),
+        ...GetUserVisibilityWhereExpression({ auth, createdByUserIDColumnName: "createdByUserId",
+            allowConfiguredVisibility: auth.hasPermission(kGlobalVisibilityPermissionPolicy) }),
     };
 }
 
@@ -46,6 +47,6 @@ export async function requireAttendanceTarget(database: Prisma.TransactionClient
 
 export function requireAttendanceRead(auth: CMServerAuthorization, bandPublicId: BandPublicId): number {
     const bandId = requireAttendanceBand(auth, bandPublicId);
-    auth.requirePermission(Permission.view_events_nonpublic);
+    auth.requirePermission(BandPermission.view_events_nonpublic);
     return bandId;
 }

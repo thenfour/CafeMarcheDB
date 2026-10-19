@@ -1,4 +1,4 @@
-import { Permission } from "shared/permissions";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import type { WikiPageRevisionPublicId } from "shared/publicId";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { queryView } from "src/core/db3/server/db3QueryCore";
@@ -19,7 +19,7 @@ interface GetWikiPageCoreArgs {
 
 export async function GetWikiPageCore({ canonicalWikiSlug, authorization: initialAuth, database, ...args }: GetWikiPageCoreArgs): Promise<WikiPageData> {
     return executeDB3Read(database, initialAuth, async context => {
-        const authorization = requireWikiAccess(context, Permission.view_wiki_pages);
+        const authorization = requireWikiAccess(context, BandPermission.view_wiki_pages);
 
         const result = await queryView({
             view: wikiPageApiView,

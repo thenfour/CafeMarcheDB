@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
@@ -14,7 +15,6 @@ import { Markdown } from "../markdown/Markdown";
 import { RenderMuiIcon } from "../../db3/components/IconMap";
 import { ColorVariationSpec, StandardVariationSpec } from "../color/palette";
 import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
-import { Permission } from "@/shared/permissions";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
@@ -69,7 +69,7 @@ export const EventChip = ({ renderAsLink = true, ...props }: EventChipProps) => 
 
     // cancelled events should be shown with a strikethrough
     const status = dashboardContext.eventStatus.getById(props.value.statusId);
-    const href = dashboardContext.isAuthorized(Permission.view_events) ? router.getURIForEvent(props.value) : undefined;
+    const href = dashboardContext.isAuthorized(BandPermission.view_events) ? router.getURIForEvent(props.value) : undefined;
 
     return <CMChip
         variation={props.variation}

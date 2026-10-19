@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "@prisma/client";
 import db from "db";
 import { createHash } from "node:crypto";
@@ -109,7 +110,7 @@ export async function lookupStaticTranslation(
     localeTag: string,
     scope: "global" | "band"
 ): Promise<string | null> {
-    auth.requirePermission(scope === "global" ? Permission.manage_global_localization : Permission.manage_band_localization);
+    auth.requirePermission(scope === "global" ? Permission.manage_global_localization : BandPermission.manage_band_localization);
     const rows = scope === "global"
         ? await database.staticLocalizedStringValue.findMany({ where: { stringKey: key }, select: valueSelection })
         : await database.bandStaticLocalizedStringValue.findMany({ where: { stringKey: key, bandId: auth.requireBand().id }, select: valueSelection });

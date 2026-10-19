@@ -19,7 +19,7 @@ vi.mock("@blitzjs/rpc", () => ({ useQuery: (_resolver: unknown, args: { table: {
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({ refreshCachedData: refreshDashboard }) }));
 vi.mock("src/core/components/SnackbarContext", () => ({ useSnackbar: () => ({ showMessage }) }));
 vi.mock("src/locale/components/PresentationProvider", () => ({ usePresentation: () => ({ bandPublicId: bandId, data: {
-    authorization: { bandUserPublicId: member.publicId, effectivePermissionNames: permissions }, input: { clientRequestId: requestId },
+    authorization: { bandPublicId: bandId, bandUserPublicId: member.publicId, effectivePermissionNames: permissions }, input: { clientRequestId: requestId },
 }, invalidate: invalidatePresentation }) }));
 vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({ getPlainString: (key: LocalizedPlainStringKey) => kStaticLocalizedStringRegistry[key].defaultValue }) }));
 
@@ -132,7 +132,7 @@ describe("band role editor", () => {
         await selectRole("Musiciens");
         await click("Save role");
         await act(async () => document.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
-        await selectRole("No assigned role (new-member defaults apply)");
+        await selectRole("Use Public band role");
         await click("Save role");
         expect(invoke).toHaveBeenLastCalledWith({ membershipId: member.publicId, roleId: null, acknowledgeContinuityRisk: false });
     });

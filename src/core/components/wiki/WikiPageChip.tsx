@@ -1,4 +1,4 @@
-import { Permission } from "@/shared/permissions";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { getHashedColor } from "@/shared/utils";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { wikiParseCanonicalWikiPath, wikiPageInternalHref } from "../../wiki/shared/wikiUtils";
@@ -21,7 +21,7 @@ export interface WikiPageChipProps {
 export const WikiPageChip = (props: WikiPageChipProps) => {
     const dashboardContext = useDashboardContext();
     const router = useCmdbRouter();
-    const isAuthorized = dashboardContext.isAuthorized(Permission.view_wiki_pages);
+    const isAuthorized = dashboardContext.isAuthorized(BandPermission.view_wiki_pages);
     const wikiPath = wikiParseCanonicalWikiPath(props.slug);
 
     return <CMChip

@@ -1,3 +1,4 @@
+import { resetAuthorizationDatabase } from "./support/authorizationSeed";
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 
 vi.mock("db", async () => {
@@ -13,7 +14,7 @@ import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/feature
 import { createActionRecord } from "@db3/server/recordActionServer";
 import { authoredTranslationContext } from "src/locale/shared/authoredTranslations";
 import { MakePublicFeedResponseSpec } from "src/core/db3/shared/publicFeedApi";
-import { gPermissionRegistry, Permission } from "shared/permissions";
+import { gPermissionRegistry, getPermissionDefinition, Permission } from "shared/permissions";
 import { parsePublicId, type FrontpageGalleryItemPublicId } from "shared/publicId";
 import { galleryPublicId } from "../support/galleryFixtures";
 import { createAuthorizationPersona, createAuthorizationTestUser, testPublicRolePermissions } from "./support/authorizationFixtures";
@@ -49,15 +50,16 @@ function resetGalleryEditor(isDeleted = false) {
     const permissions = [Permission.login, Permission.edit_public_homepage];
     const actor = createAuthorizationTestUser("normal", { id: 5, permissions });
     const permissionId = (name: Permission) => gPermissionRegistry.findIndex(definition => definition.key === name) + 1;
-    authorizationTestDb.reset({
-        user: [{ ...actor, globalRoleId: null, isDeleted: false, mergedIntoUserId: null }],
+    resetAuthorizationDatabase({
+        user: [actor],
         band: [{ id: 1, publicId: bandPublicId, isDeleted: false }],
         bandUser: [{ id: 1, publicId: parsePublicId<"BandUser">("GalleryMember001"), userId: actor.id, bandId: 1, bandRoleId: 20, isDeleted: false }],
         bandRole: [{ id: 10, isPublicRole: true, isDeleted: false }, { id: 20, isDeleted: false }],
         permission: gPermissionRegistry.map((definition, index) => ({ id: index + 1, name: definition.key, isDeleted: false })),
-        bandRolePermission: [...testPublicRolePermissions, Permission.edit_public_homepage].map((name, index) => ({
-            id: index + 1, bandRoleId: name === Permission.edit_public_homepage ? 20 : 10, permissionId: permissionId(name),
-        })),
+        bandRolePermission: [
+            ...testPublicRolePermissions.filter(name => getPermissionDefinition(name).scope === "band").map((name, index) => ({ id: index + 1, bandRoleId: 10, permissionId: permissionId(name) })),
+            ...actor.permissions.filter(name => getPermissionDefinition(name).scope === "band").map((name, index) => ({ id: 100 + index, bandRoleId: 20, permissionId: permissionId(name) })),
+        ],
         file: [{
             id: 10, publicId: filePublicId(10), bandId: 1, uploadedByUserId: actor.id,
             externalURI: null, isDeleted: false, visiblePermissionId: permissionId(Permission.visibility_public)
@@ -72,7 +74,7 @@ function resetGalleryEditor(isDeleted = false) {
 
 describe("FrontpageGalleryItem public identity", () => {
     beforeEach(() => {
-        authorizationTestDb.reset({ user: [], role: [publicRole], frontpageGalleryItem: [], change: [], action: [] });
+        resetAuthorizationDatabase({ user: [], role: [publicRole], frontpageGalleryItem: [], change: [], action: [] });
     });
 
     it("projects a public feed item without its natural key", () => {
@@ -161,7 +163,7 @@ describe("FrontpageGalleryItem public identity", () => {
     });
 
     it("accepts public telemetry identity and resolves its storage foreign key", async () => {
-        authorizationTestDb.reset({ role: [publicRole], frontpageGalleryItem: [galleryRow(20, 0)], action: [] });
+        resetAuthorizationDatabase({ role: [publicRole], frontpageGalleryItem: [galleryRow(20, 0)], action: [] });
         const input = {
             feature: ActivityFeature.frontpagegallery_item_edit,
             frontpageGalleryItemId: galleryPublicId(20),

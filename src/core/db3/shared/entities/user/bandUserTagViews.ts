@@ -1,5 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "@prisma/client";
-import { Permission } from "shared/permissions";
 import type { UserTagPublicId } from "shared/publicId";
 import { bandCatalogAuth, bandCatalogFields, bandCatalogCreateFromString, catalogColor, catalogDisplayModel } from "../../columnTypes/bandCatalog";
 import { MakeColorField } from "../../columnTypes/color";
@@ -12,7 +12,7 @@ import { defineCrudView } from "../../core/db3CrudView";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { kReadOnlyAuthMap } from "../common/entityCommon";
 
-const { authMap, sourceAuthMap, tableAuthMap } = bandCatalogAuth(Permission.manage_user_taxonomy);
+const { authMap, sourceAuthMap, tableAuthMap } = bandCatalogAuth(BandPermission.manage_user_taxonomy);
 const colorField = inheritedField(MakeColorField({ authMap }));
 
 export const bandUserTagSelection = Prisma.validator<Prisma.BandUserTagDefaultArgs>()({
@@ -29,7 +29,7 @@ export const xBandUserTag = defineTable({
     deletePolicy: "disabled", tableAuthMap, queryStrategy: "resolved",
     bandScope: {
         member: "bandId", inheritedFrom: "globalUserTag", inheritedSourceMember: "globalUserTagId",
-        hiddenMember: "isHidden", managePermission: Permission.manage_user_taxonomy,
+        hiddenMember: "isHidden", managePermission: BandPermission.manage_user_taxonomy,
     },
     naturalOrderBy: { sortOrder: "asc", name: "asc" },
     getSelectionArgs: () => bandUserTagSelection,

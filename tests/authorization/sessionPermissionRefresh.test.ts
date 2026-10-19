@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Permission, gPermissionRegistry } from "shared/permissions";
+import { Permission, gPermissionRegistry, getPermissionDefinition } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 
 vi.mock("db", async () => {
@@ -28,11 +28,13 @@ function seedSessionAuthorization(principal: AuthorizationTestUser | null) {
         user: principal ? [{ ...principal, globalRoleId: principal.globalRoleId, mergedIntoUserId: null }] : [],
         permission: gPermissionRegistry.map((definition, index) => ({ id: index + 1, name: definition.key, publicId: parsePublicId<"Permission">(`SessionPerm${String(index + 1).padStart(5, "0")}`), isDeleted: false,
             description: "", sortOrder: index, isVisibility: false, significance: null, color: null, iconName: null })),
-        globalRole: principal?.globalRole ? [{ id: principal.globalRole.id, isDeleted: false, isSysAdminRole: false }] : [],
-        globalRolePermission: grants.map((grant, index) => ({ id: index + 1, globalRoleId: principal!.globalRoleId,
-            permissionId: permissionId(grant.permission.name) })),
+        globalRole: [{ id: 900000, isPublicRole: true, isDeleted: false }, ...(principal?.globalRole ? [{ id: principal.globalRole.id, isDeleted: false, isSysAdminRole: false }] : [])],
+        globalRolePermission: [
+            ...testPublicRolePermissions.filter(name => getPermissionDefinition(name).scope === "global").map((name, index) => ({ id: 900000 + index, globalRoleId: 900000, permissionId: permissionId(name) })),
+            ...grants.map((grant, index) => ({ id: index + 1, globalRoleId: principal!.globalRoleId, permissionId: permissionId(grant.permission.name) })),
+        ],
         bandRole: [{ id: 1, isDeleted: false, isPublicRole: true, isRoleForNewUsers: false }],
-        bandRolePermission: testPublicRolePermissions.map((permission, index) => ({ id: index + 1, bandRoleId: 1, permissionId: permissionId(permission) })),
+        bandRolePermission: testPublicRolePermissions.filter(name => getPermissionDefinition(name).scope === "band").map((permission, index) => ({ id: index + 1, bandRoleId: 1, permissionId: permissionId(permission) })),
     });
 }
 
@@ -59,7 +61,7 @@ describe("authorization refresh on every request", () => {
         const expected = await loadAuthorization(createAuthorizationTestContext(user).session);
         session.$publicData.permissionNames = [...expected.sessionPermissions.names];
         const lookup = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst");
-        const roles = vi.spyOn(authorizationTestDb.getDelegate("bandRole"), "findMany");
+        const roles = vi.spyOn(authorizationTestDb.getDelegate("globalRole"), "findMany");
         const setPublicData = vi.spyOn(session, "$setPublicData");
         const [first, second] = await Promise.all([
             loadAuthorization(session), loadAuthorization(session),
@@ -130,7 +132,7 @@ describe("authorization refresh on every request", () => {
         await loadAuthorization(second);
         // Platform grants on a public band role cannot enter a shared session.
         expect(second.$publicData.permissionNames).not.toContain(Permission.manage_global_settings);
-        expect(second.$publicData.permissionNames).not.toContain(Permission.practice_tools_use);
+        expect(second.$publicData.permissionNames).toContain(Permission.practice_tools_use);
         expect(second.userId).toBe(first.userId);
     });
 
@@ -143,12 +145,12 @@ describe("authorization refresh on every request", () => {
         expect(session.userId).toBe(user.id);
     });
 
-    it("drops assigned global grants but retains account login when the role is removed", async () => {
+    it("selects Global Public without retaining login when the assigned role is cleared", async () => {
         const { session } = createAuthorizationTestContext(user);
         seedSessionAuthorization({ ...user, globalRoleId: null, globalRole: null });
         await loadAuthorization(session);
         expect(session.$publicData.permissionNames).not.toContain(Permission.manage_global_users);
-        expect(session.$publicData.permissionNames).toContain(Permission.login);
+        expect(session.$publicData.permissionNames).not.toContain(Permission.login);
         expect(session.$publicData.permissionNames).toContain(Permission.public);
         expect(session.userId).toBe(user.id);
     });
@@ -175,7 +177,7 @@ describe("authorization refresh on every request", () => {
 
     it("fails closed when authorization cannot be read", async () => {
         const { session } = createAuthorizationTestContext(user);
-        vi.spyOn(authorizationTestDb.getDelegate("bandRole"), "findMany").mockRejectedValue(new Error("database unavailable"));
+        vi.spyOn(authorizationTestDb.getDelegate("globalRole"), "findMany").mockRejectedValue(new Error("database unavailable"));
         const setPublicData = vi.spyOn(session, "$setPublicData");
         await expect(loadAuthorization(session)).rejects.toThrow("database unavailable");
         expect(setPublicData).not.toHaveBeenCalled();

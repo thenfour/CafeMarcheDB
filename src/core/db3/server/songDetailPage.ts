@@ -1,5 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { NotFoundError } from "blitz";
-import { Permission } from "shared/permissions";
 import type { SongPublicId } from "shared/publicId";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import type { PresentationInput } from "src/locale/shared/presentationInput";
@@ -12,7 +12,7 @@ export function readSongDetailPage(database: DB3ReadDatabase, authorization: CMS
 ): Promise<{ title: string; songId: SongPublicId } | null> {
     return executeDB3Read(database, authorization, async context => {
         const auth = context.authorization;
-        if (!auth.user || !auth.hasPermission(Permission.view_songs) || !input.bandPublicId
+        if (!auth.user || !auth.hasPermission(BandPermission.view_songs) || !input.bandPublicId
             || auth.band?.publicId !== input.bandPublicId) {
             return null;
         }

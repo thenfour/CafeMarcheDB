@@ -1,6 +1,6 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import type { Prisma } from "@prisma/client";
 import { AuthorizationError } from "blitz";
-import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { GetFilteredSongsArgsSchema, GetFilteredSongsItemSongSelect, type GetFilteredSongsArgs, type GetFilteredSongsRet } from "../shared/apiTypes";
@@ -16,7 +16,7 @@ function requireSetlistSongBand(auth: CMServerAuthorization, args: GetFilteredSo
     if (band.publicId !== args.bandPublicId) {
         throw new AuthorizationError("Song lookup requires the selected band.");
     }
-    auth.requirePermission(Permission.view_songs);
+    auth.requirePermission(BandPermission.view_songs);
     return band.id;
 }
 

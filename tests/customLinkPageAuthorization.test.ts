@@ -1,3 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
+import { permissionNamesSatisfyRequirement, type PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import type { SessionContext } from "@blitzjs/auth";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
@@ -16,8 +18,8 @@ describe("custom link page authorization", () => {
     beforeEach(() => loadAuth.mockReset());
 
     function grant(...permissions: Permission[]) {
-        const requirePermission = vi.fn((permission: Permission) => {
-            if (!permissions.includes(permission)) {
+        const requirePermission = vi.fn((permission: PermissionRequirement) => {
+            if (!permissionNamesSatisfyRequirement(permissions, permission, true)) {
                 throw new Error("Denied");
             }
         });
@@ -29,7 +31,7 @@ describe("custom link page authorization", () => {
         const requirePermission = grant(Permission.view_custom_links);
         await authorizePageRequest("/backstage/customLinks", session, bandPublicId);
         expect(loadAuth).toHaveBeenCalledWith(session, bandPublicId);
-        expect(requirePermission).toHaveBeenCalledWith(Permission.view_custom_links);
+        expect(requirePermission).toHaveBeenCalledWith(BandPermission.view_custom_links);
     });
 
     it("rejects a selected band whose actor lacks the custom-link capability", async () => {

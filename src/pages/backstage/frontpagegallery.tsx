@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { defineCmdbPage } from "src/route/cmdbPage";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { authoredTranslationContext, resolveAuthoredTranslations } from "src/locale/shared/authoredTranslations";
@@ -79,8 +80,8 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
     const dashboard = useDashboardContext();
     const { showMessage } = React.useContext(SnackbarContext);
     const create = DB3Client.useDB3Command(db3.frontpageGalleryItemEditorView.crud.operations.create!.command);
-    const canUpload = dashboard.isAuthorized(Permission.upload_files);
-    const canReadImages = dashboard.isAuthorized(Permission.view_files);
+    const canUpload = dashboard.isAuthorized(BandPermission.upload_files);
+    const canReadImages = dashboard.isAuthorized(BandPermission.view_files);
     const createItem = async (fileId: db3.ClientOf<typeof db3.fileImageChoiceView>["publicId"]) => {
         const permission = dashboard.getPermission(Permission.visibility_public);
         if (!permission) {
@@ -362,7 +363,7 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
                 }} className={`toolbutton resetIcon`}>⟲</CMButton>
             </Tooltip>
             <Tooltip title={"Click here to process the image with cropping. The idea is your crops probably result in a smaller image for more efficient page download. If you didn't crop anything don't bother with this. Bake creates a new cropped, rotated and resized image file. Do this if you are sure you're done with edits."}>
-                <CMButton disabled={pending || !dashboard.isAuthorized(Permission.upload_files)} onClick={handleSaveClick} className={`toolbutton save`}>{gIconMap.Save()} Bake new image</CMButton>
+                <CMButton disabled={pending || !dashboard.isAuthorized(BandPermission.upload_files)} onClick={handleSaveClick} className={`toolbutton save`}>{gIconMap.Save()} Bake new image</CMButton>
             </Tooltip>
             <Tooltip title={"Click here to save your edits. The underlying image file won't be modified but the edits will be updated for the public homepage. Do this if you didn't perform any cropping, or if you are just tweaking the image a little bit. Avoids creating a new image file."}>
                 <CMButton disabled={pending} onClick={handleSaveRotationClick} className={`toolbutton save`}>{gIconMap.Save()} Save edits</CMButton>

@@ -74,8 +74,8 @@ describe("user recovery", () => {
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
 
-    it("uses inherited Sysadmin permissions for recovery capabilities and the mutation", async () => {
-        const sysadmin = createAuthorizationTestUser("sysadmin", { id: 803, permissions: [Permission.login] });
+    it("uses assigned Sysadmin permissions for recovery independently of the display flag", async () => {
+        const sysadmin = createAuthorizationTestUser("sysadmin", { id: 803, isSysAdmin: false });
         const protectedTarget = createAuthorizationTestUser("sysadmin", { id: target.id, isDeleted: true });
         resetAuthorizationDatabase({ user: [sysadmin, protectedTarget], change: [] });
         const ctx = createAuthorizationTestContext(sysadmin);

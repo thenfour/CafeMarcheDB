@@ -18,8 +18,8 @@ export async function validateRolePermissionWrite(scope: RoleScope, context: Ass
         if (permission.name === Permission.never_grant) {
             throw new AuthorizationError("never_grant cannot be assigned to roles.");
         }
-        if (scope === "band" && (!isPermission(permission.name) || getPermissionDefinition(permission.name).scope === "platform")) {
-            throw new AuthorizationError("Band roles cannot grant platform or unknown permissions.");
+        if (!isPermission(permission.name) || getPermissionDefinition(permission.name).scope !== scope) {
+            throw new AuthorizationError(`A ${scope} role can grant only known ${scope} permissions.`);
         }
     }
     if (scope === "global") {

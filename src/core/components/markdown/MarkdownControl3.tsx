@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import CloseFullscreenIcon from "@mui/icons-material/CloseFullscreen";
 import OpenInFullIcon from "@mui/icons-material/OpenInFull";
 import TabIcon from "@mui/icons-material/Tab";
@@ -133,7 +134,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const controlledTextArea = useControlledTextArea(textAreaRef, useValue, handleChange);
     const uploadsEnabled = !readonly && props.allowUploads !== false
         && !!dashboardContext.authorizationContext?.userPublicId
-        && !!dashboardContext.authorizationContext?.bandPublicId && dashboardContext.isAuthorized(Permission.upload_files);
+        && !!dashboardContext.authorizationContext?.bandPublicId && dashboardContext.isAuthorized(BandPermission.upload_files);
     // Markdown attachments retain the original public visibility and image size policy.
     const uploadFields = props.uploadFileContext?.visiblePermissionId || props.uploadFileContext?.visiblePermission
         ? props.uploadFileContext : { ...props.uploadFileContext, visiblePermission: Permission.visibility_public };

@@ -43,7 +43,8 @@ export async function withSettingsMysqlFixture(database: PrismaClient,
                 bandRolePermissions: { create: permissions.map(permission => ({ publicId: generatePublicId(), permissionId: permission.id })) },
             } });
             const globalRole = await tx.globalRole.findFirstOrThrow({ where: { isSysAdminRole: true } });
-            const user = await tx.user.create({ data: { publicId: generatePublicId<"User">(), name: "Shared settings person", email: "settings@test.invalid" } });
+            const accountRole = await tx.globalRole.findFirstOrThrow({ where: { isRoleForNewUsers: true, isDeleted: false } });
+            const user = await tx.user.create({ data: { publicId: generatePublicId<"User">(), name: "Shared settings person", email: "settings@test.invalid", globalRoleId: accountRole.id } });
             const admin = await tx.user.create({ data: { publicId: generatePublicId<"User">(), name: "Platform fixture", email: "platform@test.invalid", globalRoleId: globalRole.id } });
             const bands: SettingsMysqlFixture["bands"] = [];
             for (let index = 0; index < 2; index++) {

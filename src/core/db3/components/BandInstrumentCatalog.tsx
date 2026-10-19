@@ -1,7 +1,8 @@
+import { scopedAuthorizationSatisfiesRequirement } from "src/auth/shared/permissionRequirement";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { invalidateQuery, useMutation, useQuery } from "@blitzjs/rpc";
 import { Alert, Checkbox, FormControlLabel, MenuItem, Stack, TextField } from "@mui/material";
 import React from "react";
-import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
@@ -52,7 +53,7 @@ function LoadedCatalog({ mode }: { readonly mode: "instrument" | "group" }) {
     const dashboard = useDashboardContext();
     const presentation = usePresentation();
     const context = useDB3QueryContext();
-    const canManage = presentation.data?.authorization.effectivePermissionNames.includes(Permission.admin_instruments) ?? false;
+    const canManage = scopedAuthorizationSatisfiesRequirement(presentation.data?.authorization, BandPermission.admin_instruments) ?? false;
     const [includeHidden, setIncludeHidden] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const [data, { refetch }] = useQuery(getBandInstrumentCatalog, {

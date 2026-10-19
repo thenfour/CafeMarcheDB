@@ -6,7 +6,7 @@ import * as db3 from "src/core/db3/db3";
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
 import { authorizeAndProjectViewDto } from "src/core/db3/server/db3QueryCore";
 import { prepareDB3ReadSelection } from "src/core/db3/shared/core/db3ReadSelection";
-import { testServerAuthorization } from "./support/serverAuthorization";
+import { testBandAuthorization, testServerAuthorization } from "./support/serverAuthorization";
 
 const userId = parsePublicId<"User">("SharedAccount001");
 const person = {
@@ -22,7 +22,7 @@ function authorization(actorId: number, ...permissions: Permission[]) {
 }
 
 const owner = authorization(person.id, Permission.login);
-const reader = authorization(20, Permission.login, Permission.view_users_basic_info);
+const reader = testBandAuthorization({ id: 20 }, authorization(20, Permission.login, Permission.view_users_basic_info).effectivePermissions);
 const platformAdmin = authorization(1, Permission.login, Permission.manage_global_users, Permission.sysadmin);
 const membershipFields = ["instruments", "tags", "bandUserInstruments", "bandUserTagAssignments", "bandRoleId", "bandId"];
 const secrets = ["hashedPassword", "calendarFeedToken", "accessToken", "uid", "signInMethods", "globalRole", "globalRoleId"];
@@ -94,7 +94,8 @@ describe("shared person and membership contract boundary", () => {
         expect(dto).toMatchObject({ publicId: userId, name: "Alice" });
         expect(dto).not.toHaveProperty("email");
         expect(dto).not.toHaveProperty("phone");
-        const contactReader = authorization(20, Permission.login, Permission.view_users_basic_info, Permission.view_user_contact_info);
+        const contactReader = testBandAuthorization({ id: 20 }, authorization(20, Permission.login,
+            Permission.view_users_basic_info, Permission.view_user_contact_info).effectivePermissions);
         expect(authorizeAndProjectViewDto(db3.userEditorView, activePerson, contactReader, "shared-contact-reader"))
             .toMatchObject({ email: person.email, phone: person.phone });
     });

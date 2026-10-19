@@ -22,7 +22,11 @@ const mutate = vi.fn(async (edit: SetRoleDesignation) => edit);
 const refetch = vi.fn(async () => {});
 const refreshDashboard = vi.fn(async () => {});
 const invalidate = vi.fn(async () => {});
-const globalRoles = [{ publicId: "GlobalRole000001", name: { value: "Sysadmin" }, isSysAdminRole: true }];
+const globalRoles = [
+    { publicId: "GlobalRole000001", name: { value: "Sysadmin" }, isSysAdminRole: true, isPublicRole: false, isRoleForNewUsers: false },
+    { publicId: "GlobalRole000002", name: { value: "Global Public" }, isSysAdminRole: false, isPublicRole: true, isRoleForNewUsers: false },
+    { publicId: "GlobalRole000003", name: { value: "Account" }, isSysAdminRole: false, isPublicRole: false, isRoleForNewUsers: true },
+];
 let bandRoles: Array<{ publicId: string; name: { value: string }; isPublicRole: boolean; isRoleForNewUsers: boolean }>;
 let root: Root;
 let container: HTMLDivElement;
@@ -44,12 +48,20 @@ async function renderControl() {
     await act(async () => root.render(<RoleDesignationControls />));
 }
 async function selectNewMembers() {
-    const control = document.querySelector<HTMLElement>('[aria-labelledby="role-designation-newUsers-label"]')!;
+    const control = document.querySelector<HTMLElement>('[aria-labelledby="role-designation-band-newUsers-label"]')!;
     await act(async () => control.dispatchEvent(new MouseEvent("mousedown", { bubbles: true })));
     await act(async () => document.querySelector<HTMLElement>('[data-value="BandRole00000002"]')!.click());
 }
 
 describe("role designation controls", () => {
+    it.each(["public", "newUsers"] as const)("writes the global %s designation independently of its band counterpart", async designation => {
+        await renderControl();
+        const control = document.querySelector<HTMLElement>(`[aria-labelledby="role-designation-global-${designation}-label"]`)!;
+        await act(async () => control.dispatchEvent(new MouseEvent("mousedown", { bubbles: true })));
+        await act(async () => document.querySelector<HTMLElement>('[data-value="GlobalRole000001"]')!.click());
+        expect(mutate).toHaveBeenCalledWith({ scope: "global", designation, roleId: "GlobalRole000001" });
+        expect(document.querySelector('[aria-labelledby="role-designation-band-public-label"]')?.textContent).toBe("Public");
+    });
     it("writes the band definition identity and refreshes both editors and authorization", async () => {
         await renderControl(); await selectNewMembers();
         expect(mutate).toHaveBeenCalledWith({ scope: "band", designation: "newUsers", roleId: "BandRole00000002" });
@@ -59,7 +71,7 @@ describe("role designation controls", () => {
         vi.spyOn(console, "error").mockImplementation(() => {});
         mutate.mockRejectedValueOnce(new Error("Revoked authority"));
         await renderControl(); await selectNewMembers();
-        expect(document.querySelector('[aria-labelledby="role-designation-newUsers-label"]')?.textContent).toBe("Membres");
+        expect(document.querySelector('[aria-labelledby="role-designation-band-newUsers-label"]')?.textContent).toBe("Membres");
         expect(document.querySelector('[role="alert"]')?.textContent).toContain("Your selection is retained");
         expect(refetch).not.toHaveBeenCalled();
         await act(async () => [...document.querySelectorAll("button")].find(element => element.textContent === "Retry role change")!.click());

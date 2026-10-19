@@ -1,34 +1,36 @@
-import { getPermissionDefinition, isPermission, Permission } from "shared/permissions";
-import { parsePublicId, type BandPublicId, type UserPublicId } from "shared/publicId";
 import type { SessionContext } from "@blitzjs/auth";
 import { AuthenticationError, AuthorizationError } from "blitz";
-import { UserWithRolesArgs, type UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
+import { getPermissionDefinition, isPermission, Permission } from "shared/permissions";
+import { parsePublicId, type BandPublicId, type UserPublicId } from "shared/publicId";
+import { HydratedUserWithRolesPayload, NullableHydrateUserWithRoles, UserWithRolesArgs, type UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
 import type { PublicDataType } from "types";
 import type { IAuthorization, ScopedAuthorizationData } from "../shared/cmAuthorization";
+import { describePermissionRequirement, satisfiesPermissionRequirement, type PermissionRequirement } from "../shared/permissionRequirement";
 import { PermissionSet } from "../shared/PermissionSet";
-import { loadEffectivePermissionContext, type EffectivePermissionContext } from "./effectivePermissions";
-import { ServerPermissionSet } from "./ServerPermissionSet";
-import { assertAuthorizationBandScope } from "./requestAuthorizationScope";
 import {
     authorizationDatabase, resolveAuthorizationContext,
     type AuthorizationBand, type AuthorizationDatabase,
     type AuthorizationMembership, type ResolvedAuthorizationContext,
 } from "./authorizationContext";
+import { loadEffectivePermissionContext, type EffectivePermissionContext } from "./effectivePermissions";
+import { assertAuthorizationBandScope } from "./requestAuthorizationScope";
+import { ServerPermissionSet } from "./ServerPermissionSet";
 
-const loadFreshPrincipal = (
+const loadFreshPrincipal = async (
     database: AuthorizationDatabase,
     userId: number | null | undefined,
-): Promise<UserWithRolesPayload | null> => userId
-        ? database.user.findFirst({
-            ...UserWithRolesArgs,
-            where: { id: userId, isDeleted: false, mergedIntoUserId: null },
-        })
-        : Promise.resolve(null);
+): Promise<HydratedUserWithRolesPayload | null> => {
+    if (!userId) return Promise.resolve(null);
+    return NullableHydrateUserWithRoles(await database.user.findFirst({
+        ...UserWithRolesArgs,
+        where: { id: userId, isDeleted: false, mergedIntoUserId: null },
+    }));
+};
 
 type AuthorizationDetails = ResolvedAuthorizationContext & EffectivePermissionContext;
 
 export class CMServerAuthorization implements IAuthorization {
-    readonly user: UserWithRolesPayload | null;
+    readonly user: HydratedUserWithRolesPayload | null;
     readonly userId: number | null;
     readonly userPublicId: UserPublicId | null;
     readonly sessionHandle: string | null;
@@ -40,7 +42,7 @@ export class CMServerAuthorization implements IAuthorization {
     readonly membership: AuthorizationMembership | null;
 
     constructor(
-        user: UserWithRolesPayload | null,
+        user: HydratedUserWithRolesPayload | null,
         effectivePermissions: ServerPermissionSet,
         sessionHandle: string | null = null,
         private readonly details?: AuthorizationDetails,
@@ -64,14 +66,17 @@ export class CMServerAuthorization implements IAuthorization {
         }
     }
 
-    hasPermission(permission: Permission): boolean {
-        return permission !== Permission.never_grant && this.effectivePermissions.includesName(permission);
+    hasPermission(permission: PermissionRequirement): boolean {
+        return satisfiesPermissionRequirement(permission, candidate => candidate !== Permission.never_grant
+            && this.effectivePermissions.includesName(candidate), this.band !== null);
     }
 
-    requirePermission(permission: Permission): void {
+    requirePermission(permission: PermissionRequirement): void {
         if (!this.hasPermission(permission)) {
-            if (!this.user) throw new AuthenticationError(`Not authorized for ${permission}.`);
-            throw new AuthorizationError(`Not authorized for ${permission}.`);
+            if (!this.user) {
+                throw new AuthenticationError(`Not authorized for ${describePermissionRequirement(permission)}.`);
+            }
+            throw new AuthorizationError(`Not authorized for ${describePermissionRequirement(permission)}.`);
         }
     }
 
@@ -115,12 +120,12 @@ export class CMServerAuthorization implements IAuthorization {
 }
 
 export class CMServerAuthorizationWithUser extends CMServerAuthorization {
-    declare readonly user: UserWithRolesPayload;
+    declare readonly user: HydratedUserWithRolesPayload;
     declare readonly userId: number;
     declare readonly userPublicId: UserPublicId;
 
     constructor(
-        user: UserWithRolesPayload,
+        user: HydratedUserWithRolesPayload,
         effectivePermissions: ServerPermissionSet,
         sessionHandle: string | null = null,
         details?: AuthorizationDetails,
@@ -155,7 +160,7 @@ async function synchronizeSharedSession(session: SessionContext, auth: CMServerA
     const previous = session.$publicData;
     const current = {
         permissionNames: auth.sessionPermissions.names,
-        isSysAdmin: auth.user?.isSysAdmin ?? false,
+        isSysAdmin: auth.hasPermission(Permission.sysadmin),
         showAdminControls: auth.sessionPermissions.includesName(Permission.sysadmin) && !!previous.showAdminControls,
         GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,
         GOOGLE_ANALYTICS_ID_PUBLIC: process.env.GOOGLE_ANALYTICS_ID_PUBLIC,

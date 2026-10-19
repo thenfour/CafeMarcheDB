@@ -4,6 +4,11 @@ Replace implicit permission grants and mixed scope rules with direct database
 role-permission mappings. Keep band context explicit and make global authority
 over band operations explicit.
 
+Implemented 2026-10-19. The
+[verification checkpoint](04-implementation-plan.md#explicit-role-authorization-checkpoint)
+records the completed checks. The migration is prepared and tested on disposable
+databases; apply it before running the updated application against existing data.
+
 ## Target contract
 
 - Permissions and roles each have two scopes: `global` and `band`. Remove the
@@ -27,15 +32,21 @@ over band operations explicit.
 - Account permissions and Sysadmin authority come from configured grants.
   Default roles, when needed, are assigned during account or membership creation.
 
-## Decisions before implementation
+## Resolved role selection and global authority
 
-Define role selection for authenticated accounts without an assigned global role,
-users without an active membership, and active memberships without a role.
-Specify when the corresponding Public role applies and when missing or invalid
-configuration must fail. Public-role selection must never create membership.
+An unassigned global role selects Global Public. No active membership or an
+unassigned membership role selects Band Public. An explicitly assigned missing
+or deleted role fails; Public selection never creates membership. Signup and
+account creation assign the configured new-account role. Seeded/migrated
+memberships receive explicit assignments.
 
-Define the small set of global capabilities over band operations and exactly
-which operations each permits. Avoid duplicating every band permission.
+The initial global capability is `global_band_admin`. It permits band feature
+operations through explicit `BandPermission` alternatives, only with a selected
+band. It does not add ordinary band permissions to the grant list. Private rows
+retain owner checks, and operations requiring membership still enforce it.
+Visibility choices and configured visibility reads explicitly recognize this
+authority. Additional moderation capabilities can be added when their operation
+boundaries are defined.
 
 ## Linear implementation plan
 

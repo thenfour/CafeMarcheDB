@@ -38,7 +38,7 @@ const policyTables = registeredTables.filter(table => (
 
 const actor = createAuthorizationTestUser("normal", {
   id: 501,
-  permissions: gPermissionOrdered,
+  permissions: gPermissionOrdered.filter(permission => permission !== Permission.global_band_admin),
 })
 const actorPublicData = createAuthorizationSchemaData(actor)
 const grantedVisibilityId = authorizationPermissionId(Permission.visibility_public)
@@ -250,7 +250,7 @@ describe("schema-wide DB3 read-policy contracts", () => {
   it.each(policyTables.map(table => [table.tableID, table] as const))(
     "%s applies row policies to Sysadmins and requires explicit deleted-row access",
     (_tableId, table) => {
-      const sysadmin = createAuthorizationTestUser("sysadmin", { id: 601 })
+      const sysadmin = createAuthorizationTestUser("sysadmin", { id: 601, permissions: gPermissionOrdered.filter(permission => permission !== Permission.global_band_admin) })
       const publicData = policyAuthorization(table, createAuthorizationSchemaData(sysadmin))
       const restrictedWhere = table.CalculateWhereClause({
         filterModel: emptyFilter,

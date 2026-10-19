@@ -1,3 +1,5 @@
+import type { PermissionRequirement } from "src/auth/shared/permissionRequirement";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { requireRestoredApplicationFeature } from "src/core/shared/applicationRecovery";
 import { AuthorizationError } from "blitz";
 import db, { Prisma } from "db";
@@ -222,9 +224,9 @@ interface SearchDomain {
     readonly view: db3.AnyDB3View;
     readonly pageViews?: readonly db3.AnyDB3View[];
     readonly modes?: readonly SearchModeDefinition[];
-    readonly permissions: readonly Permission[];
+    readonly permissions: readonly PermissionRequirement[];
     readonly sorts: readonly string[];
-    readonly criteria: ReadonlyArray<{ column: string; permission: Permission }>;
+    readonly criteria: ReadonlyArray<{ column: string; permission: PermissionRequirement }>;
     readonly nameSearchReferences: readonly SearchReferenceName[];
 }
 
@@ -234,57 +236,57 @@ const searchDomains: readonly SearchDomain[] = [
         view: db3.eventSearchView,
         pageViews: [db3.eventRelevanceView],
         modes: [eventRelevanceSearchMode],
-        permissions: [Permission.view_events_nonpublic],
+        permissions: [BandPermission.view_events_nonpublic],
         // TODO: these should be well-typed such that a misspelled symbol
         // would fail to compile!
         sorts: ["name", "startsAt"],
-        criteria: ["startsAt", "type", "status", "tags"].map(column => ({ column, permission: Permission.view_events_nonpublic })),
+        criteria: ["startsAt", "type", "status", "tags"].map(column => ({ column, permission: BandPermission.view_events_nonpublic })),
         nameSearchReferences: [db3.xEvent.fields.type, db3.xEvent.fields.status, db3.xEvent.fields.tags]
-            .map(field => ({ field, permission: Permission.view_events_nonpublic })),
+            .map(field => ({ field, permission: BandPermission.view_events_nonpublic })),
     },
     {
         table: db3.xSong,
         view: db3.songSearchView,
-        permissions: [Permission.view_songs],
+        permissions: [BandPermission.view_songs],
         // TODO: these should be well-typed such that a misspelled symbol
         // would fail to compile!
         sorts: ["name", "startBPM", "introducedYear", "lengthSeconds"],
-        criteria: [{ column: "tags", permission: Permission.view_songs }],
-        nameSearchReferences: [{ field: db3.xSong.fields.tags, permission: Permission.view_songs }],
+        criteria: [{ column: "tags", permission: BandPermission.view_songs }],
+        nameSearchReferences: [{ field: db3.xSong.fields.tags, permission: BandPermission.view_songs }],
     },
     {
         table: db3.xFile,
         view: db3.fileSearchView,
-        permissions: [Permission.view_files],
+        permissions: [BandPermission.view_files],
         // TODO: these should be well-typed such that a misspelled symbol
         // would fail to compile!
         sorts: ["fileLeafName", "uploadedAt", "sizeBytes", "mimeType"],
-        criteria: ["tags", "taggedInstruments"].map(column => ({ column, permission: Permission.view_files })),
+        criteria: ["tags", "taggedInstruments"].map(column => ({ column, permission: BandPermission.view_files })),
         nameSearchReferences: [db3.xFile.fields.tags, db3.xFile.fields.taggedInstruments]
-            .map(field => ({ field, permission: Permission.view_files })),
+            .map(field => ({ field, permission: BandPermission.view_files })),
     },
     {
         table: db3.xWikiPage,
         view: db3.wikiPageSearchView,
-        permissions: [Permission.view_wiki_pages],
+        permissions: [BandPermission.view_wiki_pages],
         sorts: ["slug", "createdAt", "namespace"],
-        criteria: ["tags", "namespace"].map(column => ({ column, permission: Permission.view_wiki_pages })),
-        nameSearchReferences: [{ field: db3.xWikiPage.fields.tags, permission: Permission.view_wiki_pages }],
+        criteria: ["tags", "namespace"].map(column => ({ column, permission: BandPermission.view_wiki_pages })),
+        nameSearchReferences: [{ field: db3.xWikiPage.fields.tags, permission: BandPermission.view_wiki_pages }],
     },
     {
         table: db3.xBandUser,
         view: db3.bandUserSearchView,
-        permissions: [Permission.search_users, Permission.view_users_basic_info],
+        permissions: [BandPermission.search_users, BandPermission.view_users_basic_info],
         sorts: ["user", "createdAt"],
         criteria: [
-            { column: "bandUserTagAssignments", permission: Permission.view_users_basic_info },
-            { column: "bandUserInstruments", permission: Permission.view_users_basic_info },
-            { column: "bandRole", permission: Permission.manage_users },
+            { column: "bandUserTagAssignments", permission: BandPermission.view_users_basic_info },
+            { column: "bandUserInstruments", permission: BandPermission.view_users_basic_info },
+            { column: "bandRole", permission: BandPermission.manage_users },
         ],
         nameSearchReferences: [
-            { field: db3.xBandUser.fields.bandUserTagAssignments, permission: Permission.view_users_basic_info },
-            { field: db3.xBandUser.fields.bandUserInstruments, permission: Permission.view_users_basic_info },
-            { field: db3.xBandUser.fields.bandRole, permission: Permission.manage_users },
+            { field: db3.xBandUser.fields.bandUserTagAssignments, permission: BandPermission.view_users_basic_info },
+            { field: db3.xBandUser.fields.bandUserInstruments, permission: BandPermission.view_users_basic_info },
+            { field: db3.xBandUser.fields.bandRole, permission: BandPermission.manage_users },
         ],
     },
 ];

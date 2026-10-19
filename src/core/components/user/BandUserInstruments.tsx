@@ -1,7 +1,8 @@
+import { scopedAuthorizationSatisfiesRequirement } from "src/auth/shared/permissionRequirement";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert, Box, Stack, Typography } from "@mui/material";
-import { Permission } from "shared/permissions";
 import type { BandUserPublicId, InstrumentPublicId } from "shared/publicId";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
@@ -67,7 +68,7 @@ export function BandUserInstrumentsEditor({ member, refetch, orientation = "vert
         },
     });
     const canEdit = presentation.data?.authorization.bandUserPublicId === member.publicId
-        || (presentation.data?.authorization.effectivePermissionNames.includes(Permission.manage_users) ?? false);
+        || (scopedAuthorizationSatisfiesRequirement(presentation.data?.authorization, BandPermission.manage_users) ?? false);
     return <Stack spacing={1} aria-busy={saving}>
         {error && !dialog && <Alert severity="error">{error}</Alert>}
         {selected.length === 0 && <Typography>{locale.getPlainString("membership.instruments.empty")}</Typography>}

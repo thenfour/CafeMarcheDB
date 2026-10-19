@@ -157,7 +157,7 @@ describe.skipIf(!settingsMysqlTestUrl)("shared-account dependency inventory on M
             permissions: { create: { publicId: generatePublicId(), permissionId: permission.id } } } });
         const person = await tx.user.update({ where: { id: fixture.user.id }, data: { globalRoleId: role.id } });
         let report = await read(tx, admin, person.publicId);
-        expect(report.userInfo).toMatchObject({ isSysAdmin: false, isProtectedAdministrator: true, globalRoleName: "Member" });
+        expect(report.userInfo).toMatchObject({ isSysAdmin: true, isProtectedAdministrator: true, globalRoleName: "Member" });
         expect(report.riskAssessment).toMatchObject({ riskLevel: "high", blockers: [{ kind: "sysadmin" }] });
         await tx.globalRole.update({ where: { id: role.id }, data: { isDeleted: true } });
         report = await read(tx, admin, person.publicId);
@@ -173,9 +173,11 @@ describe.skipIf(!settingsMysqlTestUrl)("shared-account dependency inventory on M
         expect(report.userInfo.isProtectedAdministrator).toBe(false);
         expect(report.riskAssessment.riskLevel).toBe("low");
         await tx.user.update({ where: { id: person.id }, data: { isSysAdmin: true } });
-        expect((await read(tx, admin, person.publicId)).riskAssessment.blockers).toContainEqual({ kind: "sysadmin" });
+        report = await read(tx, admin, person.publicId);
+        expect(report.userInfo.isSysAdmin).toBe(false);
+        expect(report.riskAssessment.blockers).not.toContainEqual({ kind: "sysadmin" });
         await tx.user.update({ where: { id: person.id }, data: { isSysAdmin: false } });
-        const bandManagement = await tx.permission.findUniqueOrThrow({ where: { name: Permission.manage_events } });
+        const bandManagement = await tx.permission.findUniqueOrThrow({ where: { name: Permission.global_band_admin } });
         await tx.globalRolePermission.create({ data: { publicId: generatePublicId(), globalRoleId: role.id, permissionId: bandManagement.id } });
         expect((await read(tx, admin, person.publicId)).riskAssessment.warnings).toContainEqual({ kind: "globalRole", name: "Member" });
         await tx.user.update({ where: { id: person.id }, data: { globalRoleId: null } });

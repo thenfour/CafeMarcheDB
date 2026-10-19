@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { Permission } from "shared/permissions";
@@ -11,7 +12,7 @@ import { DB3FieldReadAuth, defineAuthMap, defineTable, prismaModel } from "../..
 import { defineCrudView } from "../../core/db3CrudView";
 import { deriveViewContract } from "../../core/db3ViewContract";
 
-const { authMap, sourceAuthMap, tableAuthMap } = bandCatalogAuth(Permission.admin_events);
+const { authMap, sourceAuthMap, tableAuthMap } = bandCatalogAuth(BandPermission.admin_events);
 const colorField = inheritedField(MakeColorField({ authMap }));
 
 class EventTagSourceField extends CatalogSourceField<{ authMap: typeof sourceAuthMap }> {
@@ -53,7 +54,7 @@ export const xBandEventTag = defineTable({
         inheritedFrom: "globalEventTag",
         inheritedSourceMember: "globalEventTagId",
         hiddenMember: "isHidden",
-        managePermission: Permission.admin_events,
+        managePermission: BandPermission.admin_events,
     },
     naturalOrderBy: { sortOrder: "asc", name: "asc" },
     // Internal row authorization needs ownership; public views keep bandId server-owned.

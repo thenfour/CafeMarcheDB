@@ -1,4 +1,4 @@
-import { Permission } from "@/shared/permissions";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { getHashedColor } from "@/shared/utils";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import * as db3 from "src/core/db3/db3";
@@ -22,7 +22,7 @@ export interface SongChipProps {
 export const SongChip = (props: SongChipProps) => {
     const dashboardContext = useDashboardContext();
     const router = useCmdbRouter();
-    const href = dashboardContext.isAuthorized(Permission.view_songs) ? router.getURIForSong(props.value) : undefined;
+    const href = dashboardContext.isAuthorized(BandPermission.view_songs) ? router.getURIForSong(props.value) : undefined;
 
     return <CMChip
         variation={props.variation}

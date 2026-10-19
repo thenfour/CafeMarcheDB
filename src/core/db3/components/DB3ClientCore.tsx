@@ -1,7 +1,7 @@
 'use client';
 
 import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
-import type { CMClientAuthorization } from "src/auth/shared/cmAuthorization";
+import type { CMClientAuthorization, IAuthorization } from "src/auth/shared/cmAuthorization";
 import { useLocale } from "src/locale/components/useLocale";
 import { useDB3QueryContext, type DB3QueryContextInput } from "./useDB3Context";
 
@@ -431,7 +431,7 @@ export const omitUnauthorizedMutationFields = (args: {
     existingModel: TAnyModel;
     mode: "new" | "update";
 
-    auth: CMClientAuthorization;
+    auth: IAuthorization;
 }): TAnyModel => {
     const authorization = args.schema.authorizeAndSanitize({
         contextDesc: "DB3 client mutation preparation",

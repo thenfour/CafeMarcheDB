@@ -1,31 +1,32 @@
+import { BandPermission, kGlobalVisibilityPermissionPolicy } from "src/auth/shared/bandPermissionPolicy";
 
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
+import type { MenuLinkPublicId } from "shared/publicId";
 import { gIconOptions } from "shared/utils";
 import { DynamicMenuLinkRealm, DynamicMenuLinkType } from "../../../../../shared/dynMenuTypes";
-import { ConstEnumStringField, GenericIntegerField, MakeCreatedAtField, MakeIconField, MakePKfield, MakePublicIdField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
-import type { MenuLinkPublicId } from "shared/publicId";
-import * as db3 from "../db3core";
 import { GenericStringField } from "../columnTypes/genericString";
-import { LocalizedStringField, localizedText } from "../columnTypes/localizedString";
 import { serverOwnedField } from "../columnTypes/inherited";
+import { LocalizedStringField, localizedText } from "../columnTypes/localizedString";
+import { ConstEnumStringField, GenericIntegerField, MakeCreatedAtField, MakeIconField, MakePKfield, MakePublicIdField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
+import * as db3 from "../db3core";
 import { UserMinimalSelect } from "./prismArgs";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 
 const xAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
     PostQuery: db3.DB3FieldReadAuth.inheritRow,
-    PreMutateAsOwner: Permission.customize_menu,
-    PreMutate: Permission.customize_menu,
-    PreInsert: Permission.customize_menu,
+    PreMutateAsOwner: BandPermission.customize_menu,
+    PreMutate: BandPermission.customize_menu,
+    PreInsert: BandPermission.customize_menu,
 });
 
 const xTableAuthMap: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.public,
     View: Permission.public,
-    EditOwn: Permission.customize_menu,
-    Edit: Permission.customize_menu,
-    Insert: Permission.customize_menu,
+    EditOwn: BandPermission.customize_menu,
+    Edit: BandPermission.customize_menu,
+    Insert: BandPermission.customize_menu,
 } as const;
 
 
@@ -43,13 +44,14 @@ export const MenuLinkNaturalOrderBy = { sortOrder: "asc" } satisfies Prisma.Menu
 
 ////////////////////////////////////////////////////////////////
 export const xMenuLink = db3.defineTable({
+    globalVisibilityPermission: kGlobalVisibilityPermissionPolicy,
     prismaModel: db3.prismaModel<Prisma.MenuLinkDelegate>(),
     getIdentity: (link: { publicId: MenuLinkPublicId }) => link.publicId,
     getSelectionArgs: (): Prisma.MenuLinkDefaultArgs => {
         return MenuLinkArgs;
     },
     tableName: "MenuLink",
-    bandScope: { member: "bandId", managePermission: Permission.customize_menu },
+    bandScope: { member: "bandId", managePermission: BandPermission.customize_menu },
     queryStrategy: "resolved",
     deletePolicy: "hard",
     naturalOrderBy: MenuLinkNaturalOrderBy,

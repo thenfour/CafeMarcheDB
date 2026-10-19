@@ -1,3 +1,5 @@
+import { scopedAuthorizationSatisfiesRequirement } from "src/auth/shared/permissionRequirement";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert, Box, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, TextField, Typography } from "@mui/material";
@@ -34,7 +36,7 @@ export function BandUserRoleEditor({ member, roles, assignableRoleIds, refetch }
     const [saving, setSaving] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const pending = React.useRef(false);
-    const canEdit = presentation.data?.authorization.effectivePermissionNames.includes(Permission.assign_user_roles) ?? false;
+    const canEdit = scopedAuthorizationSatisfiesRequirement(presentation.data?.authorization, BandPermission.assign_user_roles) ?? false;
     const roleLabel = (roleId: BandRolePublicId | null) => roleId === null
         ? locale.getPlainString("membership.roles.unassigned")
         : roles.find(role => role.publicId === roleId)?.name ?? locale.getPlainString("membership.roles.unavailable");

@@ -1,3 +1,5 @@
+import { resetAuthorizationDatabase } from "./authorization/support/authorizationSeed";
+import { createAuthorizationTestUser } from "./authorization/support/authorizationFixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("db", async () => {
@@ -14,8 +16,7 @@ import { authorizationTestDb } from "./authorization/support/inMemoryPrisma";
 
 const publicId = (id: number) => `Telemetry${String(id).padStart(7, "0")}`;
 const bandId = parsePublicId<"Band">(publicId(1));
-const actor = { id: 7, publicId: publicId(7), name: "Member", email: "member@test.invalid", phone: null,
-    isDeleted: false, mergedIntoUserId: null, globalRoleId: null, isSysAdmin: false };
+const actor = createAuthorizationTestUser("normal", { id: 7, publicId: parsePublicId<"User">(publicId(7)), name: "Member", email: "member@test.invalid" });
 const associations = [
     { field: "songId", table: "song", owner: "song", id: 101 },
     { field: "customLinkId", table: "customLink", owner: "customLink", id: 102 },
@@ -39,7 +40,7 @@ const authorize = () => loadAuthorizationForUser(actor, undefined, bandId);
 
 beforeEach(() => {
     vi.restoreAllMocks();
-    authorizationTestDb.reset({
+    resetAuthorizationDatabase({
         user: [actor], action: [],
         band: [1, 2].map(id => ({ id, publicId: publicId(id), isDeleted: false })),
         locale: [{ id: 1, ietfTag: "en-US", isDeleted: false }, { id: 2, ietfTag: "fr-BE", isDeleted: false },

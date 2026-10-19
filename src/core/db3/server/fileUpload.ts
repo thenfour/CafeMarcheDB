@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma, type File } from "@prisma/client";
 import { AuthorizationError } from "blitz";
 import { constants } from "node:fs";
@@ -5,7 +6,6 @@ import { copyFile, mkdir, stat, unlink } from "node:fs/promises";
 import path from "node:path";
 import mime from "mime";
 import sharp from "sharp";
-import { Permission } from "shared/permissions";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { generatePublicId } from "src/server/publicId";
 import { AutoAssignInstrumentPartition } from "../shared/autoAssignInstrumentPartition";
@@ -181,7 +181,7 @@ export async function uploadFiles(database: DB3ReadRootDatabase, authorization: 
     try {
         return await database.$transaction(async transaction => {
             const auth = (await authorization.refresh(transaction)).requireUser();
-            auth.requirePermission(Permission.upload_files);
+            auth.requirePermission(BandPermission.upload_files);
             if (auth.requireBand().publicId !== args.bandPublicId) {
                 throw new AuthorizationError("Uploads require the selected band.");
             }

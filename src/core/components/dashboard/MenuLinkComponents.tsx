@@ -1,10 +1,10 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { CMLink } from "@/src/route/CMLink";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { assert } from "blitz";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { DynamicMenuLinkType } from "shared/dynMenuTypes";
-import { Permission } from 'shared/permissions';
 import { TAnyModel } from "shared/rootroot";
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -209,7 +209,7 @@ export const MenuLinkList = () => {
         tableClient: client,
     });
 
-    const canEdit = dashboardContext.isAuthorized(Permission.customize_menu);
+    const canEdit = dashboardContext.isAuthorized(BandPermission.customize_menu);
 
     // xTable.createNew still exposes its legacy generic model; this editor is
     // explicitly bound to the named MenuLink view's client contract.

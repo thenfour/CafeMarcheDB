@@ -1,3 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
+import { permissionNamesSatisfyRequirement, type PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import type { SessionContext } from "@blitzjs/auth";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
@@ -16,8 +18,8 @@ describe("wiki tag page authorization", () => {
     beforeEach(() => loadAuth.mockReset());
 
     function grant(...permissions: Permission[]) {
-        const requirePermission = vi.fn((permission: Permission) => {
-            if (!permissions.includes(permission)) {
+        const requirePermission = vi.fn((permission: PermissionRequirement) => {
+            if (!permissionNamesSatisfyRequirement(permissions, permission, true)) {
                 throw new Error("Denied");
             }
         });
@@ -40,7 +42,7 @@ describe("wiki tag page authorization", () => {
         const requirePermission = grant(Permission.admin_wiki_pages);
         await authorizePageRequest("/backstage/editWikiPageTags", session, bandPublicId);
         expect(loadAuth).toHaveBeenCalledWith(session, bandPublicId);
-        expect(requirePermission).toHaveBeenCalledWith(Permission.admin_wiki_pages);
+        expect(requirePermission).toHaveBeenCalledWith(BandPermission.admin_wiki_pages);
     });
 
     it("rejects a selected band whose actor lacks the wiki-tag administration capability", async () => {

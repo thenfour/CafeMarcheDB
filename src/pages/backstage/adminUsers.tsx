@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { defineCmdbPage } from "src/route/cmdbPage";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 
@@ -64,7 +65,7 @@ const UserListContent: React.FC<{}> = () => {
                 ...dashboardContext.memberPresentation, bandPublicId: null,
             }, hosting)}>{locale.getPlainString("membership.profile.accountTitle")}</CMLinkButton>
             {dashboardContext.memberPresentation.bandPublicId
-                && (auth.userPublicId === userPayload.publicId || auth.hasPermission(Permission.view_users_basic_info))
+                && (auth.userPublicId === userPayload.publicId || auth.hasPermission(BandPermission.view_users_basic_info))
                 && <CMLinkButton href={profileUrl}>{locale.getPlainString("platformUser.visitProfile")}</CMLinkButton>}
         </div>;
     }

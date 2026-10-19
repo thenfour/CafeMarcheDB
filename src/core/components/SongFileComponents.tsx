@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 
 import { useMutation } from '@blitzjs/rpc';
 import { PushPin } from '@mui/icons-material';
@@ -5,7 +6,6 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { Divider, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
-import { Permission } from 'shared/permissions';
 import type { InstrumentPublicId, BandUserPublicId, EventPublicId, EventStatusPublicId, EventTypePublicId, FileEventTagPublicId, FilePublicId, FileSongTagPublicId, FileTagPublicId, SongPublicId, UserPublicId, WikiPagePublicId } from 'shared/publicId';
 import { SplitQuickFilter } from 'shared/quickFilter';
 import { formatFileSize, SortDirection } from 'shared/rootroot';
@@ -97,7 +97,7 @@ export const PinSongRecordingMenuItem = (props: PinSongRecordingMenuItemProps) =
     const [pinMutation] = useMutation(updateSongPinnedRecording);
     const recordFeature = useFeatureRecorder();
 
-    if (!dashboardContext.isAuthorized(Permission.pin_song_recordings)) {
+    if (!dashboardContext.isAuthorized(BandPermission.pin_song_recordings)) {
         return null;
     }
 
@@ -133,7 +133,7 @@ export const UnpinSongRecordingMenuItem = (props: Omit<PinSongRecordingMenuItemP
     const [pinMutation] = useMutation(updateSongPinnedRecording);
     const recordFeature = useFeatureRecorder();
 
-    if (!dashboardContext.isAuthorized(Permission.pin_song_recordings)) {
+    if (!dashboardContext.isAuthorized(BandPermission.pin_song_recordings)) {
         return null;
     }
 
@@ -316,7 +316,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
                             endMenuItemRef.current();
                         }} refetch={props.refetch} />}
                     <Divider />
-                    {dashboardContext.isAuthorized(Permission.access_file_landing_page) &&
+                    {dashboardContext.isAuthorized(BandPermission.access_file_landing_page) &&
                         <MenuItem>
                             <ListItemIcon>{gIconMap.Link()}</ListItemIcon>
                             <CMLink href={router.getURIForFileLandingPage(file)}>Visit file landing page</CMLink>
@@ -985,8 +985,8 @@ interface FileControlProps {
 
 export const FileControl = (props: FileControlProps) => {
     const dashboard = useDashboardContext();
-    const canEdit = !props.readonly && (dashboard.isAuthorized(Permission.manage_files)
-        || (dashboard.isAuthorized(Permission.upload_files)
+    const canEdit = !props.readonly && (dashboard.isAuthorized(BandPermission.manage_files)
+        || (dashboard.isAuthorized(BandPermission.upload_files)
             && dashboard.currentUser?.publicId === props.value.uploadedByUserId));
 
     const [editMode, setEditMode] = React.useState<boolean>(false);
@@ -1045,7 +1045,7 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
         sortDirection: "desc",
     });
 
-    const canUploadFiles = !props.readonly && dashboardContext.isAuthorized(Permission.upload_files);
+    const canUploadFiles = !props.readonly && dashboardContext.isAuthorized(BandPermission.upload_files);
 
     const handleFileSelect = (files: FileList) => {
         if (canUploadFiles && progress === null && files.length > 0) {

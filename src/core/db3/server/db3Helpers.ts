@@ -23,6 +23,7 @@ interface GetVisibilityWhereExpressionArgs {
     visiblePermissionIdColumnName?: string | undefined | null;
     ownerUserIdColumnName?: string | undefined | null;
     auth: CMServerAuthorization;
+    allowConfiguredVisibility: boolean;
 }
 
 // Builds Prisma visibility WHERE clause.
@@ -33,10 +34,11 @@ export const GetVisibilityWhereExpression = ({
     visiblePermissionIdColumnName,
     auth,
     ownerUserIdColumnName,
+    allowConfiguredVisibility,
 }: GetVisibilityWhereExpressionArgs) => {
     const visibilityColumn = visiblePermissionIdColumnName || "visiblePermissionId";
     const permissionWhere = {
-        [visibilityColumn]: { in: [...auth.effectivePermissions.ids] },
+        [visibilityColumn]: allowConfiguredVisibility ? { not: null } : { in: [...auth.effectivePermissions.ids] },
     };
 
     if (auth.userId == null || !ownerUserIdColumnName) return permissionWhere;
@@ -57,12 +59,14 @@ export const GetVisibilityWhereExpression = ({
 interface GetUserVisibilityWhereExpression2Args {
     auth: CMServerAuthorization;
     createdByUserIDColumnName?: string | undefined | null;
+    allowConfiguredVisibility: boolean;
 };
 
-export const GetUserVisibilityWhereExpression = ({ auth, createdByUserIDColumnName }: GetUserVisibilityWhereExpression2Args) => {
+export const GetUserVisibilityWhereExpression = ({ auth, createdByUserIDColumnName, allowConfiguredVisibility }: GetUserVisibilityWhereExpression2Args) => {
     const ret = GetVisibilityWhereExpression({
         auth,
         ownerUserIdColumnName: createdByUserIDColumnName,
+        allowConfiguredVisibility,
     });
     const STATIC_TYPE_CHECK: Prisma.EventWhereInput = ret;
     return ret;

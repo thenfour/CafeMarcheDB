@@ -23,18 +23,29 @@ vi.mock("src/locale/components/useLocale", () => ({
         getPlainString: (key: LocalizedPlainStringKey) => kStaticLocalizedStringRegistry[key].defaultValue,
     })
 }));
-vi.mock("@blitzjs/rpc", () => ({ useQuery: () => { choicesRead(); return [[]]; } }));
+vi.mock("@blitzjs/rpc", async () => ({
+    ...await vi.importActual<typeof import("@blitzjs/rpc")>("@blitzjs/rpc"),
+    useQuery: () => { choicesRead(); return [[]]; },
+}));
 vi.mock("src/auth/queries/getAvailableBands", () => ({ default: vi.fn() }));
+vi.mock("src/core/components/select/CMSelect", () => ({
+    CMSingleSelect: (props: { value: string; onChange: (value: string) => Promise<void> }) => {
+        languageSelection = props;
+        return <span>{props.value}</span>;
+    },
+}));
 const band = parsePublicId<"Band">("PortalBand000001");
 const push = vi.fn(async (_href: string, _as?: string, _options?: unknown) => true);
 const choicesRead = vi.fn();
 let path: string;
 let root: Root;
 let container: HTMLDivElement;
+let languageSelection: { value: string; onChange: (value: string) => Promise<void> } | null;
 beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     push.mockReset().mockResolvedValue(true);
     choicesRead.mockClear();
+    languageSelection = null;
     path = `/fr-BE/b/${band}/event/PortalEvent0001/rehearsal/attendance?page=2#answer`;
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -49,14 +60,11 @@ async function render(hosting: BandHostingConfig, children = <PortalLanguageSele
     await act(async () => root.render(<PortalRoutingProvider config={{ baseUri: "https://test", hosting, requestPath: { ...parsePortalPath(new URL(path, "https://test").pathname, hosting), bandPublicId: band } }}>{children}</PortalRoutingProvider>));
 }
 async function select(value: string) {
-    const input = container.querySelector("select");
-    if (!input) {
+    const selection = languageSelection;
+    if (!selection) {
         throw new Error("Missing language selector");
     }
-    await act(async () => {
-        input.value = value;
-        input.dispatchEvent(new window.Event("change", { bubbles: true }));
-    });
+    await act(async () => selection.onChange(value));
 }
 
 describe("portal language navigation", () => {
@@ -82,7 +90,7 @@ describe("portal language navigation", () => {
         push.mockResolvedValueOnce(false);
         await render({ kind: "multiBand" });
         await select("nl-BE");
-        expect(container.textContent).toContain("Could not change language");
-        expect(container.querySelector("select")?.value).toBe("fr-BE");
+        expect(container.querySelector(".alert-indicator")).not.toBeNull();
+        expect(languageSelection?.value).toBe("fr");
     });
 });

@@ -20,12 +20,14 @@ const context = () => createAuthorizationTestContext(createAuthorizationTestUser
 
 beforeEach(() => {
     authorizationTestDb.reset({
-        user: [{ id: 42, publicId: "User000000000042", globalRoleId: null, isDeleted: false, mergedIntoUserId: null, isSysAdmin: false }],
+        user: [{ id: 42, publicId: "User000000000042", globalRoleId: 2, isDeleted: false, mergedIntoUserId: null, isSysAdmin: false }],
         band: [{ id: 1, publicId: bandPublicId, isDeleted: false }],
         bandUser: [{ id: 1, publicId: "Member0000000001", bandId: 1, userId: 42, bandRoleId: 11, isDeleted: false }],
-        bandRole: [{ id: 11, isDeleted: false }],
+        bandRole: [{ id: 1, isPublicRole: true, isDeleted: false }, { id: 11, isDeleted: false }],
+        globalRole: [{ id: 1, isPublicRole: true, isDeleted: false }, { id: 2, isRoleForNewUsers: true, isDeleted: false }],
         permission: gPermissionRegistry.map((definition, index) => ({ id: index + 1, name: definition.key, isDeleted: false })),
         bandRolePermission: [{ id: 1, bandRoleId: 11, permissionId: gPermissionRegistry.findIndex(definition => definition.key === Permission.manage_band_settings) + 1 }],
+        globalRolePermission: [{ id: 1, globalRoleId: 2, permissionId: gPermissionRegistry.findIndex(definition => definition.key === Permission.login) + 1 }],
         bandSetting: [originalSetting],
     });
     vi.mocked(clearBrandCache).mockClear();

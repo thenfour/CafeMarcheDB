@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { Permission } from "shared/permissions";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
+import type { PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import { BandPublicIdSchema } from "./presentationInput";
 import { normalizeLocaleTag, type LocalePreferences } from "./localePreferences";
 import { kStaticLocalizedStringRegistry, type StaticLocalizedStringKey } from "./staticLocalizedStringRegistry";
@@ -41,8 +43,8 @@ export interface StaticStringEditorData {
     readonly canSet: boolean;
 }
 
-export function staticStringWritePermission(scope: StaticStringTarget["scope"]): Permission {
-    return scope === "global" ? Permission.manage_global_localization : Permission.manage_band_localization;
+export function staticStringWritePermission(scope: StaticStringTarget["scope"]): PermissionRequirement {
+    return scope === "global" ? Permission.manage_global_localization : BandPermission.manage_band_localization;
 }
 
 // used by the editing components to target specific entry / locale combos

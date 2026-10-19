@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 // band dashboard.
 
 import { defineCmdbPage } from "src/route/cmdbPage";
@@ -11,7 +12,6 @@ import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
 import { useLocale } from "src/locale/components/useLocale";
 import { BandLocalizedMarkdown, Localized } from "src/setting/client/components/SettingMarkdown";
-import { Permission } from "shared/permissions";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { PermissionBoundary } from "src/core/components/CMCoreComponents";
 import { WikiStandaloneControl } from "src/core/components/wiki/WikiStandaloneComponents";
@@ -26,7 +26,7 @@ export function HomeContent() {
   const bandPublicId = dashboard.memberPresentation.bandPublicId;
   return <AppContextMarker name="backstage home"><Stack spacing={2}>
 
-    {dashboard.currentUser && dashboard.isAuthorized(Permission.member_access) && <Alert severity="info">
+    {dashboard.currentUser && !dashboard.isAuthorized(BandPermission.member_access) && <Alert severity="info">
       <Localized id="dashboard.account.limited" />
     </Alert>}
 
@@ -39,12 +39,12 @@ export function HomeContent() {
 
     <div className="DashboardHeader"><BandLocalizedMarkdown id="BackstageFrontpageHeaderMarkdown" /></div>
 
-    {bandPublicId && dashboard.currentUser && <PermissionBoundary permission={Permission.view_wiki_pages}>
+    {bandPublicId && dashboard.currentUser && <PermissionBoundary permission={BandPermission.view_wiki_pages}>
       <WikiStandaloneControl canonicalWikiPath="special/announcements"
         className="contentSection announcementMarkdown" floatingHeader={true} />
     </PermissionBoundary>}
 
-    {bandPublicId && <PermissionBoundary permission={Permission.view_events_nonpublic}>
+    {bandPublicId && <PermissionBoundary permission={BandPermission.view_events_nonpublic}>
       <React.Suspense fallback={<div className="lds-dual-ring" />}>
         <RelevantEvents />
         <BigEventCalendar />

@@ -4,7 +4,8 @@ import { MenuCaptionKey } from "@/src/locale/shared/menuStrings";
 import { Box, Collapse, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Typography } from '@mui/material';
 import Link from "next/link";
 import * as React from 'react';
-import { Permission } from "shared/permissions";
+import { isPermission, Permission } from "shared/permissions";
+import type { PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import { gNullValue } from "shared/rootroot";
 import * as db3 from "src/core/db3/db3";
 import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
@@ -33,7 +34,7 @@ export interface FlatMenuItemSectionHeader {
 
 export interface FlatMenuItemLink {
     type: "link";
-    permission: Permission;
+    permission: PermissionRequirement;
     className?: string;
     linkCaption: string;
     path: string;
@@ -73,9 +74,9 @@ export const DynMenuToMenuItem = (item: db3.MenuLinkListClient, dashboardContext
 
     return {
         type: "link",
-        // Permission rows are sourced from the same closed permission registry
-        // that defines the Permission enum used by static menu items.
-        permission: (pobj?.name || Permission.never_grant) as Permission,
+        permission: pobj && isPermission(pobj.name)
+            ? { anyOf: [pobj.name, Permission.global_band_admin], requiresBand: true }
+            : Permission.never_grant,
         className: item.itemCssClass,
         linkCaption: localizedText(item.caption) ?? "",
         renderIcon: item.iconName ? gIconMap[item.iconName] : undefined,

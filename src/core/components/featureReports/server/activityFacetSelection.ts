@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { platformSysadminWhere } from "src/auth/server/principalPredicates";
+import { loadPlatformSysadminWhere } from "src/auth/server/principalPredicates";
 import type { DB3ReadContext } from "src/core/db3/server/db3ReadExecution";
 import type { FacetedBreakdownInput } from "../activityReportTypes";
 import { activityBucketIntervals } from "./activityBucketSelection";
@@ -34,7 +34,7 @@ export async function activityFacetBaseWhere(context: DB3ReadContext, input: Fac
         conditions.push({ OR: [{ userId: null }, { userId: { not: auth.userId } }] });
     }
     if (input.filterSpec.excludeSysadmins) {
-        const administrators = await context.database.user.findMany({ where: platformSysadminWhere, select: { id: true } });
+        const administrators = await context.database.user.findMany({ where: await loadPlatformSysadminWhere(context.database), select: { id: true } });
         if (administrators.length) {
             conditions.push({ OR: [{ userId: null }, { userId: { notIn: administrators.map(person => person.id) } }] });
         }

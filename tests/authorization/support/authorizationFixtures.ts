@@ -3,7 +3,7 @@ import {
   makeUserManagementActor,
   makeUserManagementTarget,
 } from "src/auth/server/userManagementState";
-import { testServerAuthorization } from "tests/support/serverAuthorization";
+import { testBandAuthorization } from "tests/support/serverAuthorization";
 import type { AuthenticatedCtx, Ctx } from "blitz"
 import { gPermissionRegistry, getPermissionDefinition, Permission } from "shared/permissions"
 import {
@@ -121,7 +121,8 @@ export function createAuthorizationTestUser(
 ): AuthorizationTestUser {
   const id = overrides.id ?? 100
   const globalRoleId = id + 10_000
-  const permissions = overrides.permissions ?? personaPermissions[persona]
+  // These fixture roles explicitly carry baseline grants; the resolver adds none.
+  const permissions = [...new Set([...testPublicRolePermissions, ...(overrides.permissions ?? personaPermissions[persona])])]
 
   return {
     id,
@@ -165,9 +166,8 @@ export function createAuthorizationPublicData(
     userId: user?.id ?? 0,
     isSysAdmin: user?.isSysAdmin ?? false,
     permissionNames: [
-      ...testPublicRolePermissions.filter(permission => getPermissionDefinition(permission).scope !== "band"),
-      ...(user ? [Permission.login, Permission.visibility_logged_in_users] : []),
-      ...(user?.globalRole?.permissions.map((entry) => entry.permission.name) ?? []),
+      ...(user ? user.globalRole?.permissions.map((entry) => entry.permission.name) ?? []
+        : testPublicRolePermissions.filter(permission => getPermissionDefinition(permission).scope === "global")),
     ],
     impersonatingFromUserId: null,
     showAdminControls: false,
@@ -256,9 +256,8 @@ export function authorizationPermissionId(permission: Permission): number {
 
 // Direct field-policy tests supply grants explicitly; server tests load persisted roles.
 export function createAuthorizationSchemaData(user: AuthorizationTestUser | null) {
-  return testServerAuthorization(user, new ServerPermissionSet([
-    ...testPublicRolePermissions.map(name => ({ id: authorizationPermissionId(name), name })),
-    ...(user?.permissions.map(name => ({ id: authorizationPermissionId(name), name })) ?? []),
+  return testBandAuthorization(user, new ServerPermissionSet([
+    ...(user?.permissions ?? testPublicRolePermissions).map(name => ({ id: authorizationPermissionId(name), name })),
   ]))
 }
 

@@ -43,7 +43,7 @@ beforeEach(() => authorizationTestDb.reset({
     band: [1, 2].map(id => ({ id, publicId: bands[id - 1], isDeleted: false })),
     bandUser: [1, 2].map(id => ({ id, publicId: `Member000000000${id}`, userId: 42, bandId: id, bandRoleId: 10 + id, isDeleted: false })),
     bandRole: [{ id: 1, isPublicRole: true, isDeleted: false }, { id: 11, isDeleted: false }, { id: 12, isDeleted: false }],
-    globalRole: [{ id: 30, isSysAdminRole: true, isDeleted: false }],
+    globalRole: [{ id: 1, isPublicRole: true, isDeleted: false }, { id: 30, isSysAdminRole: true, isDeleted: false }],
     permission: gPermissionRegistry.map((entry, index) => ({ id: index + 1, name: entry.key, isDeleted: false })),
     bandRolePermission: [{ id: 1, bandRoleId: 11, permissionId: permissionId(Permission.manage_band_localization) }],
     globalRolePermission: [{ id: 1, globalRoleId: 30, permissionId: permissionId(Permission.manage_global_localization) }],

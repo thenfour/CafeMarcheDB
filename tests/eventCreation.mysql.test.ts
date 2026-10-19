@@ -1,6 +1,6 @@
 import { PrismaClient, type Prisma } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { Permission } from "shared/permissions";
+import { gPermissionRegistry, Permission } from "shared/permissions";
 import { isPublicId, parsePublicId } from "shared/publicId";
 import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
 import { insertEvent, insertEventInTransaction } from "src/core/db3/server/eventCreation";
@@ -9,6 +9,11 @@ import { generatePublicId } from "src/server/publicId";
 import { initializeAccessControl } from "src/setup/accessControl";
 import { prepareEventAttendanceFixture } from "./support/eventAttendanceMysqlFixture";
 import { settingsMysqlTestUrl, withSettingsMysqlFixture, type SettingsMysqlFixture } from "./support/settingsMysqlFixture";
+import { bindDB3ReadSnapshot } from "src/core/db3/server/db3ReadExecution";
+import { queryView } from "src/core/db3/server/db3QueryCore";
+import { createCommandRowServices } from "src/core/db3/server/db3CommandCore";
+import { permissionVisibilityView } from "src/core/db3/shared/entities/user/permissionViews";
+import { xEvent } from "src/core/db3/shared/schema/event";
 
 async function prepare(tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture) {
     const c = await prepareEventAttendanceFixture(tx, fixture, [Permission.manage_events, Permission.admin_events, Permission.edit_public_homepage, Permission.view_events_nonpublic,
@@ -59,6 +64,32 @@ describe.skipIf(!settingsMysqlTestUrl)("event creation on MariaDB", () => {
         await database.$disconnect();
     });
     const fixtureTest = (work: (tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture) => Promise<void>) => withSettingsMysqlFixture(database, work);
+
+    it("lets Global Admin with Band Public create member-visible events and choose configured visibility", () => fixtureTest(async (tx, fixture) => {
+        const c = await prepare(tx, fixture);
+        const auth = await loadAuthorizationForUser(fixture.admin, tx, c.args.bandPublicId);
+        expect(auth.membership).toBeNull();
+        expect(auth.hasPermission(Permission.global_band_admin)).toBe(true);
+        expect(auth.hasPermission(Permission.manage_events)).toBe(false);
+        expect(auth.hasPermission(Permission.visibility_members)).toBe(false);
+        const context = await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" });
+        const choices = await queryView({ view: permissionVisibilityView, filter: {}, cmdbQueryContext: "global admin visibility choices" }, auth, context);
+        expect(choices.items.map(choice => choice.name).sort()).toEqual(gPermissionRegistry
+            .filter(definition => definition.scope === "band" && definition.isVisibility).map(definition => definition.key).sort());
+        const created = await insertEventInTransaction(tx, auth, c.args);
+        expect(await tx.event.findUniqueOrThrow({ where: { publicId: created.event.publicId } }))
+            .toMatchObject({ visiblePermissionId: c.visibility.id, createdByUserId: auth.userId });
+        const editors = await tx.permission.findUniqueOrThrow({ where: { name: Permission.visibility_editors } });
+        const rows = createCommandRowServices(auth, tx);
+        await rows.update(xEvent, created.event.publicId, { visiblePermissionId: parsePublicId<"Permission">(editors.publicId) });
+        expect(await tx.event.findUniqueOrThrow({ where: { publicId: created.event.publicId } }))
+            .toMatchObject({ visiblePermissionId: editors.id });
+        await tx.permission.update({ where: { id: editors.id }, data: { isDeleted: true } });
+        for (const visiblePermissionId of [parsePublicId<"Permission">(generatePublicId()), parsePublicId<"Permission">(editors.publicId)]) {
+            await expect(insertEventInTransaction(tx, auth, { ...c.args, event: { ...c.args.event, visiblePermissionId } })).rejects.toThrow();
+            await expect(rows.update(xEvent, created.event.publicId, { visiblePermissionId })).rejects.toThrow();
+        }
+    }));
 
     it("creates band-owned event/segment identities, creator audits and the calendar range", () => fixtureTest(async (tx, fixture) => {
         const c = await prepare(tx, fixture);

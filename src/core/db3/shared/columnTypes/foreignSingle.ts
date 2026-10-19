@@ -41,6 +41,8 @@ type ForeignSingleFieldValueArgs<
     // the target table, but still not totally natural here either. better to put that
     // on a view.
     getTargetWhereClause?: (auth: CMServerAuthorization) => Readonly<object>;
+    // New references may require stricter eligibility than existing readable rows.
+    getWriteTargetWhereClause?: (auth: CMServerAuthorization) => Readonly<object>;
 
     defaultValue?: TForeign | null;
     getQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
@@ -112,6 +114,7 @@ export class ForeignSingleField<
     declare readonly fkidMember: TForeignKeyMember;
     requireVisibleTarget: boolean;
     getTargetWhereClause?: (auth: CMServerAuthorization) => Readonly<object>;
+    getWriteTargetWhereClause?: (auth: CMServerAuthorization) => Readonly<object>;
     private readonly declaredForeignTableID?: string;
     private readonly getForeignTable__: () => xTable;
     localTableSpec: xTable;
@@ -188,6 +191,7 @@ export class ForeignSingleField<
         ) as z.ZodType<DB3IdentityOf<TTargetTable> | null>;
         this.requireVisibleTarget = args.requireVisibleTarget === true;
         this.getTargetWhereClause = args.getTargetWhereClause;
+        this.getWriteTargetWhereClause = args.getWriteTargetWhereClause;
         this.defaultValue = args.defaultValue || null;
         this.declaredForeignTableID = args.foreignTableID;
         this.getForeignTable__ = args.getForeignTable
@@ -526,6 +530,7 @@ export const foreignRef = <
         allowNull: (args.allowNull ?? false) as TAllowNull,
         requireVisibleTarget: args.requireVisibleTarget,
         getTargetWhereClause: args.getTargetWhereClause,
+        getWriteTargetWhereClause: args.getWriteTargetWhereClause,
         defaultValue: args.defaultValue,
         specialFunction: args.specialFunction,
         sortBy: args.sortBy,
@@ -599,6 +604,7 @@ export const foreignRefByTableId = <
             allowNull: (args.allowNull ?? false) as TAllowNull,
             requireVisibleTarget: args.requireVisibleTarget,
             getTargetWhereClause: args.getTargetWhereClause,
+            getWriteTargetWhereClause: args.getWriteTargetWhereClause,
             defaultValue: args.defaultValue,
             specialFunction: args.specialFunction,
             sortBy: args.sortBy,

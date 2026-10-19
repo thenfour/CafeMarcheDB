@@ -1,5 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { Prisma } from "db";
-import { Permission } from "shared/permissions";
 import type { WikiPageTagAssignmentPublicId } from "shared/publicId";
 import { gGeneralPaletteList } from "src/core/components/color/palette";
 import { WikiPageTagAssignmentArgs, WikiPageTagAssignmentNaturalOrderBy, type WikiPageTagAssignmentPayload } from "./prismArgs";
@@ -12,27 +12,27 @@ import { xBandWikiPageTag } from "../entities/wikiPageTag/wikiPageTagViews";
 const assignmentAuthMap = defineAuthMap({
     PostQueryAsOwner: DB3FieldReadAuth.inheritRow,
     PostQuery: DB3FieldReadAuth.inheritRow,
-    PreMutateAsOwner: Permission.edit_wiki_pages,
-    PreMutate: Permission.edit_wiki_pages,
-    PreInsert: Permission.edit_wiki_pages,
+    PreMutateAsOwner: BandPermission.edit_wiki_pages,
+    PreMutate: BandPermission.edit_wiki_pages,
+    PreInsert: BandPermission.edit_wiki_pages,
 });
 
 export const xWikiPageTagAssignment = defineTable({
     prismaModel: prismaModel<Prisma.WikiPageTagAssignmentDelegate>(),
     getIdentity: (row: { publicId: WikiPageTagAssignmentPublicId }) => row.publicId,
     tableName: "WikiPageTagAssignment",
-    bandScope: { member: "bandId", via: { relation: "wikiPage", ownerUserMember: "createdByUserId" }, managePermission: Permission.edit_wiki_pages },
+    bandScope: { member: "bandId", via: { relation: "wikiPage", ownerUserMember: "createdByUserId" }, managePermission: BandPermission.edit_wiki_pages },
     readConsistency: "snapshot",
     queryParameters: {},
     getParameterizedWhereClause: (_params, auth) => [{ wikiPage: GetTableById("WikiPage").CalculateWhereClause({ filterModel: {}, auth }) }],
     deletePolicy: "hard",
     naturalOrderBy: WikiPageTagAssignmentNaturalOrderBy,
     tableAuthMap: {
-        ViewOwn: Permission.view_wiki_pages,
-        View: Permission.view_wiki_pages,
-        EditOwn: Permission.edit_wiki_pages,
-        Edit: Permission.edit_wiki_pages,
-        Insert: Permission.edit_wiki_pages,
+        ViewOwn: BandPermission.view_wiki_pages,
+        View: BandPermission.view_wiki_pages,
+        EditOwn: BandPermission.edit_wiki_pages,
+        Edit: BandPermission.edit_wiki_pages,
+        Insert: BandPermission.edit_wiki_pages,
     },
     getSelectionArgs: () => WikiPageTagAssignmentArgs,
     getRowInfo: (row: WikiPageTagAssignmentPayload) => ({

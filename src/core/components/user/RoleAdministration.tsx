@@ -1,6 +1,6 @@
 import React from "react";
 import { useMutation } from "@blitzjs/rpc";
-import { Alert, Checkbox, FormControl, FormControlLabel, FormHelperText, InputLabel, MenuItem, Select, Stack, Tooltip } from "@mui/material";
+import { Alert, FormControl, FormHelperText, InputLabel, MenuItem, Select, Stack } from "@mui/material";
 import setRoleDesignation from "src/auth/mutations/setRoleDesignation";
 import type { SetRoleDesignation } from "src/auth/roleDesignations";
 import type { BandRolePublicId, GlobalRolePublicId } from "shared/publicId";
@@ -12,7 +12,6 @@ import * as db3 from "src/core/db3/db3";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import { DB3AssociationMatrix } from "src/core/db3/components/DB3AssociationMatrix";
 import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
-import { gPermissionOrdered } from "shared/permissions";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { CMButton } from "../CMCoreComponents2";
 
@@ -28,7 +27,7 @@ export const globalRoleTableSpec = DB3Client.defineTableClientSpec({
         color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 120, fieldCaptionKey: "catalog.color", fieldDescriptionKey: null }),
         permissions: columnName => new DB3Client.TagsFieldClient({
             columnName, cellWidth: 300, allowDeleteFromCell: false,
-            selectionView: db3.permissionEditorView, selectStyle: "dialog", fieldCaptionKey: "roles.permissions", fieldDescriptionKey: null
+            selectionView: db3.permissionGlobalRoleChoicesView, selectStyle: "dialog", fieldCaptionKey: "roles.permissions", fieldDescriptionKey: null
         }),
     }
 });
@@ -41,7 +40,7 @@ export const bandRoleTableSpec = DB3Client.defineTableClientSpec({
         color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 120, fieldCaptionKey: "catalog.color", fieldDescriptionKey: null }),
         bandRolePermissions: columnName => new DB3Client.TagsFieldClient({
             columnName, cellWidth: 300, allowDeleteFromCell: false,
-            selectionView: db3.permissionEditorView, selectStyle: "dialog", fieldCaptionKey: "roles.permissions", fieldDescriptionKey: null
+            selectionView: db3.permissionBandRoleChoicesView, selectStyle: "dialog", fieldCaptionKey: "roles.permissions", fieldDescriptionKey: null
         }),
     }
 });
@@ -56,7 +55,13 @@ export function RoleDesignationControls() {
     const [saving, setSaving] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const [retryEdit, setRetryEdit] = React.useState<SetRoleDesignation | null>(null);
-    const [drafts, setDrafts] = React.useState<{ sysadmin?: GlobalRolePublicId; public?: BandRolePublicId; newUsers?: BandRolePublicId }>({});
+    const [drafts, setDrafts] = React.useState<Partial<{
+        "global-sysadmin": GlobalRolePublicId;
+        "global-public": GlobalRolePublicId;
+        "global-newUsers": GlobalRolePublicId;
+        "band-public": BandRolePublicId;
+        "band-newUsers": BandRolePublicId;
+    }>>({});
     const pending = React.useRef(false);
     const alive = React.useRef(true);
     React.useEffect(() => {
@@ -80,7 +85,7 @@ export function RoleDesignationControls() {
             }
             await Promise.all([global.refetch(), band.refetch(), dashboard.refreshCachedData(), presentation.invalidate()]);
             if (alive.current) {
-                setDrafts(previous => ({ ...previous, [edit.designation]: undefined }));
+                setDrafts(previous => ({ ...previous, [`${edit.scope}-${edit.designation}`]: undefined }));
             }
         } catch (reason) {
             console.error(reason);
@@ -97,6 +102,8 @@ export function RoleDesignationControls() {
     };
     const assignments = [
         { scope: "global", designation: "sysadmin", flag: "isSysAdminRole", label: "roles.sysadmin", rows: global.items },
+        { scope: "global", designation: "public", flag: "isPublicRole", label: "roles.globalPublic", rows: global.items },
+        { scope: "global", designation: "newUsers", flag: "isRoleForNewUsers", label: "roles.globalNewUsers", rows: global.items },
         { scope: "band", designation: "public", flag: "isPublicRole", label: "roles.public", rows: band.items },
         { scope: "band", designation: "newUsers", flag: "isRoleForNewUsers", label: "roles.newUsers", rows: band.items },
     ] as const;
@@ -105,16 +112,17 @@ export function RoleDesignationControls() {
         <Stack direction="row" useFlexGap flexWrap="wrap" spacing={2}>
             {assignments.map(assignment => {
                 const matching = assignment.rows.filter(role => assignment.flag in role && role[assignment.flag]);
-                const selected = drafts[assignment.designation] ?? (matching.length === 1 ? matching[0]!.publicId : "");
-                const labelId = `role-designation-${assignment.designation}-label`;
-                return <FormControl key={assignment.designation} error={matching.length !== 1} size="small" sx={{ minWidth: 240 }}>
+                const key = `${assignment.scope}-${assignment.designation}` as const;
+                const selected = drafts[key] ?? (matching.length === 1 ? matching[0]!.publicId : "");
+                const labelId = `role-designation-${key}-label`;
+                return <FormControl key={key} error={matching.length !== 1} size="small" sx={{ minWidth: 240 }}>
                     <InputLabel id={labelId}>{locale.getPlainString(assignment.label)}</InputLabel>
                     <Select labelId={labelId} label={locale.getPlainString(assignment.label)} value={selected} disabled={saving}
                         onChange={event => {
                             const edit = assignment.scope === "global"
-                                ? { scope: "global", designation: "sysadmin", roleId: db3.xGlobalRole.parseIdentity(event.target.value) } as const
+                                ? { scope: "global", designation: assignment.designation, roleId: db3.xGlobalRole.parseIdentity(event.target.value) } as const
                                 : { scope: "band", designation: assignment.designation, roleId: db3.xBandRole.parseIdentity(event.target.value) } as const;
-                            setDrafts(previous => ({ ...previous, [assignment.designation]: edit.roleId }));
+                            setDrafts(previous => ({ ...previous, [key]: edit.roleId }));
                             void save(edit);
                         }}>
                         {assignment.rows.map(role => <MenuItem key={role.publicId} value={role.publicId}>{role.name.value}</MenuItem>)}
@@ -178,16 +186,9 @@ export function RolePermissionMatrixContent() {
     const [scope, setScope] = React.useState<"global" | "band">("global");
     const [scopeSelectorOpen, setScopeSelectorOpen] = React.useState(false);
     const [changingScope, startScopeChange] = React.useTransition();
-    const [showUnknown, setShowUnknown] = React.useState(false);
     const refreshAuthority = async () => {
         await Promise.all([dashboard.refreshCachedData(), presentation.invalidate()]);
     };
-    const known = (name: string) => gPermissionOrdered.some(key => key === name);
-    const filterRow = (row: { name: string }) => showUnknown || known(row.name);
-    const renderExtraActions = ({ row }: { row: { name: string; sortOrder: number } }) => <Tooltip
-        title={locale.getPlainString(known(row.name) ? "roles.knownPermission" : "roles.unknownPermission")}>
-        <span>{row.sortOrder} {known(row.name) ? "🟢" : "🟥"}</span>
-    </Tooltip>;
     return <Stack spacing={2}>
         <BandLocalizedMarkdown id="rolePermissionsMatrixPage_markdown" />
         <FormControl size="small" disabled={changingScope} sx={{ maxWidth: 300 }}><InputLabel id="role-matrix-scope">{locale.getPlainString("roles.title")}</InputLabel>
@@ -202,7 +203,6 @@ export function RolePermissionMatrixContent() {
                 <MenuItem value="global">{locale.getPlainString("roles.global")}</MenuItem><MenuItem value="band">{locale.getPlainString("roles.band")}</MenuItem>
             </Select>
         </FormControl>
-        <FormControlLabel label={locale.getPlainString("roles.unknown")} control={<Checkbox disabled={changingScope} checked={showUnknown} onChange={(_, checked) => setShowUnknown(checked)} />} />
         {changingScope && <span role="status">{locale.getPlainString("roles.loading")}</span>}
         {scope === "global" ? (
             <DB3AssociationMatrix
@@ -212,7 +212,6 @@ export function RolePermissionMatrixContent() {
                 tagsField={globalRolesField}
                 associationCommand={db3.setGlobalRolePermissionCommand}
                 writeContext={platformWriteContext} disabled={changingScope}
-                filterRow={filterRow} renderExtraActions={renderExtraActions}
                 onChanged={refreshAuthority}
             />)
             : <DB3AssociationMatrix
@@ -223,8 +222,6 @@ export function RolePermissionMatrixContent() {
                 associationCommand={db3.setBandRolePermissionCommand}
                 writeContext={platformWriteContext}
                 disabled={changingScope}
-                filterRow={filterRow}
-                renderExtraActions={renderExtraActions}
                 onChanged={refreshAuthority}
             />}
     </Stack>;

@@ -1,7 +1,8 @@
+import { permissionNamesSatisfyRequirement } from "src/auth/shared/permissionRequirement";
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert, Button, Card, CardContent, Stack, TextField, Typography } from "@mui/material";
-import { Permission } from "shared/permissions";
 import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
 import db3paginatedQueries from "src/core/db3/queries/db3paginatedQueries";
 import db3queries from "src/core/db3/queries/db3queries";
@@ -63,7 +64,7 @@ export function BandMemberRecovery() {
         return <Alert severity="info">{locale.getPlainString("membership.directory.noBand")}</Alert>;
     }
     const permissions = presentation.data?.authorization.effectivePermissionNames ?? [];
-    if (!permissions.includes(Permission.recover_users) || !permissions.includes(Permission.view_users_basic_info)) {
+    if (!permissionNamesSatisfyRequirement(permissions, BandPermission.recover_users, Boolean(presentation.bandPublicId)) || !permissionNamesSatisfyRequirement(permissions, BandPermission.view_users_basic_info, Boolean(presentation.bandPublicId))) {
         return <Alert severity="info">{locale.getPlainString("membership.directory.noAccess")}</Alert>;
     }
     const key = `${presentation.bandPublicId}/${presentation.data?.authorization.userPublicId}/${presentation.data?.input.clientRequestId ?? "initial"}`;

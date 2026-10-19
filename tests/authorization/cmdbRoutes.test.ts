@@ -53,11 +53,12 @@ describe("page route registry", () => {
             expect(CmdbRouteRegistry.routeByKey(key.text).nextPattern, file).toBe(pagePattern(file, root));
         }
     });
-    it("maps patterns to semantic keys and exactly one permission", () => {
+    it("maps patterns to semantic keys and one explicit permission requirement", () => {
         for (const pattern of CmdbRouteRegistry.allPatterns) {
             const route = CmdbRouteRegistry.requireRouteByPattern(pattern);
             expect(CmdbRouteRegistry.routeByKey(route.key)).toBe(route);
-            expect(isPermission(route.permission)).toBe(true);
+            const names = typeof route.permission === "string" ? [route.permission] : route.permission.anyOf;
+            expect(names.every(isPermission)).toBe(true);
             expect(route).not.toHaveProperty("scope");
             expect(route).not.toHaveProperty("caption");
         }

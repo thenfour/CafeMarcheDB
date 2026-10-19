@@ -5,7 +5,7 @@ import { Temporal } from "@js-temporal/polyfill";
 import { Prisma } from "@prisma/client";
 import { BandTimeZoneSchema } from "shared/dateTimePolicy";
 import { ActivityReportTimeBucketSize } from "shared/mysqlUtils";
-import { platformSysadminWhere } from "src/auth/server/principalPredicates";
+import { loadPlatformSysadminWhere } from "src/auth/server/principalPredicates";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { executeDB3Read, type DB3ReadDatabase } from "src/core/db3/server/db3ReadExecution";
 import { loadBandTimeZone } from "src/server/bandTimeZone";
@@ -82,7 +82,7 @@ export function readActivityTimeline(database: DB3ReadDatabase, authorization: C
         const { auth, band } = authorizeActivityReport(context.authorization, args.bandPublicId);
         const timeZone = await loadBandTimeZone(context.database, band.id);
         const administrators = args.filterSpec.excludeSysadmins
-            ? await context.database.user.findMany({ where: platformSysadminWhere, select: { id: true } }) : [];
+            ? await context.database.user.findMany({ where: await loadPlatformSysadminWhere(context.database), select: { id: true } }) : [];
         const conditions = timelineConditions(args, band.id, auth.userId, administrators.map(person => person.id));
         const start = performance.now();
         const rows = await context.database.$queryRaw<Array<{ bucket: string; count: bigint }>>(Prisma.sql`

@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 
 import { z } from "zod";
 import { enumSetting, stringSetting } from "./settingsHelpers";
@@ -40,7 +41,7 @@ export const kGlobalSettingsRegistry = freezeRegistry({
     }),
 
     "global.files.upload.maxImageDimension": stringSetting({
-        readPermission: Permission.manage_files,
+        readPermission: BandPermission.manage_files,
         defaultValue: "",
         schema: z.string(),
         stringFormat: "plain",

@@ -1,3 +1,4 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import type { Prisma } from "@prisma/client";
 import { AuthorizationError } from "blitz";
 import { Permission } from "shared/permissions";
@@ -10,7 +11,7 @@ import { defineCommandHandler } from "../db3CommandCore";
 
 async function requireLifecycleMembership(database: Prisma.TransactionClient, auth: CMServerAuthorization, edit: BandUserLifecycleEdit) {
     auth.requirePermission(Permission.login);
-    auth.requirePermission(edit.action === "deactivate" ? Permission.deactivate_users : Permission.recover_users);
+    auth.requirePermission(edit.action === "deactivate" ? BandPermission.deactivate_users : BandPermission.recover_users);
     const membership = await database.bandUser.findFirst({
         where: { publicId: edit.membershipId, bandId: auth.requireBand().id,
             user: { isDeleted: false, mergedIntoUserId: null } },

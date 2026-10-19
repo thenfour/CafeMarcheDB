@@ -5,6 +5,7 @@ import { act, Simulate } from "react-dom/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import MarkdownIt from "markdown-it";
 import { Permission } from "shared/permissions";
+import { satisfiesPermissionRequirement, type PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import { parsePublicId } from "shared/publicId";
 import type { CMDBUploadFilesArgs } from "src/core/components/file/CMDBUploadFile";
 import type { TClientUploadFileArgs, UploadResponsePayload, UploadedFile } from "src/core/db3/shared/fileTypes";
@@ -26,7 +27,8 @@ let showAdminControls = false;
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({
     useDashboardContext: () => ({ authorizationContext: { bandPublicId: band, authority, userPublicId: signedIn ? "AttachPerson0001" : null },
         localePreferences: { routeLocale, browserLanguages }, isShowingAdminControls: showAdminControls,
-        isAuthorized: (permission: Permission) => permission === Permission.upload_files && uploadAllowed }),
+        isAuthorized: (requirement: PermissionRequirement) => satisfiesPermissionRequirement(requirement,
+            permission => permission === Permission.upload_files && uploadAllowed, band !== null) }),
     useFeatureRecorder: () => () => telemetry(),
 }));
 vi.mock("src/locale/components/PresentationProvider", () => ({ usePresentation: () => ({ data: snapshot }) }));

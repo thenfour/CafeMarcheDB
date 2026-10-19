@@ -1,6 +1,6 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
-import { Permission } from "shared/permissions";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import db from "db";
 import { executeDB3Read } from "src/core/db3/server/db3ReadExecution";
@@ -14,7 +14,7 @@ export default resolver.pipe(
     async (args: TGetWikiPageRevisionsArgs, ctx: AuthenticatedCtx) => {
         const authorization = await loadAuthorization(ctx.session, args.bandPublicId);
         return executeDB3Read(db, authorization, async context => {
-            requireWikiAccess(context, Permission.view_wiki_page_revisions);
+            requireWikiAccess(context, BandPermission.view_wiki_page_revisions);
             const result = await queryView({
                 view: wikiPageRevisionHistoryView,
                 filter: {

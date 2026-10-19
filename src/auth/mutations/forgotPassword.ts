@@ -1,4 +1,4 @@
-import { UserWithRolesArgs } from "@/src/core/db3/shared/schema/userPayloads"
+import { NullableHydrateUserWithRoles, UserWithRolesArgs } from "@/src/core/db3/shared/schema/userPayloads"
 import { ServerApi } from "@/src/server/serverApi"
 import { generateToken, hash256 } from "@blitzjs/auth"
 import { resolver } from "@blitzjs/rpc"
@@ -19,12 +19,13 @@ export default resolver.pipe(
     // Re-read effective grants before target lookup or token generation.
     const auth = await requireSignInMethodAdmin(tx, ctx)
 
-    const user = "userId" in input
+    const user = NullableHydrateUserWithRoles("userId" in input
       ? (await tx.user.findFirst({
-        select: { ...UserWithRolesArgs.select },
+        ...UserWithRolesArgs,
         where: { publicId: input.userId }
       }))
-      : (await findSignInUser(tx, { type: "email", identifier: input.email }, { allowInactive: false }))
+      : (await findSignInUser(tx, { type: "email", identifier: input.email }, { allowInactive: false })));
+
     if (user) {
       requireCanManageUser({
         actor: makeUserManagementActor(auth.requireUser().user, auth),

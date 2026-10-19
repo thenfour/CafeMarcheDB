@@ -1,9 +1,9 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert } from "@mui/material";
 import React from "react";
 import { CalendarDate } from "shared/dateTimePolicy";
-import { Permission } from "shared/permissions";
 import type { SongPublicId } from "shared/publicId";
 import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
 import { useLocale } from "src/locale/components/useLocale";
@@ -92,7 +92,7 @@ export function SongHistory(props: SongHistoryProps) {
     const context = useDB3QueryContext();
     const dashboard = useDashboardContext();
     const locale = useLocale();
-    if (!context.bandPublicId || !dashboard.isAuthorized(Permission.view_events_nonpublic)) {
+    if (!context.bandPublicId || !dashboard.isAuthorized(BandPermission.view_events_nonpublic)) {
         return <Alert severity="info">{locale.getPlainString("songHistory.unavailable")}</Alert>;
     }
     return <div>

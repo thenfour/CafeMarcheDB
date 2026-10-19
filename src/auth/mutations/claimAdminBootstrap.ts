@@ -1,9 +1,10 @@
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { resolver } from "@blitzjs/rpc";
 import { AuthorizationError } from "blitz";
 import db, { Prisma } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import {
+    HydrateUserWithRoles,
     UserWithRolesArgs,
     type UserWithRolesPayload,
 } from "src/core/db3/shared/schema/userPayloads";
@@ -17,9 +18,10 @@ import {
     hasAdminBootstrapTokenBeenClaimed,
     recordAdminBootstrapTokenClaim,
 } from "../server/adminBootstrapClaims";
-import { createPublicDataFromDatabase } from "../server/effectivePermissions";
-import { cmauthorize } from "../server/cmResolver";
 import { authorizationDatabase } from "../server/authorizationContext";
+import { cmauthorize } from "../server/cmResolver";
+import { createPublicDataFromDatabase } from "../server/effectivePermissions";
+import { makePermissionSetFromRole } from "../server/userManagementState";
 
 export const ClaimAdminBootstrapInput = z.object({
     secret: z.string().min(kMinimumAdminBootstrapSecretLength).max(4096),
@@ -56,8 +58,11 @@ export default resolver.pipe(
                     //failClaim(); // User not found, cannot claim admin bootstrap.
                     throw new AdminBootstrapClaimError(); // throw in outer code so IDE knows user is not null
                 }
+                const hydratedUser = HydrateUserWithRoles(user);
                 if (user.isDeleted || user.mergedIntoUserId !== null) failClaim();
-                if (user.isSysAdmin) failClaim(); // User is already a sysadmin, cannot claim admin bootstrap.
+                if (makePermissionSetFromRole(hydratedUser.globalRole).includesName(Permission.sysadmin)) {
+                    failClaim();
+                }
 
                 if (!adminBootstrapSecretMatches(secret, verifiedConfiguration)) {
                     failClaim();
@@ -107,8 +112,14 @@ export default resolver.pipe(
                     changeContext: CreateChangeContext("claimAdminBootstrap"),
                     table: "User",
                     pkid: user.id,
-                    oldValues: { isSysAdmin: false },
-                    newValues: { isSysAdmin: true },
+                    oldValues: {
+                        isSysAdmin: user.isSysAdmin,
+                        globalRoleId: user.globalRoleId
+                    },
+                    newValues: {
+                        isSysAdmin: true,
+                        globalRoleId: sysadminRoleId
+                    },
                     auth: ctx.auth,
                     db: tx,
                 });

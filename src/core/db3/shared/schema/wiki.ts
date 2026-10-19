@@ -1,3 +1,4 @@
+import { BandPermission, kGlobalVisibilityPermissionPolicy } from "src/auth/shared/bandPermissionPolicy";
 import { serverOwnedField } from "../columnTypes/inherited";
 import { Prisma } from "db";
 import { MysqlEscape } from "shared/mysqlUtils";
@@ -14,59 +15,59 @@ import { z } from "zod";
 import type { WikiPagePublicId, WikiPageRevisionPublicId } from "shared/publicId";
 
 const wikiPageAuthMap = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_wiki_pages,
-    PostQuery: Permission.view_wiki_pages,
-    PreMutateAsOwner: Permission.edit_wiki_pages,
-    PreMutate: Permission.edit_wiki_pages,
-    PreInsert: Permission.edit_wiki_pages,
+    PostQueryAsOwner: BandPermission.view_wiki_pages,
+    PostQuery: BandPermission.view_wiki_pages,
+    PreMutateAsOwner: BandPermission.edit_wiki_pages,
+    PreMutate: BandPermission.edit_wiki_pages,
+    PreInsert: BandPermission.edit_wiki_pages,
 });
 
 const wikiPageTableAuthMap: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.view_wiki_pages,
-    View: Permission.view_wiki_pages,
-    EditOwn: Permission.edit_wiki_pages,
-    Edit: Permission.edit_wiki_pages,
-    Insert: Permission.edit_wiki_pages,
+    ViewOwn: BandPermission.view_wiki_pages,
+    View: BandPermission.view_wiki_pages,
+    EditOwn: BandPermission.edit_wiki_pages,
+    Edit: BandPermission.edit_wiki_pages,
+    Insert: BandPermission.edit_wiki_pages,
 } as const;
 
 const wikiPageAdministrationAuthMap = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_wiki_pages,
-    PostQuery: Permission.view_wiki_pages,
-    PreMutateAsOwner: Permission.admin_wiki_pages,
-    PreMutate: Permission.admin_wiki_pages,
-    PreInsert: Permission.admin_wiki_pages,
+    PostQueryAsOwner: BandPermission.view_wiki_pages,
+    PostQuery: BandPermission.view_wiki_pages,
+    PreMutateAsOwner: BandPermission.admin_wiki_pages,
+    PreMutate: BandPermission.admin_wiki_pages,
+    PreInsert: BandPermission.admin_wiki_pages,
 });
 
 const wikiPageRevisionAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
     PostQuery: db3.DB3FieldReadAuth.inheritRow,
-    PreMutateAsOwner: Permission.admin_wiki_pages,
-    PreMutate: Permission.admin_wiki_pages,
-    PreInsert: Permission.admin_wiki_pages,
+    PreMutateAsOwner: BandPermission.admin_wiki_pages,
+    PreMutate: BandPermission.admin_wiki_pages,
+    PreInsert: BandPermission.admin_wiki_pages,
 });
 
 const wikiPageRevisionCollectionAuthMap = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_wiki_page_revisions,
-    PostQuery: Permission.view_wiki_page_revisions,
-    PreMutateAsOwner: Permission.admin_wiki_pages,
-    PreMutate: Permission.admin_wiki_pages,
-    PreInsert: Permission.admin_wiki_pages,
+    PostQueryAsOwner: BandPermission.view_wiki_page_revisions,
+    PostQuery: BandPermission.view_wiki_page_revisions,
+    PreMutateAsOwner: BandPermission.admin_wiki_pages,
+    PreMutate: BandPermission.admin_wiki_pages,
+    PreInsert: BandPermission.admin_wiki_pages,
 });
 
 const wikiPageRevisionTableAuthMap: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.view_wiki_page_revisions,
-    View: Permission.view_wiki_page_revisions,
-    EditOwn: Permission.admin_wiki_pages,
-    Edit: Permission.admin_wiki_pages,
-    Insert: Permission.admin_wiki_pages,
+    ViewOwn: BandPermission.view_wiki_page_revisions,
+    View: BandPermission.view_wiki_page_revisions,
+    EditOwn: BandPermission.admin_wiki_pages,
+    Edit: BandPermission.admin_wiki_pages,
+    Insert: BandPermission.admin_wiki_pages,
 } as const;
 
 const wikiPageCurrentRevisionAuthMap = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_wiki_pages,
-    PostQuery: Permission.view_wiki_pages,
-    PreMutateAsOwner: Permission.admin_wiki_pages,
-    PreMutate: Permission.admin_wiki_pages,
-    PreInsert: Permission.admin_wiki_pages,
+    PostQueryAsOwner: BandPermission.view_wiki_pages,
+    PostQuery: BandPermission.view_wiki_pages,
+    PreMutateAsOwner: BandPermission.admin_wiki_pages,
+    PreMutate: BandPermission.admin_wiki_pages,
+    PreInsert: BandPermission.admin_wiki_pages,
 });
 
 
@@ -104,13 +105,17 @@ function makeWikiContentSearchField() {
 
 ////////////////////////////////////////////////////////////////
 export const xWikiPage = db3.defineTable({
+    globalVisibilityPermission: kGlobalVisibilityPermissionPolicy,
     prismaModel: db3.prismaModel<Prisma.WikiPageDelegate>(),
     getIdentity: (page: { publicId: WikiPagePublicId }) => page.publicId,
     getSelectionArgs: (): Prisma.WikiPageDefaultArgs => {
         return WikiPageArgs;
     },
     tableName: "WikiPage",
-    bandScope: { member: "bandId", managePermission: Permission.edit_wiki_pages },
+    bandScope: {
+        member: "bandId",
+        managePermission: BandPermission.edit_wiki_pages
+    },
     readConsistency: "snapshot",
     deletePolicy: "hard",
     naturalOrderBy: WikiPageNaturalOrderBy,
@@ -240,7 +245,14 @@ export const xWikiPageRevision = db3.defineTable({
         return WikiPageRevisionArgs;
     },
     tableName: "WikiPageRevision",
-    bandScope: { member: "bandId", via: { relation: "wikiPage", ownerUserMember: "createdByUserId" }, managePermission: Permission.admin_wiki_pages },
+    bandScope: {
+        member: "bandId",
+        via: {
+            relation: "wikiPage",
+            ownerUserMember: "createdByUserId"
+        },
+        managePermission: BandPermission.admin_wiki_pages
+    },
     readConsistency: "snapshot",
     deletePolicy: "hard",
     naturalOrderBy: WikiPageRevisionNaturalOrderBy,
@@ -295,7 +307,14 @@ export const xWikiPageCurrentRevision = db3.defineTable({
     tableName: "WikiPageRevision",
     tableUniqueName: "WikiPageCurrentRevision",
     queryParameters: {},
-    bandScope: { member: "bandId", via: { relation: "wikiPage", ownerUserMember: "createdByUserId" }, managePermission: Permission.admin_wiki_pages },
+    bandScope: {
+        member: "bandId",
+        via: {
+            relation: "wikiPage",
+            ownerUserMember: "createdByUserId"
+        },
+        managePermission: BandPermission.admin_wiki_pages
+    },
     readConsistency: "snapshot",
     deletePolicy: "disabled",
     getSelectionArgs: () => Prisma.validator<Prisma.WikiPageRevisionDefaultArgs>()({
@@ -306,8 +325,11 @@ export const xWikiPageCurrentRevision = db3.defineTable({
         wikiPage: xWikiPage.CalculateWhereClause({ filterModel: {}, auth, includeDeleted: false }),
     }],
     tableAuthMap: {
-        View: Permission.view_wiki_pages, ViewOwn: Permission.view_wiki_pages,
-        Insert: Permission.never_grant, Edit: Permission.never_grant, EditOwn: Permission.never_grant,
+        View: BandPermission.view_wiki_pages,
+        ViewOwn: BandPermission.view_wiki_pages,
+        Insert: Permission.never_grant,
+        Edit: Permission.never_grant,
+        EditOwn: Permission.never_grant,
     },
     getRowInfo: (row: { publicId: WikiPageRevisionPublicId; name: string }) => ({ pk: row.publicId, name: row.name, ownerUserId: null }),
     fields: db3.makeColumnSet({

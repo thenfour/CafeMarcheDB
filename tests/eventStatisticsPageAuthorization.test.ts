@@ -1,3 +1,5 @@
+import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
+import { permissionNamesSatisfyRequirement, type PermissionRequirement } from "src/auth/shared/permissionRequirement";
 import type { SessionContext } from "@blitzjs/auth";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
@@ -13,8 +15,8 @@ const session = {} as SessionContext;
 const bandId = parsePublicId<"Band">("DomainBand000001");
 
 function grant(...permissions: Permission[]) {
-    const requirePermission = vi.fn((permission: Permission) => {
-        if (!permissions.includes(permission)) {
+    const requirePermission = vi.fn((permission: PermissionRequirement) => {
+        if (!permissionNamesSatisfyRequirement(permissions, permission, true)) {
             throw new Error("Denied");
         }
     });
@@ -29,7 +31,7 @@ describe("event statistics page authorization", () => {
         const requirePermission = grant(Permission.login, Permission.view_events_reports);
         await authorizePageRequest("/backstage/stats", session, selectedBand);
         expect(loadAuth).toHaveBeenCalledWith(session, selectedBand);
-        expect(requirePermission).toHaveBeenCalledWith(Permission.view_events_reports);
+        expect(requirePermission).toHaveBeenCalledWith(BandPermission.view_events_reports);
     });
 
     it.each([Permission.public, Permission.login])("rejects %s accounts without event report authority", async permission => {
