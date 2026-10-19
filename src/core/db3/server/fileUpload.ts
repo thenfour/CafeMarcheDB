@@ -11,9 +11,9 @@ import { generatePublicId } from "src/server/publicId";
 import { AutoAssignInstrumentPartition } from "../shared/autoAssignInstrumentPartition";
 import { FileUploadArgsSchema, type FileUploadArgs } from "../shared/fileUpload";
 import type { FileCustomData, UploadedFile, UploadResponsePayload } from "../shared/fileTypes";
-import { fileTagDashboardView, instrumentDashboardView, FileTagSignificance, xFile, xPermission } from "../db3";
+import { fileTagDashboardView, instrumentDashboardView, FileTagSignificance, permissionVisibilityView, DB3ReferenceStore, xFile } from "../db3";
 import { bindDB3ReadSnapshot, type DB3ReadContext, type DB3ReadRootDatabase } from "./db3ReadExecution";
-import { queryView } from "./db3QueryCore";
+import { queryHydratedView, queryView } from "./db3QueryCore";
 import { resolvePublicForeignIds } from "./db3PublicIds";
 import { createFileRecord, type FileCreationFields, type FileStorageMetadata } from "./fileCreation";
 import { resolveFileStoragePath } from "./fileStorage";
@@ -54,11 +54,16 @@ async function resolveNamedVisibility(args: FileUploadArgs, context: DB3ReadCont
     if (!args.visiblePermission) {
         return args;
     }
-    const permission = await context.database.permission.findUnique({ where: { name: args.visiblePermission }, select: { publicId: true } });
+    const result = await queryHydratedView({
+        view: permissionVisibilityView,
+        filter: { items: [{ field: "name", operator: "equals", value: args.visiblePermission }] },
+        cmdbQueryContext: "upload visibility permission",
+    }, context.authorization, new DB3ReferenceStore(), context);
+    const permission = result.items[0];
     if (!permission) {
         throw new FileUploadInputError("Unknown visibility permission.");
     }
-    return { ...args, visiblePermissionId: xPermission.parseIdentity(permission.publicId) };
+    return { ...args, visiblePermissionId: permission.publicId };
 }
 
 async function automaticUploadCatalogs(context: DB3ReadContext) {

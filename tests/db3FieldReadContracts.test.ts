@@ -1,3 +1,4 @@
+import type { TIconOptions } from "shared/utils";
 import { globalTextFixture } from "./support/eventCatalogFixtures";
 import { Prisma } from "db"
 import { describe, expect, expectTypeOf, it, vi } from "vitest"
@@ -176,13 +177,13 @@ describe("DB3 scalar field read contracts", () => {
     >
 
     expectTypeOf<RequiredNonNull>().toEqualTypeOf<{ isDeleted: boolean }>()
-    expectTypeOf<RequiredNullable>().toEqualTypeOf<{ iconName: string | null }>()
+    expectTypeOf<RequiredNullable>().toEqualTypeOf<{ iconName: TIconOptions | null }>()
     expectTypeOf<OptionalNonNull>().toEqualTypeOf<{ value?: string }>()
     expectTypeOf<MixedPolicyOptional>().toEqualTypeOf<{ mixed?: string }>()
     expectTypeOf(db3.xEventStatus.fields.isDeleted.parseReadTransportValue(false))
       .toEqualTypeOf<boolean>()
     expectTypeOf(db3.xEventStatus.fields.iconName.parseReadTransportValue(null))
-      .toEqualTypeOf<string | null>()
+      .toEqualTypeOf<TIconOptions | null>()
   })
 
   it("validates present EventStatus transport values without adding authorization optionality", () => {

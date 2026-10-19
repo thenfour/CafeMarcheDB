@@ -134,7 +134,16 @@ Repeated startup preserves matrices/wording and does not revive deleted definiti
 create memberships, generate demos or run historical backfills. Signup creates
 a shared account with its configured default global role; bootstrap assigns the
 designated Sysadmin role through the existing one-time-secret/audit protocol.
-Permission additions and historical transformations belong to deployment SQL.
+Permissions absent from the static registry are deleted at startup. Their role
+mappings cascade away, and visibility references become null (private) through
+the database foreign-key rules. Known definitions retain their identities and
+deleted state. Role-grant changes and historical transformations belong to deployment SQL.
+
+The Permission name column validates against the registry and carries the
+`Permission` type through derived DTOs, hydration, and visibility references.
+Application consumers query DB3 views for authorized, sanitized values; server
+consumers use `queryHydratedView` when they need the hydrated model. Startup
+and the reads that construct authorization run before that request boundary.
 
 The `20261019120000_explicit_authorization_roles` migration materializes previous
 Public inheritance and automatic account grants into explicit database mappings,

@@ -15,7 +15,7 @@ import { xBandRole } from "src/core/db3/shared/entities/user/bandRoleViews";
 import { permissionBandRoleChoicesView, permissionBandRoleMatrixView, permissionEditorView, permissionGlobalRoleChoicesView, permissionGlobalRoleMatrixView } from "src/core/db3/shared/entities/user/permissionViews";
 import { setBandRolePermissionCommand, setGlobalRolePermissionCommand } from "src/core/db3/shared/entities/user/rolePermissionCommands";
 import { generatePublicId } from "src/server/publicId";
-import { initializeAccessControl } from "src/setup/accessControl";
+import { initializeAccessControl, synchronizePermissions } from "src/setup/accessControl";
 import { executeCatalogCrud } from "./support/db3CatalogFixture";
 import { userEditorView } from "src/core/db3/shared/entities/user/userViews";
 import { platformUserEditorView } from "src/core/db3/shared/entities/user/platformUser";
@@ -91,9 +91,12 @@ describe.skipIf(!settingsMysqlTestUrl)("role administration on MariaDB", () => {
             const result = await queryView({ view, filter: {}, cmdbQueryContext: "scope-specific role permissions" }, auth, await snapshot(tx, auth));
             expect(new Set(result.items.map(row => row.name))).toEqual(expected);
         }
+        await expect(queryView({ view: permissionEditorView, filter: { publicIds: [parsePublicId<"Permission">(unknown.publicId)] },
+            cmdbQueryContext: "unsynchronized permission row" }, auth, await snapshot(tx, auth))).rejects.toThrow("unrecognized option");
+        await synchronizePermissions(tx, fixture.englishId);
         const editor = await queryView({ view: permissionEditorView, filter: { publicIds: [parsePublicId<"Permission">(unknown.publicId)] },
-            cmdbQueryContext: "whole permission registry" }, auth, await snapshot(tx, auth));
-        expect(editor.items).toMatchObject([{ name: unknown.name }]);
+            cmdbQueryContext: "synchronized permission registry" }, auth, await snapshot(tx, auth));
+        expect(editor.items).toEqual([]);
     }));
 
     it.each([userEditorView, platformUserEditorView])("assigns the configured account default during $viewID creation", view => run(async (tx, fixture) => {

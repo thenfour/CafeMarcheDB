@@ -1,6 +1,6 @@
 import { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
-import type { UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
+import type { HydratedUserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
 import { userPublicId } from "./userFixtures";
 import { parsePublicId } from "shared/publicId";
 
@@ -10,7 +10,7 @@ export function testServerAuthorization(
 ): CMServerAuthorization {
     // Focused DB3 policy fixtures inspect identity only, not the user payload.
     const principal = user
-        ? { id: user.id, publicId: user.publicId ?? userPublicId(user.id) } as UserWithRolesPayload
+        ? { id: user.id, publicId: user.publicId ?? userPublicId(user.id) } as HydratedUserWithRolesPayload
         : null;
     return new CMServerAuthorization(principal, effectivePermissions);
 }

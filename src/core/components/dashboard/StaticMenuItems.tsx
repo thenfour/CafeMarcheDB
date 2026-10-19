@@ -44,7 +44,7 @@ export interface MenuLink {
     className?: string;
     openInNewTab?: boolean;
     realm?: NavRealm;
-    renderIcon: () => React.ReactNode;
+    renderIcon?: () => React.ReactNode;
     enabledForSingleTenant?: boolean; // default true
 }
 

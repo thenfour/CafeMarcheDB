@@ -21,7 +21,7 @@ const Inner = () => {
         view: db3.permissionEditorView,
         columns: {
             publicId: DB3Client.publicIdFieldGen(),
-            name: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.name", columnName, cellWidth: 200 }),
+            name: columnName => new DB3Client.ConstEnumStringFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.name", columnName, cellWidth: 200, allowNull: false }),
             description: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.description" }),
             sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.sortOrder", columnName, cellWidth: 80 }),
             isVisibility: columnName => new DB3Client.BoolColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.visibilityPermission", columnName }),

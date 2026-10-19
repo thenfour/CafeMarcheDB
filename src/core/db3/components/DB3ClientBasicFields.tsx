@@ -616,8 +616,8 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
     onSchemaConnected(tableClient: DB3ClientCore.xTableRenderClient<any, any>) {
         this.enumSchemaColumn = this.schemaColumn as db3fields.ConstEnumStringField;
 
-        this.gridOptions = Object.entries(this.enumSchemaColumn.options).map(([k, v]) => {
-            return { value: k, label: v as string };
+        this.gridOptions = Object.entries(this.enumSchemaColumn.options).map(([label, value]) => {
+            return { value, label };
         });
 
         // if we use datagrid's builtin singleselect column, it doesn't support null. so use a sentinel value.

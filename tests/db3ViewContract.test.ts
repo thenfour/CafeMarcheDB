@@ -1,3 +1,6 @@
+import type { TIconOptions } from "shared/utils";
+import { EventStatusSignificance } from "src/core/db3/shared/schema/prismArgs";
+import { Permission } from "shared/permissions";
 import { wikiPageTagReferenceFixture, eventTagDtoFixture } from "./support/catalogReferenceFixtures";
 import { eventStatusDtoFixture, eventTypeDtoFixture } from "./support/eventCatalogFixtures";
 import type { LocalizedFieldValue } from "src/core/db3/shared/columnTypes/localizedString";
@@ -247,8 +250,8 @@ describe("DB3 scalar selection compiler", () => {
     expectTypeOf(compiled.prismaSelection).toEqualTypeOf<typeof selection>()
     expectTypeOf<z.infer<typeof compiled.dtoSchema>>().toEqualTypeOf<{
       publicId: EventStatusPublicId
-      significance: string | null
-      iconName: string | null
+      significance: EventStatusSignificance | null
+      iconName: TIconOptions | null
     }>()
 
     expect(compiled.prismaSelection).toBe(selection)
@@ -262,17 +265,17 @@ describe("DB3 scalar selection compiler", () => {
     ])
     expect(compiled.dtoSchema.parse({
       publicId: eventStatusPublicId,
-      significance: "FinalConfirmation",
+      significance: EventStatusSignificance.FinalConfirmation,
       iconName: null,
     })).toEqual({
       publicId: eventStatusPublicId,
-      significance: "FinalConfirmation",
+      significance: EventStatusSignificance.FinalConfirmation,
       iconName: null,
     })
     expect(compiled.dtoSchema.safeParse({ id: 10, iconName: null }).success).toBe(false)
     expect(compiled.dtoSchema.safeParse({
       id: 10,
-      significance: "FinalConfirmation",
+      significance: EventStatusSignificance.FinalConfirmation,
       iconName: undefined,
     }).success).toBe(false)
   })
@@ -446,7 +449,7 @@ describe("DB3 scalar selection compiler", () => {
     expectTypeOf<z.infer<typeof compiled.dtoSchema>>().toEqualTypeOf<{
       status?: {
         publicId: EventStatusPublicId
-        significance: string | null
+        significance: EventStatusSignificance | null
       } | null
     }>()
 
@@ -597,18 +600,18 @@ describe("DB3 derived scalar hydration", () => {
     const decode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
     const dto = {
       publicId: eventStatusPublicId,
-      significance: "FinalConfirmation",
+      significance: EventStatusSignificance.FinalConfirmation,
       color: "green",
     }
 
     expectTypeOf<Parameters<typeof derived.hydrate>[0]>().toEqualTypeOf<{
       publicId: EventStatusPublicId
-      significance: string | null
+      significance: EventStatusSignificance | null
       color: string | null
     }>()
     expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
       publicId: EventStatusPublicId
-      significance: string | null
+      significance: EventStatusSignificance | null
       color: ColorPaletteEntry | null
     }>()
 
@@ -616,7 +619,7 @@ describe("DB3 derived scalar hydration", () => {
 
     expect(hydrated).toEqual({
       publicId: eventStatusPublicId,
-      significance: "FinalConfirmation",
+      significance: EventStatusSignificance.FinalConfirmation,
       color: expect.objectContaining({ id: "green" }),
     })
     expect(dto.color).toBe("green")
@@ -969,7 +972,7 @@ describe("Song derived-view migration", () => {
     expectTypeOf<Dto["name"]>().toEqualTypeOf<string>()
     expectTypeOf<Dto["visiblePermissionId"]>()
       .toEqualTypeOf<typeof permissionPublicId | null>()
-    expectTypeOf<PermissionDto["name"]>().toEqualTypeOf<string>()
+    expectTypeOf<PermissionDto["name"]>().toEqualTypeOf<Permission>()
     expectTypeOf<PermissionDto["color"]>().toEqualTypeOf<string | null>()
     expectTypeOf<PermissionClient["color"]>()
       .toEqualTypeOf<ColorPaletteEntry | null>()
@@ -1290,7 +1293,7 @@ describe("DB3 derived embedded-relation hydration", () => {
     expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
       status?: {
         publicId: EventStatusPublicId
-        significance: string | null
+        significance: EventStatusSignificance | null
         color: ColorPaletteEntry | null
       } | null
     }>()
@@ -1298,7 +1301,7 @@ describe("DB3 derived embedded-relation hydration", () => {
     const hydrated = derived.hydrate({
       status: {
         publicId: eventStatusPublicId,
-        significance: "FinalConfirmation",
+        significance: EventStatusSignificance.FinalConfirmation,
         color: "green",
       },
     }, new db3.DB3ReferenceStore())
@@ -1306,7 +1309,7 @@ describe("DB3 derived embedded-relation hydration", () => {
     expect(hydrated).toEqual({
       status: {
         publicId: eventStatusPublicId,
-        significance: "FinalConfirmation",
+        significance: EventStatusSignificance.FinalConfirmation,
         color: expect.objectContaining({ id: "green" }),
       },
     })

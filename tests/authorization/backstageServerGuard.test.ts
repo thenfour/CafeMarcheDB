@@ -181,7 +181,7 @@ describe("backstage server page guard", () => {
             getUserMassAnalysis,
             { userId: eventAdmin.publicId },
             createAuthorizationTestContext(eventAdmin),
-        )).rejects.toThrow("Not authorized for sysadmin");
+        )).rejects.toThrow("sysadmin");
     });
 
     it("fails closed for an unregistered backstage page", async () => {

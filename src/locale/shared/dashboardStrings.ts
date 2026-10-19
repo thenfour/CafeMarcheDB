@@ -38,7 +38,6 @@ export const dashboardStrings = {
     "dashboard.band.platform": label("Account and platform"),
     "dashboard.band.unnamed": label("Unnamed band"),
     "dashboard.band.unavailable": label("Selected band is unavailable to this account"),
-    "dashboard.band.empty": label("This account has no active band memberships."),
     "dashboard.band.required": label("Select a band to view its members and catalogs."),
     "dashboard.band.switchFailed": label("Could not change bands. Try again."),
     "dashboard.instruments.missing": label("You have no instruments assigned in this band. Open your profile to choose them."),

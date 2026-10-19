@@ -29,8 +29,6 @@ import { xBandUserTag, bandUserTagDisplayContract } from "../entities/user/bandU
 import { xBandWikiPageTag, bandWikiPageTagDisplayContract } from "../entities/wikiPageTag/wikiPageTagViews";
 
 import { eventTypeDisplayContract, eventStatusDisplayContract, eventAttendanceDisplayContract } from "../entities/event/eventCatalogs";
-import { graft } from "../entities/common/viewCommon";
-import { asPermission } from "@/shared/permissions";
 
 // dashboard provider provides "hydrated" objects, not raw db rows
 // (e.g. ColorPaletteEntry rather than `string`).
@@ -81,14 +79,7 @@ export const permissionDashboardView = defineView({
     selection: dashboardPermissionResource.prismaSelection,
     dtoSchema: dashboardPermissionResource.dtoSchema,
     references: dashboardPermissionResource.referenceContract,
-    hydrate: (dto, context) => {
-        return graft(
-            dashboardPermissionResource.hydrate(dto, context),
-            {
-                name: asPermission(dto.name)
-            }
-        );
-    },
+    hydrate: dashboardPermissionResource.hydrate,
 });
 
 export const userTagDashboardView = defineView({

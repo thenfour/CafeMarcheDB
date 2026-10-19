@@ -1068,7 +1068,7 @@ describe("BA-S003 event attendance ownership", () => {
       userId: target.publicId,
       eventId: eventPublicId(100),
       comment: "Forged",
-    }, ctx)).rejects.toThrow(`required: ${Permission.change_others_event_responses}`)
+    }, ctx)).rejects.toThrow("Not authorized to update event attendance")
 
     expect(eventLookup).not.toHaveBeenCalled()
     expect(authorizationTestDb.snapshot("eventUserResponse")).toEqual([])
@@ -1092,7 +1092,7 @@ describe("BA-S003 event attendance ownership", () => {
       userId: target.publicId,
       eventId: eventPublicId(100),
       comment: "Stale grant",
-    }, ctx)).rejects.toThrow(`required: ${Permission.change_others_event_responses}`)
+    }, ctx)).rejects.toThrow("Not authorized to update event attendance")
 
     expect(eventLookup).not.toHaveBeenCalled()
     expect(authorizationTestDb.snapshot("eventUserResponse")).toEqual([])
@@ -1158,7 +1158,7 @@ describe("BA-S003 event attendance ownership", () => {
       userId: actor.publicId,
       eventId: eventPublicId(100),
       isInvited: true,
-    }, ctx)).rejects.toThrow(`required: ${Permission.manage_events}`)
+    }, ctx)).rejects.toThrow("Not authorized to update event attendance")
 
     expect(authorizationTestDb.snapshot("eventUserResponse")).toEqual([])
   })

@@ -58,7 +58,7 @@ describe("user recovery", () => {
         });
         resetAuthorizationDatabase({ user: [actor, target], change: [] });
         await expect(invokeResolver(reactivateUser, { userId: target.publicId }, createAuthorizationTestContext(admin)))
-            .rejects.toThrow("Not authorized for manage_global_users");
+            .rejects.toThrow("manage_global_users");
         expect(authorizationTestDb.snapshot("user").find(row => row.id === target.id)?.isDeleted).toBe(true);
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });

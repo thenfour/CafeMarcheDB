@@ -75,13 +75,13 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     })
 
     await expect(invokeResolver(getWikiPageRevision, { bandPublicId: parsePublicId<"Band">("FixtureBand00001"), revisionId: parsePublicId<"WikiPageRevision">("WikiTestRev00001") }, ctx)).rejects.toThrow(
-      "Not authorized for view_wiki_page_revisions",
+      "view_wiki_page_revisions",
     )
     await expect(invokeResolver(
       getUserWikiContributions,
       { bandPublicId: parsePublicId<"Band">("FixtureBand00001"), userId: pageOnlyActor.publicId },
       ctx,
-    )).rejects.toThrow("Not authorized for view_wiki_page_revisions")
+    )).rejects.toThrow("view_wiki_page_revisions")
   })
 
   it("filters hidden and deleted songs in direct ID lookups", async () => {

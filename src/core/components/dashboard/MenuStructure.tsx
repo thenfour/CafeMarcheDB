@@ -40,7 +40,7 @@ export interface FlatMenuItemLink {
     path: string;
     openInNewTab?: boolean;
     realm?: NavRealm;
-    renderIcon: () => React.ReactNode;
+    renderIcon?: () => React.ReactNode;
     sectionId?: string; // Which section this link belongs to (for collapse/expand)
 }
 

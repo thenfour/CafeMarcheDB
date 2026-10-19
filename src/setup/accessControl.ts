@@ -1,6 +1,6 @@
 import { LocalizedStringFormat, type Prisma, type PrismaClient } from "@prisma/client";
 import { DefaultRolePermissionAssignments, DefaultRoles } from "../../shared/defaultRolePermissionAssignments";
-import { getPermissionDatabaseMetadata, getPermissionDefinition, gPermissionRegistry } from "../../shared/permissions";
+import { getPermissionDatabaseMetadata, getPermissionDefinition, gPermissionRegistry, isPermission } from "../../shared/permissions";
 import { assertValidRoleConfiguration } from "../auth/server/sessionInvalidation";
 import { generatePublicId } from "../server/publicId";
 
@@ -66,8 +66,13 @@ async function ensureLocales(database: Prisma.TransactionClient): Promise<number
     return englishId;
 }
 
-async function synchronizePermissions(database: Prisma.TransactionClient, englishId: number): Promise<void> {
+export async function synchronizePermissions(database: Prisma.TransactionClient, englishId: number): Promise<void> {
     const existing = await database.permission.findMany();
+    // SQL collations may ignore case, accents or trailing spaces; registry keys are exact.
+    const unknownIds = existing.filter(permission => !isPermission(permission.name)).map(permission => permission.id);
+    // Registry removal deletes role mappings and clears visibility references through FK rules.
+    // Run before ordinary DB3 reads, whose name column requires a registry-known value.
+    await database.permission.deleteMany({ where: { id: { in: unknownIds } } });
     for (const definition of gPermissionRegistry) {
         const permission = existing.find(row => row.name === definition.key);
         const { description, ...metadata } = getPermissionDatabaseMetadata(definition);
@@ -85,8 +90,6 @@ async function synchronizePermissions(database: Prisma.TransactionClient, englis
             await database.permission.update({ where: { id: permission.id }, data: { descriptionId, ...metadata } });
         }
     }
-    // Preserve unknown/deleted permissions and their history. The authorization
-    // loader excludes them; retirement is an explicit migration operation.
 }
 
 async function seedRolesForFreshInstall(database: Prisma.TransactionClient, englishId: number): Promise<void> {

@@ -55,8 +55,21 @@ describe.skipIf(!settingsMysqlTestUrl)("associated File editing and uploads on M
     afterAll(async () => database.$disconnect());
     const run = (work: (tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture) => Promise<void>) => withSettingsMysqlFixture(database, work);
 
+    it("resolves named upload visibility through current authorized permission choices", () => run(async (tx, fixture) => withStorage(async storage => {
+        const c = await prepare(tx, fixture);
+        const patch = { visiblePermission: Permission.visibility_members, visiblePermissionId: undefined,
+            externalURI: "https://example.com/named-visibility.pdf" };
+        const response = await c.upload([], storage, patch);
+        const file = await tx.file.findUniqueOrThrow({ where: { publicId: response.files[0]!.publicId } });
+        expect(file.visiblePermissionId).toBe(c.visibility.id);
+        await tx.bandRolePermission.deleteMany({ where: { bandRoleId: c.role.id, permissionId: c.visibility.id } });
+        await expect(c.upload([], storage, patch)).rejects.toThrow("Unknown visibility permission");
+    })));
+
     it("associates Markdown uploads with the public Wiki identity and rechecks the parent visibility grant", () => run(async (tx, fixture) => withStorage(async storage => {
         const c = await prepare(tx, fixture);
+        const wikiView = await tx.permission.findUniqueOrThrow({ where: { name: Permission.view_wiki_pages } });
+        await tx.bandRolePermission.create({ data: { publicId: generatePublicId(), bandRoleId: c.role.id, permissionId: wikiView.id } });
         const permission = await tx.permission.findUniqueOrThrow({ where: { name: Permission.visibility_editors } });
         const grant = await tx.bandRolePermission.create({ data: { publicId: generatePublicId(), bandRoleId: c.role.id, permissionId: permission.id } });
         const page = await tx.wikiPage.create({ data: { publicId: generatePublicId(), bandId: c.band.id, slug: "attachment-page",

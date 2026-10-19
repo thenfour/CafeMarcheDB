@@ -74,7 +74,6 @@ function PlatformBandSelection() {
                 </option>)}
             </Select>
         </FormControl>
-        {choices.length === 0 && <Alert severity="info">{locale.getPlainString("dashboard.band.empty")}</Alert>}
         {failed && <Alert severity="error">{locale.getPlainString("dashboard.band.switchFailed")}</Alert>}
     </Stack>;
 }

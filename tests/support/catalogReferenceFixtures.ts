@@ -1,5 +1,6 @@
 import type { WikiPageTagPublicId, SongCreditTypePublicId, FileTagPublicId, EventTagPublicId, InstrumentPublicId, InstrumentFunctionalGroupPublicId, PermissionPublicId, SongTagPublicId, UserTagPublicId } from "shared/publicId";
 import type { StringResolution } from "src/locale/shared/stringResolution";
+import { Permission } from "shared/permissions";
 import { hydrateView } from "src/core/db3/shared/core/db3View";
 import { wikiPageTagDashboardView, songCreditTypeDashboardView, fileTagDashboardView, eventTagDashboardView, instrumentDashboardView, instrumentFunctionalGroupDashboardView, permissionDashboardView, songTagDashboardView, userTagDashboardView,
     createDashboardReferenceStore, registerDashboardReferences } from "src/core/db3/shared/references/dashboardReferences";
@@ -47,7 +48,7 @@ export function songTagReferenceFixture(publicId: SongTagPublicId) {
 
 export function permissionReferenceFixture(publicId: PermissionPublicId) {
     const dto = permissionDashboardView.parseDto({
-        publicId, name: "members", description: "", descriptionStringPublicId: null,
+        publicId, name: Permission.visibility_members, description: "", descriptionStringPublicId: null,
         descriptionResolution: { ...resolution(""), scope: "global" },
         isVisibility: true, sortOrder: 1, significance: null, color: null, iconName: null,
     });

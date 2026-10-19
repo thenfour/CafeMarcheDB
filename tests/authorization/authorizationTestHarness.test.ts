@@ -1108,7 +1108,7 @@ describe("BA-U001 user management boundaries", () => {
     })).toBe(false)
     await expect(
       invokeResolver(impersonateUser, { userId: isSysAdminUser.publicId }, ctx),
-    ).rejects.toThrow("Not authorized for impersonate_user.")
+    ).rejects.toThrow("impersonate_user")
   })
 
   it.each([
@@ -1160,7 +1160,7 @@ describe("BA-U002 delegated user administration", () => {
   const bandAdmin = createAuthorizationTestUser("bandAdmin", { id: 2 })
   const ordinaryUser = createAuthorizationTarget("ordinary", { id: 10 })
 
-  const makeRole = (id: number, name: string, permissions: string[]) => ({
+  const makeRole = <const TPermission extends string>(id: number, name: string, permissions: readonly TPermission[]) => ({
     id,
     publicId: parsePublicId<"Role">(`AuthRole${id.toString().padStart(8, "0")}`),
     name,
@@ -1215,7 +1215,8 @@ describe("BA-U002 delegated user administration", () => {
     expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(ordinaryRole))).toBe(true)
     expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(unheldRole))).toBe(false)
     expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(protectedRole))).toBe(false)
-    expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(unknownRole))).toBe(false)
+    // @ts-expect-error Unsynchronized roles can contain names outside the registry.
+    expect(() => makePermissionSetFromRole(unknownRole)).toThrow("Invalid permission")
 
     const targetOutsideEnvelope = {
       ...ordinaryUser,

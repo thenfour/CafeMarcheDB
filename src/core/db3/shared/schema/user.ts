@@ -16,6 +16,7 @@ import { TAnyModel } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
 import { PermissionSignificance } from "../apiTypes";
 import { GenericStringField } from "../columnTypes/genericString";
+import { ConstEnumStringField } from "../columnTypes/enum";
 import { serverOwnedField } from "../columnTypes/inherited";
 import { LocalizedStringField, localizedText } from "../columnTypes/localizedString";
 import { BoolField, ForeignCollectionField, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, tagsRef } from "../columnTypes/xTableColumnTypes";
@@ -251,10 +252,11 @@ export const xPermissionBaseArgs = db3.defineTableDesc({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
         publicId: () => MakePublicIdField<PermissionPublicId>(),
         isDeleted: () => serverOwnedField(MakeIsDeletedField({ authMap: xPermissionMetadataAuthMap })),
-        name: columnName => new GenericStringField({
+        name: columnName => new ConstEnumStringField({
             columnName,
             allowNull: false,
-            format: "plain",
+            options: Permission,
+            defaultValue: null,
             specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xPermissionMetadataAuthMap,
         }),

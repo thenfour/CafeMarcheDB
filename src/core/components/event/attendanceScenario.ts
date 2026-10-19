@@ -39,11 +39,11 @@ export type AttendanceScenarioSegment = z.infer<typeof segmentSchema>;
 export const scenarioSegmentPublicId = (index: number) => db3.xEventSegment.parseIdentity(`ScnSegment${String(index + 1).padStart(6, "0")}`);
 export const scenarioEventPublicId = db3.xEvent.parseIdentity("ScenarioEvent001");
 
-export const scenarioAttendances: db3.EventAttendanceDisplay[] = [
+export const scenarioAttendances: db3.EventAttendanceDisplay[] = ([
     { id: 1, text: "No", strength: 0, color: "attendance_no", iconName: "Cancel", description: "I cannot attend." },
-    { id: 2, text: "Probably", strength: 66, color: "attendance_yes_maybe", iconName: "HelpOutline", description: "I will probably attend." },
+    { id: 2, text: "Probably", strength: 66, color: "attendance_yes_maybe", iconName: "Help", description: "I will probably attend." },
     { id: 3, text: "Yes", strength: 100, color: "attendance_yes", iconName: "CheckCircleOutline", description: "I will attend." },
-].map((option, sortOrder) => ({
+] as const).map((option, sortOrder) => ({
     publicId: db3.xEventAttendance.parseIdentity(`scenarioAttend0${option.id}`),
     buttonCaption: option.text,
     strength: option.strength,

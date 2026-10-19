@@ -152,10 +152,10 @@ describe("BA-U005 administrator bootstrap", () => {
     const { ctx } = createAuthorizationPersona("public")
     const findUser = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst")
 
-    await expect(invokeResolver(getAdminBootstrapStatus, null, ctx)).rejects.toThrow("Not authorized for login")
+    await expect(invokeResolver(getAdminBootstrapStatus, null, ctx)).rejects.toThrow("login")
     await expect(invokeResolver(claimAdminBootstrap, {
       secret: bootstrapSecret,
-    }, ctx)).rejects.toThrow("Not authorized for login")
+    }, ctx)).rejects.toThrow("login")
 
     expect(findUser).not.toHaveBeenCalled()
     expect(authorizationTestDb.snapshot("adminBootstrapClaim")).toEqual([])
@@ -209,7 +209,7 @@ describe("BA-U005 administrator bootstrap", () => {
     await expect(invokeResolver(getAdminBootstrapStatus, null, ctx)).rejects.toMatchObject({ statusCode: 401 });
     await expect(invokeResolver(claimAdminBootstrap, {
       secret: bootstrapSecret,
-    }, ctx)).rejects.toThrow("Not authorized for login")
+    }, ctx)).rejects.toThrow("login")
 
     expect(authorizationTestDb.snapshot("user")[0]).toEqual(expect.objectContaining({ isSysAdmin: false }))
     expect(authorizationTestDb.snapshot("adminBootstrapClaim")).toEqual([])

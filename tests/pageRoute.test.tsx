@@ -30,9 +30,9 @@ function RouteDetails() {
 describe("current page route", () => {
     it("updates route metadata for navigation without reading Next's pathname", () => {
         act(() => root.render(<PageRouteProvider routeKey="bandEvent"><RouteDetails /></PageRouteProvider>));
-        expect(container.textContent).toBe("bandEvent:view_events_nonpublic or global_band_admin:band");
+        expect(container.textContent).toBe('bandEvent:{"anyOf":["view_events_nonpublic","global_band_admin"],"requiresBand":true}:band');
 
         act(() => root.render(<PageRouteProvider routeKey="adminLogs"><RouteDetails /></PageRouteProvider>));
-        expect(container.textContent).toBe("adminLogs:sysadmin:platform");
+        expect(container.textContent).toBe('adminLogs:"sysadmin":platform');
     });
 });

@@ -11,10 +11,13 @@ describe("PermissionSet", () => {
         // @ts-expect-error Omitted grants are a programming error.
         expect(() => new PermissionSet()).toThrow("permission names");
         // @ts-expect-error Client capability checks accept names, not database records.
-        expect(() => new PermissionSet([{ id: 10, name: "view" }])).toThrow("permission names");
-        const permissions = new PermissionSet(["view", "edit", "view"]);
-        expect(permissions.names).toEqual(["view", "edit"]);
-        expect(permissions.includesName("edit")).toBe(true);
+        expect(() => new PermissionSet([{ id: 10, name: "view" }])).toThrow("Invalid permission");
+        // @ts-expect-error Unknown persisted names must fail validation.
+        expect(() => new PermissionSet(["unknown_permission"])).toThrow("Invalid permission");
+        const permissions = new PermissionSet([Permission.view_events, Permission.manage_events, Permission.view_events]);
+        expect(permissions.names).toEqual([Permission.view_events, Permission.manage_events]);
+        expect(permissions.includesName(Permission.manage_events)).toBe(true);
+        // @ts-expect-error Arbitrary strings are rejected by the typed capability API.
         expect(permissions.includesName("10")).toBe(false);
         expect(permissions).not.toHaveProperty("ids");
         expect(permissions).not.toHaveProperty("includesId");
@@ -23,20 +26,19 @@ describe("PermissionSet", () => {
     });
 
     it("detects revoked grants as well as added grants without depending on order", () => {
-        const permissions = new PermissionSet(["view", "edit"]);
-        expect(permissions.hasSameNames(["edit", "view", "view"])).toBe(true);
-        expect(permissions.hasSameNames(["view"])).toBe(false);
-        expect(permissions.hasSameNames(["edit", "view", "extra"])).toBe(false);
-        expect(new PermissionSet(["view"]).hasSameNames(["view", "edit"])).toBe(false);
-        expect(permissions.hasAll(new PermissionSet(["view"]))).toBe(true);
-        expect(permissions.hasAll(new PermissionSet(["missing"]))).toBe(false);
+        const permissions = new PermissionSet([Permission.view_events, Permission.manage_events]);
+        expect(permissions.hasSameNames([Permission.manage_events, Permission.view_events, Permission.view_events])).toBe(true);
+        expect(permissions.hasSameNames([Permission.view_events])).toBe(false);
+        expect(permissions.hasSameNames([Permission.manage_events, Permission.view_events, Permission.view_files])).toBe(false);
+        expect(new PermissionSet([Permission.view_events]).hasSameNames([Permission.view_events, Permission.manage_events])).toBe(false);
+        expect(permissions.hasAll(new PermissionSet([Permission.view_events]))).toBe(true);
+        expect(permissions.hasAll(new PermissionSet([Permission.view_files]))).toBe(false);
     });
 
     it("derives delegability from the canonical registry", () => {
         const actor = new PermissionSet([Permission.view_users_basic_info, Permission.sysadmin]);
         expect(actor.hasAllDelegable(new PermissionSet([Permission.view_users_basic_info]))).toBe(true);
         expect(actor.hasAllDelegable(new PermissionSet([Permission.sysadmin]))).toBe(false);
-        expect(actor.hasAllDelegable(new PermissionSet(["unknown_permission"]))).toBe(false);
     });
 });
 

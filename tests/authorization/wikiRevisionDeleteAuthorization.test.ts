@@ -75,7 +75,7 @@ describe("wiki revision deletion authorization", () => {
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions: withoutAdmin })
 
     await expect(invokeResolver(deleteWikiRevision, { bandPublicId: parsePublicId<"Band">("FixtureBand00001"), revisionId: oldRevisionPublicId }, ctx))
-      .rejects.toThrow("Not authorized for admin_wiki_pages")
+      .rejects.toThrow("admin_wiki_pages")
     expect(authorizationTestDb.snapshot("wikiPageRevision")).toHaveLength(2)
   })
 

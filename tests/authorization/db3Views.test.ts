@@ -198,7 +198,7 @@ describe("DB3 named views", () => {
             color: "green",
             iconName: null,
         });
-        expectTypeOf(permissionDto.name).toEqualTypeOf<string>();
+        expectTypeOf(permissionDto.name).toEqualTypeOf<Permission>();
         expectTypeOf(permissionDto.description).toEqualTypeOf<string | null>();
         expectTypeOf(permissionDto.isVisibility).toEqualTypeOf<boolean>();
 

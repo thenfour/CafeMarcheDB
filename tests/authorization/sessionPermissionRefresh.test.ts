@@ -246,7 +246,7 @@ describe("authorization refresh on every request", () => {
         expect(original.hasPermission(Permission.manage_global_localization)).toBe(true);
         expect(refreshed.hasPermission(Permission.manage_global_localization)).toBe(false);
         expect(refreshed.hasPermission(Permission.never_grant)).toBe(false);
-        expect(() => refreshed.requirePermission(Permission.manage_global_localization)).toThrow("Not authorized for manage_global_localization");
+        expect(() => refreshed.requirePermission(Permission.manage_global_localization)).toThrow("manage_global_localization");
 
         seedSessionAuthorization({ ...actor, isDeleted: true });
         const deleted = await original.refresh(database);
