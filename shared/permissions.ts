@@ -23,8 +23,15 @@ export type PermissionDefinition = Readonly<{
   isProtected: boolean
   // A delegable permission may safely be carried by a preconfigured role
   // assigned by a non-sysadmin. This does not authorize editing role grants.
-  isDelegable: boolean
-  isVisibility: boolean
+  isDelegable: boolean;
+
+
+  // indicates that the permission is used for user-configurable visibility gating.
+  // NB: at server startup, unknown permissions are deleted from the database with cascading.
+  // it means if you rename or modify visibility-permissions that are in use by configured records (events, songs...)
+  // then upon sync, those records lose visibility silently.
+  isVisibility: boolean;
+
   // Used for capabilities where removing the final non-Sysadmin holder could
   // leave the band unable to perform an important administrative operation.
   isContinuitySensitive: boolean
@@ -154,26 +161,31 @@ const permissionRegistry = registryFor<Omit<PermissionDefinition, "key">>()({
     110
   ),
 
+  // NB: CAREFUL TO AVOID ACCIDENTAL DELETION; changing this permission  can result in loss of visibility for existing records.
   visibility_public: definePermission(
     "band",
     "Public visibility: everyone can see the object.",
     200,
-    {
-      ...visibilityPresentation("green", "Public", "Visibility_Public"),
-    }
+    visibilityPresentation("green", "Public", "Visibility_Public")
   ),
+
+  // NB: CAREFUL TO AVOID ACCIDENTAL DELETION; changing this permission  can result in loss of visibility for existing records.
   visibility_logged_in_users: definePermission(
     "band",
     "Visibility restricted to authenticated users.",
     210,
     visibilityPresentation("blue", "Person", "Visibility_LoggedInUsers")
   ),
+
+  // NB: CAREFUL TO AVOID ACCIDENTAL DELETION; changing this permission  can result in loss of visibility for existing records.
   visibility_members: definePermission(
     "band",
     "Visibility restricted to trusted site members.",
     220,
     visibilityPresentation("gold", "Security", "Visibility_Members")
   ),
+
+  // NB: CAREFUL TO AVOID ACCIDENTAL DELETION; changing this permission  can result in loss of visibility for existing records.
   visibility_editors: definePermission(
     "band",
     "Visibility restricted to site editors.",
