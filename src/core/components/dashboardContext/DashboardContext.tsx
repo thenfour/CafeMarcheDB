@@ -10,7 +10,7 @@ import { ClientSession, useSession } from '@blitzjs/auth';
 import { useMutation, useQuery } from '@blitzjs/rpc';
 import React from 'react';
 import { isAttendanceGoing } from 'shared/eventAttendance';
-import { asPermission, isPermission, Permission } from 'shared/permissions';
+import { asPermission, Permission } from 'shared/permissions';
 import type { PermissionRequirement } from 'src/auth/shared/permissionRequirement';
 import { kGlobalVisibilityPermissionPolicy } from 'src/auth/shared/bandPermissionPolicy';
 import { isSelectableBandVisibilityPermission } from 'src/core/db3/shared/entities/user/visibilityPermissionPolicy';

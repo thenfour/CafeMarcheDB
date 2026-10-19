@@ -1215,7 +1215,6 @@ describe("BA-U002 delegated user administration", () => {
     expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(ordinaryRole))).toBe(true)
     expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(unheldRole))).toBe(false)
     expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(protectedRole))).toBe(false)
-    // @ts-expect-error Unsynchronized roles can contain names outside the registry.
     expect(() => makePermissionSetFromRole(unknownRole)).toThrow("Invalid permission")
 
     const targetOutsideEnvelope = {

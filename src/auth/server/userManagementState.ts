@@ -1,6 +1,6 @@
 // Server-side adapters and loaders for user-management authorization.
 
-import type { Permission } from "shared/permissions";
+import { asPermission, type Permission } from "shared/permissions";
 import type { UserPublicId } from "shared/publicId";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { HydrateUserWithRoles, UserWithRolesArgs, UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
@@ -14,12 +14,12 @@ import {
     UserManagementTarget,
 } from "./userManagementPolicy";
 
-type RoleWithPermissionIdentities = {
+type RoleWithPermissionIdentities<TPermissionName extends string = Permission> = {
     isDeleted: boolean;
     permissions: ReadonlyArray<{
         permission: {
             id: number;
-            name: Permission;
+            name: TPermissionName;
             isDeleted: boolean;
         };
     }>;
@@ -30,9 +30,17 @@ type UserManagementPrincipalPayload = UserManagementPrincipal & {
     mergedIntoUserId?: number | null;
 };
 
-export const makePermissionSetFromRole = (role: RoleWithPermissionIdentities | null | undefined): PermissionSet => (
-    new PermissionSet(role && !role.isDeleted ? role.permissions.filter(entry => !entry.permission.isDeleted).map(entry => entry.permission.name) : [])
-);
+// Authorization inspects persisted grants before DB3 can authorize a view read.
+// Prisma exposes names as strings; validate them at this boundary, keeping PermissionSet typed.
+export const makePermissionSetFromRole = (role: RoleWithPermissionIdentities<string> | null | undefined): PermissionSet => {
+    if (!role || role.isDeleted) {
+        return new PermissionSet([]);
+    }
+    const names = role.permissions
+        .filter(entry => !entry.permission.isDeleted)
+        .map(entry => asPermission(entry.permission.name));
+    return new PermissionSet(names);
+};
 
 /** Clearing an assignment selects Public; it does not remove the global role slot. */
 export async function loadGlobalPublicRoleGrants(db: TransactionalPrismaClient): Promise<PermissionSet> {

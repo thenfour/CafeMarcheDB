@@ -1,6 +1,6 @@
 
 import { Prisma } from "@prisma/client";
-import { asPermission, type Permission } from "shared/permissions";
+import { asPermission } from "shared/permissions";
 
 
 export const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
