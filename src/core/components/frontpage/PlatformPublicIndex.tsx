@@ -2,7 +2,8 @@
 
 import Head from "next/head";
 import React from "react";
-import { BandSelection } from "../dashboard/BandSelection";
+import { MenuList } from "@mui/material";
+import { BandMenuItems } from "../dashboard/BandMenuItems";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 export type PlatformPublicIndexProps = {
@@ -25,7 +26,7 @@ export const PlatformPublicIndex: React.FC<PlatformPublicIndexProps> = () => {
                     <p>todo: login, signup, select band, locale, your avatar showing you have an account and  logged in</p>
                     <p>you are: {dashboardContext.currentUser?.name ?? "not logged in"}</p>
                     {!dashboardContext.currentUser?.name ? <a href="/auth/login">Login</a> : <a href="/auth/logout">Logout</a>}
-                    <BandSelection />
+                    <MenuList><BandMenuItems /></MenuList>
                 </div>
             </div>
         </>

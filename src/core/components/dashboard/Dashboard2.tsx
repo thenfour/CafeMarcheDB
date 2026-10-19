@@ -43,6 +43,7 @@ import {
     SideMenu
 } from "./MenuStructure";
 import { NavRealm } from "./StaticMenuItems";
+import { BandMenuItems } from "./BandMenuItems";
 
 const drawerWidth = 260;
 
@@ -124,6 +125,10 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
 
         {currentUser &&
             <>
+                {router.hosting.kind === "multiBand" && <>
+                    <BandMenuItems onNavigate={closeMenu} />
+                    <Divider />
+                </>}
                 {dashboardContext.memberPresentation.bandPublicId && dashboardContext.isAuthorized(BandPermission.view_events_nonpublic) && <MenuItem
                     component={Link}
                     href={router.href("/backstage/calendar")}

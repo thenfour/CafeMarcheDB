@@ -1,7 +1,5 @@
-import { DbBrandConfig, DefaultDbBrandConfig, PlatformDbBrandConfig } from "shared/brandConfigBase";
-import { validateDbBrandConfig } from "shared/brandingValidation";
-import { BandSettingsRegistryKey, kBandSettingsRegistry } from "src/setting/shared/bandSettingsRegistry";
-import { validateSettingValue } from "src/setting/shared/settingsContract";
+import { DbBrandConfig, PlatformDbBrandConfig } from "shared/brandConfigBase";
+import { resolveBandBranding } from "./bandBranding";
 import db from "db";
 
 type CacheEntry = { value: DbBrandConfig; expiresAt: number };
@@ -27,27 +25,7 @@ export async function loadDbBrandConfig({ hostHeader, bandId: selectedBandId, fr
     try {
         // todo: probably cache settings; avoid ad-hoc one-row db fetches like this
         const rows = selectedBandId === null ? [] : await db.bandSetting.findMany({ where: { bandId: selectedBandId } });
-        const byName = new Map(rows.map(row => [row.name, row.value]));
-
-        // helper to read a setting value from 
-        const read = (key: BandSettingsRegistryKey): string => byName.has(key)
-            ? String(validateSettingValue("band", key, byName.get(key)!)) : kBandSettingsRegistry[key].defaultValue;
-
-        const defaultTheme = DefaultDbBrandConfig.theme!;
-        const value = validateDbBrandConfig({
-            siteTitle: read("siteCustomization.title"),
-            siteTitlePrefix: read("siteCustomization.titlePrefix"),
-            siteFaviconUrl: read("siteCustomization.faviconUrl"),
-            siteLogoUrl: read("siteCustomization.logoUrl"),
-            theme: {
-                primaryMain: read("siteCustomization.themeColors.primaryMain") || defaultTheme.primaryMain,
-                secondaryMain: read("siteCustomization.themeColors.secondaryMain") || defaultTheme.secondaryMain,
-                backgroundDefault: read("siteCustomization.themeColors.backgroundDefault") || defaultTheme.backgroundDefault,
-                backgroundPaper: read("siteCustomization.themeColors.backgroundPaper") || defaultTheme.backgroundPaper,
-                textPrimary: read("siteCustomization.themeColors.textPrimary") || undefined,
-                contrastText: read("siteCustomization.themeColors.contrastText") || defaultTheme.contrastText,
-            },
-        });
+        const value = resolveBandBranding(rows);
         cache.set(cacheKey, { value, expiresAt: Date.now() + CACHE_TTL_MS });
         return value;
     } catch (error) {

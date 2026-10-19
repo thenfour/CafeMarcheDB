@@ -30,24 +30,32 @@ export const kBandSettingsRegistry = freezeRegistry({
         writePermission: BandPermission.manage_site_branding,
         schema: z.string().max(100),
         stringFormat: "plain",
+
+        // in order to know which settings to fetch when rendering simple branding-only (i.e. public)
+        // but actually the CORRECT solution is  to just specify explicit permissions and use a proper
+        // db3 query. that resolves access and fallback system.
+        isBranding: true,
     }),
     "siteCustomization.titlePrefix": stringSetting({
         defaultValue: DefaultDbBrandConfig.siteTitlePrefix,
         writePermission: BandPermission.manage_site_branding,
         schema: z.string().max(8),
         stringFormat: "plain",
+        isBranding: true, // in order to know which settings to fetch when rendering simple branding-only (i.e. public)
     }),
     "siteCustomization.faviconUrl": stringSetting({
         defaultValue: DefaultDbBrandConfig.siteFaviconUrl,
         writePermission: BandPermission.manage_site_branding,
         schema: BrandAssetUrlSchema,
         stringFormat: "plain",
+        isBranding: true, // in order to know which settings to fetch when rendering simple branding-only (i.e. public)
     }),
     "siteCustomization.logoUrl": stringSetting({
         defaultValue: DefaultDbBrandConfig.siteLogoUrl ?? "",
         writePermission: BandPermission.manage_site_branding,
         schema: BrandAssetUrlSchema,
         stringFormat: "plain",
+        isBranding: true, // in order to know which settings to fetch when rendering simple branding-only (i.e. public)
     }),
     "siteCustomization.themeColors.primaryMain": stringSetting({
         defaultValue: DefaultDbBrandConfig.theme!.primaryMain!,
@@ -55,24 +63,28 @@ export const kBandSettingsRegistry = freezeRegistry({
         // Colors must be usable by MUI; an empty value selects the presentation default.
         schema: OptionalBrandColorSchema,
         stringFormat: "plain",
+        isBranding: true, // in order to know which settings to fetch when rendering simple branding-only (i.e. public)
     }),
     "siteCustomization.themeColors.secondaryMain": stringSetting({
         defaultValue: DefaultDbBrandConfig.theme!.secondaryMain!,
         writePermission: BandPermission.manage_site_branding,
         schema: OptionalBrandColorSchema,
         stringFormat: "plain",
+        isBranding: true, // in order to know which settings to fetch when rendering simple branding-only (i.e. public)
     }),
     "siteCustomization.themeColors.backgroundDefault": stringSetting({
         defaultValue: DefaultDbBrandConfig.theme!.backgroundDefault!,
         writePermission: BandPermission.manage_site_branding,
         schema: OptionalBrandColorSchema,
         stringFormat: "plain",
+        isBranding: true, // in order to know which settings to fetch when rendering simple branding-only (i.e. public)
     }),
     "siteCustomization.themeColors.backgroundPaper": stringSetting({
         defaultValue: DefaultDbBrandConfig.theme!.backgroundPaper!,
         writePermission: BandPermission.manage_site_branding,
         schema: OptionalBrandColorSchema,
         stringFormat: "plain",
+        isBranding: true, // in order to know which settings to fetch when rendering simple branding-only (i.e. public)
     }),
     "siteCustomization.themeColors.textPrimary": stringSetting({
         // Empty leaves primary text color to the application theme.
@@ -80,12 +92,14 @@ export const kBandSettingsRegistry = freezeRegistry({
         writePermission: BandPermission.manage_site_branding,
         schema: OptionalBrandColorSchema,
         stringFormat: "plain",
+        isBranding: true, // in order to know which settings to fetch when rendering simple branding-only (i.e. public)
     }),
     "siteCustomization.themeColors.contrastText": stringSetting({
         defaultValue: DefaultDbBrandConfig.theme!.contrastText!,
         writePermission: BandPermission.manage_site_branding,
         schema: OptionalBrandColorSchema,
         stringFormat: "plain",
+        isBranding: true, // in order to know which settings to fetch when rendering simple branding-only (i.e. public)
     }),
 
     //    BandTimeZone = "BandTimeZone", -> band.dateTime.bandTimeZone
@@ -94,6 +108,7 @@ export const kBandSettingsRegistry = freezeRegistry({
         // A timezone write reanchors only this band's all-day events in the same transaction.
         schema: BandTimeZoneSchema,
         stringFormat: "plain",
+        isBranding: false,
     }),
 
     // - Ical_CalendarName -> band.ical.calendarName
@@ -106,24 +121,28 @@ export const kBandSettingsRegistry = freezeRegistry({
         defaultValue: "",
         schema: z.string().max(100),
         stringFormat: "plain",
+        isBranding: false,
     }),
     "ical.calendarCompany": stringSetting({
         writePermission: BandPermission.manage_site_branding,
         defaultValue: "",
         schema: z.string().max(100),
         stringFormat: "plain",
+        isBranding: false,
     }),
     "ical.calendarProduct": stringSetting({
         writePermission: BandPermission.manage_site_branding,
         defaultValue: "",
         schema: z.string().max(100),
         stringFormat: "plain",
+        isBranding: false,
     }),
     "ical.calendarEventPrefix": stringSetting({
         writePermission: BandPermission.manage_site_branding,
         defaultValue: "",
         schema: z.string().max(100),
         stringFormat: "plain",
+        isBranding: false,
     }),
 });
 

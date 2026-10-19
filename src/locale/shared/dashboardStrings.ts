@@ -32,7 +32,7 @@ export const dashboardStrings = {
     "wikiSearch.bandRequired": label("Select a band to search Wiki pages."),
     "setlistPlanner.selectBand": label("Select a band to use the setlist planner."),
     "dashboard.title": label("Home"),
-    "dashboard.band.select": label("Select a band"),
+    "dashboard.band.loading": label("Loading bands…"),
     "dashboard.language.select": label("Language"),
     "dashboard.language.browser": label("Browser languages"),
     "dashboard.band.platform": label("Account and platform"),

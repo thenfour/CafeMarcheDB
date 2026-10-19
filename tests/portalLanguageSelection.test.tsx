@@ -7,7 +7,7 @@ import { parsePublicId } from "shared/publicId";
 import { kStaticLocalizedStringRegistry, type LocalizedPlainStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
 import { PortalRoutingProvider } from "@/src/route/useCmdbRouter";
 import { PortalLanguageSelection } from "src/route/PortalLanguageSelection";
-import { BandSelection } from "src/core/components/dashboard/BandSelection";
+import { BandMenuItems } from "src/core/components/dashboard/BandMenuItems";
 import { parsePortalPath, type BandHostingConfig } from "src/route/portalRouting";
 
 vi.mock("next/router", () => ({ useRouter: () => ({ asPath: path, push }) }));
@@ -80,8 +80,8 @@ describe("portal language navigation", () => {
     });
     it("preserves the familiar standalone URL and hides the band picker without reading choices", async () => {
         path = "/fr-BE/b/songs?q=brass#results";
-        await render({ kind: "singleBand", tenant: "generic" }, <><BandSelection /><PortalLanguageSelection /></>);
-        expect(container.querySelector("#dashboard-band")).toBeNull();
+        await render({ kind: "singleBand", tenant: "generic" }, <><BandMenuItems /><PortalLanguageSelection /></>);
+        expect(container.querySelector(".BandBadge")).toBeNull();
         expect(choicesRead).not.toHaveBeenCalled();
         await select("nl-BE");
         expect(push).toHaveBeenCalledWith("/nl-BE/b/songs?q=brass#results", undefined, undefined);

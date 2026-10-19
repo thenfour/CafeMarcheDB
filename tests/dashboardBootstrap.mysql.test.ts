@@ -172,7 +172,7 @@ describe.skipIf(!settingsMysqlTestUrl)("account and dashboard bootstrap on migra
         const context = await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" });
         const choices = await loadAvailableBands(context, auth, {});
         expect(choices.map(band => band.publicId)).toEqual(expect.arrayContaining(fixture.bands.map(band => band.publicId)));
-        expect(choices.every(band => Object.keys(band).sort().join(",") === "name,publicId,supportedLocales")).toBe(true);
+        expect(choices.every(band => Object.keys(band).sort().join(",") === "logoUrl,name,publicId,supportedLocales,theme")).toBe(true);
         expect(choices.every(band => band.supportedLocales.includes("fr-BE"))).toBe(true);
     }));
     it("returns each destination's active languages for an intentional band switch", () => withFixture(async (tx, fixture) => {
@@ -182,5 +182,31 @@ describe.skipIf(!settingsMysqlTestUrl)("account and dashboard bootstrap on migra
         expect(choices.find(choice => choice.publicId === fixture.bands[0]!.publicId)?.supportedLocales).toContain("fr-BE");
         expect(choices.find(choice => choice.publicId === fixture.bands[1]!.publicId)?.supportedLocales).not.toContain("fr-BE");
         expect(choices.find(choice => choice.publicId === fixture.bands[1]!.publicId)?.supportedLocales).toContain("nl-BE");
+    }));
+
+    it("returns each band's own resolved branding without exposing other settings", () => withFixture(async (tx, fixture) => {
+        for (const [index, band] of fixture.bands.entries()) {
+            for (const [name, value] of Object.entries({
+                "siteCustomization.logoUrl": `/band-${index}.svg`,
+                "siteCustomization.themeColors.primaryMain": index === 0 ? "#123456" : "#654321",
+                "siteCustomization.themeColors.secondaryMain": "",
+                "siteCustomization.themeColors.contrastText": "#ffffff",
+                "ical.calendarName": "Not part of a band badge",
+            })) {
+                await tx.bandSetting.create({ data: { publicId: generatePublicId(), bandId: band.id, name, value } });
+            }
+        }
+        const { context, auth } = await authorize(tx, fixture);
+        const choices = await loadAvailableBands(context, auth, {});
+        for (const [index, band] of fixture.bands.entries()) {
+            expect(choices.find(choice => choice.publicId === band.publicId)).toMatchObject({
+                logoUrl: `/band-${index}.svg`,
+                theme: {
+                    primaryMain: index === 0 ? "#123456" : "#654321",
+                    secondaryMain: "#831012", contrastText: "#ffffff",
+                },
+            });
+        }
+        expect(choices.every(choice => !("bandSettings" in choice))).toBe(true);
     }));
 });
