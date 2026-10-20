@@ -2,7 +2,7 @@ import { defineCmdbPage } from "src/route/cmdbPage";
 import { FileTableClientColumns } from "src/core/components/file/FileComponentsBase";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
-import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/locale/components/Localized";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
@@ -32,7 +32,7 @@ const MainContent = () => {
     });
 
     return <>
-        <BandLocalizedMarkdown id="EditFilesPage_markdown"></BandLocalizedMarkdown>
+        <Localized id="EditFilesPage_markdown" />
         <DB3EditGrid
             tableSpec={tableSpec}
             view={db3.fileEditorView}

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
+import type { LocalizedStringIdAndParams } from "src/locale/shared/localizationCatalog";
 import { createRoot, type Root } from "react-dom/client";
 import { act } from "react-dom/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -42,9 +43,11 @@ vi.mock("src/core/components/wiki/WikiStandaloneComponents", () => ({
     WikiStandaloneControl: (props: { canonicalWikiPath: string; className?: string; floatingHeader?: boolean }) =>
         <div className={props.className} data-floating={props.floatingHeader}>{props.canonicalWikiPath}</div>,
 }));
-vi.mock("src/setting/client/components/SettingMarkdown", () => ({
-    BandLocalizedMarkdown: ({ id }: { id: string }) => <div data-setting={id}>{id}</div>,
-    Localized: ({ id }: { id: LocalizedPlainStringKey }) => <>{kStaticLocalizedStringRegistry[id].defaultValue}</>,
+vi.mock("src/locale/components/Localized", () => ({
+    Localized: ({ id, parameters }: LocalizedStringIdAndParams) => <>
+        {kStaticLocalizedStringRegistry[id].format === "markdown" ? id
+            : kStaticLocalizedStringRegistry[id].defaultValue.replace("{bandName}", parameters && "bandName" in parameters ? parameters.bandName : "")}
+    </>,
 }));
 vi.mock("src/locale/components/useLocale", () => ({
     useLocale: () => ({
@@ -128,12 +131,12 @@ describe("dashboard announcements and navigation", () => {
         expect(container.textContent).toContain("Your Brass Collective Profile");
         selectedBand = { publicId: otherBand, name: null };
         await renderMenu();
-        expect(container.textContent).toContain("Your Unnamed band Profile");
+        expect(container.textContent).toContain("Your  Profile");
         selectedBand = null;
         dashboard.memberPresentation.bandPublicId = null;
         await renderMenu();
         expect(container.textContent).toContain("Your CMDB profile");
-        expect(container.textContent).not.toContain("Your Unnamed band Profile");
+        expect(container.textContent).not.toContain("Your  Profile");
     });
 
     it("retains nested Wiki paths, contextual band/locale, authored blank captions and external URLs", () => {

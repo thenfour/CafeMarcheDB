@@ -2,11 +2,30 @@
 
 import { IntlMessageFormat } from "intl-messageformat";
 import {
-    kStaticLocalizedStringRegistry, type LocalizedMarkdownKey, type LocalizedPlainStringKey,
-    type StaticLocalizedStringKey, type StaticStringArguments
+    kStaticLocalizedStringRegistry,
+    type LocalizedMarkdownKey, type LocalizedPlainStringKey, type StaticLocalizedStringKey,
+    type StaticLocalizedStringKeysWithoutParameters, type StaticLocalizedStringKeysWithParameters,
+    type StaticStringArguments, type StaticStringParameterProps,
 } from "./staticLocalizedStringRegistry";
 import type { LocalePreferences } from "./localePreferences";
 import type { LocaleAvailability, StringResolution } from "./stringResolution";
+
+// Group parameterless keys so forwarding a key union avoids TypeScript's 25-combination limit.
+export type LocalizedStringIdAndParams<K extends StaticLocalizedStringKey = StaticLocalizedStringKey> =
+    // put strings without parameters in its own union branch, otherwise
+    // the union of types with parameters includes all keys and TS fails to match types. Without
+    // this branch, the type becomes something like,
+    // { id: "firstKey"; parameters?: never }
+    // | { id: "key2"; parameters?: never }
+    // | { id: "menu.profile"; parameters: { bandName: string } }
+    // | ...
+    // so when passing a key without parameters, TS stops after 25 keys and fails to match the correct type.
+    // this groups them into 1 check.
+    { id: Extract<K, StaticLocalizedStringKeysWithoutParameters>; parameters?: never }
+    // the following branch handles all keys with parameters
+    | {
+        [P in Extract<K, StaticLocalizedStringKeysWithParameters>]: { id: P } & StaticStringParameterProps<P>;
+    }[Extract<K, StaticLocalizedStringKeysWithParameters>];
 
 export interface LocalizationCatalog {
     readonly bandPublicId: string | null;
@@ -20,9 +39,13 @@ export interface LocalizationCatalog {
 
 export function createLocaleApi(catalog: LocalizationCatalog | null, refetch: () => void = () => { }) {
     function getStringDetail(key: StaticLocalizedStringKey): StringResolution {
-        if (!catalog) throw new Error("Localization catalog is not loaded.");
+        if (!catalog) {
+            throw new Error("Localization catalog is not loaded.");
+        }
         const value = catalog.strings[key];
-        if (!value) throw new Error(`Localization key is not loaded: ${key}`);
+        if (!value) {
+            throw new Error(`Localization key is not loaded: ${key}`);
+        }
         return value;
     }
     function requireText(key: StaticLocalizedStringKey): StringResolution & { value: string } {
@@ -35,46 +58,55 @@ export function createLocaleApi(catalog: LocalizationCatalog | null, refetch: ()
             value: detail.value,
         };
     }
+
+    function formatPlainString(detail: StringResolution & { value: string }, parameters: Parameters<IntlMessageFormat["format"]>[0]): string {
+        if (!catalog) {
+            throw new Error("Localization catalog is not loaded.");
+        }
+        const message = new IntlMessageFormat(detail.value, detail.localeTag ?? "en-US", undefined, {
+            ignoreTag: true,
+            formatters: {
+                getNumberFormat: (_locale, options) => new Intl.NumberFormat(catalog.formattingLocale, options),
+                getDateTimeFormat: (_locale, options) => new Intl.DateTimeFormat(catalog.formattingLocale, options),
+                // Plural grammar follows the translation's language; numbers/dates follow formatting preferences.
+                getPluralRules: (locale, options) => new Intl.PluralRules(locale, options),
+            },
+        });
+        const result = message.format(parameters);
+        if (typeof result !== "string") {
+            throw new Error("Expected a plain-text localization result.");
+        }
+        return result;
+    }
     return {
         getStringDetail,
 
-        // even though you can use this for general chrome text, try to use <Localized /> because it will add
-        // necessary features for localization editing.
+        // Use <Localized> for rendered content; use this helper where an API requires a string.
         getPlainString<K extends LocalizedPlainStringKey>(key: K, ...args: StaticStringArguments<K>): string {
-            if (kStaticLocalizedStringRegistry[key].format !== "plain") throw new Error(`Expected a plain-text key: ${key}`);
-            const detail = requireText(key);
-            const message = new IntlMessageFormat(detail.value, detail.localeTag ?? "en-US", undefined, {
-                ignoreTag: true,
-                formatters: {
-                    getNumberFormat: (_locale, options) => new Intl.NumberFormat(catalog!.formattingLocale, options),
-                    getDateTimeFormat: (_locale, options) => new Intl.DateTimeFormat(catalog!.formattingLocale, options),
-                    // Plural grammar follows the translation's language; numbers/dates follow formatting preferences.
-                    getPluralRules: (locale, options) => new Intl.PluralRules(locale, options),
-                },
-            });
-            const result = message.format(args[0]);
-            if (typeof result !== "string") throw new Error(`Expected plain text from ${key}`);
-            return result;
+            if (kStaticLocalizedStringRegistry[key].format !== "plain") {
+                throw new Error(`Expected a plain-text key: ${key}`);
+            }
+            return formatPlainString(requireText(key), args[0]);
         },
         getMarkdownString(key: LocalizedMarkdownKey): string {
-            if (kStaticLocalizedStringRegistry[key].format !== "markdown") throw new Error(`Expected a Markdown key: ${key}`);
+            if (kStaticLocalizedStringRegistry[key].format !== "markdown") {
+                throw new Error(`Expected a Markdown key: ${key}`);
+            }
             return requireText(key).value;
         },
 
-        // convenience to expose the registry entry + resolved string
-        getString<K extends StaticLocalizedStringKey>(key: K) {
-            const detail = requireText(key);
-            // we don't store this with the resolved catalog, so that fetching them preserves
-            // the entry's type.
-            const entry = kStaticLocalizedStringRegistry[key];
+        // Compose display text while keeping the original translation and its provenance.
+        getString(input: LocalizedStringIdAndParams) {
+            const detail = requireText(input.id);
+            const entry = kStaticLocalizedStringRegistry[input.id];
             return {
-                value: detail.value,
-                detail: detail,
-                format: kStaticLocalizedStringRegistry[key].format,
+                value: entry.format === "plain" ? formatPlainString(detail, input.parameters) : detail.value,
+                detail,
+                format: entry.format,
                 entry,
             };
         },
-        getRegistryEntry(key) {
+        getRegistryEntry<K extends StaticLocalizedStringKey>(key: K) {
             return kStaticLocalizedStringRegistry[key];
         },
         formattingLocale: catalog?.formattingLocale ?? null,

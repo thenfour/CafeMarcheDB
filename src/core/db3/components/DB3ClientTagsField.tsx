@@ -30,7 +30,7 @@ import { IColumnClient, type RenderForNewItemDialogArgs, type RenderViewerArgs, 
 import type { RenderAsChipParams } from './db3ForeignSingleFieldClient';
 import { RenderMuiIcon } from './IconMap';
 import { type CrudViewCreateToken, useCrudViewCreate } from './useCrudViewCreate';
-import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/locale/components/Localized";
 
 
 const gMaxVisibleTags = 6;
@@ -99,7 +99,7 @@ function DB3SelectTagsDialogInner<TAssociation extends TAnyModel>(props: DB3Sele
     };
     return <SelectionPicker source={source} multiple value={props.initialValue}
         title={props.caption ? locale.getPlainString(props.caption) : locale.getPlainString("db3.action.selectField", { field: props.spec.selectionCaption })}
-        description={descriptionSettingName ? <BandLocalizedMarkdown id={descriptionSettingName} /> : undefined}
+        description={descriptionSettingName ? <Localized id={descriptionSettingName} /> : undefined}
         onCancel={props.onClose} onAccept={value => { props.onChange(value); props.onClose(); }} />;
 }
 

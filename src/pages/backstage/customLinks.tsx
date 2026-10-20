@@ -2,7 +2,7 @@ import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { defineCmdbPage } from "src/route/cmdbPage";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
-import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/locale/components/Localized";
 import { BlitzPage } from "@blitzjs/next";
 import { Alert } from "@mui/material";
 import { Suspense } from 'react';
@@ -25,7 +25,7 @@ const MyContent = () => {
     }
 
     return <div>
-        <BandLocalizedMarkdown id="CustomLinksPageMarkdown" />
+        <Localized id="CustomLinksPageMarkdown" />
         <CustomLinkList key={dashboardContext.memberPresentation.bandPublicId} />
     </div>;
 };

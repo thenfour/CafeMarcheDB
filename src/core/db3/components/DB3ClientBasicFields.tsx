@@ -24,7 +24,7 @@ import { IconEditCell } from "./IconSelectDialog";
 // NB: do not use API.* here due to circular dependencies
 import { gNullValue, TAnyModel } from "@/shared/rootroot";
 import type { LocalizedMarkdownKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
-import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/locale/components/Localized";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
@@ -684,7 +684,7 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
                 </CMChipContainer>
                 {selectedDescriptionKey && <div className="description">
                     <Suspense>
-                        <BandLocalizedMarkdown id={selectedDescriptionKey} />
+                        <Localized id={selectedDescriptionKey} />
                     </Suspense>
                 </div>}
             </div>

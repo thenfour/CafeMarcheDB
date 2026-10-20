@@ -1,6 +1,6 @@
 import { defineCmdbPage } from "src/route/cmdbPage";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/locale/components/Localized";
 import { BlitzPage } from "@blitzjs/next";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import { GlobalCatalogContext } from "src/core/db3/components/GlobalCatalogContext";
@@ -26,7 +26,7 @@ const tableSpec = DB3Client.defineTableClientSpec({
 
 const MainContent = () => {
     return <>
-        <BandLocalizedMarkdown id="EditEventStatusesPage_markdown" />
+        <Localized id="EditEventStatusesPage_markdown" />
         <GlobalCatalogContext><DB3EditGrid tableSpec={tableSpec} view={db3.eventStatusEditorView} /></GlobalCatalogContext>
     </>;
 };

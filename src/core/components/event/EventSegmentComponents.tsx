@@ -15,7 +15,6 @@ import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { BandLocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
 import { DB3EditObjectDialog } from '../../db3/components/db3NewObjectDialog';
 import clearEventSegmentResponses from "../../db3/mutations/clearEventSegmentResponses";
@@ -26,6 +25,7 @@ import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { EventStatusValue } from "../event/EventChips";
 import { Markdown } from "../markdown/Markdown";
 import { type EventDetailEvent, type EventDetailTableClient, EventTableClientColumns } from "./EventComponentsBase";
+import { Localized } from "@/src/locale/components/Localized";
 
 
 
@@ -113,10 +113,8 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
         onCancel={props.onCancel}
         onOK={value => props.onSave(value as EventSegmentEditorClient, commands, initialValue)}
         tableRenderClient={tableRenderClient}
-        // title={<SettingMarkdown setting={props.isNewObject ? "NewEventSegmentDialogTitle" : "EditEventSegmentDialogTitle"} />}
-        // description={<SettingMarkdown setting={props.isNewObject ? "NewEventSegmentDialogDescription" : "EditEventSegmentDialogDescription"} />}
-        title={<BandLocalizedMarkdown id={props.titleKey} />}
-        description={<BandLocalizedMarkdown id={props.descriptionKey} />}
+        title={<Localized id={props.titleKey} />}
+        description={<Localized id={props.descriptionKey} />}
     />;
 };
 

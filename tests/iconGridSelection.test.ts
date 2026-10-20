@@ -8,7 +8,6 @@ vi.mock("src/core/db3/db3", () => ({}));
 vi.mock("src/core/components/CMTextField", () => ({}));
 vi.mock("src/core/components/markdown/Markdown", () => ({}));
 vi.mock("src/core/components/markdown/MarkdownControl3", () => ({}));
-vi.mock("src/core/components/SettingMarkdown", () => ({}));
 vi.mock("src/core/components/CMCoreComponents2", () => ({}));
 vi.mock("src/core/components/color/ColorPick", () => ({}));
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({}));

@@ -10,7 +10,6 @@ import { db3FieldStrings } from "./db3FieldStrings";
 import { eventCatalogStrings } from "./eventCatalogStrings";
 import { eventStatisticsStrings } from "./eventStatisticsStrings";
 import { instrumentStrings } from "./instrumentStrings";
-import { localizedMarkdownStrings } from "./localizedMarkdownStrings";
 import { markdownReferenceStrings } from "./markdownReferenceStrings";
 import { membershipStrings } from "./membershipStrings";
 import { menuStrings } from "./menuStrings";
@@ -40,7 +39,6 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
     ...songWorkflowStrings,
     ...eventStatisticsStrings,
     ...markdownReferenceStrings,
-    ...localizedMarkdownStrings,
     ...activityReportStrings,
     ...roleAdministrationStrings,
     ...accountAnalysisStrings,
@@ -152,6 +150,8 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
     "EditEventSegmentDialogTitle": defaultMarkdownStaticString(),
     "EditSingleEventSegmentDialogDescription": defaultMarkdownStaticString(),
     "EditSingleEventSegmentDialogTitle": defaultMarkdownStaticString(),
+
+    // NB: these are dynamically generated keys (to be avoided; todo: fix this)
     "EventFrontpageEditDialog_Date": defaultMarkdownStaticString(),
     "EventFrontpageEditDialog_Time": defaultMarkdownStaticString(),
     "EventFrontpageEditDialog_Title": defaultMarkdownStaticString(),
@@ -159,6 +159,8 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
     "EventFrontpageEditDialog_Location": defaultMarkdownStaticString(),
     "EventFrontpageEditDialog_Location URI": defaultMarkdownStaticString(),
     "EventFrontpageEditDialog_Tags": defaultMarkdownStaticString(),
+
+
     "general.fieldCaptions.id": plainStaticString({
         defaultValue: "ID",
         description: "Record identifier column heading",
@@ -167,6 +169,15 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
 });
 
 export type StaticLocalizedStringKey = keyof typeof kStaticLocalizedStringRegistry;
+
+export type StaticLocalizedStringKeysWithoutParameters = {
+    [K in StaticLocalizedStringKey]: typeof kStaticLocalizedStringRegistry[K] extends { readonly parameters: readonly (infer P)[] } ? never : K;
+}[StaticLocalizedStringKey];
+
+export type StaticLocalizedStringKeysWithParameters = {
+    [K in StaticLocalizedStringKey]: typeof kStaticLocalizedStringRegistry[K] extends { readonly parameters: readonly (infer P)[] } ? K : never;
+}[StaticLocalizedStringKey];
+
 export type LocalizedStringKey = StaticLocalizedStringKey; // "static" is slightly redundant; this is for convenience/readibility
 
 type KeysWithFormat<TFormat extends "plain" | "markdown"> = {
@@ -187,5 +198,5 @@ export type StaticStringParameters<K extends StaticLocalizedStringKey> =
 export type StaticStringParameterProps<K extends StaticLocalizedStringKey> =
     [StaticStringParameters<K>] extends [never] ? { parameters?: never } : { parameters: StaticStringParameters<K> };
 
-export type StaticStringArguments<K extends LocalizedPlainStringKey> =
+export type StaticStringArguments<K extends StaticLocalizedStringKey> =
     [StaticStringParameters<K>] extends [never] ? [] : [parameters: StaticStringParameters<K>];

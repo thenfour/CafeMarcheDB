@@ -34,7 +34,14 @@ identities, never arbitrary public string-ID access.
 needs no locale database row or translation. Carry full preferences as well as
 formatting locale. ICU plain text has typed parameters: plural grammar follows
 translation language, numbers/dates follow formatting locale. Markdown does not
-interpolate. Unloaded/unavailable text stays explicit rather than becoming empty.
+interpolate. Missing translations and unloaded catalogs throw errors; intentional
+empty strings remain valid values.
+
+`Localized` presents every registered static string. Its key determines the required
+parameters and the plain-text or Markdown renderer. Plain text accepts an optional
+`component` wrapper; Markdown rejects component overrides at compile time. The shared
+`getString({ id, parameters })` API composes text with the same typed parameter contract.
+Static string presentation has no inline editor, upload controls, or caller fallbacks.
 
 ## Delivery and refresh
 
@@ -178,32 +185,17 @@ bounds atomically, including DST; timed segments/other bands are unaffected. The
 separate versioned UTC-conversion command requires `--band=<public-id>`; schema
 migration itself does not convert date-time versions.
 
-`LocalizedMarkdown` keeps resolved display text separate from exact stored editor
-values. Its caller supplies scope, edit locale and attachment policy; existing band
-chrome uses `BandLocalizedMarkdown`, with an enabled writing language chosen from
-the full preference list. Changing the selector starts that exact locale's draft.
-Missing overrides start empty without copying fallback text. Saving empty text
-creates a blank override; explicitly using inherited content removes only that
-key/locale/scope row. Cancel sends no write, failed saves keep the draft, and a
-post-commit refresh failure has separate feedback. Context changes discard late
-read/save/upload completions; grant and availability refreshes preserve drafts
-while disabling unauthorized writes.
+Registered page, dialog and field Markdown uses `Localized` for presentation.
+Inline editing was explicitly retired on 2026-10-20, including its exact-value RPCs,
+draft controls and attachment policy. Plain strings use the same component and
+shared composition API with registry-typed parameters.
 
 The Song Tag catalog retains `editSongTags_markdown` help above its existing grid.
-Its editor uses the same explicit band/language owner, independently of the
-catalog's `admin_songs` permission. Production-copy inventory must map the legacy
+The help resolves in the selected band/language context. Production-copy inventory
+must map the legacy
 help value to this registered Markdown key with an explicit target band and enabled
 language; it must account for existing translations and intentional blanks rather
 than adding arbitrary setting aliases or guessing a language at startup.
-
-The static-string owner validates registered keys and each key's schema/format.
-Exact reads and writes refresh authority inside Serializable transactions. Band
-writes require an explicit selected band and `manage_band_localization`; platform
-writes require `manage_global_localization`. Sets require an enabled locale;
-existing unavailable overrides can still be removed. Storage, person-authored
-audits and resets are atomic, and unchanged values create no extra audit. Existing
-band help uses public attachments through the restored Markdown editor; global
-editors disable band attachments explicitly.
 
 Optional Wiki help uses a registered Markdown definition's `wikiPagePath`
 association, starting with `WikiWelcomePage_Markdown` for `welcome`. Values belong

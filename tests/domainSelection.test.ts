@@ -26,7 +26,7 @@ vi.mock("src/core/db3/components/IconMap", async () => ({ ...await vi.importActu
     RenderMuiIcon: (icon: string) => icon ? React.createElement("svg", { "data-icon": icon, "aria-hidden": true }) : null }));
 vi.mock("src/core/db3/components/useDB3Context", () => ({ useDB3QueryContext: () => ({ bandPublicId: "FixtureBand00001" }) }));
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: vi.fn(), useFeatureRecorder: vi.fn() }));
-vi.mock("src/setting/client/components/SettingMarkdown", () => ({ LocalizedMarkdown: () => null, BandLocalizedMarkdown: () => null }));
+vi.mock("src/locale/components/Localized", () => ({ Localized: () => null }));
 vi.mock("src/core/components/CMLink", () => ({ CMLink: () => null }));
 vi.mock("src/core/db3/queries/getUser", () => ({ default: vi.fn() }));
 vi.mock("@blitzjs/rpc", async () => ({ ...await vi.importActual<typeof import("@blitzjs/rpc")>("@blitzjs/rpc"), useQuery: vi.fn() }));

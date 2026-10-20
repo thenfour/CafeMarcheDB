@@ -10,7 +10,7 @@ import { ProfilePageIdentityControl } from "src/core/components/user/UserIdentit
 import { CalendarUserSettingsControl } from "src/core/components/user/UserSettingsControls";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
-import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/locale/components/Localized";
 
 function ProfileContent() {
     const presentation = usePresentation();
@@ -18,11 +18,11 @@ function ProfileContent() {
     const personId = presentation.data?.authorization.userPublicId;
     const locale = useLocale();
     return <>
-        <BandLocalizedMarkdown id="profile_markdown" />
+        <Localized id="profile_markdown" />
         <CMSinglePageSurfaceCard className="surface2">
             <div className="header"><h1>{locale.getPlainString("membership.profile.ownTitle")}</h1></div>
             <div className="content">
-                <BandLocalizedMarkdown id="profile_description_markdown" />
+                <Localized id="profile_description_markdown" />
                 {personId && <OwnProfileContent personId={personId} />}
                 {dashboard.isAuthorized(Permission.sysadmin) && personId && <ProfilePageIdentityControl userId={personId} />}
             </div>

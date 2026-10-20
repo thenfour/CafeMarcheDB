@@ -893,7 +893,7 @@ References:
 - [Setting keys](../shared/settingKeys.ts#L4)
 - [Setting update by name](../src/auth/mutations/updateSetting.ts#L11)
 - [Raw settings page](../src/pages/backstage/settings.tsx#L17)
-- [Setting Markdown editor](../src/core/components/SettingMarkdown.tsx#L77)
+- [Localized string presentation](../src/locale/components/Localized.tsx)
 
 ### BA-C002 — Split Brand page
 

@@ -31,6 +31,10 @@ See `docs/testing.md` for the rationale and full conventions.
 - Control flow statements (`return`, `continue`, `break`, `throw`...) should be on their own line
 - Prefer clean new-looking code rather than legacy fallbacks.
   Legacy / fallbacks / odd-but-justified behavior / workarounds requires a comment explanation.
+- Make application errors loud and clear. If a runtime error indicates an application
+  or configuration error, let it throw/crash so it can be detected and debugged. Never
+  hide application errors. Fallbacks and graceful error handling are to be employed only
+  when it's the result of nominal execution (input validation for example).
 
 ## Encapsulation / modularity
 

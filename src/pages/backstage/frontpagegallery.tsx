@@ -40,7 +40,7 @@ import * as db3 from "src/core/db3/db3";
 import updateGalleryItemImage from "src/core/db3/mutations/updateGalleryItemImage";
 import { applyGalleryImageDrag, type ImageEditorTool } from "src/core/db3/shared/galleryImageEditor";
 import { useLocale } from "src/locale/components/useLocale";
-import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/locale/components/Localized";
 
 type FrontpageGalleryItemClient = db3.ClientOf<typeof db3.frontpageGalleryItemEditorView>;
 type FrontpageGalleryClient = DB3Client.CrudTableRenderContext<typeof db3.frontpageGalleryItemEditorView>;
@@ -554,7 +554,7 @@ const MainContent = () => {
     };
 
     return <>
-        <BandLocalizedMarkdown id="frontpage_gallery_markdown" />
+        <Localized id="frontpage_gallery_markdown" />
         <NewGalleryItemComponent client={client} />
 
         <ReactSmoothDndContainer

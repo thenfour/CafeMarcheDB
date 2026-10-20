@@ -23,7 +23,7 @@ import { EventActivityTimingSchema, type EventActivityTiming } from "src/core/db
 import type { EventStatisticsFilter, EventStatisticsEvent, EventStatisticsResult, PopularSongOccurrence } from "src/core/db3/shared/entities/event/eventStatistics";
 import { useLocale } from "src/locale/components/useLocale";
 import type { LocalizedPlainStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
-import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/locale/components/Localized";
 
 const timingLabels: { readonly [Timing in EventActivityTiming]: LocalizedPlainStringKey } = {
     All: "songHistory.all",
@@ -159,7 +159,7 @@ function MainContent() {
         return <Alert severity="info">{locale.getPlainString("eventStatistics.unavailable")}</Alert>;
     }
     return <CMSinglePageSurfaceCard><div className="content">
-        <BandLocalizedMarkdown id="StatsPage_markdown" />
+        <Localized id="StatsPage_markdown" />
         <StatsPageInner key={`${context.bandPublicId}/${context.routeLocale}/${context.clientRequestId}`} />
     </div></CMSinglePageSurfaceCard>;
 }

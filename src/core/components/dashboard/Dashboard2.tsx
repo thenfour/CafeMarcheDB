@@ -1,6 +1,7 @@
 import { shouldShowAdminControls } from "@/shared/adminControls";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { IsNullOrWhitespace } from "@/shared/utils";
+import { Localized } from "@/src/locale/components/Localized";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { useSession } from "@blitzjs/auth";
 import { useMutation } from "@blitzjs/rpc";
@@ -19,7 +20,6 @@ import { usePresentation } from "src/locale/components/PresentationProvider";
 import { PortalLanguageSelection } from "src/route/PortalLanguageSelection";
 import { usePageRoute } from "src/route/usePageRoute";
 import { useBrand } from "../../../../shared/brandConfig";
-import { BandLocalizedMarkdown, Localized } from "../../../setting/client/components/SettingMarkdown";
 import { ConnectionStatusIndicator } from "../../connectivity/ConnectionHealthComponents";
 import { API } from "../../db3/clientAPI";
 import { gIconMap } from "../../db3/components/IconMap";
@@ -200,7 +200,7 @@ const AppBarPageQrDialog = ({ open, onClose }: { open: boolean, onClose: () => v
             onClose={onClose}
             content={QrHelpers.url(router.getAbsoluteUri(router.asPath))}
             title="QR code for this page"
-            description={<BandLocalizedMarkdown id={"QrCodeForThisPageDescriptionMarkdown"} />}
+            description={<Localized id={"QrCodeForThisPageDescriptionMarkdown"} />}
         />
     </AppContextMarker>;
 };

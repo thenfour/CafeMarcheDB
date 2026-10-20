@@ -3,7 +3,7 @@ import React from "react";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
 import { galleryColumnSelection } from "src/core/components/file/GalleryColumns";
 import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
-import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/locale/components/Localized";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
@@ -15,7 +15,7 @@ function EditFrontpageGalleryItemsPage() {
         columns: galleryColumnSelection
     });
     return <DashboardLayout title="Gallery">
-        <BandLocalizedMarkdown id="EditFrontpageGalleryItemsPage_markdown" />
+        <Localized id="EditFrontpageGalleryItemsPage_markdown" />
         <DB3EditGrid
             key={`${context.bandPublicId}:${context.routeLocale}`}
             tableSpec={tableSpec}

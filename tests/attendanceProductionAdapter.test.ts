@@ -17,7 +17,7 @@ vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({
     useFeatureRecorder: () => recordFeature,
 }));
 vi.mock("src/core/components/CMCoreComponents2", () => ({ AdminInspectObject: () => null }));
-vi.mock("src/setting/client/components/SettingMarkdown", () => ({ BandLocalizedMarkdown: () => null }));
+vi.mock("src/locale/components/Localized", () => ({ Localized: () => null }));
 
 import { EventAttendanceControl, EventAttendanceControlProps } from "src/core/components/EventAttendanceComponents";
 import { SnackbarContext } from "src/core/components/SnackbarContext";

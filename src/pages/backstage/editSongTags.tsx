@@ -10,7 +10,7 @@ import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import { bandSongTagView } from "src/core/db3/shared/entities/song/bandSongTagViews";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
-import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/locale/components/Localized";
 
 export const bandSongTagTableSpec = defineTableClientSpec({
     view: bandSongTagView,
@@ -34,7 +34,7 @@ const MainContent = () => {
     const presentation = usePresentation();
     const locale = useLocale();
     return <>
-        <BandLocalizedMarkdown id="editSongTags_markdown" />
+        <Localized id="editSongTags_markdown" />
         {presentation.bandPublicId ? <DB3EditGrid
             tableSpec={bandSongTagTableSpec}
             view={bandSongTagView}

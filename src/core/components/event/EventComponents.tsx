@@ -1,9 +1,12 @@
+import type { EventPublicId, EventSegmentPublicId } from "shared/publicId";
 import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { isTenant } from "src/route/portalRouting";
-import type { EventPublicId, EventSegmentPublicId } from "shared/publicId";
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
+import { Localized } from "@/src/locale/components/Localized";
+import { CMLink } from "@/src/route/CMLink";
+import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 import { EditNote, LibraryMusic } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
@@ -12,8 +15,8 @@ import { assert } from 'blitz';
 import React, { Suspense } from "react";
 import { toSorted } from 'shared/arrayUtils';
 import { isAttendanceGoing, isAttendanceNotGoing } from 'shared/eventAttendance';
-import { Timing } from 'shared/time';
 import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, PermissionPublicId } from 'shared/publicId';
+import { Timing } from 'shared/time';
 import { IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
@@ -21,26 +24,23 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../../db3/clientAPI';
 import { gCharMap, gIconMap } from '../../db3/components/IconMap';
-import { EventResponseInfo, EventParticipantList } from '../../db3/shared/schema/eventAPI';
+import { EventParticipantList, EventResponseInfo } from '../../db3/shared/schema/eventAPI';
 import { wikiMakeWikiPathFromEventDescription } from '../../wiki/shared/wikiUtils';
 import { AppContextMarker } from '../AppContext';
 import { CMChipContainer, CMStandardDBChip } from '../CMChip';
 import { InstrumentChip, InstrumentFunctionalGroupChip } from '../CMCoreComponents';
 import { AdminInspectObject, CMButton, CMDialogContentText, DotMenu, EventDateField, NameValuePair } from '../CMCoreComponents2';
 import { CMDialog } from '../CMDialog';
-import { CMLink } from "@/src/route/CMLink";
 import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
 import { ColorVariationSpec, gLightSwatchColors, StandardVariationSpec } from '../color/palette';
 import { DashboardContextData, useDashboardContext, useFeatureRecorder } from '../dashboardContext/DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from '../EditFieldsDialog';
 import { EventStatusChip } from '../event/EventChips';
 import { EventAttendanceControl } from '../EventAttendanceComponents';
-import { getAttendanceEditChanges } from './attendanceEditChanges';
 import { EventSongListTabContent } from '../EventSongListComponents';
 import { ActivityFeature } from '../featureReports/activityTracking';
 import { Markdown } from '../markdown/Markdown';
 import { SearchItemBigCardLink } from '../SearchItemBigCardLink';
-import { BandLocalizedMarkdown } from '../../../setting/client/components/SettingMarkdown';
 import { FilesTabContent } from '../SongFileComponents';
 import { CMTab, CMTabPanel } from '../TabPanel';
 import { UserChip } from '../user/userChip';
@@ -48,13 +48,13 @@ import { AddUserButton } from '../user/UserComponents';
 import { VisibilityValue } from '../VisibilityControl';
 import { WikiStandaloneControl } from '../wiki/WikiStandaloneComponents';
 import { AttendanceChip } from './AttendanceChips';
+import { getAttendanceEditChanges } from './attendanceEditChanges';
 import { EventAttendanceUserTagControl } from './EventAttendanceUserTagControl';
 import { EventsFilterSpec } from './EventClientBaseTypes';
 import { CalculateEventDetailMetadata, CalculateEventSearchResultsMetadata, EventDetailEvent, EventDetailTableClient, EventWithMetadata } from './EventComponentsBase';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { RelevanceClassOverrideIndicator, RelevanceClassOverrideMenuItemGroup } from './EventRelevanceOverrideComponents';
 import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from './EventSegmentComponents';
-import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 // type EventWithTypePayload = Prisma.EventGetPayload<{
 //     include: {
@@ -275,7 +275,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         open
         onClose={props.onCancel}
         title={<>
-            <BandLocalizedMarkdown id="EventAttendanceEditDialog_TitleMarkdown" />
+            <Localized id="EventAttendanceEditDialog_TitleMarkdown" />
             <AdminInspectObject src={eventResponseValue} label="event response" />
             <AdminInspectObject src={eventSegmentResponseValues} label="segment responses" />
         </>}
@@ -285,7 +285,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         </>}
     >
         <CMDialogContentText>
-            <BandLocalizedMarkdown id="EventAttendanceEditDialog_DescriptionMarkdown" />
+            <Localized id="EventAttendanceEditDialog_DescriptionMarkdown" />
         </CMDialogContentText>
 
         <div className="NameValuePairList">
@@ -600,7 +600,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                             }}
                             buttonChildren={<>{gIconMap.Add()} Invite someone</>}
                             title={"Invite users"}
-                            description={<BandLocalizedMarkdown id='EventInviteUsersDialogDescriptionMarkdown' />}
+                            description={<Localized id='EventInviteUsersDialogDescriptionMarkdown' />}
                         />}
                     </td>
                     {segStats.map(seg => {
@@ -957,7 +957,7 @@ export const EventDetailContainer = ({ eventData, tableClient, editCommands, ref
                     renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
                     tableSpec={tableClient.tableSpec}
                     tableRenderClient={tableClient}
-                    dialogDescription={<BandLocalizedMarkdown id="EditEventDialogDescriptionMarkdown" />}
+                    dialogDescription={<Localized id="EditEventDialogDescriptionMarkdown" />}
                     onCancel={() => { }}
                     onOK={(obj: EventDetailEvent, _tableClient: EventDetailTableClient, api: EditFieldsDialogButtonApi) => {
                         void recordFeature({
@@ -1116,7 +1116,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryTitle="by instrument"
         >
             <AppContextMarker name="by instrument tab">
-                <BandLocalizedMarkdown id='EventCompletenessTabMarkdown' />
+                <Localized id='EventCompletenessTabMarkdown' />
                 <EventCompletenessTabContent eventData={eventData} userMap={userMap} readonly={props.readonly} refetch={refetch} />
             </AppContextMarker>
         </CMTab>
@@ -1128,7 +1128,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summarySubtitle={segmentResponseCountStr}
         >
             <AppContextMarker name="attendance tab">
-                <BandLocalizedMarkdown id='EventAttendanceDetailMarkdown' />
+                <Localized id='EventAttendanceDetailMarkdown' />
                 <EventAttendanceDetail eventData={eventData} tableClient={tableClient} refetch={refetch} readonly={props.readonly} userMap={userMap} />
             </AppContextMarker>
         </CMTab>

@@ -10,7 +10,7 @@ import { LocalizedStringColumnClient, InheritedColumnClient } from "src/core/db3
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
-import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/locale/components/Localized";
 
 export const bandUserTagTableSpec = defineTableClientSpec({
     view: bandUserTagView,
@@ -35,7 +35,7 @@ const MainContent = () => {
     const presentation = usePresentation();
     const locale = useLocale();
     return <>
-        <BandLocalizedMarkdown id="EditUserTagsPage_markdown" />
+        <Localized id="EditUserTagsPage_markdown" />
         {presentation.bandPublicId ? <DB3EditGrid tableSpec={bandUserTagTableSpec} view={bandUserTagView} referenceProvider={dashboard.referenceStore} />
             : <Alert severity="info">{locale.getPlainString("catalog.selectBand")}</Alert>}
     </>;

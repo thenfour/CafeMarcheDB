@@ -4,7 +4,7 @@ import { useLocale } from "src/locale/components/useLocale";
 
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
-import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/locale/components/Localized";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -24,7 +24,7 @@ const MainContent = () => {
     });
 
     return <>
-        <BandLocalizedMarkdown id="editSongCreditTypes_markdown" />
+        <Localized id="editSongCreditTypes_markdown" />
         <GlobalCatalogContext><DB3EditGrid tableSpec={tableSpec} view={db3.songCreditTypeEditorView} /></GlobalCatalogContext>
     </>;
 };

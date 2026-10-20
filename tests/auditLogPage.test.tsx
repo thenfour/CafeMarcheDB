@@ -11,7 +11,7 @@ import { auditLogView } from "src/core/db3/shared/audit/auditViews";
 vi.mock("src/core/components/dashboard/DashboardLayout", () => ({ default: ({ title, children }: React.PropsWithChildren<{ title: string }>) => <main><h1>{title}</h1>{children}</main> }));
 vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({ getPlainString: (key: LocalizedPlainStringKey) => `${language}: ${kStaticLocalizedStringRegistry[key].defaultValue}` }) }));
 vi.mock("src/core/db3/components/useDB3Context", () => ({ useDB3QueryContext: () => ({ bandPublicId: "AuditBand0000001", routeLocale: language, browserLanguages: ["nl-BE", "en-US"] }) }));
-vi.mock("src/setting/client/components/SettingMarkdown", () => ({ BandLocalizedMarkdown: ({ id }: { id: string }) => <aside data-help={id} /> }));
+vi.mock("src/locale/components/Localized", () => ({ Localized: ({ id }: { id: string }) => <aside data-help={id} /> }));
 vi.mock("@blitzjs/rpc", async () => ({ ...await vi.importActual<typeof import("@blitzjs/rpc")>("@blitzjs/rpc"),
     useQuery: (_query: unknown, input: unknown) => { queryInput = input; return [filters, {}]; },
 }));

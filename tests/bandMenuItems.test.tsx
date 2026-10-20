@@ -92,10 +92,10 @@ describe("band navigation menu", () => {
         expect(container.querySelector('a[aria-current="page"]')?.textContent).toContain("First band");
         expect(closeMenu).not.toHaveBeenCalled();
     });
-    it("shows an unavailable selected band and does not fall back to another membership", async () => {
+    it("does not select another membership when the selected band is unavailable", async () => {
         bandPublicId = "Band000000000099";
         await render();
-        expect(container.textContent).toContain("Selected band is unavailable");
+        expect(container.querySelectorAll(".BandBadge")).toHaveLength(choices.length);
         expect(container.querySelector('a[aria-current="page"]')).toBeNull();
         expect(push).not.toHaveBeenCalled();
     });
@@ -122,10 +122,10 @@ describe("band navigation menu", () => {
         expect(container.querySelector('a[aria-current="page"]')?.textContent).toContain("Second band");
         expect(badges[1]!.querySelector('[data-testid="CheckIcon"]')).not.toBeNull();
     });
-    it("uses a localized placeholder for a missing band name", async () => {
+    it("preserves a missing band name without inventing a display name", async () => {
         choices[0] = { ...choices[0]!, name: null, logoUrl: "" };
         await render();
-        expect(container.querySelector(".BandBadge")?.textContent).toContain("Unnamed band");
+        expect(container.querySelector(".BandBadge .MuiTypography-root")?.textContent).toBe("");
     });
     it("supports keyboard focus through the band entries and skips the section heading", async () => {
         await render();

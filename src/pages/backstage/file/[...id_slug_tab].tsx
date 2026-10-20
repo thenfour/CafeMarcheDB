@@ -11,7 +11,6 @@ import { AdminInspectObject, KeyValueTable, Pre } from "@/src/core/components/CM
 import { CMLink } from "@/src/route/CMLink";
 import { DateValue } from "@/src/core/components/DateTime/DateTimeComponents";
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from "@/src/core/components/EditFieldsDialog";
-import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { useSnackbar } from "@/src/core/components/SnackbarContext";
 import { AudioPlayerFileControls, FileExternalLink } from "@/src/core/components/SongFileComponents";
 import { VisibilityValue } from "@/src/core/components/VisibilityControl";
@@ -39,6 +38,7 @@ import { AppContextMarker } from "src/core/components/AppContext";
 import { FileTableClientColumns } from "src/core/components/file/FileComponentsBase";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
+import { Localized } from "@/src/locale/components/Localized";
 
 ////////////////////////////////////////////////////////////////
 export interface FileBreadcrumbProps {
@@ -111,7 +111,7 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
 
             {tableClient && <EditFieldsDialogButton
                 dialogTitle='Edit file'
-                dialogDescription={<BandLocalizedMarkdown id='EditFileDialogDescription' />}
+                dialogDescription={<Localized id='EditFileDialogDescription' />}
                 readonly={readonly}
                 initialValue={file}
                 renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}

@@ -10,7 +10,7 @@ import { isPublicId, type SongTagPublicId } from "shared/publicId";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
-import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/locale/components/Localized";
 import { NewSongButton } from "src/core/components/song/NewSongComponents";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
@@ -173,7 +173,7 @@ const SearchSongsPage: BlitzPage = (props) => {
             <div className="eventsMainContent searchPage">
                 <AppContextMarker name="song search page">
                     <Suspense>
-                        <BandLocalizedMarkdown id="songs_markdown" />
+                        <Localized id="songs_markdown" />
                     </Suspense>
                     <NewSongButton />
 

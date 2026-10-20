@@ -42,7 +42,7 @@ vi.mock("src/core/components/CMCoreComponents2", () => ({
 }));
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({ referenceStore: {}, refreshCachedData: vi.fn() }) }));
 vi.mock("src/core/db3/components/useCrudViewCreate", () => ({ useCrudViewCreate: vi.fn() }));
-vi.mock("src/setting/client/components/SettingMarkdown", () => ({ BandLocalizedMarkdown: () => null }));
+vi.mock("src/locale/components/Localized", () => ({ Localized: () => null }));
 vi.mock("src/core/components/SnackbarContext", async () => {
     const React = await vi.importActual<typeof import("react")>("react");
     return { SnackbarContext: React.createContext({ showMessage: vi.fn() }) };

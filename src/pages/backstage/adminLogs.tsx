@@ -5,7 +5,7 @@ import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
-import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/locale/components/Localized";
 import { useLocale } from "src/locale/components/useLocale";
 import { getHashedColor } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -35,7 +35,8 @@ export function AuditLogContent() {
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
             userId: columnName => new DB3Client.AuditActorColumnClient(columnName),
             action: columnName => new DB3Client.GenericStringColumnClient({ fieldCaptionKey: "db3.fields.action", fieldDescriptionKey: null, columnName, cellWidth: 85 }),
-            table: columnName => new DB3Client.GenericStringColumnClient({ fieldCaptionKey: "db3.fields.table", fieldDescriptionKey: null, columnName, cellWidth: 150,
+            table: columnName => new DB3Client.GenericStringColumnClient({
+                fieldCaptionKey: "db3.fields.table", fieldDescriptionKey: null, columnName, cellWidth: 150,
                 renderCell: params => <span style={{ color: getHashedColor(String(params.value ?? "")) }}>{params.value}</span>,
             }),
             recordId: columnName => new DB3Client.AuditRecordColumnClient(columnName),
@@ -48,7 +49,7 @@ export function AuditLogContent() {
     const users = [...filters.users].sort((left, right) => (left.name ?? "").localeCompare(right.name ?? ""));
     const userOptions = users.filter(user => userIds.includes(user.publicId) || `${user.name ?? ""} ${user.email ?? ""} ${user.publicId}`.toLocaleLowerCase().includes(userText.toLocaleLowerCase()));
     return <>
-        <BandLocalizedMarkdown id="AdminLogsPage_markdown" />
+        <Localized id="AdminLogsPage_markdown" />
         <NameValuePair name={locale.getPlainString("auditLog.tables")} value={<>
             <CMTextInputBase aria-label={locale.getPlainString("auditLog.filterTables")} value={tableText} onChange={(_event, value) => setTableText(value)} />
             <CMChipContainer>{tableOptions.map(({ tableName }) => <CMChip key={tableName} size="small"

@@ -17,7 +17,7 @@ import { BigEventCalendar } from "src/core/components/EventCalendar";
 import { WikiStandaloneControl } from "src/core/components/wiki/WikiStandaloneComponents";
 import { useLocale } from "src/locale/components/useLocale";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
-import { BandLocalizedMarkdown, Localized } from "src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/locale/components/Localized";
 
 export function HomeContent() {
   const cmdbRouter = useCmdbRouter();
@@ -41,7 +41,7 @@ export function HomeContent() {
       </CMLink>
     </Alert>}
 
-    <div className="DashboardHeader"><BandLocalizedMarkdown id="BackstageFrontpageHeaderMarkdown" /></div>
+    <div className="DashboardHeader"><Localized id="BackstageFrontpageHeaderMarkdown" /></div>
 
     {bandPublicId && dashboard.currentUser && <PermissionBoundary permission={BandPermission.view_wiki_pages}>
       <WikiStandaloneControl canonicalWikiPath="special/announcements"
@@ -54,7 +54,7 @@ export function HomeContent() {
         <BigEventCalendar />
       </React.Suspense>
     </PermissionBoundary>}
-    <BandLocalizedMarkdown id="BackstageFrontpageMarkdown" />
+    <Localized id="BackstageFrontpageMarkdown" />
   </Stack></AppContextMarker>;
 }
 

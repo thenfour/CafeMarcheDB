@@ -10,7 +10,7 @@ import { DateTimeRange } from "shared/time";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { authoredTranslationContext, resolveAuthoredTranslations } from "src/locale/shared/authoredTranslations";
-import { BandLocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
+import { Localized } from "../../../locale/components/Localized";
 import { API } from '../../db3/clientAPI';
 import { gIconMap } from "../../db3/components/IconMap";
 import { getAgendaItem } from "../../db3/shared/publicFeedApi";
@@ -310,7 +310,7 @@ const EventFrontpageControl = (props: EventFrontpageControlProps) => {
                     valueFr={valueFr || ""}
                     dialogTitle={props.fieldSpec.fieldLabel}
                     readOnly={readonly}
-                    dialogDescription={<BandLocalizedMarkdown id={`EventFrontpageEditDialog_${props.fieldSpec.fieldLabel}`} />}
+                    dialogDescription={<Localized id={`EventFrontpageEditDialog_${props.fieldSpec.fieldLabel}`} />}
                     selectButtonLabel='edit'
                     onChange={handleChange}
                 />

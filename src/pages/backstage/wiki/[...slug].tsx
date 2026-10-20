@@ -7,7 +7,6 @@ import { Permission } from "shared/permissions";
 import type { WikiPagePublicId } from "shared/publicId";
 import { gSSP } from "src/blitz-server";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { WikiPageControl } from "src/core/components/wiki/WikiComponents";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
@@ -16,6 +15,7 @@ import { GetWikiPageCore } from "src/core/wiki/server/getWikiPageCore";
 import { wikiParsePathComponents, WikiPath } from "src/core/wiki/shared/wikiUtils";
 import { useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
 import { resolvePagePresentationInput } from "src/route/server/portalRequest";
+import { Localized } from "@/src/locale/components/Localized";
 
 
 const WikiPageComponent = ({ wikiPath, wikiPageId }: { wikiPath: WikiPath, wikiPageId: WikiPagePublicId | undefined }) => {
@@ -25,7 +25,7 @@ const WikiPageComponent = ({ wikiPath, wikiPageId }: { wikiPath: WikiPath, wikiP
     });
 
     return <>
-        <BandLocalizedMarkdown id="GlobalWikiPage_Markdown" />
+        <Localized id="GlobalWikiPage_Markdown" />
 
         <WikiPageControl wikiPath={wikiPath} />
     </>;

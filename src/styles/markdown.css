@@ -137,16 +137,6 @@ test cases:
 
 
 
-/* -  --------------------------------- */
-.settingMarkdownContainer {
-    max-width: var(--content-max-width);
-}
-
-.settingMarkdownContainer.editable {
-    border: 1px solid #0002;
-    border-radius: 5px;
-}
-
 .MD3Container.editor {
     --radius: 5px;
     border: 1px solid #ddd;

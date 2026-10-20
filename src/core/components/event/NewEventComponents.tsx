@@ -1,7 +1,6 @@
 import { BandPermission } from "src/auth/shared/bandPermissionPolicy";
 import { TAnyModel } from "@/shared/rootroot";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
-import { BandLocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import React from "react";
 import type { PermissionPublicId } from "shared/publicId";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
@@ -20,6 +19,7 @@ import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/Das
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { EventTableClientColumns } from "./EventComponentsBase";
 import { EventSegmentClientColumns } from "./EventSegmentComponents";
+import { Localized } from "@/src/locale/components/Localized";
 
 interface NewEventDialogProps {
     onCancel: () => void;
@@ -165,7 +165,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             <CMButton onClick={handleSaveClick} startIcon={gIconMap.Save()} enabled={!grayed}>OK</CMButton>
         </>}
     >
-        <BandLocalizedMarkdown id="NewEventDialogDescriptionMarkdown" />
+        <Localized id="NewEventDialogDescriptionMarkdown" />
 
         <div className="NameValuePairList">
             <VisibilityControl value={eventValue.visiblePermission} onChange={(newVisiblePermission) => {

@@ -1,6 +1,6 @@
 // Production adapter for the shared attendance control.
 import React from "react";
-import { BandLocalizedMarkdown } from "../../setting/client/components/SettingMarkdown";
+import { Localized } from "../../locale/components/Localized";
 import { API } from "../db3/clientAPI";
 import type { EventParticipantList } from "../db3/shared/schema/eventAPI";
 import { AdminInspectObject } from "./CMCoreComponents2";
@@ -98,7 +98,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
             onSave,
             allowUploads: true,
             datePresentation: dashboardContext.eventDatePresentation,
-            commentDialogTitle: <BandLocalizedMarkdown id="EventAttendanceCommentDialog_TitleMarkdown" />,
-            commentDialogDescription: <BandLocalizedMarkdown id="EventAttendanceCommentDialog_DescriptionMarkdown" />,
+            commentDialogTitle: <Localized id="EventAttendanceCommentDialog_TitleMarkdown" />,
+            commentDialogDescription: <Localized id="EventAttendanceCommentDialog_DescriptionMarkdown" />,
         }} />;
 };

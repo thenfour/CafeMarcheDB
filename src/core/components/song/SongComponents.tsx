@@ -10,7 +10,6 @@ import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { BandLocalizedMarkdown } from '../../../setting/client/components/SettingMarkdown';
 import { API } from '../../db3/clientAPI';
 import { gIconMap } from '../../db3/components/IconMap';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../../db3/components/db3NewObjectDialog';
@@ -33,6 +32,7 @@ import { Markdown3Editor } from '../markdown/MarkdownControl3';
 import { UserChip } from '../user/userChip';
 import { CalculateSongMetadata, GetSongFileInfo, SongWithMetadata } from './SongComponentsBase';
 import { SongHistory } from './SongHistory';
+import { Localized } from "@/src/locale/components/Localized";
 
 
 export const SongClientColumns = DB3Client.makeClientColumnSet({
@@ -470,7 +470,7 @@ export const SongDetailContainer = ({ songData, tableClient, editCommands, ...pr
 
                 {tableClient && editCommands && <EditFieldsDialogButton
                     dialogTitle='Edit song'
-                    dialogDescription={<BandLocalizedMarkdown id='EditSongDialogDescription' />}
+                    dialogDescription={<Localized id='EditSongDialogDescription' />}
                     readonly={props.readonly}
                     initialValue={song}
                     renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}

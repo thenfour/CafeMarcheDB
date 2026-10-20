@@ -6,7 +6,6 @@ import type { SetRoleDesignation } from "src/auth/roleDesignations";
 import type { BandRolePublicId, GlobalRolePublicId } from "shared/publicId";
 import { useLocale } from "src/locale/components/useLocale";
 import { usePresentation } from "src/locale/components/PresentationProvider";
-import { BandLocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
@@ -14,6 +13,7 @@ import { DB3AssociationMatrix } from "src/core/db3/components/DB3AssociationMatr
 import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { CMButton } from "../CMCoreComponents2";
+import { Localized } from "@/src/locale/components/Localized";
 
 // Role definitions are platform-owned; selected bands affect label resolution only.
 const platformWriteContext = { bandPublicId: null };
@@ -145,7 +145,7 @@ export function RoleDefinitionsContent() {
     const refreshPresentation = async () => { await presentation.invalidate(); };
     const scopeKey = `${context.bandPublicId}:${context.routeLocale}:${context.browserLanguages?.join(",")}`;
     return <Stack spacing={3} key={scopeKey}>
-        <BandLocalizedMarkdown id="RolesAdminPage_markdown" />
+        <Localized id="RolesAdminPage_markdown" />
         <RoleDesignationControls />
         <h3>{locale.getPlainString("roles.global")}</h3>
         <DB3EditGrid tableSpec={globalRoleTableSpec} view={db3.globalRoleEditorView} referenceProvider={dashboard.referenceStore}
@@ -190,7 +190,7 @@ export function RolePermissionMatrixContent() {
         await Promise.all([dashboard.refreshCachedData(), presentation.invalidate()]);
     };
     return <Stack spacing={2}>
-        <BandLocalizedMarkdown id="rolePermissionsMatrixPage_markdown" />
+        <Localized id="rolePermissionsMatrixPage_markdown" />
         <FormControl size="small" disabled={changingScope} sx={{ maxWidth: 300 }}><InputLabel id="role-matrix-scope">{locale.getPlainString("roles.title")}</InputLabel>
             <Select labelId="role-matrix-scope" label={locale.getPlainString("roles.title")} value={scope}
                 open={scopeSelectorOpen} onOpen={() => setScopeSelectorOpen(true)} onClose={() => setScopeSelectorOpen(false)}
