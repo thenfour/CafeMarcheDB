@@ -1252,33 +1252,45 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 
 
 /* - dashboard menu --------------------------------- */
-
-
-/* .CMMenu .public {
-    color: #080;
-    background-color: #eee;
+.CMMenu {
+    --menu-bg-color: #fff;
+    --menu-hover-bg-color: #ccc;
+    --menu-selected-bg-color: #ddd;
+    --menu-text-color: #000;
 }
 
-.CMMenu .public.linkMenuItem:hover {
-    background-color: #ccc;
-} */
+.CMMenu .Mui-selected {
+    background-color: var(--menu-selected-bg-color);
+}
+
+.CMMenu .linkMenuItem:hover {
+    background-color: var(--menu-hover-bg-color);
+}
 
 .CMMenu .admin {
-    color: #a40;
-    background-color: #eee;
+    --menu-text-color: #a40;
+    --menu-bg-color: #eee;
 }
 
-.CMMenu .admin.Mui-selected {
-    background-color: #ddd;
+.CMMenu .MuiButtonBase-root {
+    padding-top: 4px;
+    padding-bottom: 4px;
 }
 
-/* 
-.CMMenu .admin.events {
-    color: #008;
-} */
+.CMMenu .MuiButtonBase-root,
+.CMMenu .MuiCollapse-root,
+.CMMenu .MuiListSubheader-root {
+    color: var(--menu-text-color);
+    background-color: var(--menu-bg-color);
+}
 
-.CMMenu .admin.linkMenuItem:hover {
-    background-color: #ccc;
+.CMMenu .MuiButtonBase-root svg {
+    fill: var(--menu-text-color);
+}
+
+.CMMenu .platform_scope {
+    --menu-text-color: #154d92;
+    --menu-bg-color: #f4f4f4;
 }
 
 .ReactiveInputDialog .MuiDialog-container>.MuiPaper-root {

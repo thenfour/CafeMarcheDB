@@ -37,7 +37,7 @@ export enum NavRealm {
 export interface MenuLink {
     type: "link";
     permission: PermissionRequirement;
-    linkCaption: string;
+    linkCaption: React.ReactNode;
     path: string;
     routeKey?: CmdbRouteKey;
 

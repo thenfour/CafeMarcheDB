@@ -1,22 +1,29 @@
 // @vitest-environment jsdom
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { act } from "react-dom/test-utils";
+import { act, Simulate } from "react-dom/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Localized } from "src/locale/components/Localized";
 import { createLocaleApi, type LocalizationCatalog, type LocalizedStringIdAndParams } from "src/locale/shared/localizationCatalog";
 import { collectLocalePreferences } from "src/locale/shared/localePreferences";
 import { kStaticLocalizedStringRegistry, type LocalizedMarkdownKey, type StaticLocalizedStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
 import { resolveString } from "src/locale/shared/stringResolution";
+import type { DataAttributes } from "src/core/components/dataAttributes";
 
 vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => createLocaleApi(catalog) }));
 vi.mock("src/core/components/markdown/Markdown", () => ({
-    Markdown: ({ markdown, className }: { markdown: string; className?: string }) => <div data-markdown className={className}>{markdown}</div>,
+    Markdown: ({ markdown, className, containerProps }: { markdown: string; className?: string; containerProps?: DataAttributes }) =>
+        <div {...containerProps} data-markdown className={className}>{markdown}</div>,
 }));
 
 let catalog: LocalizationCatalog;
 let root: Root;
 let container: HTMLDivElement;
+
+type ActionProps = React.PropsWithChildren<{ destination: string; emphasis: "quiet" | "strong" }> & DataAttributes;
+function Action({ destination, emphasis, children, ...attributes }: ActionProps) {
+    return <a {...attributes} href={destination} className={emphasis}>{children}</a>;
+}
 
 function createCatalog(): LocalizationCatalog {
     const preferences = collectLocalePreferences({ routeLocale: "fr-BE" });
@@ -55,15 +62,43 @@ afterEach(async () => {
 });
 
 describe("localized presentation", () => {
-    it("interpolates parameters in fragments and wrappers, including parameter changes", async () => {
+    it("interpolates parameters in default spans and wrappers, including parameter changes", async () => {
         await render(<Localized id="menu.profile" parameters={{ bandName: "River Band" }} />);
         expect(container.textContent).toBe("Your River Band Profile");
+        expect(container.firstElementChild?.tagName).toBe("SPAN");
+        expect(container.firstElementChild?.getAttribute("data-localized-string-key")).toBe("menu.profile");
         await render(<Localized id="menu.profile" parameters={{ bandName: "Brass Collective" }}
             component="span" className="profile" style={{ fontWeight: 700 }} />);
         expect(container.querySelector("span.profile")?.textContent).toBe("Your Brass Collective Profile");
         expect(container.querySelector("span")?.style.fontWeight).toBe("700");
         await render(<Localized id="common.action.ok" component="strong" />);
         expect(container.querySelector("strong")?.textContent).toBe("OK");
+        expect(container.querySelector("strong")?.getAttribute("data-localized-string-key")).toBe("common.action.ok");
+    });
+
+    it("forwards element props and event handlers without leaking localization inputs", async () => {
+        const onClick = vi.fn();
+        await render(<Localized id="menu.profile" parameters={{ bandName: "River Band" }} component="button"
+            type="button" disabled={false} onClick={event => onClick(event.currentTarget.type)}
+            aria-label="Open profile" data-purpose="profile" data-localized-string-key="incorrect" />);
+        const button = container.querySelector("button")!;
+        await act(async () => Simulate.click(button));
+        expect(onClick).toHaveBeenCalledWith("button");
+        expect(button.getAttribute("aria-label")).toBe("Open profile");
+        expect(button.getAttribute("data-purpose")).toBe("profile");
+        expect(button.getAttribute("data-localized-string-key")).toBe("menu.profile");
+        expect(button.hasAttribute("id")).toBe(false);
+        expect(button.hasAttribute("parameters")).toBe(false);
+        expect(button.hasAttribute("component")).toBe(false);
+        await render(<Localized id="common.action.ok" title="Confirm" onClick={onClick} />);
+        expect(container.querySelector("span")?.title).toBe("Confirm");
+    });
+
+    it("supports custom component props and annotates their forwarded root", async () => {
+        await render(<Localized id="common.action.ok" component={Action} destination="/confirm" emphasis="strong" />);
+        expect(container.querySelector("a.strong")?.getAttribute("href")).toBe("/confirm");
+        expect(container.querySelector("a")?.textContent).toBe("OK");
+        expect(container.querySelector("a")?.getAttribute("data-localized-string-key")).toBe("common.action.ok");
     });
 
     it("uses translation plural rules and the viewer's number formatting", async () => {
@@ -99,6 +134,7 @@ describe("localized presentation", () => {
         setTranslation("GlobalWikiPage_Markdown", "**Help** {literal}");
         await render(<Help id="GlobalWikiPage_Markdown" />);
         expect(container.querySelector("[data-markdown].help")?.textContent).toBe("**Help** {literal}");
+        expect(container.querySelector("[data-markdown]")?.getAttribute("data-localized-string-key")).toBe("GlobalWikiPage_Markdown");
         expect(container.querySelector("button, textarea, select")).toBeNull();
     });
 
@@ -106,6 +142,7 @@ describe("localized presentation", () => {
         setTranslation("menu.profile", "");
         await render(<Localized id="menu.profile" parameters={{ bandName: "River Band" }} />);
         expect(container.textContent).toBe("");
+        expect(container.querySelector("span")?.getAttribute("data-localized-string-key")).toBe("menu.profile");
         setTranslation("GlobalWikiPage_Markdown", "");
         await render(<Localized id="GlobalWikiPage_Markdown" />);
         expect(container.querySelector("[data-markdown]")?.textContent).toBe("");
@@ -155,10 +192,32 @@ describe("localized composition API", () => {
 
     it("checks parameter pairs and Markdown presentation options at compile time", () => {
         if (false) {
+            <Localized id="common.action.ok" component="a" href="/confirm" target="_blank" />;
+            <Localized id="common.action.ok" component="button" onClick={event => {
+                const button: HTMLButtonElement = event.currentTarget;
+                button.focus();
+                // @ts-expect-error Button event targets do not have anchor properties.
+                event.currentTarget.href;
+            }} />;
+            <Localized id="common.action.ok" component={Action} destination="/confirm" emphasis="quiet" />;
+            // @ts-expect-error Custom components retain their required props.
+            <Localized id="common.action.ok" component={Action} emphasis="quiet" />;
+            // @ts-expect-error Custom component prop types are preserved.
+            <Localized id="common.action.ok" component={Action} destination="/confirm" emphasis="invalid" />;
+            // @ts-expect-error Button props cannot include anchor-only attributes.
+            <Localized id="common.action.ok" component="button" href="/confirm" />;
+            // @ts-expect-error Extra props cannot infer a different root when component is omitted.
+            <Localized id="common.action.ok" href="/confirm" />;
+            // @ts-expect-error Translated content owns the children.
+            <Localized id="common.action.ok" component="span">Other text</Localized>;
+            // @ts-expect-error Translated content cannot be replaced with HTML.
+            <Localized id="common.action.ok" component="span" dangerouslySetInnerHTML={{ __html: "Other text" }} />;
             // @ts-expect-error Only registered keys can be presented.
             <Localized id="unregistered.string" />;
             // @ts-expect-error The profile caption requires bandName.
             <Localized id="menu.profile" />;
+            // @ts-expect-error A component override still requires the string's parameters.
+            <Localized id="menu.profile" component="span" />;
             // @ts-expect-error bandName must be a string.
             <Localized id="menu.profile" parameters={{ bandName: 42 }} />;
             // @ts-expect-error Unknown parameters cannot replace bandName.
@@ -175,6 +234,8 @@ describe("localized composition API", () => {
             <Localized id="GlobalWikiPage_Markdown" component="article" />;
             // @ts-expect-error Even a null component is unsupported for Markdown.
             <Localized id="GlobalWikiPage_Markdown" component={null} />;
+            // @ts-expect-error Plain-text presentation options do not apply to Markdown.
+            <Localized id="GlobalWikiPage_Markdown" style={{ color: "red" }} />;
             // @ts-expect-error Caller fallbacks are no longer supported.
             <Localized id="common.action.ok" fallbackPlainString="Fallback" />;
             const id = Date.now() ? "menu.profile" : "common.action.ok";

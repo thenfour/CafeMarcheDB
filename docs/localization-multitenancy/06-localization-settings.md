@@ -38,8 +38,18 @@ interpolate. Missing translations and unloaded catalogs throw errors; intentiona
 empty strings remain valid values.
 
 `Localized` presents every registered static string. Its key determines the required
-parameters and the plain-text or Markdown renderer. Plain text accepts an optional
-`component` wrapper; Markdown rejects component overrides at compile time. The shared
+parameters and the plain-text or Markdown renderer. Plain text defaults to a `span`;
+an explicit `component` infers that element or component's props, including required
+custom props and event types. For example,
+`<Localized id="common.action.ok" component="button" type="button" onClick={confirm} />`.
+`id` remains the localization key, rather than an HTML ID; `parameters`, `component`
+and translated children are also owned by `Localized`. Callers cannot replace the
+content with `children` or `dangerouslySetInnerHTML`.
+
+The rendered root receives `data-localized-string-key` automatically. Custom
+components must forward data attributes to their DOM root; `CMButton` does so.
+Markdown annotates its existing container and rejects component overrides at compile
+time. Empty Markdown retains its existing behavior of rendering no container. The shared
 `getString({ id, parameters })` API composes text with the same typed parameter contract.
 Static string presentation has no inline editor, upload controls, or caller fallbacks.
 

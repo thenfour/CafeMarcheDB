@@ -5,7 +5,7 @@ import React from "react";
 import getAvailableBands from "src/auth/queries/getAvailableBands";
 import type { AvailableBand } from "src/auth/shared/availableBands";
 import { usePresentation } from "src/locale/components/PresentationProvider";
-import { useLocale } from "src/locale/components/useLocale";
+import { Localized } from "src/locale/components/Localized";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { BandBadge } from "../BandBadge";
 
@@ -56,7 +56,6 @@ function useBandMenuNavigation(onNavigate: (() => void) | undefined) {
 function PlatformBandMenuItems({ onNavigate }: { onNavigate?: () => void }) {
     const router = useCmdbRouter();
     const presentation = usePresentation();
-    const locale = useLocale();
     const { bandPublicId: _selected, ...input } = presentation.data?.input ?? {};
     const [bands] = useQuery(getAvailableBands, input, { keepPreviousData: false, staleTime: 0 });
     const { switching, failed, navigate } = useBandMenuNavigation(onNavigate);
@@ -67,7 +66,7 @@ function PlatformBandMenuItems({ onNavigate }: { onNavigate?: () => void }) {
         <MenuItem component={Link} href={platformHref} disabled={switching}
             selected={!selected} aria-current={!selected ? "page" : undefined}
             onClick={event => { void navigate(event, platformHref); }}>
-            {locale.getPlainString("dashboard.band.platform")}
+            <Localized id="dashboard.band.platform" />
         </MenuItem>
         {bands.map(band => {
             const href = router.href("/backstage", {
@@ -88,18 +87,17 @@ function PlatformBandMenuItems({ onNavigate }: { onNavigate?: () => void }) {
                 <BandBadge band={band} selected={isSelected} />
             </MenuItem>;
         })}
-        {failed && <li><Alert severity="error">{locale.getPlainString("dashboard.band.switchFailed")}</Alert></li>}
+        {failed && <li><Alert severity="error"><Localized id="dashboard.band.switchFailed" /></Alert></li>}
     </>;
 }
 
 /** Menu entries shared by the account menu and platform landing pages. */
 export function BandMenuItems({ onNavigate }: { onNavigate?: () => void }) {
     const router = useCmdbRouter();
-    const locale = useLocale();
     if (router.hosting.kind !== "multiBand") {
         return null;
     }
-    return <React.Suspense fallback={<MenuItem disabled>{locale.getPlainString("dashboard.band.loading")}</MenuItem>}>
+    return <React.Suspense fallback={<MenuItem disabled><Localized id="dashboard.band.loading" /></MenuItem>}>
         <PlatformBandMenuItems onNavigate={onNavigate} />
     </React.Suspense>;
 }

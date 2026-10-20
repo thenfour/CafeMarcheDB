@@ -23,6 +23,7 @@ import { fileDownloadHref } from "src/core/db3/shared/fileDownloadUrl";
 import "@webscopeio/react-textarea-autocomplete/style.css";
 import MarkdownIt from 'markdown-it';
 import React from "react";
+import type { DataAttributes } from "../dataAttributes";
 
 import { IsNullOrWhitespace } from "shared/utils";
 
@@ -36,6 +37,8 @@ import { useCmdbRouter } from "@/src/route/useCmdbRouter";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface MarkdownProps {
+    // Root attributes are separate from the rendered HTML and the inner content's id.
+    containerProps?: Omit<React.ComponentPropsWithoutRef<"div">, "children" | "dangerouslySetInnerHTML" | "className" | "onClick"> & DataAttributes;
     presentation?: DB3QueryContextInput;
     markdown: string | null,
     id?: string,
@@ -134,7 +137,7 @@ export const Markdown = (props: MarkdownProps) => {
 
     return <NoSsr>
         {IsNullOrWhitespace(props.markdown) ? null :
-            <div className={`markdown renderedContent ${props.compact && "compact"} ${props.className || ""}`} onClick={props.onClick}>
+            <div {...props.containerProps} className={`markdown renderedContent ${props.compact && "compact"} ${props.className || ""}`} onClick={props.onClick}>
                 <div className='extraContainerDiv' ref={containerRef} id={props.id} dangerouslySetInnerHTML={{ __html: html }}></div>
             </div>
         }

@@ -16,6 +16,7 @@ import { useDashboardContext } from "./dashboardContext/DashboardContext";
 
 import CMButtonStyle from "./CMButton.module.css";
 import { useCmdbRouter } from "@/src/route/useCmdbRouter";
+import { pickDataAttributes, type DataAttributes } from "./dataAttributes";
 
 export const AbsoluteUriText = (props: { relativeUri: string }) => {
     const router = useCmdbRouter();
@@ -208,7 +209,7 @@ export const CMTextButton = ({ enabled = true, ...props }: React.PropsWithChildr
 // };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface CMButtonProps {
+export interface CMButtonProps extends DataAttributes {
     "aria-label"?: React.AriaAttributes["aria-label"];
     "aria-expanded"?: React.AriaAttributes["aria-expanded"];
     onClick?: (e: React.MouseEvent<HTMLElement>) => void;
@@ -234,6 +235,7 @@ export interface CMButtonProps {
 
 //export const CMButton = ({ enabled, disabled, component = "button", ...props }: React.PropsWithChildren<CMButtonProps>) => {
 export const CMButton = React.forwardRef<HTMLElement, React.PropsWithChildren<CMButtonProps>>(({ enabled, disabled, component = "button", ...props }, ref) => {
+    const dataAttributes = pickDataAttributes(props);
     let innerContent = <>
         {props.startIcon}
         {props.children}
@@ -259,6 +261,7 @@ export const CMButton = React.forwardRef<HTMLElement, React.PropsWithChildren<CM
     if (props.type === "submit" && props.value) {
         // submit are rendered as <input type="submit" value={props.value} /> instead of a button
         return <input
+            {...dataAttributes}
             type="submit"
             value={props.value}
             style={props.style}
@@ -271,6 +274,7 @@ export const CMButton = React.forwardRef<HTMLElement, React.PropsWithChildren<CM
     return React.createElement(
         component,
         {
+            ...dataAttributes,
             style: props.style,
             className: className,
             onClick: clickHandler,

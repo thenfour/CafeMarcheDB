@@ -1,5 +1,7 @@
 import { groupByMap } from '@/shared/arrayUtils';
-import { MenuCaptionKey } from "@/src/locale/shared/menuStrings";
+import { Localized } from "src/locale/components/Localized";
+import type { LocalizedStringIdAndParams } from "src/locale/shared/localizationCatalog";
+import type { MenuCaptionKey } from "src/locale/shared/menuStrings";
 import { Box, Collapse, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Typography } from '@mui/material';
 import Link from "next/link";
 import * as React from 'react';
@@ -10,7 +12,6 @@ import * as db3 from "src/core/db3/db3";
 import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
 import { wikiPageInternalHref } from "src/core/wiki/shared/wikiUtils";
 import { usePresentation } from "src/locale/components/PresentationProvider";
-import { useLocale } from "src/locale/components/useLocale";
 import { type BandHostingConfig, type PortalPath } from "src/route/portalRouting";
 import { useCmdbRouter } from "src/route/useCmdbRouter";
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
@@ -37,7 +38,7 @@ export interface FlatMenuItemLink {
     type: "link";
     permission: PermissionRequirement;
     className?: string;
-    linkCaption: string;
+    linkCaption: React.ReactNode;
     path: string;
     openInNewTab?: boolean;
     realm?: NavRealm;
@@ -253,7 +254,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
             const isSectionExpanded = props.expandedSections.has(linkItem.sectionId);
             // Animate the appearance/disappearance of the links
             return (
-                <Collapse in={isSectionExpanded} timeout="auto" unmountOnExit>
+                <Collapse in={isSectionExpanded} timeout="auto" unmountOnExit className={`${props.item.sectionInfo.className} ${linkItem.className}`}>
                     {linkItem.openInNewTab ? (
                         <ListItemButton
                             component="a"
@@ -325,10 +326,10 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
     return <>??</>;
 };
 
-// Helper function to get menu item name for context
+// Context markers use the destination because captions may contain React elements.
 export const getMenuItemName = (item: FlatMenuItemSpec): string => {
     if (item.type === "link") {
-        return item.linkCaption;
+        return item.path;
     }
     if (item.type === "sectionHeader") {
         return item.sectionName;
@@ -394,15 +395,21 @@ export const AddDynMenuItemsToStatic = (
 
 
 
-// effectively creates a copy of the static menu section registry, but with links filtered and captions resolved according to the provided context.
-function resolveStaticMenuSections(getCaption: (key: MenuCaptionKey) => string, context: MenuContext): MenuSection[] {
+function renderStaticMenuCaption(id: MenuCaptionKey, bandName: string): React.ReactNode {
+    // Every menu key uses the same bandName schema; TypeScript cannot distribute this large key union.
+    const input = { id, parameters: { bandName } } as LocalizedStringIdAndParams<MenuCaptionKey>;
+    return <Localized {...input} />;
+}
+
+// Select context links and compose their captions without resolving display text early.
+function resolveStaticMenuSections(bandName: string, context: MenuContext): MenuSection[] {
     return gMenuSections.map(section => ({
         ...section,
         groups: section.groups.map(group => ({
             ...group,
             links: group.links.filter(link => link.context === context).map(({ captionKey, context: _context, ...link }) => ({
                 ...link,
-                linkCaption: getCaption(captionKey),
+                linkCaption: renderStaticMenuCaption(captionKey, bandName),
             })),
         })),
     }));
@@ -429,10 +436,9 @@ export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme 
         dynamicSectionsAndGroups.set(sectionName, groupByMap(items, item => item.groupName || gNullValue));
     }
 
-    const locale = useLocale();
     const band = usePresentation().data?.band;
     const bandName = band?.name ?? "";
-    const staticSections = resolveStaticMenuSections(key => locale.getPlainString(key, { bandName }),
+    const staticSections = resolveStaticMenuSections(bandName,
         dashboardContext.memberPresentation.bandPublicId ? "band" : "platform");
     const menuSections = AddDynMenuItemsToStatic(staticSections, dynamicSectionsAndGroups, dashboardContext);
 

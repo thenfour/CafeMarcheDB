@@ -5,7 +5,8 @@ import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { act } from "react-dom/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { kStaticLocalizedStringRegistry, type LocalizedPlainStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
+import { kStaticLocalizedStringRegistry } from "src/locale/shared/staticLocalizedStringRegistry";
+import type { LocalizedStringIdAndParams } from "src/locale/shared/localizationCatalog";
 import { BandMenuItems } from "src/core/components/dashboard/BandMenuItems";
 import { MenuList } from "@mui/material";
 import type { AvailableBand } from "src/auth/shared/availableBands";
@@ -17,7 +18,13 @@ vi.mock("src/auth/queries/getAvailableBands", () => ({ default: vi.fn() }));
 vi.mock("src/locale/components/PresentationProvider", () => ({ usePresentation: () => ({ bandPublicId, data: { input: {
     bandPublicId, routeLocale: "fr-BE", browserLanguages: ["nl-BE", "en-US"], clientRequestId: "snapshot",
 } } }) }));
-vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({ getPlainString: (key: LocalizedPlainStringKey) => kStaticLocalizedStringRegistry[key].defaultValue }) }));
+vi.mock("src/core/components/markdown/Markdown", () => ({ Markdown: () => null }));
+vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({
+    getString: ({ id }: LocalizedStringIdAndParams) => ({
+        format: kStaticLocalizedStringRegistry[id].format,
+        value: kStaticLocalizedStringRegistry[id].defaultValue,
+    }),
+}) }));
 
 const push = vi.fn(async (_href: string, _as?: string, _options?: unknown) => true);
 const queries: unknown[] = [];
@@ -77,6 +84,7 @@ describe("band navigation menu", () => {
     it("never automatically selects a band and carries full language preferences to its account query", async () => {
         await render();
         expect(container.querySelector('a[aria-current="page"]')?.textContent).toContain("Account and platform");
+        expect(container.querySelector('a[aria-current="page"] [data-localized-string-key="dashboard.band.platform"]')).not.toBeNull();
         expect(push).not.toHaveBeenCalled();
         expect(queries[0]).toEqual({ routeLocale: "fr-BE", browserLanguages: ["nl-BE", "en-US"], clientRequestId: "snapshot" });
         await select(choices[1]!.publicId);
@@ -89,6 +97,7 @@ describe("band navigation menu", () => {
         await select("");
         expect(push).toHaveBeenCalledWith("/fr-BE/platform", undefined, undefined);
         expect(container.textContent).toContain("Could not change bands");
+        expect(container.querySelector('[role="alert"] [data-localized-string-key="dashboard.band.switchFailed"]')).not.toBeNull();
         expect(container.querySelector('a[aria-current="page"]')?.textContent).toContain("First band");
         expect(closeMenu).not.toHaveBeenCalled();
     });

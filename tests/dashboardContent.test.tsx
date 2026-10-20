@@ -43,14 +43,16 @@ vi.mock("src/core/components/wiki/WikiStandaloneComponents", () => ({
     WikiStandaloneControl: (props: { canonicalWikiPath: string; className?: string; floatingHeader?: boolean }) =>
         <div className={props.className} data-floating={props.floatingHeader}>{props.canonicalWikiPath}</div>,
 }));
-vi.mock("src/locale/components/Localized", () => ({
-    Localized: ({ id, parameters }: LocalizedStringIdAndParams) => <>
-        {kStaticLocalizedStringRegistry[id].format === "markdown" ? id
-            : kStaticLocalizedStringRegistry[id].defaultValue.replace("{bandName}", parameters && "bandName" in parameters ? parameters.bandName : "")}
-    </>,
+vi.mock("src/core/components/markdown/Markdown", () => ({
+    Markdown: ({ markdown }: { markdown: string }) => <div>{markdown}</div>,
 }));
 vi.mock("src/locale/components/useLocale", () => ({
     useLocale: () => ({
+        getString: ({ id, parameters }: LocalizedStringIdAndParams) => ({
+            format: kStaticLocalizedStringRegistry[id].format,
+            value: kStaticLocalizedStringRegistry[id].format === "markdown" ? id
+                : kStaticLocalizedStringRegistry[id].defaultValue.replace("{bandName}", parameters && "bandName" in parameters ? parameters.bandName : ""),
+        }),
         getPlainString: (key: LocalizedPlainStringKey, parameters?: { bandName: string }) =>
             kStaticLocalizedStringRegistry[key].defaultValue.replace("{bandName}", parameters?.bandName ?? ""),
     })
@@ -103,6 +105,7 @@ beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     grants.clear(); grants.add(Permission.visibility_members); grants.add(Permission.view_wiki_pages); grants.add(Permission.view_events_nonpublic);
     dashboard.memberPresentation = { bandPublicId: band, routeLocale: "fr-BE" };
+    dashboard.dynMenuLinks = new TableAccessor<MenuLinkListClient>([]);
     selectedBand = { publicId: band, name: "River Band" };
     dashboard.currentUser = { id: 1 }; dashboard.currentMembership = { bandUserInstruments: [] };
     container = document.createElement("div"); document.body.appendChild(container); root = createRoot(container);
@@ -112,6 +115,7 @@ afterEach(async () => { await act(async () => root.unmount()); container.remove(
 describe("dashboard announcements and navigation", () => {
     it.each(["Different website title", ""])("uses the localized band name in menu captions with site title %j", async siteTitle => {
         grants.add(Permission.login);
+        dashboard.dynMenuLinks = new TableAccessor([menu({ applicationPage: "Backstage" })]);
         const theme = createTheme();
         const renderMenu = () => act(async () => root.render(
             <BrandContext.Provider value={{ ...DefaultDbBrandConfig, siteTitle }}>
@@ -121,9 +125,15 @@ describe("dashboard announcements and navigation", () => {
         await renderMenu();
         expect(container.textContent).toContain("Your River Band Profile");
         expect(container.textContent).toContain("Your CMDB profile");
+        expect(container.querySelector('[data-localized-string-key="menu.profile"]')?.textContent).toBe("Your River Band Profile");
+        expect(container.querySelector('[data-localized-string-key="menu.platform-profile"]')?.textContent).toBe("Your CMDB profile");
+        const authoredLink = container.querySelector('a.score-link')!;
+        expect(authoredLink.textContent).toBe("Partitions");
+        expect(authoredLink.querySelector("[data-localized-string-key]")).toBeNull();
         selectedBand = { publicId: band, name: "Groupe Rivière" };
         await renderMenu();
         expect(container.textContent).toContain("Your Groupe Rivière Profile");
+        expect(container.querySelector('[data-localized-string-key="menu.profile"]')?.textContent).toBe("Your Groupe Rivière Profile");
         expect(container.textContent).not.toContain("Your River Band Profile");
         selectedBand = { publicId: otherBand, name: "Brass Collective" };
         dashboard.memberPresentation.bandPublicId = otherBand;
@@ -137,6 +147,7 @@ describe("dashboard announcements and navigation", () => {
         await renderMenu();
         expect(container.textContent).toContain("Your CMDB profile");
         expect(container.textContent).not.toContain("Your  Profile");
+        expect(container.querySelector('[data-localized-string-key="menu.profile"]')).toBeNull();
     });
 
     it("retains nested Wiki paths, contextual band/locale, authored blank captions and external URLs", () => {
